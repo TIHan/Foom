@@ -71,4 +71,4 @@ module Polygon =
             j <- i
         c
 
-type PolygonTree = PolygonTree of Polygon * Polygon list
+type PolygonTree = PolygonTree of Polygon * PolygonTree list

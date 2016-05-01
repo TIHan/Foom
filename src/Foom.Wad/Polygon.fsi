@@ -21,4 +21,4 @@ module Polygon =
 
     val isPointInside : point: Vector2 -> poly: Polygon -> bool
 
-type PolygonTree = PolygonTree of Polygon * Polygon list
+type PolygonTree = PolygonTree of Polygon * PolygonTree list

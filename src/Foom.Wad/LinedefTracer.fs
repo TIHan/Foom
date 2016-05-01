@@ -3,6 +3,7 @@
 open System.Numerics
 open System.Collections.Immutable
 
+open Foom.Wad.Geometry
 open Foom.Wad.Level.Structures
 
 type LinedefTracer = { 
@@ -123,3 +124,13 @@ module LinedefTracer =
             |> create
                         
         f [] tracer tracer   
+
+module Polygon =
+
+    let ofLinedefs (linedefs: Linedef list) =
+        let vertices =
+            linedefs
+            |> List.map (fun x -> 
+                if x.FrontSidedef.IsSome then x.Start else x.End) 
+            |> Array.ofList
+        Polygon.create vertices.[..vertices.Length - 1]
