@@ -5,6 +5,7 @@ open Urho.IO
 open Urho.Gui
 
 open Foom.Wad
+open Foom.Wad.Level
 
 type App () =
     inherit Urho.Application (ApplicationOptions ("Data")) 

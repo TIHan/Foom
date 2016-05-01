@@ -1,4 +1,4 @@
-﻿namespace Foom.Shared.Geometry
+﻿namespace Foom.Wad.Geometry
 
 open System.Numerics
 
@@ -7,23 +7,18 @@ type Edge =
     val X : Vector2
     val Y : Vector2
 
-// TODO: PolygonTree might be better IMO.
-type Polygon = { Vertices: Vector2 []; Children: Polygon list }
+type Polygon = Polygon of Vector2 []
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Polygon =
     val inline create : vertices: Vector2 [] -> Polygon
 
-    val inline addChild : child: Polygon -> poly: Polygon -> Polygon
-
-    val inline addChildren : children: Polygon list -> poly: Polygon -> Polygon
-
     val inline vertices : poly: Polygon -> Vector2 []
 
-    val inline children : poly: Polygon -> Polygon list
-
-    val edges : poly: Polygon -> Edge list
+    val edges : poly: Polygon -> Edge []
 
     val isArrangedClockwise : poly: Polygon -> bool
 
     val isPointInside : point: Vector2 -> poly: Polygon -> bool
+
+type PolygonTree = PolygonTree of Polygon * Polygon list

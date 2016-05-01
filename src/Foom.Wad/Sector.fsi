@@ -1,6 +1,6 @@
 ﻿namespace Foom.Wad.Level.Structures
 
-open Foom.Shared.Geometry
+open Foom.Wad.Geometry
 
 type Sector = {
     Linedefs: Linedef [] }
