@@ -60,15 +60,15 @@ module LiteReadStream =
     let readString (n: int) lstream =
         match lstream.Stream with
         | None ->
-            let s : nativeptr<char> = (NativePtr.ofNativeInt <| NativePtr.toNativeInt &&lstream.bytes.[int lstream.position])
-            let result = String (s, 0, n * sizeof<char>)
+            let enc = System.Text.UTF8Encoding (true, true)
+            let result = enc.GetString (lstream.bytes, lstream.position, n)
             lstream.position <- lstream.position + n
             result
         | Some stream ->
             let mutable bytes = Array.zeroCreate<byte> (n)
             stream.Read (bytes, 0, n) |> ignore
-            let s : nativeptr<char> = NativePtr.ofNativeInt <| NativePtr.toNativeInt &&bytes.[0]
-            String (s, 0, n * sizeof<char>)
+            let enc = System.Text.UTF8Encoding (true, true)
+            enc.GetString (bytes, 0, n)
 
     let read<'a when 'a : unmanaged> lstream =
         match lstream.Stream with
