@@ -1,6 +1,7 @@
 ﻿namespace Foom.Droid
 
 open System
+open System.IO
 
 open Android.App
 open Android.Content

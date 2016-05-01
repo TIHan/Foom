@@ -23,10 +23,10 @@ namespace Foom.Droid
     #nowarn "51" // address-of operator can occur in the code
     #nowarn "1183" // unused 'this' reference
     
-    exception ReturnException50b42e9759424d27b12dbb9f9a1c14d4 of obj
-    exception ReturnNoneException50b42e9759424d27b12dbb9f9a1c14d4
+    exception ReturnExceptiona81aeb34d775450c85ce9b929a0dedeb of obj
+    exception ReturnNoneExceptiona81aeb34d775450c85ce9b929a0dedeb
     [<AutoOpen>]
-    module FuncConvertFinalOverload50b42e9759424d27b12dbb9f9a1c14d4 =
+    module FuncConvertFinalOverloada81aeb34d775450c85ce9b929a0dedeb =
       // This extension member adds to the FuncConvert type and is the last resort member in the method overloading rules. 
       type global.Microsoft.FSharp.Core.FuncConvert with
           /// A utility function to convert function values from tupled to curried form
