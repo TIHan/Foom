@@ -11,6 +11,11 @@ open Foom.Wad.Geometry
 type App () =
     inherit Urho.Application (ApplicationOptions ("Data")) 
 
+    let mutable yaw = 0.f
+    let mutable pitch = 0.f
+    let touchSensitivity = 2.f
+    let mutable camera = Unchecked.defaultof<Camera>
+
     override this.Start () = 
         base.Start ()
 
@@ -72,7 +77,7 @@ type App () =
         // Camera
         let cameraNode = scene.CreateChild ()
         cameraNode.Position <- (new Vector3 (0.0f, 0.0f, -0.2f))
-        cameraNode.CreateComponent<Camera> () |> ignore
+        camera <- cameraNode.CreateComponent<Camera> ()
 
         this.Renderer.SetViewport (0u, new Viewport (this.Context, scene, cameraNode.GetComponent<Camera> (), null))
 
@@ -88,7 +93,7 @@ type App () =
         let cache = this.ResourceCache
         let helloText = new Text ()
 
-        helloText.Value <- "Foom - F# and Doom"
+        helloText.Value <- "Foom - Urho, F# and Doom"
         helloText.HorizontalAlignment <- HorizontalAlignment.Center
         helloText.VerticalAlignment <- VerticalAlignment.Top
 
@@ -115,3 +120,17 @@ type App () =
                     debugRenderer.AddLine (new Vector3 (v1.X, v1.Y, 0.f), new Vector3 (v2.X, v2.Y, 0.f), Color.Red, true)
             )
         ) |> ignore
+
+    member this.MoveCameraByTouches (timeStep: float32) =
+        let input = this.Input
+
+        for i = 0 to int input.NumTouches - 1 do
+            let state = input.GetTouch (uint32 i)
+            if (state.TouchedElement = null) then
+                if (state.Delta.X <> 0 || state.Delta.Y <> 0) then
+                    yaw <- yaw + touchSensitivity * camera.Fov / (float32 this.Graphics.Height) * float32 state.Delta.X
+                    pitch <- pitch + touchSensitivity * camera.Fov / (float32 this.Graphics.Height) * float32 state.Delta.Y
+                    camera.Node.Rotation <- new Quaternion (pitch, yaw, 0.f);
+
+    override this.OnUpdate timeStep =
+        this.MoveCameraByTouches (timeStep)
