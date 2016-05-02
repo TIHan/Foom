@@ -111,14 +111,14 @@ type LumpVertices = { Vertices: Vector2 [] }
 type LumpSectors = { Sectors: SectorData [] }
 
 [<Struct>]
-type PixelData =
+type Pixel =
     val R : byte
     val G : byte
     val B : byte
 
-    new : byte * byte * byte -> PixelData
+    new : byte * byte * byte -> Pixel
 
-type PaletteData = { Pixels: PixelData [] }
+type PaletteData = { Pixels: Pixel [] }
 
 module UnpickleWad =
 

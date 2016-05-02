@@ -53,7 +53,6 @@
   <ItemGroup>
     <AndroidAsset Include="Assets\AboutAssets.txt" />
     <AndroidAsset Include="Assets\Data\freedoom1.wad" />
-    <AndroidAsset Include="Assets\Data\DOOM.WAD" />
     <None Include="Resources\AboutResources.txt" />
     <AndroidResource Include="Resources\values\Strings.xml" />
     <AndroidResource Include="Resources\drawable\Icon.png" />
@@ -64,10 +63,8 @@
     <Content Include="UrhoSharpReadme.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="FSharp.Core" />
     <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core">
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Mono.Android" />
     <Reference Include="System" />
     <Reference Include="System.Xml" />
@@ -78,6 +75,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Foom.Pickler\Foom.Pickler.fsproj">
+      <Name>Foom.Pickler</Name>
+      <Project>{4fc2b7b5-28ca-4322-84ab-49ddad9613fc}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Wad\Foom.Wad.fsproj">
+      <Name>Foom.Wad</Name>
+      <Project>{13cab67a-5a00-401d-8ce2-032ffea5fece}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\Foom\Foom.fsproj">
       <Name>Foom</Name>
       <Project>{50fc3ae6-d97a-4ca0-95ec-c36b5e9c2073}</Project>

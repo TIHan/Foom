@@ -16,6 +16,9 @@ type App () =
     let touchSensitivity = 2.f
     let mutable camera = Unchecked.defaultof<Camera>
 
+    static member val SaveBitmap = fun (_: Foom.Wad.Pickler.Pixel [] []) (_: string) -> ()  with get, set
+    static member val ApplicationDirectory = "" with get, set
+
     override this.Start () = 
         base.Start ()
 
@@ -34,6 +37,20 @@ type App () =
         use ms = new System.IO.MemoryStream (bytes)
 
         let wad = Wad.create ms |> Async.RunSynchronously
+
+        let result = this.ResourceCache.AddResourceDir (App.ApplicationDirectory, 0u)
+
+        Wad.flats wad
+        |> Array.iter (fun flat ->
+            let pixels = Array.init 64 (fun _ -> Array.zeroCreate<Foom.Wad.Pickler.Pixel> 64) 
+            App.SaveBitmap (pixels) flat.Name
+        )
+
+        let stuff =
+            Wad.flats wad
+            |> Array.map (fun flat ->
+                this.ResourceCache.GetImage (flat.Name + ".png")
+            )
 
         let e1m1Level = Wad.findLevel "e1m1" wad |> Async.RunSynchronously
 

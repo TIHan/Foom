@@ -111,14 +111,14 @@ type LumpVertices = { Vertices: Vector2 [] }
 type LumpSectors = { Sectors: SectorData [] }
 
 [<Struct>]
-type PixelData =
+type Pixel =
     val R : byte
     val G : byte
     val B : byte
 
     new (r, g, b) = { R = r; G = g; B = b }
 
-type PaletteData = { Pixels: PixelData [] }
+type PaletteData = { Pixels: Pixel [] }
 
 module UnpickleWad =
 
@@ -268,11 +268,11 @@ module UnpickleWad =
     [<Literal>]
     let paletteSize = 768
     let u_pixel =
-        u_pipe3 u_byte u_byte u_byte <| fun r g b -> PixelData (r, g, b)
+        u_pipe3 u_byte u_byte u_byte <| fun r g b -> Pixel (r, g, b)
 
     let u_pixels count = u_array count u_pixel
 
-    let u_palette = (u_pixels (768 / sizeof<PixelData>)) |>> fun pixels -> { Pixels = pixels }
+    let u_palette = (u_pixels (768 / sizeof<Pixel>)) |>> fun pixels -> { Pixels = pixels }
 
     let u_palettes count offset : Unpickle<PaletteData []> =
         u_skipBytes offset >>. u_array count (u_palette)

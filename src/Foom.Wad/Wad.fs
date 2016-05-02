@@ -18,11 +18,9 @@ open Microsoft.FSharp.NativeInterop
 
 type FlatTexture =
     {
-        pixelData: PixelData []
-        name: string
+        Pixels: Pixel []
+        Name: string
     }
-
-    member this.Name = this.name
 
 type Wad = 
     {
@@ -115,7 +113,7 @@ module Wad =
                             x |> Array.map (fun y -> palette.Pixels.[int y])
                         )
                         |> Array.mapi (fun i pixels ->
-                            { pixelData = pixels; name = lumpFlatHeaders.[i].Name }
+                            { Pixels = pixels; Name = lumpFlatHeaders.[i].Name }
                         )
 
                     return { wad with flats = flats }
@@ -128,6 +126,8 @@ module Wad =
             { stream = stream; wadData = wadData; defaultPaletteData = None; flats = [||] }
             |> (loadPalettes >=> loadFlats)
     }
+
+    let flats (wad: Wad) = wad.flats
 
     let findLevel (levelName: string) wad =
         let stream = wad.stream
