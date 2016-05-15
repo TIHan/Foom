@@ -54,37 +54,7 @@ type App () =
 
         let e1m1Level = Wad.findLevel "e1m1" wad |> Async.RunSynchronously
 
-        let polygonTrees =
-            e1m1Level.Sectors
-            |> Array.map (fun sector -> LinedefTracer.run sector.Linedefs)
-            |> Array.map (fun sectorLinedefs ->
-                let polygons =
-                    sectorLinedefs
-                    |> List.map Polygon.ofLinedefs
-                
-                let rec f (polygons: Polygon list) (trees: PolygonTree list) =
-                    match trees, polygons with
-                    | _, [] ->
-                        trees
-
-                    | [], poly :: polygons -> 
-                        f polygons [PolygonTree (poly, [])]
-
-                    | _, poly :: polygons ->
-                        trees
-                        |> List.map (fun (PolygonTree (poly2, children) as tree) ->
-                            if (Polygon.isPointInside (Polygon.vertices poly).[0] poly2) then
-                                [PolygonTree (poly2, f [poly] children)]
-                            elif (Polygon.isPointInside (Polygon.vertices poly2).[0] poly) then
-                                [PolygonTree (poly, [tree])]
-                            else
-                                PolygonTree (poly, []) :: [tree]
-                        )
-                        |> List.reduce (@)
-                        |> f polygons
-                f polygons []
-            )
-            |> Array.reduce (@)
+        let polygonTrees = e1m1Level.CalculatePolygonTrees ()
 
         this.Renderer.DrawDebugGeometry (true)
         let scene = new Scene ()
