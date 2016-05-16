@@ -12,6 +12,8 @@ let main argv =
 
     let wad = Wad.create file |> Async.RunSynchronously
 
+    let e1m1 = Wad.findLevel "e1m1" wad |> Async.RunSynchronously
+
     Wad.flats wad
     |> Array.iter (fun tex ->
         let handle = GCHandle.Alloc (tex.Pixels, GCHandleType.Pinned)

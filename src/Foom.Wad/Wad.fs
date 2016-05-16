@@ -62,6 +62,18 @@ module Wad =
             |> Array.map (fun h -> u h.Size (int64 h.Offset))
         runUnpickles us fileName
 
+    let filterLumpHeaders (headers: LumpHeader []) =
+        headers
+        |> Array.filter (fun x ->
+            match x.Name.ToUpper () with
+            | "F1_START" -> false
+            | "F2_START" -> false
+            | "F3_START" -> false
+            | "F1_END" -> false
+            | "F2_END" -> false
+            | "F3_END" -> false
+            | _ -> true)
+
     let loadPalettes wad =
         match wad.wadData.LumpHeaders |> Array.tryFind (fun x -> x.Name.ToUpper () = "PLAYPAL") with
         | None -> async { return wad }
@@ -97,6 +109,7 @@ module Wad =
             | Some lumpFlatsHeaderStartIndex, Some lumpFlatsHeaderEndIndex ->
                 let lumpFlatHeaders =
                     lumpHeaders.[(lumpFlatsHeaderStartIndex + 1)..(lumpFlatsHeaderEndIndex - 1)]
+                    |> filterLumpHeaders
 
                 // Assert Flat Headers are valid
                 lumpFlatHeaders
@@ -142,6 +155,7 @@ module Wad =
         // printfn "Found Level: %s" name
         let lumpHeaders = wad.wadData.LumpHeaders.[lumpLevelStartIndex..]
 
+        // Note: This seems to work, but may be possible to get invalid data for the level.
         let lumpLinedefsHeader = lumpHeaders |> Array.find (fun x -> x.Name.ToLower () = "LINEDEFS".ToLower ())
         let lumpSidedefsHeader = lumpHeaders |> Array.find (fun x -> x.Name.ToLower () = "SIDEDEFS".ToLower ())
         let lumpVerticesHeader = lumpHeaders |> Array.find (fun x -> x.Name.ToLower () = "VERTEXES".ToLower ())
