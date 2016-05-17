@@ -120,6 +120,17 @@ type Pixel =
 
 type PaletteData = { Pixels: Pixel [] }
 
+type TextureHeader =
+    {
+        Count: int
+        Offsets: int []
+    }
+
+type Texture =
+    {
+        Name: string
+    }
+
 module UnpickleWad =
 
     let inline u_arrayi n (p: int -> Unpickle<'a>) =
@@ -270,3 +281,25 @@ module UnpickleWad =
 
     let u_lumpRaw size offset : Unpickle<byte []> =
         u_lookAhead (u_skipBytes offset >>. u_bytes size)
+
+    let inline goToLump lumpHeader u =
+        u_lookAhead (u_skipBytes (int64 lumpHeader.Offset) >>. u)
+
+    let uTextureHeader lumpHeader : Unpickle<TextureHeader> =
+        goToLump lumpHeader (
+            u_int32 >>= fun count ->
+                (u_array count u_int32) |>> fun offsets ->
+                    {
+                        Count = count
+                        Offsets = offsets
+                    }
+        )
+
+    let uTextures lumpHeader (textureHeader: TextureHeader) : Unpickle<Texture []> =
+        goToLump lumpHeader (
+            u_arrayi textureHeader.Offsets.Length (fun i ->
+                u_lookAhead (u_skipBytes (int64 textureHeader.Offsets.[i]) >>.
+                    (u_string 8) |>> fun name -> { Name = name.Trim().Trim('\000') }
+                )   
+            )
+        )

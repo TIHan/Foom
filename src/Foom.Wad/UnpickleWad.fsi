@@ -120,6 +120,17 @@ type Pixel =
 
 type PaletteData = { Pixels: Pixel [] }
 
+type TextureHeader =
+    {
+        Count: int
+        Offsets: int []
+    }
+
+type Texture =
+    {
+        Name: string
+    }
+
 module UnpickleWad =
 
     val u_lumpHeader : Unpickle<LumpHeader>
@@ -141,3 +152,7 @@ module UnpickleWad =
     val u_lumpPalettes : size: int -> offset: int64 -> Unpickle<PaletteData []>
 
     val u_lumpRaw : size: int -> offset: int64 -> Unpickle<byte []>
+
+    val uTextureHeader : LumpHeader -> Unpickle<TextureHeader>
+
+    val uTextures : LumpHeader -> TextureHeader -> Unpickle<Texture []>

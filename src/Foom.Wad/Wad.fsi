@@ -23,3 +23,5 @@ module Wad =
     val flats : Wad -> FlatTexture []
 
     val findLevel : levelName: string -> wad: Wad -> Async<Level>
+
+    val loadPatches : Wad -> unit

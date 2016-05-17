@@ -30,6 +30,7 @@ type Wad =
         flats: FlatTexture []
     }
 
+// TODO: Holy crap using async here is just not useful, stop it.
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Wad =
 
@@ -131,6 +132,24 @@ module Wad =
 
                     return { wad with flats = flats }
                 }
+
+    let loadPatches wad =
+        let texture1Lump =
+            wad.wadData.LumpHeaders
+            |> Array.find (fun x -> x.Name.ToUpper() = "TEXTURE1")
+
+        let texture2Lump =
+            wad.wadData.LumpHeaders
+            |> Array.find (fun x -> x.Name.ToUpper() = "TEXTURE2")
+
+        let pnamesLump =
+            wad.wadData.LumpHeaders
+            |> Array.find (fun x -> x.Name.ToUpper() = "PNAMES")
+
+        let textureHeader = runUnpickle (uTextureHeader texture1Lump) wad.stream |> Async.RunSynchronously
+
+        let textures = runUnpickle (uTextures texture1Lump textureHeader) wad.stream |> Async.RunSynchronously
+        ()
 
     let create stream = async {
         let! wadData = runUnpickle u_wad stream

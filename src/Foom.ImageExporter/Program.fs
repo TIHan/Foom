@@ -16,8 +16,6 @@ let main argv =
 
     Wad.flats wad
     |> Array.iter (fun tex ->
-        let handle = GCHandle.Alloc (tex.Pixels, GCHandleType.Pinned)
-        let addr = handle.AddrOfPinnedObject ()
         let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format32bppRgb)
 
         for i = 0 to 64 - 1 do
@@ -25,8 +23,10 @@ let main argv =
                 let pixel = tex.Pixels.[i + (j * 64)]
                 bmp.SetPixel (i, j, Drawing.Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
 
-        handle.Free ()
         bmp.Save(tex.Name + ".bmp")
         bmp.Dispose()
     )
+
+    Wad.loadPatches wad
+
     0
