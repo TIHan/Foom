@@ -149,6 +149,8 @@ module Wad =
         let textureHeader = runUnpickle (uTextureHeader texture1Lump) wad.stream |> Async.RunSynchronously
 
         let textures = runUnpickle (uTextures texture1Lump textureHeader) wad.stream |> Async.RunSynchronously
+
+        let patchNames = runUnpickle (uPatchNames pnamesLump) wad.stream |> Async.RunSynchronously
         ()
 
     let create stream = async {

@@ -156,3 +156,5 @@ module UnpickleWad =
     val uTextureHeader : LumpHeader -> Unpickle<TextureHeader>
 
     val uTextures : LumpHeader -> TextureHeader -> Unpickle<Texture []>
+
+    val uPatchNames : LumpHeader -> Unpickle<string []>

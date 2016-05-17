@@ -303,3 +303,12 @@ module UnpickleWad =
                 )   
             )
         )
+
+    let uPatchNames lumpHeader : Unpickle<string []> =
+        goToLump lumpHeader (
+            u_int32 >>= fun count ->
+                u_array count (u_string 8) 
+                |>> fun names -> 
+                    names 
+                    |> Array.map (fun name -> name.Trim().Trim('\000'))
+        )
