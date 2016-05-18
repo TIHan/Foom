@@ -134,6 +134,10 @@ module Wad =
                 }
 
     let loadPatches wad =
+        let findLump (str: string) =
+            wad.wadData.LumpHeaders
+            |> Array.find (fun x -> x.Name.ToUpper() = str.ToUpper())
+
         let texture1Lump =
             wad.wadData.LumpHeaders
             |> Array.find (fun x -> x.Name.ToUpper() = "TEXTURE1")
@@ -148,9 +152,15 @@ module Wad =
 
         let textureHeader = runUnpickle (uTextureHeader texture1Lump) wad.stream |> Async.RunSynchronously
 
-        let textures = runUnpickle (uTextures texture1Lump textureHeader) wad.stream |> Async.RunSynchronously
+        let textureInfos = runUnpickle (uTextureInfos texture1Lump textureHeader) wad.stream |> Async.RunSynchronously
 
         let patchNames = runUnpickle (uPatchNames pnamesLump) wad.stream |> Async.RunSynchronously
+
+        let textures =
+            patchNames
+            |> Array.map (fun x ->
+                runUnpickle (uTexture (findLump x)) wad.stream |> Async.RunSynchronously
+            )
         ()
 
     let create stream = async {

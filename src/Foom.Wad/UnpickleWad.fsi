@@ -126,9 +126,17 @@ type TextureHeader =
         Offsets: int []
     }
 
-type Texture =
+type TextureInfo =
     {
         Name: string
+    }
+
+type Texture =
+    {
+        Width: int
+        Height: int
+        Top: int
+        Left: int
     }
 
 module UnpickleWad =
@@ -155,6 +163,8 @@ module UnpickleWad =
 
     val uTextureHeader : LumpHeader -> Unpickle<TextureHeader>
 
-    val uTextures : LumpHeader -> TextureHeader -> Unpickle<Texture []>
+    val uTextureInfos : LumpHeader -> TextureHeader -> Unpickle<TextureInfo []>
 
     val uPatchNames : LumpHeader -> Unpickle<string []>
+
+    val uTexture : LumpHeader -> Unpickle<Texture>

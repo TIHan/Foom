@@ -126,9 +126,17 @@ type TextureHeader =
         Offsets: int []
     }
 
-type Texture =
+type TextureInfo =
     {
         Name: string
+    }
+
+type Texture =
+    {
+        Width: int
+        Height: int
+        Top: int
+        Left: int
     }
 
 module UnpickleWad =
@@ -295,7 +303,7 @@ module UnpickleWad =
                     }
         )
 
-    let uTextures lumpHeader (textureHeader: TextureHeader) : Unpickle<Texture []> =
+    let uTextureInfos lumpHeader (textureHeader: TextureHeader) : Unpickle<TextureInfo []> =
         goToLump lumpHeader (
             u_arrayi textureHeader.Offsets.Length (fun i ->
                 u_lookAhead (u_skipBytes (int64 textureHeader.Offsets.[i]) >>.
@@ -311,4 +319,16 @@ module UnpickleWad =
                 |>> fun names -> 
                     names 
                     |> Array.map (fun name -> name.Trim().Trim('\000'))
+        )
+
+    let uTexture lumpHeader : Unpickle<Texture> =
+        goToLump lumpHeader (
+            u_pipe4 u_uint16 u_uint16 u_uint16 u_uint16 <| 
+            fun width height top left ->
+                {
+                    Width = int width
+                    Height = int height
+                    Top = int top
+                    Left = int left
+                }
         )
