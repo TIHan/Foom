@@ -14,6 +14,35 @@ type LinedefTracer = {
     visitedLinedefs: ImmutableHashSet<Linedef>
     path: Linedef list }
 
+type LinedefPolygon = 
+    {
+        Linedefs: Linedef list
+        Inner: LinedefPolygon list
+    }
+
+    // http://alienryderflex.com/polygon/
+    member this.IsPointInside (point: Vector2) =
+        let linedefs = this.Linedefs
+        let mutable j = linedefs.Length - 1
+        let mutable c = false
+
+        for i = 0 to linedefs.Length - 1 do
+            let linedef = linedefs.[i]
+
+            let xp1 = linedef.Start.X
+            let xp2 = linedef.End.X
+            let yp1 = linedef.Start.Y
+            let yp2 = linedef.End.Y
+
+            if
+                ((yp1 > point.Y) <> (yp2 > point.Y)) &&
+                (point.X < (xp2 - xp1) * (point.Y - yp1) / (yp2 - yp1) + xp1) then
+                c <- not c
+            else ()
+
+            j <- i
+        c
+
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module LinedefTracer =
 
@@ -124,6 +153,64 @@ module LinedefTracer =
             |> create
                         
         f [] tracer tracer   
+
+    let run2 linedefs =
+        let rec f  (polygons: LinedefPolygon list) (originalTracer: LinedefTracer) (tracer: LinedefTracer) =
+            match tryVisitNextLinedef tracer with
+            | tracer, true -> f polygons originalTracer tracer
+            | tracer, _ ->
+                if isFinished tracer then
+                    let polygon = 
+                        {
+                            Linedefs = tracer.path
+                            Inner = [ ]
+                        }
+
+                    match nonVisitedLinedefs tracer with
+                    | [] -> polygon :: polygons
+                    | linedefs ->
+
+                        let innerLinedefs, linedefs =
+                            linedefs
+                            |> List.partition (fun linedef ->
+                                polygon.IsPointInside linedef.Start &&
+                                polygon.IsPointInside linedef.End
+                            )
+
+                          
+
+                        let polygon =
+                            if innerLinedefs.Length > 0 then
+                                let tracer = create innerLinedefs
+                                { polygon with Inner = f [] tracer tracer }
+                            else
+                                polygon
+
+
+                        match linedefs with
+                        | [] -> polygon :: polygons
+                        | linedefs ->
+                            let tracer = create linedefs
+                            f (polygon :: polygons) tracer tracer
+
+
+                else
+                    match nonVisitedLinedefs tracer with
+                    | [] -> polygons
+                    | linedefs ->
+                        let tracer = create linedefs
+                        f polygons originalTracer originalTracer
+
+        let tracer =
+            linedefs
+            |> Seq.filter (fun x -> 
+                not (x.FrontSidedef.IsSome && x.BackSidedef.IsSome) &&
+                not (x.FrontSidedef.IsNone && x.BackSidedef.IsNone)) 
+            |> Seq.distinctBy (fun x -> x.Start, x.End)
+            |> List.ofSeq
+            |> create
+                        
+        f [] tracer tracer  
 
 module Polygon =
 

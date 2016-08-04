@@ -9,6 +9,11 @@ type Sector = {
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Sector =
+
     let polygonFlats sector = 
-        LinedefTracer.run (sector.Linedefs)
-        |> List.map (Polygon.ofLinedefs)
+        let polygons =
+            LinedefTracer.run2 (sector.Linedefs)
+            |> List.map (fun x -> Polygon.ofLinedefs x.Linedefs)
+
+        Foom.Wad.Geometry.Triangulation.EarClipping.compute polygons.[0]
+        //polygons

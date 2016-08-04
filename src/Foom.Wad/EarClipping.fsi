@@ -5,4 +5,4 @@ open System.Numerics
 
 open Foom.Wad.Geometry
 
-val compute : Polygon -> (Vector3 []) list
+val compute : Polygon -> Polygon list
