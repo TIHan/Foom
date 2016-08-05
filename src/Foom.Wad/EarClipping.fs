@@ -84,5 +84,7 @@ let compute ((Polygon vertices) as polygon: Polygon) =
         else
             vertices
 
-    compute (ResizeArray(vertices)) 0
+    let triangles = compute (ResizeArray(vertices)) 0
+
+    triangles
     |> List.ofSeq

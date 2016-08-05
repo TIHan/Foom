@@ -1,0 +1,10 @@
+#version 330
+
+in vec3 position;
+uniform mat4x4 uni_projection;
+
+void main ()
+{
+    gl_Position = uni_projection * vec4(position, 1.0);
+	gl_Position = vec4(gl_Position.x, gl_Position.y, 0.0, 1.0);
+}

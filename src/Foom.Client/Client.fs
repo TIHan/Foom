@@ -17,14 +17,19 @@ type UserState = {
 
     static member Default = { IsMapMoving = false }
 
+type Vbo =
+    {
+        Id: int
+        Length: int
+    }
+
 type RendererState = {
     UniformColor: int<uniform>
     UniformProjection: int<uniform>
     Program: int<program>
     Application: Application
-    Vbo: int
-    VboLength: int
-    DrawVbo: unit -> unit
+    Vbos: Vbo ResizeArray
+    DrawVbo: Matrix4x4 -> unit
     Sectors: Polygon list [] }
 
 type ClientState = {
@@ -47,11 +52,11 @@ type ClientState = {
 
 let init () =
     let wad = Wad.create (System.IO.File.Open ("freedoom1.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
-    let lvl = Wad.findLevel "e1m1" wad |> Async.RunSynchronously
+    let lvl = Wad.findLevel "e1m3" wad |> Async.RunSynchronously
 
     let app = Renderer.init ()
-    let vbo = Renderer.makeVbo ()
-    let program = Backend.loadShaders ()
+    //let program = Backend.loadShaders ()
+    let program = Backend.loadTriangleShader ()
     let uniformColor = Renderer.getUniformColor program
     let uniformProjection = Renderer.getUniformProjection program
 
@@ -59,54 +64,76 @@ let init () =
         lvl.Sectors
         |> Array.map Sector.polygonFlats
 
-    let vertices =
-        match sectorPolygons with
-        | [||] -> [||]
-        | _ ->
-            let vertexList =
-                sectorPolygons
-                |> Array.map (fun x ->
-                    let vlist = 
-                        x 
-                        |> List.map (fun x -> Polygon.vertices x) 
-                    match vlist with
-                    | [] -> [||]
-                    | _ ->
-                        vlist
-                        |> List.reduce Array.append)
+    //let vertices =
+    //    match sectorPolygons with
+    //    | [||] -> [||]
+    //    | _ ->
+    //        let vertexList =
+    //            sectorPolygons
+    //            |> Array.map (fun x ->
+    //                let vlist = 
+    //                    x 
+    //                    |> List.map (fun x -> Polygon.vertices x) 
+    //                match vlist with
+    //                | [] -> [||]
+    //                | _ ->
+    //                    vlist
+    //                    |> List.reduce Array.append)
 
-            match vertexList with
-            | [||] -> [||]
-            | _ ->
-                vertexList
-                |> Array.reduce Array.append
+    //        match vertexList with
+    //        | [||] -> [||]
+    //        | _ ->
+    //            vertexList
+    //            |> Array.reduce Array.append
 
-    Renderer.bufferVbo vertices (sizeof<Vector2> * vertices.Length) vbo
+
+    let vbos = ResizeArray ()
+
+    sectorPolygons
+    |> Array.iter (fun polygons ->
+        polygons
+        |> List.iter (fun (Polygon vertices: Polygon) ->
+            let vertices =
+                vertices
+                |> Array.map (fun x -> Vector3 (x.X, x.Y, 0.f))
+
+            let vbo = Renderer.makeVbo ()
+            Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
+            vbos.Add 
+                {
+                    Id = vbo
+                    Length = vertices.Length
+                }
+
+        )
+    )
 
     let index = ref 0
-    let arr = ResizeArray<unit -> unit> ()
-    sectorPolygons
-    |> Array.fold (fun count sector ->
-        index := !index + 1
-        match sector with
-        | [] -> count
-        | _ ->
-            sector
-            |> List.fold (fun count poly ->
-                let vertices = Polygon.vertices poly
-                arr.Add (fun () -> Renderer.drawArraysLoop count vertices.Length)
-                count + vertices.Length) count
-    ) 0
-    |> ignore        
+    let arr = ResizeArray<Matrix4x4 -> unit> ()    
+
+    let random = System.Random ()
+
+    vbos
+    |> Seq.iter (fun vbo ->
+        fun mvp ->
+            Renderer.bindVbo vbo.Id
+            Renderer.setUniformProjection uniformProjection mvp
+
+            let color = Color.FromArgb(random.Next(0, 255), random.Next(0, 255), random.Next (0, 255))
+
+            Renderer.setUniformColor uniformColor (RenderColor.OfColor color)
+            Renderer.bindPosition program
+            Renderer.drawTriangleStrip 0 vbo.Length
+        |> arr.Add
+    )
 
     let rendererState =
         { UniformColor = uniformColor
           UniformProjection = uniformProjection
           Program = program
           Application = app 
-          Vbo = vbo
-          VboLength = vertices.Length
-          DrawVbo = fun () -> arr.ForEach (fun x -> x ())
+          Vbos = vbos
+          DrawVbo = fun m -> arr.ForEach (fun x -> x m)
           Sectors = sectorPolygons }
     
     { Renderer = rendererState
@@ -122,9 +149,6 @@ let draw t (prev: ClientState) (curr: ClientState) =
     let model = Matrix4x4.CreateTranslation (lerp prev.ViewPosition curr.ViewPosition t) |> Matrix4x4.Transpose
     let mvp = (projection * model) |> Matrix4x4.Transpose
 
-    Renderer.setUniformProjection curr.Renderer.UniformProjection mvp
-    Renderer.setUniformColor curr.Renderer.UniformColor (RenderColor.OfColor Color.White)
-
-    curr.Renderer.DrawVbo () 
+    curr.Renderer.DrawVbo mvp
 
     Renderer.draw curr.Renderer.Application

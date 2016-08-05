@@ -125,6 +125,20 @@ glBufferData (GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
         """
 
     [<Import; MI (MIO.NoInlining)>]
+    let bufferVboVector3 (data: Vector3 []) (size: int) (vbo: int) : unit =
+        C """
+glBindBuffer (GL_ARRAY_BUFFER, vbo);
+glBufferData (GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
+        """
+
+
+    [<Import; MI (MIO.NoInlining)>]
+    let bindVbo (vbo: int) : unit =
+        C """
+glBindBuffer (GL_ARRAY_BUFFER, vbo);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
     let drawArrays (first: int) (count: int) : unit =
         C """
 glDrawArrays (GL_LINES, first, count);
@@ -134,6 +148,12 @@ glDrawArrays (GL_LINES, first, count);
     let drawArraysLoop (first: int) (count : int) : unit =
         C """
 glDrawArrays (GL_LINE_LOOP, first, count);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let drawTriangleStrip (first: int) (count : int) : unit =
+        C """
+glDrawArrays (GL_TRIANGLE_STRIP, first, count);
         """
 
     [<Import; MI (MIO.NoInlining)>]
@@ -203,13 +223,17 @@ glGenVertexArrays (1, &vao);
 
 glBindVertexArray (vao);
 
-GLint posAttrib = glGetAttribLocation (ProgramID, "position");
+return ProgramID;
+        """
 
-glVertexAttribPointer (posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    [<Import; MI (MIO.NoInlining)>]
+    let bindPosition (programID: int<program>) : unit =
+        C """
+GLint posAttrib = glGetAttribLocation (programID, "position");
+
+glVertexAttribPointer (posAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 glEnableVertexAttribArray (posAttrib);
-
-return ProgramID;
         """
 
     [<Import; MI (MIO.NoInlining)>]
@@ -241,5 +265,11 @@ module Backend =
     let loadShaders () =
         let mutable vertexFile = ([|0uy|]) |> Array.append (File.ReadAllBytes ("v.vertex"))
         let mutable fragmentFile = ([|0uy|]) |> Array.append (File.ReadAllBytes ("f.fragment"))
+
+        Renderer.loadShaders vertexFile fragmentFile
+
+    let loadTriangleShader () =
+        let mutable vertexFile = ([|0uy|]) |> Array.append (File.ReadAllBytes ("triangle.vertex"))
+        let mutable fragmentFile = ([|0uy|]) |> Array.append (File.ReadAllBytes ("triangle.fragment"))
 
         Renderer.loadShaders vertexFile fragmentFile
