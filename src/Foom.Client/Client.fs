@@ -65,29 +65,6 @@ let init () =
         lvl.Sectors
         |> Array.map Sector.polygonFlats
 
-    //let vertices =
-    //    match sectorPolygons with
-    //    | [||] -> [||]
-    //    | _ ->
-    //        let vertexList =
-    //            sectorPolygons
-    //            |> Array.map (fun x ->
-    //                let vlist = 
-    //                    x 
-    //                    |> List.map (fun x -> Polygon.vertices x) 
-    //                match vlist with
-    //                | [] -> [||]
-    //                | _ ->
-    //                    vlist
-    //                    |> List.reduce Array.append)
-
-    //        match vertexList with
-    //        | [||] -> [||]
-    //        | _ ->
-    //            vertexList
-    //            |> Array.reduce Array.append
-
-
     let vbos = ResizeArray ()
 
     let random = System.Random ()
@@ -97,9 +74,9 @@ let init () =
         let color = Color.FromArgb(random.Next(0, 255), random.Next(0, 255), random.Next (0, 255))
 
         polygons
-        |> List.iter (fun (Polygon vertices: Polygon) ->
+        |> List.iter (fun polygon ->
             let vertices =
-                vertices
+                Polygon.vertices polygon
                 |> Array.map (fun x -> Vector3 (x.X, x.Y, 0.f))
 
             let vbo = Renderer.makeVbo ()
@@ -125,7 +102,7 @@ let init () =
 
             Renderer.setUniformColor uniformColor (RenderColor.OfColor vbo.Color)
             Renderer.bindPosition program
-            Renderer.drawTriangleStrip 0 vbo.Length
+            Renderer.drawTriangles 0 vbo.Length
         |> arr.Add
     )
 
@@ -137,8 +114,6 @@ let init () =
           Vbos = vbos
           DrawVbo = fun m -> arr.ForEach (fun x -> x m)
           Sectors = sectorPolygons }
-
-    let (Polygon vertices) = sectorPolygons.[28].[0]
     
     { Renderer = rendererState
       User = UserState.Default

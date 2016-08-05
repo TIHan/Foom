@@ -7,13 +7,13 @@ type Edge =
     val X : Vector2
     val Y : Vector2
 
-type Polygon = Polygon of Vector2 []
+type Polygon 
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Polygon =
-    val inline create : vertices: Vector2 [] -> Polygon
+    val create : vertices: Vector2 [] -> Polygon
 
-    val inline vertices : poly: Polygon -> Vector2 []
+    val vertices : poly: Polygon -> Vector2 []
 
     val edges : poly: Polygon -> Edge []
 
@@ -21,4 +21,8 @@ module Polygon =
 
     val isPointInside : point: Vector2 -> poly: Polygon -> bool
 
-type PolygonTree = PolygonTree of Polygon * PolygonTree list
+type PolygonTree = 
+    {
+        Polygon: Polygon
+        Children: PolygonTree list
+    }

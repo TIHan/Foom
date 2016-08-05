@@ -10,13 +10,17 @@ type Edge =
 
     new (x, y) = { X = x; Y = y }
 
-type Polygon = Polygon of Vector2 []
+type Polygon =
+    {
+        Vertices: Vector2 []
+    }
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Polygon =
-    let inline create vertices = Polygon (vertices)
 
-    let inline vertices (Polygon (vertices)) = vertices
+    let create vertices = { Vertices = vertices }
+
+    let vertices polygon = polygon.Vertices
 
     let edges poly =
         let vertices = vertices poly
@@ -71,4 +75,8 @@ module Polygon =
             j <- i
         c
 
-type PolygonTree = PolygonTree of Polygon * PolygonTree list
+type PolygonTree = 
+    {
+        Polygon: Polygon
+        Children: PolygonTree list
+    }

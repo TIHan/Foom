@@ -151,7 +151,7 @@ glDrawArrays (GL_LINE_LOOP, first, count);
         """
 
     [<Import; MI (MIO.NoInlining)>]
-    let drawTriangleStrip (first: int) (count : int) : unit =
+    let drawTriangles (first: int) (count : int) : unit =
         C """
 glDrawArrays (GL_TRIANGLES, first, count);
         """

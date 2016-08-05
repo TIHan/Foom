@@ -7,5 +7,3 @@ type Level =
     {
         Sectors: Sector [] 
     }
-
-    member CalculatePolygonTrees : unit -> PolygonTree list

@@ -5,7 +5,6 @@ open System.Numerics
 
 open Foom.Wad.Geometry
 
-
 //create a list of the vertices (perferably in CCW order, starting anywhere)
 //while true
 //  for every vertex
@@ -20,7 +19,8 @@ open Foom.Wad.Geometry
 //    remove pCur from the list;
 //  if no triangles were made in the above for loop
 //    break;
-let compute ((Polygon vertices) as polygon: Polygon) =
+let compute polygon =
+
     let triangles = ResizeArray<Vector2 []> ()
 
     let rec compute (vertices: Vector2 ResizeArray) currentIndex =
@@ -51,7 +51,7 @@ let compute ((Polygon vertices) as polygon: Polygon) =
         let p2 = pNext - pCur
         let wedgeProduct = Vector3.Cross (Vector3 (p1.X, p1.Y, 0.f), Vector3 (p2.X, p2.Y, 0.f))
 
-        let triangle = Polygon [|pPrev;pCur;pNext|]
+        let triangle = Polygon.create [|pPrev;pCur;pNext|]
 
         let anyPointsInsideTriangle =
             vertices
@@ -80,9 +80,9 @@ let compute ((Polygon vertices) as polygon: Polygon) =
 
     let vertices =
         if Polygon.isArrangedClockwise polygon then
-            vertices |> Array.rev
+            Polygon.vertices polygon |> Array.rev
         else
-            vertices
+            Polygon.vertices polygon
 
     let triangles = compute (ResizeArray(vertices)) 0
 
@@ -91,4 +91,10 @@ let compute ((Polygon vertices) as polygon: Polygon) =
         |> Seq.reduce Array.append
 
 
-    [ Polygon (result) ]
+    [ Polygon.create result ]
+
+let computeTree (tree: PolygonTree) =
+
+    tree.Polygon
+    |> compute
+        
