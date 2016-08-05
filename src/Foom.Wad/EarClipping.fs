@@ -21,13 +21,13 @@ open Foom.Wad.Geometry
 //  if no triangles were made in the above for loop
 //    break;
 let compute ((Polygon vertices) as polygon: Polygon) =
-    let triangles = ResizeArray<Polygon> ()
+    let triangles = ResizeArray<Vector2 []> ()
 
     let rec compute (vertices: Vector2 ResizeArray) currentIndex =
         if vertices.Count < 3 then
             triangles
         elif vertices.Count = 3 then
-            Polygon (vertices |> Seq.toArray)
+            vertices |> Seq.toArray
             |> triangles.Add
 
             triangles
@@ -75,7 +75,7 @@ let compute ((Polygon vertices) as polygon: Polygon) =
                 else
                     currentIndex + 1
 
-            triangles.Add(Polygon [|pPrev;pCur;pNext|])
+            triangles.Add([|pPrev;pCur;pNext|])
             compute vertices nextIndex
 
     let vertices =
@@ -86,5 +86,9 @@ let compute ((Polygon vertices) as polygon: Polygon) =
 
     let triangles = compute (ResizeArray(vertices)) 0
 
-    triangles
-    |> List.ofSeq
+    let result =
+        triangles
+        |> Seq.reduce Array.append
+
+
+    [ Polygon (result) ]

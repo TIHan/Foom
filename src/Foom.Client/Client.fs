@@ -21,6 +21,7 @@ type Vbo =
     {
         Id: int
         Length: int
+        Color: Color
     }
 
 type RendererState = {
@@ -51,8 +52,8 @@ type ClientState = {
 // 271 - map03 sunder
 
 let init () =
-    let wad = Wad.create (System.IO.File.Open ("freedoom1.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
-    let lvl = Wad.findLevel "e1m3" wad |> Async.RunSynchronously
+    let wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
+    let lvl = Wad.findLevel "e1m1" wad |> Async.RunSynchronously
 
     let app = Renderer.init ()
     //let program = Backend.loadShaders ()
@@ -89,8 +90,12 @@ let init () =
 
     let vbos = ResizeArray ()
 
+    let random = System.Random ()
+
     sectorPolygons
     |> Array.iter (fun polygons ->
+        let color = Color.FromArgb(random.Next(0, 255), random.Next(0, 255), random.Next (0, 255))
+
         polygons
         |> List.iter (fun (Polygon vertices: Polygon) ->
             let vertices =
@@ -103,6 +108,7 @@ let init () =
                 {
                     Id = vbo
                     Length = vertices.Length
+                    Color = color
                 }
 
         )
@@ -111,17 +117,13 @@ let init () =
     let index = ref 0
     let arr = ResizeArray<Matrix4x4 -> unit> ()    
 
-    let random = System.Random ()
-
     vbos
     |> Seq.iter (fun vbo ->
         fun mvp ->
             Renderer.bindVbo vbo.Id
             Renderer.setUniformProjection uniformProjection mvp
 
-            let color = Color.FromArgb(random.Next(0, 255), random.Next(0, 255), random.Next (0, 255))
-
-            Renderer.setUniformColor uniformColor (RenderColor.OfColor color)
+            Renderer.setUniformColor uniformColor (RenderColor.OfColor vbo.Color)
             Renderer.bindPosition program
             Renderer.drawTriangleStrip 0 vbo.Length
         |> arr.Add
@@ -135,12 +137,14 @@ let init () =
           Vbos = vbos
           DrawVbo = fun m -> arr.ForEach (fun x -> x m)
           Sectors = sectorPolygons }
+
+    let (Polygon vertices) = sectorPolygons.[28].[0]
     
     { Renderer = rendererState
       User = UserState.Default
       Level = lvl
       ViewDistance = 0.1f
-      ViewPosition = Vector3.Zero }
+      ViewPosition = Vector3(-0.05f, 0.05f, 0.f) }
 
 let draw t (prev: ClientState) (curr: ClientState) =
     Renderer.clear ()
