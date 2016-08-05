@@ -15,5 +15,7 @@ module Sector =
             LinedefTracer.run2 (sector.Linedefs)
             |> List.map (fun x -> Polygon.ofLinedefs x.Linedefs)
 
-        Foom.Wad.Geometry.Triangulation.EarClipping.compute polygons.[0]
+        polygons
+        |> List.map Foom.Wad.Geometry.Triangulation.EarClipping.compute
+        |> List.reduce (@)
         //polygons
