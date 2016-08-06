@@ -175,7 +175,7 @@ let init () =
         fun mvp ->
             Renderer.setUniformProjection uniformProjection mvp
             Renderer.setTexture program vbo.TextureId
-            Renderer.setUniformColor uniformColor (RenderColor.OfColor vbo.Color)
+            Renderer.setUniformColor uniformColor (RenderColor.OfColor Color.Red)
 
             Renderer.bindVbo vbo.Id
             Renderer.bindPosition program
@@ -188,7 +188,9 @@ let init () =
             for i = 0 to (vbo.Length / 3) do
 
                 Renderer.drawArraysLoop (i * 3) 3
-            //Renderer.drawTriangles 0 vbo.Length
+
+            Renderer.setUniformColor uniformColor (RenderColor.OfColor vbo.Color)
+            Renderer.drawTriangles 0 vbo.Length
         |> arr.Add
     )
 
