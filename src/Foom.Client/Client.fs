@@ -66,24 +66,25 @@ let init () =
 
     let lookupTexture = Dictionary<string, int> ()
 
+    let inline fixedToSingle x = (single x / 65536.f)
+
+    let flatUnit = fixedToSingle 64
 
     Wad.flats wad
     |> Array.iter (fun tex ->
-        let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format32bppRgb)
+        let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format24bppRgb)
 
         for i = 0 to 64 - 1 do
             for j = 0 to 64 - 1 do
                 let pixel = tex.Pixels.[i + (j * 64)]
-                bmp.SetPixel (i, j, Color.Green) // Color.FromArgb (int pixel.R, int pixel.G, int pixel.B)
+                bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
 
-        let rect = new Rectangle(0, 0, bmp.Width, bmp.Height)
-        let bmpData = bmp.LockBits (rect, Imaging.ImageLockMode.ReadOnly, Imaging.PixelFormat.Format32bppRgb)
-
-        let id = Renderer.createTexture 64 64 (bmpData.Scan0)
-
-        bmp.UnlockBits (bmpData)
-
+        bmp.Save(tex.Name + ".bmp")
         bmp.Dispose ()
+
+        use ptr = new Gdk.Pixbuf (tex.Name + ".bmp")
+
+        let id = Renderer.createTexture 64 64 (ptr.Pixels)
 
         lookupTexture.Add (tex.Name, id)
     )
@@ -92,16 +93,13 @@ let init () =
 
     let sectorPolygons =
         lvl.Sectors
-        |> Array.map (fun s -> (Sector.polygonFlats s, s.FloorTextureName))
+        |> Array.map (fun s -> (Sector.polygonFlats s, s.FloorTextureName, s.LightLevel))
 
     let vbos = ResizeArray ()
     let textureVbosUV = ResizeArray ()
 
-    let random = System.Random ()
-
     sectorPolygons
-    |> Array.iter (fun (polygons, floorTextureName) ->
-        let color = Color.FromArgb(random.Next(0, 255), random.Next(0, 255), random.Next (0, 255))
+    |> Array.iter (fun (polygons, floorTextureName, lightLevel) ->
 
         polygons
         |> List.iter (fun polygon ->
@@ -117,9 +115,9 @@ let init () =
                 let p2 = vertices.[i + 1]
                 let p3 = vertices.[i + 2]
 
-                uv.[i] <- Vector2 (0.f, 1.f)
-                uv.[i] <- Vector2 (1.f, 1.f)
-                uv.[i] <- Vector2 (1.f, 0.f)
+                uv.[i] <- Vector2 (p1.X / flatUnit, p1.Y / flatUnit * -1.f)
+                uv.[i + 1] <- Vector2(p2.X / flatUnit, p2.Y / flatUnit * -1.f)
+                uv.[i + 2] <- Vector2(p3.X / flatUnit, p3.Y / flatUnit * -1.f)
 
                 i <- i + 3
 
@@ -134,7 +132,7 @@ let init () =
                 {
                     Id = vbo
                     Length = vertices.Length
-                    Color = color
+                    Color = Color.FromArgb(lightLevel, lightLevel, lightLevel)
                     TextureId = lookupTexture.[floorTextureName]
                     UvVbo = uvVbo
                 }
@@ -158,6 +156,7 @@ let init () =
             Renderer.bindVbo vbo.UvVbo
             Renderer.bindUv program
 
+            Renderer.bindTexture vbo.TextureId
             Renderer.drawTriangles 0 vbo.Length
         |> arr.Add
     )
@@ -173,8 +172,8 @@ let init () =
     { Renderer = rendererState
       User = UserState.Default
       Level = lvl
-      ViewDistance = 0.1f
-      ViewPosition = Vector3(-0.05f, 0.05f, 0.f) }
+      ViewDistance = 0.05f
+      ViewPosition = Vector3(-0.025f, 0.05f, 0.f) }
 
 let draw t (prev: ClientState) (curr: ClientState) =
     Renderer.clear ()

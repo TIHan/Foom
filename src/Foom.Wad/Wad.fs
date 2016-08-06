@@ -213,7 +213,11 @@ module Wad =
                                 |> Some)
                         |> Array.filter (fun x -> x.IsSome)
                         |> Array.map (fun x -> x.Value)
-                    { Linedefs = lines; FloorTextureName = sector.FloorTextureName }
+                    { 
+                        Linedefs = lines; 
+                        FloorTextureName = sector.FloorTextureName
+                        LightLevel = sector.LightLevel
+                    }
                 )
 
             return { Sectors = sectors }

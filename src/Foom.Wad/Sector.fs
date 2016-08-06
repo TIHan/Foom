@@ -8,6 +8,7 @@ type Sector =
     {
         Linedefs: Linedef [] 
         FloorTextureName: string
+        LightLevel: int
     }
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
