@@ -16,6 +16,6 @@ type Triangle2D =
 
     new : Vector2 * Vector2 * Vector2 -> Triangle2D
 
-val compute : Polygon -> (Triangle2D []) list
+val compute : Polygon -> Triangle2D [] option
 
 val computeTree : PolygonTree -> (Triangle2D []) list

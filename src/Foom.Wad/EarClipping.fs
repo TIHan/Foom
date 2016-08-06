@@ -85,17 +85,20 @@ let compute polygon =
     )
 
     if triangles.Count = 0 then
-        []
+        None
     else
         let result = 
             triangles
             |> Seq.toArray
 
-        [ result ]
+        Some result
 
 let computeTree (tree: PolygonTree) =
 
-    compute tree.Polygon
+    match compute tree.Polygon with
+    | None -> [ ]
+    | Some triangles ->
+        [ triangles ]
 
     //if tree.Children.IsEmpty then
     //    compute tree.Polygon
