@@ -210,7 +210,7 @@ let init () =
       User = UserState.Default
       Level = lvl
       ViewDistance = 1.f
-      ViewPosition = new Vector3 (-position.X, -position.Y, -0.2f) }
+      ViewPosition = new Vector3 (-position.X + -flatUnit * 100.f, -position.Y * -20.f, -0.05f) }
       //ViewDistance = 0.05f
       //ViewPosition = Vector3(-0.025f, 0.05f, 0.f) }
 

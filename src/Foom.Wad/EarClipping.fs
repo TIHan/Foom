@@ -261,12 +261,16 @@ let computeTree (tree: PolygonTree) =
                     let linkedList = vertices |> System.Collections.Generic.List
 
 
+                    if not (Polygon.isArrangedClockwise (Polygon.create childVertices)) then
+                        failwith "butt"
+
 
                     let mutable i = childMaxIndex
                     let mutable count = 0
                     let linkedList2 = System.Collections.Generic.List ()
 
                     linkedList2.Add(pt)
+
                     while (count < childVertices.Length) do
                         linkedList2.Add(childVertices.[i])
                         i <-
@@ -277,27 +281,30 @@ let computeTree (tree: PolygonTree) =
                         count <- count + 1
 
                     //linkedList2.Add(linkedList2.[0])
-                    linkedList2.Add(childVertices.[childMaxIndex])
-                    linkedList2.Add(pt)
+                    //linkedList2.Add(childVertices.[childMaxIndex])
+                    //linkedList2.Add(pt)
 
 
 
                     linkedList.InsertRange(edge2Index, linkedList2)
 
                     vertices <- (linkedList |> Seq.toArray)
-                    result <- 
-                        match compute (Polygon.create vertices) with
-                        | None -> vertices
-                        | Some triangles ->
-                            triangles
-                            |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
-                            |> Array.reduce Array.append
+
 
                 | _ -> ()
         )   
 
         let triangles = ResizeArray<Triangle2D> ()
         let mutable i = 0
+
+
+        result <- 
+            match compute (Polygon.create vertices) with
+            | None -> vertices
+            | Some triangles ->
+                triangles
+                |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
+                |> Array.reduce Array.append
 
         while (i < result.Length) do
             Triangle2D (
