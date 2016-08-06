@@ -5,6 +5,7 @@ open System.Numerics
 
 open Foom.Wad.Geometry
 
+[<Struct>]
 type Triangle2D =
 
     val X : Vector2

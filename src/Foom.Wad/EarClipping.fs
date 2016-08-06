@@ -5,6 +5,7 @@ open System.Numerics
 
 open Foom.Wad.Geometry
 
+[<Struct>]
 type Triangle2D =
 
     val X : Vector2
@@ -20,35 +21,16 @@ let inline isReflexVertex (prev: Vector2) (next: Vector2) (vertex: Vector2) =
     let p2 = next - vertex
     Vector3.Cross(Vector3 (p1.X, p1.Y, 0.f), Vector3 (p2.X, p2.Y, 0.f)).Z < 0.f
 
-//create a list of the vertices (perferably in CCW order, starting anywhere)
-//while true
-//  for every vertex
-//    let pPrev = the previous vertex in the list
-//    let pCur = the current vertex;
-//    let pNext = the next vertex in the list
-//    if the vertex is not an interior vertex (the wedge product of (pPrev - pCur) and (pNext - pCur) <= 0, for CCW winding);
-//      continue;
-//    if there are any vertices in the polygon inside the triangle made by the current vertex and the two adjacent ones
-//      continue;
-//    create the triangle with the points pPrev, pCur, pNext, for a CCW triangle;
-//    remove pCur from the list;
-//  if no triangles were made in the above for loop
-//    break;
-let compute polygon =
+let computeVertices (vertices: Vector2 seq) f =
 
-    let triangles = ResizeArray<Triangle2D> ()
-
-    let rec compute (recursiveSteps: int) (vertices: Vector2 ResizeArray) currentIndex =
-
+    let rec computeVertices (recursiveSteps: int) (vertices: Vector2 ResizeArray) currentIndex = 
         if recursiveSteps > vertices.Count then
             failwith "Unable to triangulate"
 
         if vertices.Count < 3 then
-            triangles
+            ()
         elif vertices.Count = 3 then
-            triangles.Add (Triangle2D (vertices.[2], vertices.[1], vertices.[0]))
-
-            triangles
+            f vertices.[2] vertices.[1] vertices.[0]
         else
 
         let pPrev =
@@ -65,21 +47,21 @@ let compute polygon =
             else
                 vertices.[currentIndex + 1]
 
-        let triangle = Triangle2D (pNext, pCur, pPrev)
+        let triangle = [|pNext;pCur;pPrev|]
 
         let anyPointsInsideTriangle =
             vertices
             |> Seq.exists (fun x ->
-                (x <> pPrev) && (x <> pCur) && (x <> pNext) && (Polygon.isPointInside x (Polygon.create [|triangle.X;triangle.Y;triangle.Z|]))
+                (x <> pPrev) && (x <> pCur) && (x <> pNext) && (Polygon.isPointInside x (Polygon.create triangle))
             )
-  
+
         if isReflexVertex pPrev pNext pCur || anyPointsInsideTriangle then
             let nextIndex =
                 if currentIndex >= (vertices.Count - 1) then
                     0
                 else
                     currentIndex + 1
-            compute (recursiveSteps + 1) (vertices) nextIndex
+            computeVertices (recursiveSteps + 1) (vertices) nextIndex
         else
             vertices.RemoveAt(currentIndex)
 
@@ -89,10 +71,18 @@ let compute polygon =
                 else
                     currentIndex + 1
 
-            triangles.Add (triangle)
-            compute 0 vertices nextIndex
+            f pNext pCur pPrev
+            computeVertices 0 vertices nextIndex
 
-    let triangles = compute 0 (ResizeArray (Polygon.vertices polygon)) 0
+    computeVertices 0 (ResizeArray (vertices)) 0
+
+let compute polygon =
+
+    let triangles = ResizeArray<Triangle2D> ()
+
+    computeVertices (Polygon.vertices polygon) (fun x y z ->
+        triangles.Add (Triangle2D (x, y, z))
+    )
 
     if triangles.Count = 0 then
         []
@@ -152,7 +142,24 @@ let computeTree (tree: PolygonTree) =
 
     //    linkedList.InsertRange(indy, linkedList2)
 
-    //    vertices <- (linkedList |> Seq.toArray)
-    //)        
+    //    vertices <- 
+    //        compute (Polygon.create (linkedList |> Seq.toArray))
+    //        |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
+    //        |> Array.reduce Array.append
+    //)   
 
-    //[ Polygon.create vertices ]
+    //let triangles = ResizeArray<Triangle2D> ()
+    //let mutable i = 0
+
+    //while (i < vertices.Length) do
+    //    Triangle2D (
+    //        vertices.[i],
+    //        vertices.[i + 1],
+    //        vertices.[i + 2]
+    //    )
+    //    |> triangles.Add
+    //    i <- i + 3
+    //[
+    //    triangles
+    //    |> Seq.toArray
+    //]
