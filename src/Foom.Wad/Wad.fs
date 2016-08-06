@@ -92,8 +92,8 @@ module Wad =
             let stream = wad.stream
             let lumpHeaders = wad.wadData.LumpHeaders
 
-            let lumpFlatsHeaderStartIndex = lumpHeaders |> Array.tryFindIndex (fun x -> x.Name.ToUpper () = "F_START")
-            let lumpFlatsHeaderEndIndex = lumpHeaders |> Array.tryFindIndex (fun x -> x.Name.ToUpper () = "F_END")
+            let lumpFlatsHeaderStartIndex = lumpHeaders |> Array.tryFindIndex (fun x -> x.Name.ToUpper () = "F_START" || x.Name.ToUpper () = "FF_START")
+            let lumpFlatsHeaderEndIndex = lumpHeaders |> Array.tryFindIndex (fun x -> x.Name.ToUpper () = "F_END" || x.Name.ToUpper () = "FF_END")
 
             match lumpFlatsHeaderStartIndex, lumpFlatsHeaderEndIndex with
             | None, None -> 
@@ -170,6 +170,15 @@ module Wad =
             { stream = stream; wadData = wadData; defaultPaletteData = None; flats = [||] }
             |> (loadPalettes >=> loadFlats)
     }
+
+    let createFromWad (wad: Wad) stream =
+        async {
+            let! wadData = runUnpickle u_wad stream
+
+            return!
+                { stream = stream; wadData = wadData; defaultPaletteData = wad.defaultPaletteData; flats = [||] }
+                |> (loadFlats)
+        }
 
     let flats (wad: Wad) = wad.flats
 

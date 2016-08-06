@@ -54,8 +54,9 @@ type ClientState = {
 // 271 - map03 sunder
 
 let init () =
-    let wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
-    let lvl = Wad.findLevel "e1m1" wad |> Async.RunSynchronously
+    let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
+    let wad = Wad.createFromWad doom2Wad (System.IO.File.Open ("sunder.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
+    let lvl = Wad.findLevel "e1m1" doom2Wad |> Async.RunSynchronously
 
     let app = Renderer.init ()
     //let program = Backend.loadShaders ()
@@ -86,14 +87,35 @@ let init () =
 
         let id = Renderer.createTexture 64 64 (ptr.Pixels)
 
+        if lookupTexture.ContainsKey (tex.Name) |> not then
+            lookupTexture.Add (tex.Name, id)
+    )
+
+    Wad.flats doom2Wad
+    |> Array.iter (fun tex ->
+        let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format24bppRgb)
+
+        for i = 0 to 64 - 1 do
+            for j = 0 to 64 - 1 do
+                let pixel = tex.Pixels.[i + (j * 64)]
+                bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+
+        bmp.Save(tex.Name + ".bmp")
+        bmp.Dispose ()
+
+        use ptr = new Gdk.Pixbuf (tex.Name + ".bmp")
+
+        let id = Renderer.createTexture 64 64 (ptr.Pixels)
+
         lookupTexture.Add (tex.Name, id)
     )
 
-
-
     let sectorPolygons =
         lvl.Sectors
-        |> Array.map (fun s -> (Sector.polygonFlats s, s.FloorTextureName, s.LightLevel))
+        |> Array.mapi (fun i s -> 
+            System.Diagnostics.Debug.WriteLine ("Sector " + string i)
+            (Sector.polygonFlats s, s.FloorTextureName, s.LightLevel)
+        )
 
     let vbos = ResizeArray ()
     let textureVbosUV = ResizeArray ()
@@ -128,12 +150,14 @@ let init () =
 
             let vbo = Renderer.makeVbo ()
             Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
+
+            let textureId = lookupTexture.[floorTextureName]
             vbos.Add 
                 {
                     Id = vbo
                     Length = vertices.Length
                     Color = Color.FromArgb(lightLevel, lightLevel, lightLevel)
-                    TextureId = lookupTexture.[floorTextureName]
+                    TextureId = textureId
                     UvVbo = uvVbo
                 }
 
@@ -168,20 +192,28 @@ let init () =
           Application = app 
           Vbos = vbos
           DrawVbo = fun m -> arr.ForEach (fun x -> x m) }
+
+    let position =
+        match sectorPolygons.[0] with
+        | (polygons, _, _) -> polygons.[0] |> Polygon.vertices
     
     { Renderer = rendererState
       User = UserState.Default
       Level = lvl
-      ViewDistance = 0.05f
-      ViewPosition = Vector3(-0.025f, 0.05f, 0.f) }
+      ViewDistance = 1.f
+      ViewPosition = new Vector3 (-position.[0].X, -position.[0].Y, -0.05f) }
+      //ViewDistance = 0.05f
+      //ViewPosition = Vector3(-0.025f, 0.05f, 0.f) }
 
 let draw t (prev: ClientState) (curr: ClientState) =
     Renderer.clear ()
 
-    let projection = Matrix4x4.CreatePerspectiveFieldOfView (lerp prev.ViewDistance curr.ViewDistance t, (16.f / 9.f), 0.1f, 100.f) |> Matrix4x4.Transpose
+    let projection = Matrix4x4.CreatePerspectiveFieldOfView (lerp prev.ViewDistance curr.ViewDistance t, (16.f / 9.f), 0.0001f, 100.f) |> Matrix4x4.Transpose
     let model = Matrix4x4.CreateTranslation (lerp prev.ViewPosition curr.ViewPosition t) |> Matrix4x4.Transpose
     let mvp = (projection * model) |> Matrix4x4.Transpose
 
+    Renderer.enableDepth ()
     curr.Renderer.DrawVbo mvp
+    Renderer.disableDepth ()
 
     Renderer.draw curr.Renderer.Application

@@ -20,6 +20,8 @@ module Wad =
 
     val create : Stream -> Async<Wad>
 
+    val createFromWad : Wad -> Stream -> Async<Wad>
+
     val flats : Wad -> FlatTexture []
 
     val findLevel : levelName: string -> wad: Wad -> Async<Level>

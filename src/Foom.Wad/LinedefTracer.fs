@@ -195,18 +195,17 @@ module LinedefTracer =
 
 
                 else
-                    match nonVisitedLinedefs tracer with
+                    match nonVisitedLinedefs originalTracer with
                     | [] -> polygons
                     | linedefs ->
                         let tracer = create linedefs
-                        f polygons originalTracer originalTracer
+                        f polygons tracer tracer
 
         let tracer =
             linedefs
             |> Seq.filter (fun x -> 
                 not (x.FrontSidedef.IsSome && x.BackSidedef.IsSome) &&
                 not (x.FrontSidedef.IsNone && x.BackSidedef.IsNone)) 
-            |> Seq.distinctBy (fun x -> x.Start, x.End)
             |> List.ofSeq
             |> create
                         

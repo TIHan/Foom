@@ -36,8 +36,7 @@ let compute polygon =
         if vertices.Count < 3 then
             triangles
         elif vertices.Count = 3 then
-            vertices |> Seq.toArray
-            |> triangles.Add
+            triangles.Add([|vertices.[2];vertices.[1];vertices.[0]|])
 
             triangles
         else
@@ -56,7 +55,7 @@ let compute polygon =
             else
                 vertices.[currentIndex + 1]
 
-        let triangle = Polygon.create [|pPrev;pCur;pNext|]
+        let triangle = Polygon.create [|pNext;pCur;pPrev|]
 
         let anyPointsInsideTriangle =
             vertices
@@ -80,16 +79,19 @@ let compute polygon =
                 else
                     currentIndex + 1
 
-            triangles.Add([|pPrev;pCur;pNext|])
+            triangles.Add([|pNext;pCur;pPrev|])
             compute 0 vertices nextIndex
 
     let triangles = compute 0 (ResizeArray (Polygon.vertices polygon)) 0
 
-    let result =
-        triangles
-        |> Seq.reduce Array.append
+    if triangles.Count = 0 then
+        []
+    else
+        let result = 
+            triangles
+            |> Seq.reduce Array.append
 
-    [ Polygon.create result ]
+        [ Polygon.create result ]
 
 let computeTree (tree: PolygonTree) =
 

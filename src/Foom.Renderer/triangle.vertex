@@ -9,7 +9,5 @@ out vec2 uv;
 void main ()
 {
     gl_Position = uni_projection * vec4(position, 1.0);
-	gl_Position = vec4(gl_Position.x, gl_Position.y, 0.0, 1.0);
-
-  uv = in_uv;
+    uv = in_uv;
 }

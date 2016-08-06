@@ -102,7 +102,7 @@ return 0;
         """
     
     [<Import; MI (MIO.NoInlining)>]
-    let clear () : unit = C """ glClear (GL_COLOR_BUFFER_BIT); """
+    let clear () : unit = C """ glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); """
 
     [<Import; MI (MIO.NoInlining)>]
     let draw (app: Application) : unit = C """ SDL_GL_SwapWindow ((SDL_Window*)app.Window); """
@@ -301,6 +301,24 @@ glUniform4f (uniformColor, color.R, color.G, color.B, color.A);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         return textureID;
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let enableDepth () : unit =
+        C """
+        // Enable depth test
+        glEnable(GL_DEPTH_TEST);
+        // Accept fragment if it closer to the camera than the former one
+        glDepthFunc(GL_LESS); 
+        // Cull triangles which normal is not towards the camera
+        glEnable(GL_CULL_FACE);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let disableDepth () : unit =
+        C """
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
         """
 
 module Backend =

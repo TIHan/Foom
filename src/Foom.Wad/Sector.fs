@@ -15,17 +15,18 @@ type Sector =
 module Sector =
 
     let polygonFlats sector = 
-        let linedefPolygons = LinedefTracer.run2 (sector.Linedefs)
+        match LinedefTracer.run2 (sector.Linedefs) with
+        | [] -> []
+        | linedefPolygons ->
+            let rec map (linedefPolygons: LinedefPolygon list) =
+                linedefPolygons
+                |> List.map (fun x -> 
+                    {
+                        Polygon = x.Linedefs |> Polygon.ofLinedefs
+                        Children = map x.Inner
+                    }
+                )
 
-        let rec map (linedefPolygons: LinedefPolygon list) =
-            linedefPolygons
-            |> List.map (fun x -> 
-                {
-                    Polygon = x.Linedefs |> Polygon.ofLinedefs
-                    Children = map x.Inner
-                }
-            )
-
-        map linedefPolygons
-        |> List.map Foom.Wad.Geometry.Triangulation.EarClipping.computeTree
-        |> List.reduce (@)
+            map linedefPolygons
+            |> List.map Foom.Wad.Geometry.Triangulation.EarClipping.computeTree
+            |> List.reduce (@)
