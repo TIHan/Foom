@@ -115,13 +115,12 @@ let rayCast (ray: Ray) (vertices: Vector2 []) (tmax: float32) (t: float32 byref)
     let mutable j = vertices.Length - 1
     let mutable i = 0
 
-    let mutable edge = (-1, -1)
+    let mutable eedge = (-1, -1)
 
     while (i < vertices.Length || crossings <= 0) do
 
         if (rayIntersectsSegment ray vertices.[j] vertices.[i] Single.MaxValue &distance) then
-            crossings <- crossings + 1
-            edge <- (j, i)
+
             if (distance < t && distance <= tmax) then
                 t <- distance
                 pt <- ray.GetPoint(t)
@@ -131,12 +130,14 @@ let rayCast (ray: Ray) (vertices: Vector2 []) (tmax: float32) (t: float32 byref)
                 // We would use LeftPerp() if the polygon was
                 // in clock wise order
                 normal <- Vector2.Normalize( leftPerp (edge))
+                crossings <- crossings + 1
+                eedge <- (j, i)
 
         j <- i
         i <- i + 1
 
     if crossings > 0 then
-        Some (edge)
+        Some (eedge)
     else
         None
 
@@ -237,7 +238,7 @@ let computeTree (tree: PolygonTree) =
             if childTree.Children.Length > 0 then
                 failwith "butt"
 
-            if i = 1 || i = 2 then
+            if true then
                 let childVertices = childTree.Polygon |> Polygon.vertices
 
                 let childMax = childVertices |> Array.maxBy (fun x -> x.X)
@@ -264,25 +265,24 @@ let computeTree (tree: PolygonTree) =
                     if not (Polygon.isArrangedClockwise (Polygon.create childVertices)) then
                         failwith "butt"
 
-
-                    let mutable i = childMaxIndex
+                    let mutable ii = childMaxIndex
                     let mutable count = 0
                     let linkedList2 = System.Collections.Generic.List ()
 
                     linkedList2.Add(pt)
 
                     while (count < childVertices.Length) do
-                        linkedList2.Add(childVertices.[i])
-                        i <-
-                            if i + 1 >= childVertices.Length then
+                        linkedList2.Add(childVertices.[ii])
+                        ii <-
+                            if ii + 1 >= childVertices.Length then
                                 0
                             else
-                                i + 1
+                                ii + 1
                         count <- count + 1
 
-                    //linkedList2.Add(linkedList2.[0])
-                    //linkedList2.Add(childVertices.[childMaxIndex])
-                    //linkedList2.Add(pt)
+
+                    linkedList2.Add(childVertices.[childMaxIndex])
+                    linkedList2.Add(pt)
 
 
 
