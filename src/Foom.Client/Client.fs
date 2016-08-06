@@ -112,6 +112,7 @@ let init () =
 
     let sectorPolygons =
         lvl.Sectors
+        //[| lvl.Sectors.[1] |]
         |> Array.mapi (fun i s -> 
             System.Diagnostics.Debug.WriteLine ("Sector " + string i)
             (Sector.polygonFlats s, s.FloorTextureName, s.LightLevel)
@@ -126,7 +127,9 @@ let init () =
         polygons
         |> List.iter (fun polygon ->
             let vertices =
-                Polygon.vertices polygon
+                polygon
+                |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
+                |> Array.reduce Array.append
                 |> Array.map (fun x -> Vector3 (x.X, x.Y, 0.f))
 
             let uv = Array.zeroCreate vertices.Length
@@ -195,13 +198,13 @@ let init () =
 
     let position =
         match sectorPolygons.[0] with
-        | (polygons, _, _) -> polygons.[0] |> Polygon.vertices
+        | (polygons, _, _) -> polygons.[0].[0].X
     
     { Renderer = rendererState
       User = UserState.Default
       Level = lvl
       ViewDistance = 1.f
-      ViewPosition = new Vector3 (-position.[0].X, -position.[0].Y, -0.05f) }
+      ViewPosition = new Vector3 (-position.X, -position.Y, -0.05f) }
       //ViewDistance = 0.05f
       //ViewPosition = Vector3(-0.025f, 0.05f, 0.f) }
 

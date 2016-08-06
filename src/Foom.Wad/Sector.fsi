@@ -11,4 +11,4 @@ type Sector =
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Sector =
-    val polygonFlats : Sector -> Polygon list
+    val polygonFlats : Sector -> Foom.Wad.Geometry.Triangulation.EarClipping.Triangle2D [] list

@@ -5,6 +5,16 @@ open System.Numerics
 
 open Foom.Wad.Geometry
 
-val compute : Polygon -> Polygon list
+type Triangle2D =
 
-val computeTree : PolygonTree -> Polygon list
+    val X : Vector2
+
+    val Y : Vector2
+
+    val Z : Vector2
+
+    new : Vector2 * Vector2 * Vector2 -> Triangle2D
+
+val compute : Polygon -> (Triangle2D []) list
+
+val computeTree : PolygonTree -> (Triangle2D []) list

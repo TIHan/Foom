@@ -219,4 +219,4 @@ module Polygon =
             |> List.map (fun x -> 
                 if x.FrontSidedef.IsSome then x.Start else x.End) 
             |> Array.ofList
-        Polygon.create vertices.[..vertices.Length - 1]
+        Polygon.create vertices

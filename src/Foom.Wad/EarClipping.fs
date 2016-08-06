@@ -5,6 +5,16 @@ open System.Numerics
 
 open Foom.Wad.Geometry
 
+type Triangle2D =
+
+    val X : Vector2
+
+    val Y : Vector2
+
+    val Z : Vector2
+
+    new (x, y, z) = { X = x; Y = y; Z = z }
+
 let inline isReflexVertex (prev: Vector2) (next: Vector2) (vertex: Vector2) =
     let p1 = prev - vertex
     let p2 = next - vertex
@@ -26,7 +36,7 @@ let inline isReflexVertex (prev: Vector2) (next: Vector2) (vertex: Vector2) =
 //    break;
 let compute polygon =
 
-    let triangles = ResizeArray<Vector2 []> ()
+    let triangles = ResizeArray<Triangle2D> ()
 
     let rec compute (recursiveSteps: int) (vertices: Vector2 ResizeArray) currentIndex =
 
@@ -36,7 +46,7 @@ let compute polygon =
         if vertices.Count < 3 then
             triangles
         elif vertices.Count = 3 then
-            triangles.Add([|vertices.[2];vertices.[1];vertices.[0]|])
+            triangles.Add (Triangle2D (vertices.[2], vertices.[1], vertices.[0]))
 
             triangles
         else
@@ -55,12 +65,12 @@ let compute polygon =
             else
                 vertices.[currentIndex + 1]
 
-        let triangle = Polygon.create [|pNext;pCur;pPrev|]
+        let triangle = Triangle2D (pNext, pCur, pPrev)
 
         let anyPointsInsideTriangle =
             vertices
             |> Seq.exists (fun x ->
-                (x <> pPrev) && (x <> pCur) && (x <> pNext) && (Polygon.isPointInside x triangle)
+                (x <> pPrev) && (x <> pCur) && (x <> pNext) && (Polygon.isPointInside x (Polygon.create [|triangle.X;triangle.Y;triangle.Z|]))
             )
   
         if isReflexVertex pPrev pNext pCur || anyPointsInsideTriangle then
@@ -79,7 +89,7 @@ let compute polygon =
                 else
                     currentIndex + 1
 
-            triangles.Add([|pNext;pCur;pPrev|])
+            triangles.Add (triangle)
             compute 0 vertices nextIndex
 
     let triangles = compute 0 (ResizeArray (Polygon.vertices polygon)) 0
@@ -89,14 +99,60 @@ let compute polygon =
     else
         let result = 
             triangles
-            |> Seq.reduce Array.append
+            |> Seq.toArray
 
-        [ Polygon.create result ]
+        [ result ]
 
 let computeTree (tree: PolygonTree) =
 
+    compute tree.Polygon
+
+    //if tree.Children.IsEmpty then
+    //    compute tree.Polygon
+    //else
+
+    //let mutable vertices = tree.Polygon |> Polygon.vertices
+
+    //tree.Children
+    //|> List.iter (fun childTree ->
+    //    let childVertices = childTree.Polygon |> Polygon.vertices
+
+    //    let childMax = childVertices |> Array.maxBy (fun x -> x.X)
+    //    let max = vertices |> Array.maxBy (fun x -> x.X)
+
+    //    let maxIndex = vertices |> Array.findIndex (fun x -> x = max)
+    //    let childMaxIndex = childVertices |> Array.findIndex (fun x -> x = childMax)
+
+    //    let linkedList = vertices |> System.Collections.Generic.List
 
 
-    tree.Polygon
-    |> compute
-        
+    //    let mutable i = childMaxIndex
+    //    let mutable count = 0
+    //    let linkedList2 = System.Collections.Generic.List ()
+
+    //    while (count < childVertices.Length) do
+    //        i <-
+    //            if i + 1 >= childVertices.Length then
+    //                0
+    //            else
+    //                i + 1
+    //        linkedList2.Add(childVertices.[i])
+    //        count <- count + 1
+
+    //    let indy =
+    //        if maxIndex + 1 >= linkedList.Count then
+    //            0
+    //        else
+    //            maxIndex + 1
+
+    //    linkedList2.Add(linkedList2.[0])
+    //    linkedList2.Add(vertices.[maxIndex])
+
+
+
+    //    linkedList.InsertRange(indy, linkedList2)
+
+    //    vertices <- (linkedList |> Seq.toArray)
+    //)        
+
+    //[ Polygon.create vertices ]
