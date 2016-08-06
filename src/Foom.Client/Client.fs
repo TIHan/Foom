@@ -54,9 +54,9 @@ type ClientState = {
 // 271 - map03 sunder
 
 let init () =
-    let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
+    let doom2Wad = Wad.create (System.IO.File.Open ("doom2.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
     let wad = Wad.createFromWad doom2Wad (System.IO.File.Open ("sunder.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
-    let lvl = Wad.findLevel "e1m1" doom2Wad |> Async.RunSynchronously
+    let lvl = Wad.findLevel "map01" wad |> Async.RunSynchronously
 
     let app = Renderer.init ()
     //let program = Backend.loadShaders ()
@@ -111,8 +111,8 @@ let init () =
     )
 
     let sectorPolygons =
-        lvl.Sectors
-        //[| lvl.Sectors.[1] |]
+        //lvl.Sectors
+        [| lvl.Sectors.[392] |]
         |> Array.mapi (fun i s -> 
             System.Diagnostics.Debug.WriteLine ("Sector " + string i)
             (Sector.polygonFlats s, s.FloorTextureName, s.LightLevel)
@@ -204,7 +204,7 @@ let init () =
       User = UserState.Default
       Level = lvl
       ViewDistance = 1.f
-      ViewPosition = new Vector3 (-position.X, -position.Y, -0.05f) }
+      ViewPosition = new Vector3 (-position.X, -position.Y, -0.2f) }
       //ViewDistance = 0.05f
       //ViewPosition = Vector3(-0.025f, 0.05f, 0.f) }
 
