@@ -54,7 +54,7 @@ type ClientState = {
 // 271 - map03 sunder
 
 let init () =
-    let doom2Wad = Wad.create (System.IO.File.Open ("doom2.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
+    let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
     let wad = Wad.createFromWad doom2Wad (System.IO.File.Open ("sunder.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
     let lvl = Wad.findLevel "map01" wad |> Async.RunSynchronously
 
@@ -184,7 +184,11 @@ let init () =
             Renderer.bindUv program
 
             Renderer.bindTexture vbo.TextureId
-            Renderer.drawTriangles 0 vbo.Length
+
+            for i = 0 to (vbo.Length / 3) do
+
+                Renderer.drawArraysLoop (i * 3) 3
+            //Renderer.drawTriangles 0 vbo.Length
         |> arr.Add
     )
 
