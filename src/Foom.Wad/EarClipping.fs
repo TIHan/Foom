@@ -25,7 +25,9 @@ let computeVertices (vertices: Vector2 seq) f =
 
     let rec computeVertices (recursiveSteps: int) (vertices: Vector2 ResizeArray) currentIndex = 
         if recursiveSteps > vertices.Count then
-            failwith "Unable to triangulate"
+            ()
+        else
+            //failwith "Unable to triangulate"
 
         if vertices.Count < 3 then
             ()
@@ -95,74 +97,79 @@ let compute polygon =
 
 let computeTree (tree: PolygonTree) =
 
-    match compute tree.Polygon with
-    | None -> [ ]
-    | Some triangles ->
-        [ triangles ]
+    if tree.Children.IsEmpty then
+        match compute tree.Polygon with
+        | None -> [ ]
+        | Some triangles ->
+            [ triangles ]
+    else
 
-    //if tree.Children.IsEmpty then
-    //    compute tree.Polygon
-    //else
+        let mutable vertices = tree.Polygon |> Polygon.vertices
 
-    //let mutable vertices = tree.Polygon |> Polygon.vertices
-
-    //tree.Children
-    //|> List.iter (fun childTree ->
-    //    let childVertices = childTree.Polygon |> Polygon.vertices
-
-    //    let childMax = childVertices |> Array.maxBy (fun x -> x.X)
-    //    let max = vertices |> Array.maxBy (fun x -> x.X)
-
-    //    let maxIndex = vertices |> Array.findIndex (fun x -> x = max)
-    //    let childMaxIndex = childVertices |> Array.findIndex (fun x -> x = childMax)
-
-    //    let linkedList = vertices |> System.Collections.Generic.List
+        tree.Children
+        |> List.iteri (fun i childTree ->
 
 
-    //    let mutable i = childMaxIndex
-    //    let mutable count = 0
-    //    let linkedList2 = System.Collections.Generic.List ()
+            if i = 0 then
+                let childVertices = childTree.Polygon |> Polygon.vertices
 
-    //    while (count < childVertices.Length) do
-    //        i <-
-    //            if i + 1 >= childVertices.Length then
-    //                0
-    //            else
-    //                i + 1
-    //        linkedList2.Add(childVertices.[i])
-    //        count <- count + 1
+                let childMax = childVertices |> Array.maxBy (fun x -> x.X)
+                let max = vertices |> Array.maxBy (fun x -> x.X)
 
-    //    let indy =
-    //        if maxIndex + 1 >= linkedList.Count then
-    //            0
-    //        else
-    //            maxIndex + 1
+                let maxIndex = vertices |> Array.findIndex (fun x -> x = max)
+                let childMaxIndex = childVertices |> Array.findIndex (fun x -> x = childMax)
 
-    //    linkedList2.Add(linkedList2.[0])
-    //    linkedList2.Add(vertices.[maxIndex])
+                let linkedList = vertices |> System.Collections.Generic.List
 
 
+                let mutable i = childMaxIndex
+                let mutable count = 0
+                let linkedList2 = System.Collections.Generic.List ()
 
-    //    linkedList.InsertRange(indy, linkedList2)
+                while (count < childVertices.Length) do
+                    i <-
+                        if i + 1 >= childVertices.Length then
+                            0
+                        else
+                            i + 1
+                    linkedList2.Add(childVertices.[i])
+                    count <- count + 1
 
-    //    vertices <- 
-    //        compute (Polygon.create (linkedList |> Seq.toArray))
-    //        |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
-    //        |> Array.reduce Array.append
-    //)   
+                let indy =
+                    if maxIndex + 1 >= linkedList.Count then
+                        0
+                    else
+                        maxIndex + 1
 
-    //let triangles = ResizeArray<Triangle2D> ()
-    //let mutable i = 0
+                linkedList2.Add(linkedList2.[0])
+                linkedList2.Add(vertices.[maxIndex])
 
-    //while (i < vertices.Length) do
-    //    Triangle2D (
-    //        vertices.[i],
-    //        vertices.[i + 1],
-    //        vertices.[i + 2]
-    //    )
-    //    |> triangles.Add
-    //    i <- i + 3
-    //[
-    //    triangles
-    //    |> Seq.toArray
-    //]
+
+
+                linkedList.InsertRange(indy, linkedList2)
+
+                vertices <- 
+                    match compute (Polygon.create (linkedList |> Seq.toArray)) with
+                    | None -> vertices
+                    | Some triangles ->
+                        triangles
+                        |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
+                        |> Array.reduce Array.append
+        )   
+
+        let triangles = ResizeArray<Triangle2D> ()
+        let mutable i = 0
+
+        while (i < vertices.Length) do
+            Triangle2D (
+                vertices.[i],
+                vertices.[i + 1],
+                vertices.[i + 2]
+            )
+            |> triangles.Add
+            i <- i + 3
+
+        [
+            triangles
+            |> Seq.toArray
+        ]
