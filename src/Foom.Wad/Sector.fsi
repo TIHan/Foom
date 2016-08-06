@@ -2,8 +2,11 @@
 
 open Foom.Wad.Geometry
 
-type Sector = {
-    Linedefs: Linedef [] }
+type Sector = 
+    {
+        Linedefs: Linedef [] 
+        FloorTextureName: string
+    }
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Sector =

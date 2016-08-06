@@ -237,6 +237,16 @@ glEnableVertexAttribArray (posAttrib);
         """
 
     [<Import; MI (MIO.NoInlining)>]
+    let bindUv (programID: int<program>) : unit =
+        C """
+GLint posAttrib = glGetAttribLocation (programID, "in_uv");
+
+glVertexAttribPointer (posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+glEnableVertexAttribArray (posAttrib);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
     let getUniformProjection (program: int<program>) : int<uniform> =
         C """
 return glGetUniformLocation (program, "uni_projection");
@@ -259,6 +269,38 @@ return uni_color;
     let setUniformColor (uniformColor: int<uniform>) (color: RenderColor) : unit =
         C """
 glUniform4f (uniformColor, color.R, color.G, color.B, color.A);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let setTexture (shaderProgram: int<program>) (textureId: int) : unit =
+        C """
+        GLuint uni = glGetUniformLocation (shaderProgram, "uni_texture");
+        glUniform1i(textureId, 0);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let bindTexture (textureId: int) : unit =
+        C """
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textureId);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let createTexture (width: int) (height: int) (data: nativeint) : int =
+        C """
+        // Create one OpenGL texture
+        GLuint textureID;
+        glGenTextures(1, &textureID);
+         
+        // "Bind" the newly created texture : all future texture functions will modify this texture
+        glBindTexture(GL_TEXTURE_2D, textureID);
+         
+        // Give the image to OpenGL
+        glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+         
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        return textureID;
         """
 
 module Backend =

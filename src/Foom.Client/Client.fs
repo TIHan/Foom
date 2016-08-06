@@ -3,6 +3,7 @@ module Foom.Client.Client
 
 open System.Drawing
 open System.Numerics
+open System.Collections.Generic
 
 open Foom.Renderer
 open Foom.Wad
@@ -22,6 +23,8 @@ type Vbo =
         Id: int
         Length: int
         Color: Color
+        TextureId: int
+        UvVbo: int
     }
 
 type RendererState = {
@@ -30,8 +33,7 @@ type RendererState = {
     Program: int<program>
     Application: Application
     Vbos: Vbo ResizeArray
-    DrawVbo: Matrix4x4 -> unit
-    Sectors: Polygon list [] }
+    DrawVbo: Matrix4x4 -> unit }
 
 type ClientState = {
     Renderer: RendererState
@@ -61,16 +63,44 @@ let init () =
     let uniformColor = Renderer.getUniformColor program
     let uniformProjection = Renderer.getUniformProjection program
 
+
+    let lookupTexture = Dictionary<string, int> ()
+
+
+    Wad.flats wad
+    |> Array.iter (fun tex ->
+        let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format32bppRgb)
+
+        for i = 0 to 64 - 1 do
+            for j = 0 to 64 - 1 do
+                let pixel = tex.Pixels.[i + (j * 64)]
+                bmp.SetPixel (i, j, Color.Green) // Color.FromArgb (int pixel.R, int pixel.G, int pixel.B)
+
+        let rect = new Rectangle(0, 0, bmp.Width, bmp.Height)
+        let bmpData = bmp.LockBits (rect, Imaging.ImageLockMode.ReadOnly, Imaging.PixelFormat.Format32bppRgb)
+
+        let id = Renderer.createTexture 64 64 (bmpData.Scan0)
+
+        bmp.UnlockBits (bmpData)
+
+        bmp.Dispose ()
+
+        lookupTexture.Add (tex.Name, id)
+    )
+
+
+
     let sectorPolygons =
         lvl.Sectors
-        |> Array.map Sector.polygonFlats
+        |> Array.map (fun s -> (Sector.polygonFlats s, s.FloorTextureName))
 
     let vbos = ResizeArray ()
+    let textureVbosUV = ResizeArray ()
 
     let random = System.Random ()
 
     sectorPolygons
-    |> Array.iter (fun polygons ->
+    |> Array.iter (fun (polygons, floorTextureName) ->
         let color = Color.FromArgb(random.Next(0, 255), random.Next(0, 255), random.Next (0, 255))
 
         polygons
@@ -79,6 +109,25 @@ let init () =
                 Polygon.vertices polygon
                 |> Array.map (fun x -> Vector3 (x.X, x.Y, 0.f))
 
+            let uv = Array.zeroCreate vertices.Length
+
+            let mutable i = 0
+            while (i < vertices.Length) do
+                let p1 = vertices.[i]
+                let p2 = vertices.[i + 1]
+                let p3 = vertices.[i + 2]
+
+                uv.[i] <- Vector2 (0.f, 1.f)
+                uv.[i] <- Vector2 (1.f, 1.f)
+                uv.[i] <- Vector2 (1.f, 0.f)
+
+                i <- i + 3
+
+            let uvVbo = Renderer.makeVbo ()
+            Renderer.bufferVbo uv (sizeof<Vector2> * uv.Length) uvVbo
+  
+            textureVbosUV.Add uvVbo
+
             let vbo = Renderer.makeVbo ()
             Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
             vbos.Add 
@@ -86,6 +135,8 @@ let init () =
                     Id = vbo
                     Length = vertices.Length
                     Color = color
+                    TextureId = lookupTexture.[floorTextureName]
+                    UvVbo = uvVbo
                 }
 
         )
@@ -97,11 +148,16 @@ let init () =
     vbos
     |> Seq.iter (fun vbo ->
         fun mvp ->
-            Renderer.bindVbo vbo.Id
             Renderer.setUniformProjection uniformProjection mvp
-
+            Renderer.setTexture program vbo.TextureId
             Renderer.setUniformColor uniformColor (RenderColor.OfColor vbo.Color)
+
+            Renderer.bindVbo vbo.Id
             Renderer.bindPosition program
+
+            Renderer.bindVbo vbo.UvVbo
+            Renderer.bindUv program
+
             Renderer.drawTriangles 0 vbo.Length
         |> arr.Add
     )
@@ -112,8 +168,7 @@ let init () =
           Program = program
           Application = app 
           Vbos = vbos
-          DrawVbo = fun m -> arr.ForEach (fun x -> x m)
-          Sectors = sectorPolygons }
+          DrawVbo = fun m -> arr.ForEach (fun x -> x m) }
     
     { Renderer = rendererState
       User = UserState.Default
