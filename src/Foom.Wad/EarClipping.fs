@@ -5,6 +5,11 @@ open System.Numerics
 
 open Foom.Wad.Geometry
 
+let inline isReflexVertex (prev: Vector2) (next: Vector2) (vertex: Vector2) =
+    let p1 = prev - vertex
+    let p2 = next - vertex
+    Vector3.Cross(Vector3 (p1.X, p1.Y, 0.f), Vector3 (p2.X, p2.Y, 0.f)).Z < 0.f
+
 //create a list of the vertices (perferably in CCW order, starting anywhere)
 //while true
 //  for every vertex
@@ -23,7 +28,11 @@ let compute polygon =
 
     let triangles = ResizeArray<Vector2 []> ()
 
-    let rec compute (vertices: Vector2 ResizeArray) currentIndex =
+    let rec compute (recursiveSteps: int) (vertices: Vector2 ResizeArray) currentIndex =
+
+        if recursiveSteps > vertices.Count then
+            failwith "Unable to triangulate"
+
         if vertices.Count < 3 then
             triangles
         elif vertices.Count = 3 then
@@ -47,10 +56,6 @@ let compute polygon =
             else
                 vertices.[currentIndex + 1]
 
-        let p1 = pPrev - pCur
-        let p2 = pNext - pCur
-        let wedgeProduct = Vector3.Cross (Vector3 (p1.X, p1.Y, 0.f), Vector3 (p2.X, p2.Y, 0.f))
-
         let triangle = Polygon.create [|pPrev;pCur;pNext|]
 
         let anyPointsInsideTriangle =
@@ -59,13 +64,13 @@ let compute polygon =
                 (x <> pPrev) && (x <> pCur) && (x <> pNext) && (Polygon.isPointInside x triangle)
             )
   
-        if (wedgeProduct.Z < 0.f) || anyPointsInsideTriangle then
+        if isReflexVertex pPrev pNext pCur || anyPointsInsideTriangle then
             let nextIndex =
                 if currentIndex >= (vertices.Count - 1) then
                     0
                 else
                     currentIndex + 1
-            compute (vertices) nextIndex
+            compute (recursiveSteps + 1) (vertices) nextIndex
         else
             vertices.RemoveAt(currentIndex)
 
@@ -76,24 +81,19 @@ let compute polygon =
                     currentIndex + 1
 
             triangles.Add([|pPrev;pCur;pNext|])
-            compute vertices nextIndex
+            compute 0 vertices nextIndex
 
-    let vertices =
-        if Polygon.isArrangedClockwise polygon then
-            Polygon.vertices polygon |> Array.rev
-        else
-            Polygon.vertices polygon
-
-    let triangles = compute (ResizeArray(vertices)) 0
+    let triangles = compute 0 (ResizeArray (Polygon.vertices polygon)) 0
 
     let result =
         triangles
         |> Seq.reduce Array.append
 
-
     [ Polygon.create result ]
 
 let computeTree (tree: PolygonTree) =
+
+
 
     tree.Polygon
     |> compute

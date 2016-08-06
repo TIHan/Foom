@@ -80,7 +80,7 @@ module LinedefTracer =
             currentVertex = if linedef.FrontSidedef.IsSome then linedef.End else linedef.Start
             currentLinedef = linedef
             visitedLinedefs = tracer.visitedLinedefs.Add linedef
-            path = linedef :: tracer.path }  
+            path = tracer.path @ [linedef] }  
 
     let create linedefs =
         let linedef = findClosestLinedef linedefs
