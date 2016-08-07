@@ -31,116 +31,46 @@ let inline isReflexVertex (prev: Vector2) (next: Vector2) (vertex: Vector2) =
     let p2 = next - vertex
     Vector3.Cross(Vector3 (p1.X, p1.Y, 0.f), Vector3 (p2.X, p2.Y, 0.f)).Z < 0.f
 
-//public static bool RayIntersectsSegment(Ray ray, Vector2 pt0, Vector2 pt1, float tmax, out float t) {
-//    Vector2 seg = pt1 - pt0;
-//    Vector2 segPerp = LeftPerp(seg);
-//    float perpDotd = Vector2.Dot(ray.Direction, segPerp);
-//    if (Equals(perpDotd, 0.0f, float.Epsilon))
-//    {
-//        t = float.MaxValue;
-//        return false;
-//    }
+let inline perpDot (left: Vector2) (right: Vector2) = left.X * right.Y - left.Y * right.X
 
-//    Vector2 d = pt0 - ray.Origin;
+// https://rootllama.wordpress.com/2014/06/20/ray-line-segment-intersection-test-in-2d/
+let rayIntersection (ray: Ray) (vertices: Vector2 []) =
+    let mutable i = vertices.Length - 1
+    let mutable j = 0
 
-//    t = Vector2.Dot(segPerp, d) / perpDotd;
-//    float s = Vector2.Dot(LeftPerp(ray.Direction), d) / perpDotd;
+    let mutable result = None
 
-//    return t >= 0.0f && t <= tmax && s >= 0.0f && s <= 1.0f;
-//}
+    let segmentsHit = ResizeArray<int * int * Vector2> ()
 
-let inline equals value1 value2 = abs (value1 - value2) < System.Single.Epsilon
+    while (j < vertices.Length) do
 
-let inline leftPerp (v: Vector2) = Vector2 (v.Y, -v.X)
+        let start' = vertices.[i]
+        let end' = vertices.[j]
+        let dir' = end' - start' |> Vector2.Normalize
 
-let inline rightPerp (v: Vector2) = Vector2 (-v.Y, v.X)
+        let v1 = ray.Origin - start'
+        let v2 = end' - start'
+        let v3 = Vector2 (-ray.Direction.Y, ray.Direction.X)
 
-//http://afloatingpoint.blogspot.com/2011/04/2d-polygon-raycasting.html
-let rayIntersectsSegment (ray: Ray) (pt0: Vector2) (pt1: Vector2) (tmax: float32) (t: float32 byref) =
-    let seg = pt1 - pt0
-    let segPerp = leftPerp (seg)
-    let perpDotd = Vector2.Dot (ray.Direction, segPerp)
+        let distance = perpDot v2 v1 / Vector2.Dot (v2, v3)
+        let t1 = perpDot (v2 |> Vector2.Normalize) (v1 |> Vector2.Normalize) / Vector2.Dot (v2, v3)
+        let t2 = Vector2.Dot (v1, v3) / Vector2.Dot (v2, v3)
 
-    if equals perpDotd 0.0f then
-        t <- System.Single.MaxValue
-        false
-    else
-        let d = pt0 - ray.Origin
+        if (t1 >= 0.f && t2 >= 0.f && t2 <= 1.f) then
+            segmentsHit.Add(i, j, ray.GetPoint (distance))
+            //result <- Some (i, j, ray.GetPoint (distance))
 
-        t <- Vector2.Dot (segPerp, d) / perpDotd
-        let s = Vector2.Dot (leftPerp (ray.Direction), d) / perpDotd
+        i <- j
+        j <- j + 1
 
-        t >= 0.0f && t <= tmax && s >= 0.0f && s <= 1.0f
-
-
-//public static bool RayCast(Ray ray, Polygon polygon, float tmax, out float t, out Vector2 pt, out Vector2 normal)
-//        {
-//            t = float.MaxValue;
-//            pt = ray.Origin;
-//            normal = ray.Direction;
-            
-//            // temp holder for segment distance
-//            float distance;
-//            int crossings = 0;
-
-//            for (int j = polygon.NumVertices - 1, i = 0; i < polygon.NumVertices; j = i, i++)
-//            {
-//                if (RayIntersectsSegment(ray, polygon.v[j], polygon.v[i], float.MaxValue, out distance))
-//                {
-//                    crossings++;
-//                    if (distance < t && distance <= tmax)
-//                    {
-//                        t = distance;
-//                        pt = ray.GetPoint(t);
-
-//                        Vector2 edge = polygon.v[j] - polygon.v[i];
-//                        // We would use LeftPerp() if the polygon was
-//                        // in clock wise order
-//                        normal = Vector2.Normalize(RightPerp(edge));
-//                    }
-//                }
-//            }
-//            return crossings > 0 && crossings % 2 == 0;
-//        }
-
-let rayCast (ray: Ray) (vertices: Vector2 []) (tmax: float32) (t: float32 byref) (pt: Vector2 byref) (normal: Vector2 byref) =
-    t <- Single.MaxValue
-    pt <- ray.Origin
-    normal <- ray.Direction
-    
-    // temp holder for segment distance
-    let mutable distance = 0.f
-    let mutable crossings = 0
-
-    let mutable j = vertices.Length - 1
-    let mutable i = 0
-
-    let mutable eedge = (-1, -1)
-
-    while (i < vertices.Length || crossings <= 0) do
-
-        if (rayIntersectsSegment ray vertices.[j] vertices.[i] Single.MaxValue &distance) then
-
-            if (distance < t && distance <= tmax) then
-                t <- distance
-                pt <- ray.GetPoint(t)
-
-                let edge = vertices.[j] - vertices.[i]
-
-                // We would use LeftPerp() if the polygon was
-                // in clock wise order
-                normal <- Vector2.Normalize( leftPerp (edge))
-                crossings <- crossings + 1
-                eedge <- (j, i)
-
-        j <- i
-        i <- i + 1
-
-    if crossings > 0 then
-        Some (eedge)
-    else
+    if segmentsHit.Count = 0 then
         None
-
+    else
+        segmentsHit
+        |> Seq.minBy (fun (i, _, _) ->
+            vertices.[i].X
+        )
+        |> Some
 
 let inline pointInsideTriangle p v =
     Polygon.isPointInside p (Polygon.create v)
@@ -248,12 +178,8 @@ let decomposeTree (tree: PolygonTree) =
 
             let ray = { Origin = childMax; Direction = Vector2.UnitX }
 
-            let mutable t = 0.f
-            let mutable pt = Vector2.Zero
-            let mutable normal = Vector2.Zero
-
-            match (rayCast ray vertices Single.MaxValue &t &pt &normal) with
-            | Some (edge1Index, edge2Index) ->
+            match rayIntersection ray vertices with
+            | Some (edge1Index, edge2Index, pt) ->
 
                 let mutable replaceIndex = None
                 let childMaxIndex = childVertices |> Array.findIndex (fun x -> x = childMax)
@@ -293,6 +219,7 @@ let decomposeTree (tree: PolygonTree) =
                
                 linkedList2.Add(pt)
 
+               // linkedList2.Add(vertices.[edge2Index])
                 while (count < childVertices.Length) do
                     linkedList2.Add(childVertices.[ii])
                     ii <-
@@ -305,8 +232,6 @@ let decomposeTree (tree: PolygonTree) =
 
                 linkedList2.Add(childVertices.[childMaxIndex])
                 linkedList2.Add(pt)
-
-
                 linkedList.InsertRange(edge2Index, linkedList2)
 
                 vertices <- (linkedList |> Seq.toArray)
