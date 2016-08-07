@@ -52,13 +52,11 @@ let rayIntersection (ray: Ray) (vertices: Vector2 []) =
         let v2 = end' - start'
         let v3 = Vector2 (-ray.Direction.Y, ray.Direction.X)
 
-        let distance = perpDot v2 v1 / Vector2.Dot (v2, v3)
-        let t1 = perpDot (v2 |> Vector2.Normalize) (v1 |> Vector2.Normalize) / Vector2.Dot (v2, v3)
+        let t1 = perpDot v2 v1 / Vector2.Dot (v2, v3)
         let t2 = Vector2.Dot (v1, v3) / Vector2.Dot (v2, v3)
 
         if (t1 >= 0.f && t2 >= 0.f && t2 <= 1.f) then
-            segmentsHit.Add(i, j, ray.GetPoint (distance))
-            //result <- Some (i, j, ray.GetPoint (distance))
+            segmentsHit.Add(i, j, ray.GetPoint (t1))
 
         i <- j
         j <- j + 1
