@@ -147,8 +147,6 @@ module UnpickleWad =
             | 0 -> [||]
             | _ -> Array.init n (fun i -> p i stream)
 
-    let inline fixedToSingle x = (single x / 65536.f)
-
     let u_header : Unpickle<Header> =
         u_pipe3 (u_string 4) u_int32 u_int32 <|
         fun id lumpCount lumpOffset ->
@@ -191,7 +189,7 @@ module UnpickleWad =
     let vertexSize = 4
     let u_vertex : Unpickle<Vector2> =
         u_pipe2 u_int16 u_int16 <|
-        fun x y -> Vector2 (fixedToSingle x, fixedToSingle y)
+        fun x y -> Vector2 (single x, single y)
 
     let u_vertices count offset : Unpickle<Vector2 []> =
         u_skipBytes offset >>. u_array count u_vertex
