@@ -150,8 +150,8 @@ let computeVertices (vertices: Vector2 seq) f =
 
     let rec computeVertices (recursiveSteps: int) (vertices: Vector2 ResizeArray) currentIndex = 
         if recursiveSteps > vertices.Count then
-           failwith "Unable to triangulate"
-            //()
+           //failwith "Unable to triangulate"
+            ()
         else
 
         if vertices.Count < 3 then
@@ -220,6 +220,103 @@ let compute polygon =
 
         Some result
 
+let decomposeTree (tree: PolygonTree) =
+
+    let mutable vertices = tree.Polygon |> Polygon.vertices
+
+    let mutable once = false
+
+    tree.Children
+    |> List.sortByDescending (fun childTree -> 
+        let yopac =
+            childTree.Polygon 
+            |> Polygon.vertices 
+            |> Array.maxBy (fun x -> x.X)
+
+        yopac.X
+    )
+    |> List.iteri (fun i childTree ->
+
+        if childTree.Children.Length > 0 then
+            failwith "butt"
+
+        if true then
+
+            let childVertices = childTree.Polygon |> Polygon.vertices
+
+            let childMax = childVertices |> Array.maxBy (fun x -> x.X)
+
+            let ray = { Origin = childMax; Direction = Vector2.UnitX }
+
+            let mutable t = 0.f
+            let mutable pt = Vector2.Zero
+            let mutable normal = Vector2.Zero
+
+            match (rayCast ray vertices Single.MaxValue &t &pt &normal) with
+            | Some (edge1Index, edge2Index) ->
+
+                let mutable replaceIndex = None
+                let childMaxIndex = childVertices |> Array.findIndex (fun x -> x = childMax)
+
+                let v1 = pt
+                let v2 = childVertices.[childMaxIndex]
+                let v3 = vertices.[edge2Index]
+
+                match
+                    vertices |> Array.filter (fun x ->
+                        x <> v1 && x <> v2 && x <> v3 &&
+                        pointInsideTriangle x [|v1;v2;v3|]
+                    ) with
+                | [||] -> ()
+                | points when once = false && points |> Array.exists (fun x -> vertices |> Array.contains (x) |> not) ->
+                    replaceIndex <-
+                        let p =
+                            points
+                            |> Array.sortBy (fun x -> Vector2.Dot (x, v2))
+                            |> Array.head
+                        //pt <- p
+                        Array.findIndex (fun x -> x = p) vertices
+                        |> Some
+                    once <- true
+                | _ -> ()
+                    //failwith "butt"
+
+                let linkedList = vertices |> System.Collections.Generic.List
+
+                if not (Polygon.isArrangedClockwise (Polygon.create childVertices)) then
+                    failwith "butt"
+
+                let mutable ii = childMaxIndex
+                let mutable count = 0
+                let linkedList2 = System.Collections.Generic.List ()
+
+               
+                linkedList2.Add(pt)
+
+                while (count < childVertices.Length) do
+                    linkedList2.Add(childVertices.[ii])
+                    ii <-
+                        if ii + 1 >= childVertices.Length then
+                            0
+                        else
+                            ii + 1
+                    count <- count + 1
+
+
+                linkedList2.Add(childVertices.[childMaxIndex])
+                linkedList2.Add(pt)
+
+
+                linkedList.InsertRange(edge2Index, linkedList2)
+
+                vertices <- (linkedList |> Seq.toArray)
+
+
+            | _ -> ()
+    )  
+
+    Polygon.create vertices
+
 let computeTree (tree: PolygonTree) =
 
     if tree.Children.IsEmpty then
@@ -229,117 +326,24 @@ let computeTree (tree: PolygonTree) =
             [ triangles ]
     else
 
-        let mutable vertices = tree.Polygon |> Polygon.vertices
-        let mutable result = Array.empty<Vector2>
-
-        let mutable once = false
-
-        tree.Children
-        |> List.sortByDescending (fun childTree -> 
-            let yopac =
-                childTree.Polygon 
-                |> Polygon.vertices 
-                |> Array.maxBy (fun x -> x.X)
-
-            yopac.X
-        )
-        |> List.iteri (fun i childTree ->
-
-            if childTree.Children.Length > 0 then
-                failwith "butt"
-
-            if true then
-
-                let childVertices = childTree.Polygon |> Polygon.vertices
-
-                let childMax = childVertices |> Array.maxBy (fun x -> x.X)
-
-                let ray = { Origin = childMax; Direction = Vector2.UnitX }
-
-                let mutable t = 0.f
-                let mutable pt = Vector2.Zero
-                let mutable normal = Vector2.Zero
-
-                match (rayCast ray vertices Single.MaxValue &t &pt &normal) with
-                | Some (edge1Index, edge2Index) ->
-
-                    let mutable replaceIndex = None
-                    let childMaxIndex = childVertices |> Array.findIndex (fun x -> x = childMax)
-
-                    let v1 = pt
-                    let v2 = childVertices.[childMaxIndex]
-                    let v3 = vertices.[edge2Index]
-
-                    match
-                        vertices |> Array.filter (fun x ->
-                            x <> v1 && x <> v2 && x <> v3 &&
-                            pointInsideTriangle x [|v1;v2;v3|]
-                        ) with
-                    | [||] -> ()
-                    | points when once = false && points |> Array.exists (fun x -> vertices |> Array.contains (x) |> not) ->
-                        let wut = vertices |> Array.tryFind (fun x -> x = Vector2 (-256.f, -4032.f))
-                        let test = v1 <> wut.Value
-                        replaceIndex <-
-                            let p =
-                                points
-                                |> Array.sortBy (fun x -> Vector2.Dot (x, v2))
-                                |> Array.head
-                            //pt <- p
-                            Array.findIndex (fun x -> x = p) vertices
-                            |> Some
-                        once <- true
-                    | _ -> ()
-                        //failwith "butt"
-
-                    let linkedList = vertices |> System.Collections.Generic.List
-
-                    if not (Polygon.isArrangedClockwise (Polygon.create childVertices)) then
-                        failwith "butt"
-
-                    let mutable ii = childMaxIndex
-                    let mutable count = 0
-                    let linkedList2 = System.Collections.Generic.List ()
-
-                    linkedList2.Add(pt)
-
-                    while (count < childVertices.Length) do
-                        linkedList2.Add(childVertices.[ii])
-                        ii <-
-                            if ii + 1 >= childVertices.Length then
-                                0
-                            else
-                                ii + 1
-                        count <- count + 1
-
-
-                    linkedList2.Add(childVertices.[childMaxIndex])
-                    linkedList2.Add(pt)
-
-                    linkedList.InsertRange(edge2Index, linkedList2)
-
-                    vertices <- (linkedList |> Seq.toArray)
-
-
-                | _ -> ()
-        )   
 
         let triangles = ResizeArray<Triangle2D> ()
-        let mutable i = 0
 
-
-        result <- 
-            match compute (Polygon.create vertices) with
-            | None -> vertices
+        let vertices = 
+            match compute (decomposeTree tree) with
+            | None -> [||]
             | Some triangles ->
                 triangles
                 |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
                 |> Array.reduce Array.append
 
-        while (i < result.Length) do
+        let triangles = ResizeArray<Triangle2D> ()
+        let mutable i = 0
+        while (i < vertices.Length) do
             Triangle2D (
-                result.[i],
-                result.[i + 1],
-                result.[i + 2]
+                vertices.[i],
+                vertices.[i + 1],
+                vertices.[i + 2]
             )
             |> triangles.Add
             i <- i + 3

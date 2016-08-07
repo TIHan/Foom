@@ -54,9 +54,9 @@ type ClientState = {
 // 271 - map03 sunder
 
 let init () =
-    let doom2Wad = Wad.create (System.IO.File.Open ("doom2.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
+    let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
     let wad = Wad.createFromWad doom2Wad (System.IO.File.Open ("sunder.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
-    let lvl = Wad.findLevel "map05" wad |> Async.RunSynchronously
+    let lvl = Wad.findLevel "e1m1" doom2Wad |> Async.RunSynchronously
 
     let app = Renderer.init ()
     //let program = Backend.loadShaders ()
@@ -189,9 +189,9 @@ let init () =
 
             Renderer.bindTexture vbo.TextureId
 
-            //for i = 0 to (vbo.Length / 3) do
+            for i = 0 to (vbo.Length / 3) do
 
-            //    Renderer.drawArraysLoop (i * 3) 3
+                Renderer.drawArraysLoop (i * 3) 3
 
             Renderer.setUniformColor uniformColor (RenderColor.OfColor vbo.Color)
             Renderer.drawTriangles 0 vbo.Length
@@ -214,7 +214,7 @@ let init () =
       User = UserState.Default
       Level = lvl
       ViewDistance = 1.f
-      ViewPosition = new Vector3 (320.f, 4096.f, flatUnit * -1.f * 200.f) }
+      ViewPosition = new Vector3 (-position.X, -position.Y, flatUnit * -1.f * 32.f) }
 
 let draw t (prev: ClientState) (curr: ClientState) =
     Renderer.clear ()
