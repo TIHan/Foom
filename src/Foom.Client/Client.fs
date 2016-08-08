@@ -55,11 +55,15 @@ type ClientState = {
 // 663 - map05 sunder
 // 506 - map04 sunder
 // 3 - map02 sunder
+// 3450 - map11 sunder
+// 1558 - map11 sunder
+// 240 - map07 sunder
+// 2021 - map11 sunder
 
 let init () =
     let doom2Wad = Wad.create (System.IO.File.Open ("doom2.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
     let wad = Wad.createFromWad doom2Wad (System.IO.File.Open ("sunder.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
-    let lvl = Wad.findLevel "map11" wad |> Async.RunSynchronously
+    let lvl = Wad.findLevel "map14" wad |> Async.RunSynchronously
 
     let app = Renderer.init ()
     //let program = Backend.loadShaders ()
@@ -113,7 +117,7 @@ let init () =
 
     let sectorPolygons =
         lvl.Sectors
-        //[| lvl.Sectors.[3] |]
+        //[| lvl.Sectors.[240] |]
         |> Array.mapi (fun i s -> 
             System.Diagnostics.Debug.WriteLine ("Sector " + string i)
             (Sector.polygonFlats s, s.FloorTextureName, s.LightLevel)
@@ -192,9 +196,9 @@ let init () =
 
             Renderer.bindTexture vbo.TextureId
 
-            for i = 0 to (vbo.Length / 3) do
+            //for i = 0 to (vbo.Length / 3) do
 
-                Renderer.drawArraysLoop (i * 3) 3
+            //    Renderer.drawArraysLoop (i * 3) 3
 
             Renderer.setUniformColor uniformColor (RenderColor.OfColor vbo.Color)
             Renderer.drawTriangles 0 vbo.Length
@@ -217,7 +221,7 @@ let init () =
       User = UserState.Default
       Level = lvl
       ViewDistance = 1.f
-      ViewPosition = new Vector3 (320.f, 4096.f, flatUnit * -1.f * 200.f) }
+      ViewPosition = new Vector3 (-position.X, -position.Y, flatUnit * -1.f * 200.f) }
 
 let draw t (prev: ClientState) (curr: ClientState) =
     Renderer.clear ()

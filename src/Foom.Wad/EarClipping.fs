@@ -70,14 +70,23 @@ let rayIntersection (ray: Ray) (vertices: Vector2 []) =
 
         let yopac =
             segmentsHit
-            |> Seq.sortBy (fun (i, j, p) ->
+            |> Seq.filter (fun (i, j, p) ->
                 isPointOnLeftSide vertices.[j] vertices.[i] ray.Origin
             )
             |> Seq.toArray
 
 
-        yopac
-        |> Seq.rev
+        let jopac =
+            yopac
+            |> Seq.sortByDescending (fun (_, j, _) ->
+                j
+            )
+            |> Seq.toArray
+
+        jopac
+        |> Seq.sortBy (fun (i, j, p) ->
+            Vector2.Dot (vertices.[i] - vertices.[j] |> Vector2.Normalize, ray.Direction)
+        )
         |> Seq.minBy (fun (i, j, p) ->
             (ray.Origin - p).Length()
         )
@@ -176,8 +185,8 @@ let decomposeTree (tree: PolygonTree) =
     )
     |> List.iteri (fun i childTree ->
 
-        if childTree.Children.Length > 0 then
-            failwith "butt"
+        //if childTree.Children.Length > 0 then
+        //    failwith "butt"
 
         if true then
 
@@ -189,6 +198,14 @@ let decomposeTree (tree: PolygonTree) =
 
             match rayIntersection ray vertices with
             | Some (edge1Index, edge2Index, pt) ->
+                let l1 = Vector2.Dot(-ray.Direction, ray.Origin - vertices.[edge1Index])//(childMax - vertices.[edge1Index]).Length ()
+                let l2 = Vector2.Dot(-ray.Direction, ray.Origin - vertices.[edge2Index])//(childMax - vertices.[edge2Index]).Length ()
+
+                let mutable edge2Index =
+                    if l1 > l2 then
+                        edge1Index
+                    else
+                        edge2Index
 
                 let mutable replaceIndex = None
                 let childMaxIndex = childVertices |> Array.findIndex (fun x -> x = childMax)
@@ -215,7 +232,7 @@ let decomposeTree (tree: PolygonTree) =
                          
 
                 match
-                    vertices |> Array.filter (fun x ->
+                    vertices |> Array.mapi (fun i x -> (i, x)) |> Array.filter (fun (_, x) ->
                         x <> v1 && x <> v2 && x <> v3 &&
                         pointInsideTriangle x [|v1;v2;v3|]
                     ) with
@@ -223,14 +240,13 @@ let decomposeTree (tree: PolygonTree) =
                 | points ->
                     //try
                     replaceIndex <-
-                        let p =
+                        let (index, _) =
                             points
-                            |> Array.filter (fun x ->
-                                let index = Array.findIndex (fun z -> z = x) vertices
-                                reflexes.[index]
+                            |> Array.filter (fun (i, x) ->
+                                reflexes.[i]
                             )
-                            |> Array.maxBy (fun x -> Vector2.Dot (x - v2 |> Vector2.Normalize, v1 - v2 |> Vector2.Normalize))
-                        Array.findIndex (fun x -> x = p) vertices
+                            |> Array.maxBy (fun (_, x) -> Vector2.Dot (x - v2 |> Vector2.Normalize, v1 - v2 |> Vector2.Normalize))
+                        index
                         |> Some
                     //with | _ -> ()
 
