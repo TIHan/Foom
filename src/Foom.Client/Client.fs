@@ -61,9 +61,9 @@ type ClientState = {
 // 2021 - map11 sunder
 
 let init () =
-    let doom2Wad = Wad.create (System.IO.File.Open ("doom2.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
+    let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
     let wad = Wad.createFromWad doom2Wad (System.IO.File.Open ("sunder.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
-    let lvl = Wad.findLevel "map14" wad |> Async.RunSynchronously
+    let lvl = Wad.findLevel "e1m1" doom2Wad |> Async.RunSynchronously
 
     let app = Renderer.init ()
     //let program = Backend.loadShaders ()
@@ -120,14 +120,14 @@ let init () =
         //[| lvl.Sectors.[240] |]
         |> Array.mapi (fun i s -> 
             System.Diagnostics.Debug.WriteLine ("Sector " + string i)
-            (Sector.polygonFlats s, s.FloorTextureName, s.LightLevel)
+            (Sector.polygonFlats s, s)
         )
 
     let vbos = ResizeArray ()
     let textureVbosUV = ResizeArray ()
 
     sectorPolygons
-    |> Array.iter (fun (polygons, floorTextureName, lightLevel) ->
+    |> Array.iter (fun (polygons, sector) ->
 
         polygons
         |> List.iter (fun polygon ->
@@ -135,7 +135,7 @@ let init () =
                 polygon
                 |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
                 |> Array.reduce Array.append
-                |> Array.map (fun x -> Vector3 (x.X, x.Y, 0.f))
+                |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.FloorHeight))
 
             let uv = Array.zeroCreate vertices.Length
 
@@ -159,12 +159,12 @@ let init () =
             let vbo = Renderer.makeVbo ()
             Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
 
-            let textureId = lookupTexture.[floorTextureName]
+            let textureId = lookupTexture.[sector.FloorTextureName]
 
 
             let lightLevel =
-                if lightLevel > 255 then 255
-                else lightLevel
+                if sector.LightLevel > 255 then 255
+                else sector.LightLevel
 
             vbos.Add 
                 {
@@ -215,20 +215,22 @@ let init () =
 
     let position =
         match sectorPolygons.[0] with
-        | (polygons, _, _) -> polygons.[0].[0].X
+        | (polygons, _) -> polygons.[0].[0].X
     
     { Renderer = rendererState
       User = UserState.Default
       Level = lvl
       ViewDistance = 1.f
-      ViewPosition = new Vector3 (-position.X, -position.Y, flatUnit * -1.f * 200.f) }
+      ViewPosition = new Vector3 (-position.X, -position.Y, flatUnit * -1.f * 1.f) }
 
 let draw t (prev: ClientState) (curr: ClientState) =
     Renderer.clear ()
 
     let projection = Matrix4x4.CreatePerspectiveFieldOfView (lerp prev.ViewDistance curr.ViewDistance t, (16.f / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose
+    let rotation = Matrix4x4.CreateRotationX (-90.f * 0.0174533f) |> Matrix4x4.Transpose
+    let camera = Matrix4x4.CreateTranslation (Vector3 (0.f, -64.f * 8.f, 0.f) * -1.f) |> Matrix4x4.Transpose
     let model = Matrix4x4.CreateTranslation (lerp prev.ViewPosition curr.ViewPosition t) |> Matrix4x4.Transpose
-    let mvp = (projection * model) |> Matrix4x4.Transpose
+    let mvp = (projection * rotation * camera * model) |> Matrix4x4.Transpose
 
     Renderer.enableDepth ()
     curr.Renderer.DrawVbo mvp

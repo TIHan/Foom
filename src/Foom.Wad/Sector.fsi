@@ -6,6 +6,7 @@ type Sector =
     {
         Linedefs: Linedef [] 
         FloorTextureName: string
+        FloorHeight: int
         LightLevel: int
     }
 
