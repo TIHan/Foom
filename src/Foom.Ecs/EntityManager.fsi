@@ -157,13 +157,13 @@ type EntityManager =
 
     // Components
 
-    member internal AddComponent<'T when 'T :> IEntityComponent and 'T : not struct> : Entity -> 'T -> unit
+    member AddComponent<'T when 'T :> IEntityComponent and 'T : not struct> : Entity -> 'T -> unit
 
-    member internal RemoveComponent<'T when 'T :> IEntityComponent and 'T : not struct> : Entity -> unit
+    member RemoveComponent<'T when 'T :> IEntityComponent and 'T : not struct> : Entity -> unit
 
     // Entites
 
-    member internal Spawn : (Entity -> unit) -> Entity
+    member Spawn : (Entity -> unit) -> Entity
 
     /// Defers to destroy the specified Entity.
     member Destroy : Entity -> unit

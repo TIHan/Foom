@@ -39,12 +39,16 @@ type MaterialComponent (vertexShaderFileName: string, fragmentShaderFileName: st
 
 ////////
 
+let render (mvp: Matrix4x4) (entityManager: EntityManager) =
+    entityManager.ForEach<MeshComponent, MaterialComponent> (fun ent meshComp materialComp ->
+        match meshComp.State, materialComp.TextureState, materialComp.ShaderProgramState with
+        | MeshState.Loaded bufferId, TextureState.Loaded textureId, ShaderProgramState.Loaded programId ->
+            ()
+        | _ -> ()
+    )
+
 let create () =
     let app = Renderer.init ()
-
-    let vbos = ResizeArray<int>()
-
-    let programs = ResizeArray<int> ()
 
     Systems.system "Renderer" (fun entityManager eventManager (deltaTime: float32) ->
         Renderer.clear ()
@@ -53,24 +57,23 @@ let create () =
         let model = Matrix4x4.CreateTranslation (Vector3.Zero) |> Matrix4x4.Transpose
         let mvp = (projection * model) |> Matrix4x4.Transpose
 
-        match entityManager.TryFind<CameraComponent> (fun _ _ -> true) with
-        | Some (ent, cameraComp) ->
-   
-            match entityManager.TryGet<TransformComponent> (ent) with
-            | Some transformComp ->
+        entityManager.TryFind<CameraComponent> (fun _ _ -> true)
+        |> Option.iter (fun (ent, cameraComp) ->
+
+            entityManager.TryGet<TransformComponent> (ent)
+            |> Option.iter (fun transformComp ->
                 let mutable invertedTransform = transformComp.Transform
                 Matrix4x4.Invert(transformComp.Transform, &invertedTransform) |> ignore
 
                 let mvp = (projection * invertedTransform * model) |> Matrix4x4.Transpose
 
-                ()
-                // let's do our rendering stuffz
+                Renderer.enableDepth ()
 
-            | _ -> ()
+                render mvp entityManager
 
-        | _ -> ()
-
-
+                Renderer.disableDepth ()
+            )
+        )
 
         Renderer.draw app
     )
