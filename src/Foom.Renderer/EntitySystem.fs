@@ -59,12 +59,14 @@ let meshQueue =
 
             entityManager.TryGet<MeshComponent> (componentAdded.Entity)
             |> Option.iter (fun meshComp ->
+
                 match meshComp.State with
                 | MeshState.ReadyToLoad vertices ->
                     let vbo = Renderer.makeVbo ()
                     Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
                     meshComp.State <- MeshState.Loaded (vbo)
                 | _ -> ()
+
             )
      
     )
@@ -72,18 +74,29 @@ let meshQueue =
 let materialQueue =
     eventQueue (fun entityManager eventManager ->
 
-        fun (deltaTime: float32) (componentAdded: Events.ComponentAdded<MeshComponent>) ->
+        fun (deltaTime: float32) (componentAdded: Events.ComponentAdded<MaterialComponent>) ->
 
             entityManager.TryGet<MaterialComponent> (componentAdded.Entity)
             |> Option.iter (fun materialComp ->
                  
                     match materialComp.TextureState with
-                    | TextureState.ReadyToLoad fileName -> ()
-                        //use ptr = new Gdk.Pixbuf (fileName + ".bmp")
+                    | TextureState.ReadyToLoad fileName ->
+                        use ptr = new Gdk.Pixbuf (fileName)
+                        let textureId = Renderer.createTexture 64 64 (ptr.Pixels)
 
-                        //let textureId = Renderer.createTexture 64 64 (ptr.Pixels)
-                        //materialComp.TextureState <- TextureState.Loaded textureId
+                        materialComp.TextureState <- TextureState.Loaded textureId
                     | _ -> ()
+
+                    match materialComp.ShaderProgramState with
+                    | ShaderProgramState.ReadyToLoad (vertex, fragment) ->
+                        let mutable vertexFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (vertex))
+                        let mutable fragmentFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (fragment))
+
+                        let programId = Renderer.loadShaders vertexFile fragmentFile
+                        materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
+
+                    | _ -> ()
+
             )
      
     )
@@ -94,6 +107,7 @@ let create () =
     EntitySystem.create "Renderer"
         [
             meshQueue
+            materialQueue
 
             update (fun entityManager eventManager deltaTime ->
 

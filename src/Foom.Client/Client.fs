@@ -62,6 +62,7 @@ type ClientState = {
 
 open Foom.Ecs
 open Foom.Ecs.World
+open Foom.Renderer.EntitySystem
 
 let init () =
     let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
@@ -74,6 +75,12 @@ let init () =
     //let world = World (65536)
     //let sys1 = Foom.Renderer.EntitySystem.create ()
     //let updateSys1 = world.AddSystem sys1
+
+    //let ent1 = world.EntityManager.Spawn ()
+
+    //world.EntityManager.AddComponent ent1 (MeshComponent([|Vector3.One;Vector3.One;Vector3.One|]))
+    //world.EntityManager.AddComponent ent1 (MaterialComponent("triangle.vertex", "triangle.fragment", "BLOOD1.bmp", Color.White))
+
     //updateSys1 50.f
 
 
