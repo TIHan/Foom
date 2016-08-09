@@ -8,26 +8,31 @@ type internal EntitySystemState =
         Queues: ResizeArray<obj>
     }
 
+type internal SysContext<'Update> =
+    {
+        EntitySystemState: EntitySystemState
+        EntityManager: EntityManager
+        EventManager: EventManager
+        Actions: ResizeArray<'Update -> unit>
+    }
+
+type Sys<'Update> = internal Sys of (SysContext<'Update> -> unit)
+
 type EntitySystem<'Update> =
     internal {
         State: EntitySystemState
-        InitEvents: EventManager -> unit
-        Init: EntityManager -> EventManager -> ('Update -> unit)
+        CreateSysContext: EntityManager -> EventManager -> SysContext<'Update>
+        SysCollection: Sys<'Update> list
     }
 
-[<Sealed>]
-type EventHook
-
-[<Sealed>]
-type EventQueue<'T> =
-
-    member Process : ('T -> unit) -> unit
-
-    member Hook : EventHook
-
 [<AutoOpen>]
+module SysOperators =
+
+    val eventQueue : (EntityManager -> EventManager -> 'Update -> #IEntitySystemEvent -> unit) -> Sys<'Update>
+
+    val update : (EntityManager -> EventManager -> 'Update -> unit) -> Sys<'Update>
+
+[<RequireQualifiedAccess>]
 module EntitySystem =
 
-    val createEventQueue<'T when 'T :> IEntitySystemEvent> : unit -> EventQueue<'T>
-
-    val system : name: string -> events: EventHook list -> init: (EntityManager -> EventManager -> ('Update -> unit)) -> EntitySystem<'Update>
+    val create : name: string -> actions: Sys<'Update> list -> EntitySystem<'Update>

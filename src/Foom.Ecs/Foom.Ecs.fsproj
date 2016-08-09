@@ -46,8 +46,6 @@
     <Compile Include="System.fs" />
     <Compile Include="World.fsi" />
     <Compile Include="World.fs" />
-    <Compile Include="EntityPrototype.fsi" />
-    <Compile Include="EntityPrototype.fs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
 </Project>

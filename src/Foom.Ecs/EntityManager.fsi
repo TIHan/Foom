@@ -163,7 +163,7 @@ type EntityManager =
 
     // Entites
 
-    member Spawn : (Entity -> unit) -> Entity
+    member Spawn : unit -> Entity
 
     /// Defers to destroy the specified Entity.
     member Destroy : Entity -> unit

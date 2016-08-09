@@ -11,10 +11,16 @@ type World (maxEntityAmount) =
     let eventManager = EventManager.Create ()
     let entityManager = EntityManager.Create (eventManager, maxEntityAmount)
 
-    let initEvents = ResizeArray<unit -> unit> ()
-    let inits = ResizeArray<unit -> unit> ()
-
     member this.AddSystem<'Update> (sys: EntitySystem<'Update>) =
-        sys.InitEvents eventManager
-        sys.Init entityManager eventManager
+        let context = sys.CreateSysContext entityManager eventManager
+        sys.SysCollection
+        |> List.iter (fun (Sys f) ->
+            f context
+        )
+        fun updateData ->
+            for i = 0 to context.Actions.Count - 1 do
+                let f = context.Actions.[i]
+                f updateData
+
+    member this.EntityManager = entityManager
         

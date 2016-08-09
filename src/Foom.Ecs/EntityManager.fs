@@ -462,7 +462,7 @@ type EntityManager =
             else
                 Debug.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot remove component, {1}", entity, typeof<'T>.Name))
 
-    member this.Spawn f =                         
+    member this.Spawn () =                         
         if this.RemovedEntityQueue.Count = 0 && this.nextEntityIndex >= this.MaxEntityAmount then
             Debug.WriteLine (String.Format ("ECS WARNING: Unable to spawn entity. Max entity amount hit: {0}", (this.MaxEntityAmount - 1)))
             Entity ()
@@ -480,11 +480,6 @@ type EntityManager =
             this.ActiveIndices.[entity.Index] <- true
 
             this.EntitySpawnedEvent.Trigger ({ entity = entity })
-
-            if this.CurrentIterations > 0 then
-                this.PendingComponentAdditionsQueue.Enqueue ((entity, f))
-            else
-                f entity
 
             entity
 

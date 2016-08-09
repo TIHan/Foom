@@ -60,12 +60,23 @@ type ClientState = {
 // 240 - map07 sunder
 // 2021 - map11 sunder
 
+open Foom.Ecs
+open Foom.Ecs.World
+
 let init () =
     let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
     let wad = Wad.createFromWad doom2Wad (System.IO.File.Open ("sunder.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
     let lvl = Wad.findLevel "e1m1" doom2Wad |> Async.RunSynchronously
 
     let app = Renderer.init ()
+
+
+    //let world = World (65536)
+    //let sys1 = Foom.Renderer.EntitySystem.create ()
+    //let updateSys1 = world.AddSystem sys1
+    //updateSys1 50.f
+
+
     //let program = Backend.loadShaders ()
     let program = Backend.loadTriangleShader ()
     let uniformColor = Renderer.getUniformColor program

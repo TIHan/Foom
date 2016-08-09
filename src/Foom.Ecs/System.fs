@@ -10,47 +10,51 @@ type EntitySystemState =
         Queues: ResizeArray<obj>
     }
 
+type SysContext<'Update> =
+    {
+        EntitySystemState: EntitySystemState
+        EntityManager: EntityManager
+        EventManager: EventManager
+        Actions: ResizeArray<'Update -> unit>
+    }
+
+type Sys<'Update> = Sys of (SysContext<'Update> -> unit)
+
 type EntitySystem<'Update> =
     {
         State: EntitySystemState
-        InitEvents: EventManager -> unit
-        Init: EntityManager -> EventManager -> ('Update -> unit)
+        CreateSysContext: EntityManager -> EventManager -> SysContext<'Update>
+        SysCollection: Sys<'Update> list
     }
-
-type EventHook = EventHook of (EntitySystemState -> EventManager -> unit)
-
-type EventQueue<'T> =
-    {
-        Queue: ConcurrentQueue<'T>
-        Hook': EventHook
-        IsHooked: bool ref
-    }
-
-    member this.Process (f: 'T -> unit) =
-        let mutable item = Unchecked.defaultof<'T>
-        while this.Queue.TryDequeue (&item) do f item
-
-    member this.Hook = this.Hook'
 
 [<AutoOpen>]
+module SysOperators =
+
+    let eventQueue (f: EntityManager -> EventManager -> 'Update -> #IEntitySystemEvent -> unit) = 
+        Sys (fun context ->
+            let queue = ConcurrentQueue<'T> ()
+            context.EventManager.GetEvent<'T>().Publish.Add queue.Enqueue
+
+            let f = f context.EntityManager context.EventManager
+
+            (fun updateData ->
+                let mutable item = Unchecked.defaultof<#IEntitySystemEvent>
+                while queue.TryDequeue (&item) do
+                    f updateData item
+            )
+            |> context.Actions.Add
+        )
+
+    let update (f: EntityManager -> EventManager -> 'Update -> unit) = 
+        Sys (fun context ->
+            (f context.EntityManager context.EventManager)
+            |> context.Actions.Add
+        )
+
+[<RequireQualifiedAccess>]
 module EntitySystem =
 
-    let createEventQueue<'T when 'T :> IEntitySystemEvent> () =
-        let queue = ConcurrentQueue<'T> ()
-        let isHooked = ref false
-        {
-            Queue = queue
-            Hook' = 
-                EventHook (fun (state: EntitySystemState) (eventManager: EventManager) ->
-                    if !isHooked |> not then
-                        state.Queues.Add queue 
-                        isHooked := true
-                        eventManager.GetEvent().Publish.Add queue.Enqueue
-                )
-            IsHooked = isHooked
-        }
-
-    let system name (events: EventHook list) init =
+    let create name actions =
         let state =
             {
                 Name = name
@@ -59,11 +63,13 @@ module EntitySystem =
 
         {
             State = state
-            InitEvents =
-                fun eventManager ->
-                    events
-                    |> List.iter (fun (EventHook f) ->
-                        f state eventManager
-                    )
-            Init = init
+            CreateSysContext =
+                fun entityManager eventManager ->
+                    {
+                        EntitySystemState = state
+                        EntityManager = entityManager
+                        EventManager = eventManager
+                        Actions = ResizeArray ()
+                    }
+            SysCollection = actions
         }

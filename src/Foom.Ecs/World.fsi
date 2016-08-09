@@ -12,3 +12,5 @@ type World =
    
     /// Adds an Entity System to the world and returns a handle.
     member AddSystem<'Update> : EntitySystem<'Update> -> ('Update -> unit)
+
+    member EntityManager : EntityManager

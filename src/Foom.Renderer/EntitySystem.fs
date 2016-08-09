@@ -50,52 +50,79 @@ let render (mvp: Matrix4x4) (entityManager: EntityManager) =
         | _ -> ()
     )
 
+
+
+let meshQueue =
+    eventQueue (fun entityManager eventManager ->
+
+        fun (deltaTime: float32) (componentAdded: Events.ComponentAdded<MeshComponent>) ->
+
+            entityManager.TryGet<MeshComponent> (componentAdded.Entity)
+            |> Option.iter (fun meshComp ->
+                match meshComp.State with
+                | MeshState.ReadyToLoad vertices ->
+                    let vbo = Renderer.makeVbo ()
+                    Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
+                    meshComp.State <- MeshState.Loaded (vbo)
+                | _ -> ()
+            )
+     
+    )
+
+let materialQueue =
+    eventQueue (fun entityManager eventManager ->
+
+        fun (deltaTime: float32) (componentAdded: Events.ComponentAdded<MeshComponent>) ->
+
+            entityManager.TryGet<MaterialComponent> (componentAdded.Entity)
+            |> Option.iter (fun materialComp ->
+                 
+                    match materialComp.TextureState with
+                    | TextureState.ReadyToLoad fileName -> ()
+                        //use ptr = new Gdk.Pixbuf (fileName + ".bmp")
+
+                        //let textureId = Renderer.createTexture 64 64 (ptr.Pixels)
+                        //materialComp.TextureState <- TextureState.Loaded textureId
+                    | _ -> ()
+            )
+     
+    )
+
 let create () =
     let app = Renderer.init ()
 
-    let meshComponentAddedQueue = createEventQueue<Events.ComponentAdded<MeshComponent>> ()
-    let materialComponentAddedQueue = createEventQueue<Events.ComponentAdded<MaterialComponent>> ()
+    EntitySystem.create "Renderer"
+        [
+            meshQueue
 
-    system "Renderer" [ meshComponentAddedQueue.Hook; materialComponentAddedQueue.Hook ]
+            update (fun entityManager eventManager deltaTime ->
 
-        (fun entityManager eventManager (deltaTime: float32) ->
-   
-            meshComponentAddedQueue.Process (fun componentAdded ->
-                entityManager.TryGet<MeshComponent> (componentAdded.Entity)
-                |> Option.iter (fun meshComp ->
-                    match meshComp.State with
-                    | MeshState.ReadyToLoad vertices ->
-                        let vbo = Renderer.makeVbo ()
-                        Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
-                        meshComp.State <- MeshState.Loaded (vbo)
-                    | _ -> ()
+                Renderer.clear ()
+
+                let projection = Matrix4x4.CreatePerspectiveFieldOfView (1.f, (16.f / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose
+                let model = Matrix4x4.CreateTranslation (Vector3.Zero) |> Matrix4x4.Transpose
+                let mvp = (projection * model) |> Matrix4x4.Transpose
+
+                entityManager.TryFind<CameraComponent> (fun _ _ -> true)
+                |> Option.iter (fun (ent, cameraComp) ->
+
+                    entityManager.TryGet<TransformComponent> (ent)
+                    |> Option.iter (fun transformComp ->
+                        let mutable invertedTransform = transformComp.Transform
+                        Matrix4x4.Invert(transformComp.Transform, &invertedTransform) |> ignore
+
+                        let mvp = (projection * invertedTransform * model) |> Matrix4x4.Transpose
+
+                        Renderer.enableDepth ()
+
+                        render mvp entityManager
+
+                        Renderer.disableDepth ()
+                    )
                 )
+
+                Renderer.draw app
+
             )
 
-
-            Renderer.clear ()
-
-            let projection = Matrix4x4.CreatePerspectiveFieldOfView (1.f, (16.f / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose
-            let model = Matrix4x4.CreateTranslation (Vector3.Zero) |> Matrix4x4.Transpose
-            let mvp = (projection * model) |> Matrix4x4.Transpose
-
-            entityManager.TryFind<CameraComponent> (fun _ _ -> true)
-            |> Option.iter (fun (ent, cameraComp) ->
-
-                entityManager.TryGet<TransformComponent> (ent)
-                |> Option.iter (fun transformComp ->
-                    let mutable invertedTransform = transformComp.Transform
-                    Matrix4x4.Invert(transformComp.Transform, &invertedTransform) |> ignore
-
-                    let mvp = (projection * invertedTransform * model) |> Matrix4x4.Transpose
-
-                    Renderer.enableDepth ()
-
-                    render mvp entityManager
-
-                    Renderer.disableDepth ()
-                )
-            )
-
-            Renderer.draw app
-        )
+        ]
