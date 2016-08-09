@@ -227,6 +227,12 @@ return ProgramID;
         """
 
     [<Import; MI (MIO.NoInlining)>]
+    let useProgram (programId: int) : unit =
+        C """
+        glUseProgram (programId);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
     let bindPosition (programID: int<program>) : unit =
         C """
 GLint posAttrib = glGetAttribLocation (programID, "position");

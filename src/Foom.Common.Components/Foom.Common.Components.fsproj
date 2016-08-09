@@ -3,12 +3,12 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{6B534E80-F1C7-48FF-A85C-2A507E910798}</ProjectGuid>
+    <ProjectGuid>{FB77CA41-3C2E-4D41-826D-5FCF9EF10C88}</ProjectGuid>
     <TargetProfile>netcore</TargetProfile>
     <TargetFSharpCoreVersion>3.3.1.0</TargetFSharpCoreVersion>
     <OutputType>Library</OutputType>
-    <RootNamespace>Foom.Shared</RootNamespace>
-    <AssemblyName>Foom.Shared</AssemblyName>
+    <RootNamespace>Foom.Common.Components</RootNamespace>
+    <AssemblyName>Foom.Common.Components</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
   </PropertyGroup>
@@ -42,16 +42,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CommonComponents.fs" />
+    <Compile Include="Components.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Foom.Ecs\Foom.Ecs.fsproj">
       <Project>{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}</Project>
       <Name>Foom.Ecs</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
 </Project>
