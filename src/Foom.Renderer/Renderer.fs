@@ -86,6 +86,11 @@ glewExperimental = GL_TRUE;
 glewInit ();
 #endif
 
+GLuint vao;
+glGenVertexArrays (1, &vao);
+
+glBindVertexArray (vao);
+
 return app;
         """
 
@@ -212,11 +217,6 @@ if ( InfoLogLength > 0 ){
 }
 
 /******************************************************/
-
-GLuint vao;
-glGenVertexArrays (1, &vao);
-
-glBindVertexArray (vao);
 
 return ProgramID;
         """
