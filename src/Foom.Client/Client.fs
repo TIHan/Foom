@@ -28,9 +28,9 @@ type Vbo =
     }
 
 type RendererState = {
-    UniformColor: int<uniform>
-    UniformProjection: int<uniform>
-    Program: int<program>
+    UniformColor: int
+    UniformProjection: int
+    Program: int
     Application: Application
     Vbos: Vbo ResizeArray
     DrawVbo: Matrix4x4 -> unit }
@@ -184,6 +184,7 @@ let init () =
     vbos
     |> Seq.iter (fun vbo ->
         fun mvp ->
+            Renderer.useProgram program
             Renderer.setUniformProjection uniformProjection mvp
             Renderer.setTexture program vbo.TextureId
             Renderer.setUniformColor uniformColor (RenderColor.OfColor Color.Red)

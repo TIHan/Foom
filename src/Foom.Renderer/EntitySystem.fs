@@ -44,7 +44,7 @@ let create () =
 
     let vbos = ResizeArray<int>()
 
-    let programs = ResizeArray<int<program>> ()
+    let programs = ResizeArray<int> ()
 
     Systems.system "Renderer" (fun entityManager eventManager (deltaTime: float32) ->
         Renderer.clear ()

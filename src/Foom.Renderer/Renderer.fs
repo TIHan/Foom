@@ -8,9 +8,6 @@ open System.Numerics
 
 open Ferop
 
-[<Measure>] type program
-[<Measure>] type uniform
-
 [<Struct>]
 type Application =
     val Window : nativeint
@@ -157,7 +154,7 @@ glDrawArrays (GL_TRIANGLES, first, count);
         """
 
     [<Import; MI (MIO.NoInlining)>]
-    let loadShaders (vertexSource: byte[]) (fragmentSource: byte[]) : int<program> =
+    let loadShaders (vertexSource: byte[]) (fragmentSource: byte[]) : int =
         C """
 // Create the shaders
 GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
@@ -214,8 +211,6 @@ if ( InfoLogLength > 0 ){
     for (int i = 0; i < 65536; ++i) { ProgramErrorMessage[i] = '\0'; }
 }
 
-glUseProgram (ProgramID);
-
 /******************************************************/
 
 GLuint vao;
@@ -233,7 +228,7 @@ return ProgramID;
         """
 
     [<Import; MI (MIO.NoInlining)>]
-    let bindPosition (programID: int<program>) : unit =
+    let bindPosition (programID: int) : unit =
         C """
 GLint posAttrib = glGetAttribLocation (programID, "position");
 
@@ -243,7 +238,7 @@ glEnableVertexAttribArray (posAttrib);
         """
 
     [<Import; MI (MIO.NoInlining)>]
-    let bindUv (programID: int<program>) : unit =
+    let bindUv (programID: int) : unit =
         C """
 GLint posAttrib = glGetAttribLocation (programID, "in_uv");
 
@@ -253,32 +248,32 @@ glEnableVertexAttribArray (posAttrib);
         """
 
     [<Import; MI (MIO.NoInlining)>]
-    let getUniformProjection (program: int<program>) : int<uniform> =
+    let getUniformProjection (program: int) : int =
         C """
 return glGetUniformLocation (program, "uni_projection");
         """
 
     [<Import; MI (MIO.NoInlining)>]
-    let setUniformProjection (uni: int<uniform>) (m: Matrix4x4)  : unit =
+    let setUniformProjection (uni: int) (m: Matrix4x4)  : unit =
         C """
 glUniformMatrix4fv (uni, 1, GL_FALSE, &m);
 """
 
     [<Import; MI (MIO.NoInlining)>]
-    let getUniformColor (program: int<program>) : int<uniform> =
+    let getUniformColor (program: int) : int =
         C """
 GLint uni_color = glGetUniformLocation (program, "uni_color");
 return uni_color;
         """
 
     [<Import; MI (MIO.NoInlining)>]
-    let setUniformColor (uniformColor: int<uniform>) (color: RenderColor) : unit =
+    let setUniformColor (uniformColor: int) (color: RenderColor) : unit =
         C """
 glUniform4f (uniformColor, color.R, color.G, color.B, color.A);
         """
 
     [<Import; MI (MIO.NoInlining)>]
-    let setTexture (shaderProgram: int<program>) (textureId: int) : unit =
+    let setTexture (shaderProgram: int) (textureId: int) : unit =
         C """
         GLuint uni = glGetUniformLocation (shaderProgram, "uni_texture");
         glUniform1i(textureId, 0);
