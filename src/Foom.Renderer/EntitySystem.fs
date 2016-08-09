@@ -53,7 +53,23 @@ let render (mvp: Matrix4x4) (entityManager: EntityManager) =
 let create () =
     let app = Renderer.init ()
 
-    Systems.system "Renderer" (fun entityManager eventManager (deltaTime: float32) ->
+    let meshComponentAddedQueue = createEventQueue<Events.ComponentAdded<MeshComponent>> ()
+
+    system "Renderer" [ meshComponentAddedQueue.Hook ] (fun entityManager eventManager (deltaTime: float32) ->
+
+        meshComponentAddedQueue.Process (fun componentAdded ->
+            entityManager.TryGet<MeshComponent> (componentAdded.Entity)
+            |> Option.iter (fun meshComp ->
+                match meshComp.State with
+                | MeshState.ReadyToLoad vertices ->
+                    let vbo = Renderer.makeVbo ()
+                    Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
+                    meshComp.State <- MeshState.Loaded (vbo)
+                | _ -> ()
+            )
+        )
+
+
         Renderer.clear ()
 
         let projection = Matrix4x4.CreatePerspectiveFieldOfView (1.f, (16.f / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose
