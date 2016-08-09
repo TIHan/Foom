@@ -54,45 +54,48 @@ let create () =
     let app = Renderer.init ()
 
     let meshComponentAddedQueue = createEventQueue<Events.ComponentAdded<MeshComponent>> ()
+    let materialComponentAddedQueue = createEventQueue<Events.ComponentAdded<MaterialComponent>> ()
 
-    system "Renderer" [ meshComponentAddedQueue.Hook ] (fun entityManager eventManager (deltaTime: float32) ->
+    system "Renderer" [ meshComponentAddedQueue.Hook; materialComponentAddedQueue.Hook ]
 
-        meshComponentAddedQueue.Process (fun componentAdded ->
-            entityManager.TryGet<MeshComponent> (componentAdded.Entity)
-            |> Option.iter (fun meshComp ->
-                match meshComp.State with
-                | MeshState.ReadyToLoad vertices ->
-                    let vbo = Renderer.makeVbo ()
-                    Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
-                    meshComp.State <- MeshState.Loaded (vbo)
-                | _ -> ()
+        (fun entityManager eventManager (deltaTime: float32) ->
+   
+            meshComponentAddedQueue.Process (fun componentAdded ->
+                entityManager.TryGet<MeshComponent> (componentAdded.Entity)
+                |> Option.iter (fun meshComp ->
+                    match meshComp.State with
+                    | MeshState.ReadyToLoad vertices ->
+                        let vbo = Renderer.makeVbo ()
+                        Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
+                        meshComp.State <- MeshState.Loaded (vbo)
+                    | _ -> ()
+                )
             )
-        )
 
 
-        Renderer.clear ()
+            Renderer.clear ()
 
-        let projection = Matrix4x4.CreatePerspectiveFieldOfView (1.f, (16.f / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose
-        let model = Matrix4x4.CreateTranslation (Vector3.Zero) |> Matrix4x4.Transpose
-        let mvp = (projection * model) |> Matrix4x4.Transpose
+            let projection = Matrix4x4.CreatePerspectiveFieldOfView (1.f, (16.f / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose
+            let model = Matrix4x4.CreateTranslation (Vector3.Zero) |> Matrix4x4.Transpose
+            let mvp = (projection * model) |> Matrix4x4.Transpose
 
-        entityManager.TryFind<CameraComponent> (fun _ _ -> true)
-        |> Option.iter (fun (ent, cameraComp) ->
+            entityManager.TryFind<CameraComponent> (fun _ _ -> true)
+            |> Option.iter (fun (ent, cameraComp) ->
 
-            entityManager.TryGet<TransformComponent> (ent)
-            |> Option.iter (fun transformComp ->
-                let mutable invertedTransform = transformComp.Transform
-                Matrix4x4.Invert(transformComp.Transform, &invertedTransform) |> ignore
+                entityManager.TryGet<TransformComponent> (ent)
+                |> Option.iter (fun transformComp ->
+                    let mutable invertedTransform = transformComp.Transform
+                    Matrix4x4.Invert(transformComp.Transform, &invertedTransform) |> ignore
 
-                let mvp = (projection * invertedTransform * model) |> Matrix4x4.Transpose
+                    let mvp = (projection * invertedTransform * model) |> Matrix4x4.Transpose
 
-                Renderer.enableDepth ()
+                    Renderer.enableDepth ()
 
-                render mvp entityManager
+                    render mvp entityManager
 
-                Renderer.disableDepth ()
+                    Renderer.disableDepth ()
+                )
             )
-        )
 
-        Renderer.draw app
-    )
+            Renderer.draw app
+        )
