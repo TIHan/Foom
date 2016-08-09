@@ -36,11 +36,11 @@ type EntitySystem<'Update> = EntitySystem of (unit -> IEntitySystem<'Update>)
 [<RequireQualifiedAccess>]
 module EntitySystem =
 
-    let build (f: unit -> EntitySystem<_>) =
-        EntitySystem (fun () ->
-            match f () with
-            | EntitySystem g -> g ()
-        )
+    //let build (f: unit -> EntitySystem<_>) =
+    //    EntitySystem (fun () ->
+    //        match f () with
+    //        | EntitySystem g -> g ()
+    //    )
 
     let merge name (systems: EntitySystem<'T> list) =
         EntitySystem (
@@ -81,79 +81,79 @@ module Systems =
             }
         )
 
-    let eventListener<'Update, 'Event when 'Event :> IEntitySystemEvent and 'Event : not struct> f =
-        EntitySystem (fun () ->
-            {
-                new IEntitySystem<'Update> with
+    //let eventListener<'Update, 'Event when 'Event :> IEntitySystemEvent and 'Event : not struct> f =
+    //    EntitySystem (fun () ->
+    //        {
+    //            new IEntitySystem<'Update> with
 
-                    member this.Events = [ handle<'Event> f ]
+    //                member this.Events = [ handle<'Event> f ]
 
-                    member this.Shutdown () = ()
+    //                member this.Shutdown () = ()
 
-                    member this.Initialize _ _ = NoResult
-            }
-        )
+    //                member this.Initialize _ _ = NoResult
+    //        }
+    //    )
 
-    let getTypeName (t: Type) =
-        let name = t.Name
-        let index = name.IndexOf ('`')
-        if index = -1 then name else name.Substring (0, index)
+    //let getTypeName (t: Type) =
+    //    let name = t.Name
+    //    let index = name.IndexOf ('`')
+    //    if index = -1 then name else name.Substring (0, index)
 
-    let getTypeNameWithTypeArgNames (t: Type) =
-        let rec getTypeArgNames (t: Type) typeArgNames = function
-            | [] -> 
-                let name = getTypeName t
-                let typeArgNames = typeArgNames |> List.rev
+    //let getTypeNameWithTypeArgNames (t: Type) =
+    //    let rec getTypeArgNames (t: Type) typeArgNames = function
+    //        | [] -> 
+    //            let name = getTypeName t
+    //            let typeArgNames = typeArgNames |> List.rev
 
-                match typeArgNames with
-                | [] -> name
-                | _ ->
-                    sprintf "%s<%s>" name
-                        (
-                            typeArgNames
-                            |> List.reduce (fun x y -> x + ", " + y)
-                        )
+    //            match typeArgNames with
+    //            | [] -> name
+    //            | _ ->
+    //                sprintf "%s<%s>" name
+    //                    (
+    //                        typeArgNames
+    //                        |> List.reduce (fun x y -> x + ", " + y)
+    //                    )
 
-            | (typeArg: Type) :: typeArgs ->
-                let typeArgName = 
-                    getTypeArgNames typeArg [] (typeArg.GenericTypeArguments |> List.ofArray)
+    //        | (typeArg: Type) :: typeArgs ->
+    //            let typeArgName = 
+    //                getTypeArgNames typeArg [] (typeArg.GenericTypeArguments |> List.ofArray)
 
-                getTypeArgNames t (typeArgName :: typeArgNames) typeArgs
+    //            getTypeArgNames t (typeArgName :: typeArgNames) typeArgs
 
-        getTypeArgNames t [] (t.GenericTypeArguments |> List.ofArray)
+    //    getTypeArgNames t [] (t.GenericTypeArguments |> List.ofArray)
 
-    let eventQueue<'Update, 'Event when 'Event :> IEntitySystemEvent and 'Event : not struct> f =
-        EntitySystem (fun () ->
-            let name = sprintf "Event Queue of `%s`" (getTypeNameWithTypeArgNames typeof<'Event>)
-            let queue = System.Collections.Concurrent.ConcurrentQueue ()
-            {
-                new IEntitySystem<'Update> with
+    //let eventQueue<'Update, 'Event when 'Event :> IEntitySystemEvent and 'Event : not struct> f =
+    //    EntitySystem (fun () ->
+    //        let name = sprintf "Event Queue of `%s`" (getTypeNameWithTypeArgNames typeof<'Event>)
+    //        let queue = System.Collections.Concurrent.ConcurrentQueue ()
+    //        {
+    //            new IEntitySystem<'Update> with
 
-                    member this.Events = [ handle<'Event> queue.Enqueue ]
+    //                member this.Events = [ handle<'Event> queue.Enqueue ]
 
-                    member this.Shutdown () = ()
+    //                member this.Shutdown () = ()
 
-                    member this.Initialize entityManager eventManager =
-                        let f = f entityManager eventManager
-                        Update (
-                            name,
-                            fun data ->
-                                let mutable event = Unchecked.defaultof<'Event>
-                                while queue.TryDequeue (&event) do
-                                    f data event
-                        )
-            }
-        )
+    //                member this.Initialize entityManager eventManager =
+    //                    let f = f entityManager eventManager
+    //                    Update (
+    //                        name,
+    //                        fun data ->
+    //                            let mutable event = Unchecked.defaultof<'Event>
+    //                            while queue.TryDequeue (&event) do
+    //                                f data event
+    //                    )
+    //        }
+    //    )
 
-    let shutdown<'Update> f =
-        EntitySystem (fun () ->
-            {
-                new IEntitySystem<'Update> with
+    //let shutdown<'Update> f =
+    //    EntitySystem (fun () ->
+    //        {
+    //            new IEntitySystem<'Update> with
 
-                    member this.Events = []
+    //                member this.Events = []
 
-                    member this.Shutdown () = f ()
+    //                member this.Shutdown () = f ()
 
-                    member this.Initialize _ _ = NoResult
-            }
-        )
+    //                member this.Initialize _ _ = NoResult
+    //        }
+    //    )

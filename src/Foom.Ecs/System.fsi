@@ -3,9 +3,14 @@
 open System
 
 [<AbstractClass>]
-type internal EntitySystemEvent =
+type EntitySystemEvent =
 
     abstract internal Handle : EventManager -> IDisposable
+
+[<AutoOpen>]
+module EntityEventOperators =
+
+    val handle<'T when 'T :> IEntitySystemEvent> : ('T -> unit) -> EntitySystemEvent
 
 type internal InitializeResult<'Update> =
     | Update of name: string * ('Update -> unit)

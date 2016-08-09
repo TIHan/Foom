@@ -3,6 +3,7 @@
 open System
 open System.Numerics
 open System.IO
+open System.Drawing
 
 open Foom.Ecs
 open Foom.Common.Components
@@ -29,11 +30,13 @@ type ShaderProgramState =
     | ReadyToLoad of vsFileName: string * fsFileName: string
     | Loaded of programId: int
 
-type MaterialComponent (vertexShaderFileName: string, fragmentShaderFileName: string, textureFileName: string) =
+type MaterialComponent (vertexShaderFileName: string, fragmentShaderFileName: string, textureFileName: string, color: Color) =
 
-    member val TextureState = TextureState.ReadyToLoad textureFileName
+    member val TextureState = TextureState.ReadyToLoad textureFileName with get, set
 
-    member val ShaderProgramState = ShaderProgramState.ReadyToLoad (vertexShaderFileName, fragmentShaderFileName)
+    member val ShaderProgramState = ShaderProgramState.ReadyToLoad (vertexShaderFileName, fragmentShaderFileName) with get, set
+
+    member val Color = color
 
     interface IEntityComponent
 
