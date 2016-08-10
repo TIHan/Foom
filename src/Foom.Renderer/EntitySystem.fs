@@ -51,12 +51,12 @@ type MaterialComponent (vertexShaderFileName: string, fragmentShaderFileName: st
 
 ////////
 
-let render (modelView: Matrix4x4) (entityManager: EntityManager) =
+let render (projection: Matrix4x4) (view: Matrix4x4) (entityManager: EntityManager) =
     entityManager.ForEach<MeshComponent, MaterialComponent, TransformComponent> (fun ent meshComp materialComp transformComp ->
 
         let model = transformComp.Transform
 
-        let mvp = modelView * model |> Matrix4x4.Transpose
+        let mvp = (projection * view) |> Matrix4x4.Transpose
 
         match meshComp.State, materialComp.TextureState, materialComp.ShaderProgramState with
         | MeshState.Loaded mesh, TextureState.Loaded textureId, ShaderProgramState.Loaded programId ->
@@ -166,14 +166,12 @@ let create () =
                     entityManager.TryGet<TransformComponent> (ent)
                     |> Option.iter (fun transformComp ->
                         let mutable invertedTransform = transformComp.Transform
-                        Matrix4x4.Invert(transformComp.Transform, &invertedTransform) |> ignore
-                        let invertedTransform = invertedTransform |> Matrix4x4.Transpose
-
-                        let modelView = (projection * invertedTransform) |> Matrix4x4.Transpose
+                       // Matrix4x4.Invert(transformComp.Transform, &invertedTransform) |> ignore
+                       // let invertedTransform = invertedTransform |> Matrix4x4.Transpose
 
                         Renderer.enableDepth ()
 
-                        render modelView entityManager
+                        render projection invertedTransform entityManager
 
                         Renderer.disableDepth ()
                     )

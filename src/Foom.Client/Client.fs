@@ -18,29 +18,12 @@ type UserState = {
 
     static member Default = { IsMapMoving = false }
 
-type Vbo =
+type ClientState = 
     {
-        Id: int
-        Length: int
-        Color: Color
-        TextureId: int
-        UvVbo: int
+        RenderUpdate: (float32 -> unit)
+        User: UserState
+        Level: Level 
     }
-
-type RendererState = {
-    UniformColor: int
-    UniformProjection: int
-    Program: int
-    Application: Application
-    Vbos: Vbo ResizeArray
-    DrawVbo: Matrix4x4 -> unit }
-
-type ClientState = {
-    Renderer: RendererState
-    User: UserState
-    Level: Level
-    ViewDistance: single
-    ViewPosition: Vector3 }
 
 // These are sectors to look for and test to ensure things are working as they should.
 // 568 - map10 sunder
@@ -63,36 +46,18 @@ type ClientState = {
 open Foom.Ecs
 open Foom.Ecs.World
 open Foom.Renderer.EntitySystem
+open Foom.Common.Components
 
 let init () =
-    let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
+
+    // Load up doom wads.
+
+    let doom2Wad = Wad.create (System.IO.File.Open ("doom2.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
     let wad = Wad.createFromWad doom2Wad (System.IO.File.Open ("sunder.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
-    let lvl = Wad.findLevel "e1m1" doom2Wad |> Async.RunSynchronously
-
-    let app = Renderer.init ()
+    let lvl = Wad.findLevel "map05" wad |> Async.RunSynchronously
 
 
-    //let world = World (65536)
-    //let sys1 = Foom.Renderer.EntitySystem.create ()
-    //let updateSys1 = world.AddSystem sys1
-
-    //let ent1 = world.EntityManager.Spawn ()
-
-    //world.EntityManager.AddComponent ent1 (MeshComponent([|Vector3.One;Vector3.One;Vector3.One|]))
-    //world.EntityManager.AddComponent ent1 (MaterialComponent("triangle.vertex", "triangle.fragment", "BLOOD1.bmp", Color.White))
-
-    //updateSys1 50.f
-
-
-    //let program = Backend.loadShaders ()
-    let program = Backend.loadTriangleShader ()
-    let uniformColor = Renderer.getUniformColor program
-    let uniformProjection = Renderer.getUniformProjection program
-
-
-    let lookupTexture = Dictionary<string, int> ()
-
-    let flatUnit = 64.f
+    // Extract all doom textures.
 
     Wad.flats doom2Wad
     |> Array.iter (fun tex ->
@@ -105,12 +70,6 @@ let init () =
 
         bmp.Save(tex.Name + ".bmp")
         bmp.Dispose ()
-
-        use ptr = new Gdk.Pixbuf (tex.Name + ".bmp")
-
-        let id = Renderer.createTexture 64 64 (ptr.Pixels)
-
-        lookupTexture.Add (tex.Name, id)
     )
 
     Wad.flats wad
@@ -124,13 +83,6 @@ let init () =
 
         bmp.Save(tex.Name + ".bmp")
         bmp.Dispose ()
-
-        use ptr = new Gdk.Pixbuf (tex.Name + ".bmp")
-
-        let id = Renderer.createTexture 64 64 (ptr.Pixels)
-
-        if lookupTexture.ContainsKey (tex.Name) |> not then
-            lookupTexture.Add (tex.Name, id)
     )
 
     let sectorPolygons =
@@ -141,8 +93,20 @@ let init () =
             (Sector.polygonFlats s, s)
         )
 
-    let vbos = ResizeArray ()
-    let textureVbosUV = ResizeArray ()
+
+
+    // Start up ECS.
+
+    let world = World (65536)
+    let sys1 = Foom.Renderer.EntitySystem.create ()
+    let updateSys1 = world.AddSystem sys1
+
+    let cameraEnt = world.EntityManager.Spawn ()
+    world.EntityManager.AddComponent cameraEnt (CameraComponent ())
+    world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (Vector3 (-1536.f, 3584.f, -100.f))))
+
+
+    let flatUnit = 64.f
 
     sectorPolygons
     |> Array.iter (fun (polygons, sector) ->
@@ -169,90 +133,43 @@ let init () =
 
                 i <- i + 3
 
-            let uvVbo = Renderer.makeVbo ()
-            Renderer.bufferVbo uv (sizeof<Vector2> * uv.Length) uvVbo
-  
-            textureVbosUV.Add uvVbo
-
-            let vbo = Renderer.makeVbo ()
-            Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
-
-            let textureId = lookupTexture.[sector.FloorTextureName]
-
-
             let lightLevel =
                 if sector.LightLevel > 255 then 255
                 else sector.LightLevel
 
-            vbos.Add 
-                {
-                    Id = vbo
-                    Length = vertices.Length
-                    Color = Color.FromArgb(lightLevel, lightLevel, lightLevel)
-                    TextureId = textureId
-                    UvVbo = uvVbo
-                }
+            let ent = world.EntityManager.Spawn ()
 
+            world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
+            world.EntityManager.AddComponent ent (MeshComponent (vertices, uv))
+            world.EntityManager.AddComponent ent (
+                MaterialComponent (
+                    "triangle.vertex",
+                    "triangle.fragment",
+                    sector.FloorTextureName + ".bmp",
+                    Color.FromArgb(lightLevel, lightLevel, lightLevel)
+                )
+            )
         )
     )
 
-    let index = ref 0
-    let arr = ResizeArray<Matrix4x4 -> unit> ()    
-
-    vbos
-    |> Seq.iter (fun vbo ->
-        fun mvp ->
-            Renderer.useProgram program
-            Renderer.setUniformProjection uniformProjection mvp
-            Renderer.setTexture program vbo.TextureId
-            Renderer.setUniformColor uniformColor (RenderColor.OfColor Color.Red)
-
-            Renderer.bindVbo vbo.Id
-            Renderer.bindPosition program
-
-            Renderer.bindVbo vbo.UvVbo
-            Renderer.bindUv program
-
-            Renderer.bindTexture vbo.TextureId
-
-            //for i = 0 to (vbo.Length / 3) do
-
-            //    Renderer.drawArraysLoop (i * 3) 3
-
-            Renderer.setUniformColor uniformColor (RenderColor.OfColor vbo.Color)
-            Renderer.drawTriangles 0 vbo.Length
-        |> arr.Add
-    )
-
-    let rendererState =
-        { UniformColor = uniformColor
-          UniformProjection = uniformProjection
-          Program = program
-          Application = app 
-          Vbos = vbos
-          DrawVbo = fun m -> arr.ForEach (fun x -> x m) }
-
-    let position =
-        match sectorPolygons.[0] with
-        | (polygons, _) -> polygons.[0].[0].X
-    
-    { Renderer = rendererState
-      User = UserState.Default
-      Level = lvl
-      ViewDistance = 1.f
-      ViewPosition = new Vector3 (-position.X, -position.Y, flatUnit * -1.f * 1.f) }
+    { 
+        RenderUpdate = updateSys1
+        User = UserState.Default
+        Level = lvl
+    }
 
 let draw t (prev: ClientState) (curr: ClientState) =
-    Renderer.clear ()
+    curr.RenderUpdate t
+    //Renderer.clear ()
 
-    let projection = Matrix4x4.CreatePerspectiveFieldOfView (lerp prev.ViewDistance curr.ViewDistance t, (16.f / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose
-    let rotation = Matrix4x4.CreateRotationX (-90.f * 0.0174533f) |> Matrix4x4.Transpose
-    let camera = Matrix4x4.CreateTranslation (Vector3 (0.f, -64.f * 8.f, 0.f) * -1.f) |> Matrix4x4.Transpose
-    let model = Matrix4x4.CreateTranslation (lerp prev.ViewPosition curr.ViewPosition t) |> Matrix4x4.Transpose
-    let mvp = (projection * rotation * camera * model) |> Matrix4x4.Transpose
+    //let projection = Matrix4x4.CreatePerspectiveFieldOfView (lerp prev.ViewDistance curr.ViewDistance t, (16.f / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose
+    //let rotation = Matrix4x4.CreateRotationX (-90.f * 0.0174533f) |> Matrix4x4.Transpose
+    //let camera = Matrix4x4.CreateTranslation (Vector3 (0.f, -64.f * 8.f, 0.f) * -1.f) |> Matrix4x4.Transpose
+    //let model = Matrix4x4.CreateTranslation (lerp prev.ViewPosition curr.ViewPosition t) |> Matrix4x4.Transpose
+    //let mvp = (projection * rotation * camera * model) |> Matrix4x4.Transpose
 
-    Renderer.enableDepth ()
-    curr.Renderer.DrawVbo mvp
-    Renderer.disableDepth ()
+    //Renderer.enableDepth ()
+    //curr.Renderer.DrawVbo mvp
+    //Renderer.disableDepth ()
 
-    Renderer.draw curr.Renderer.Application
+    //Renderer.draw curr.Renderer.Application
