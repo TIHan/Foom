@@ -52,9 +52,9 @@ let init () =
 
     // Load up doom wads.
 
-    let doom2Wad = Wad.create (System.IO.File.Open ("doom2.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
+    let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
     let wad = Wad.createFromWad doom2Wad (System.IO.File.Open ("sunder.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
-    let lvl = Wad.findLevel "map05" wad |> Async.RunSynchronously
+    let lvl = Wad.findLevel "e1m1" doom2Wad |> Async.RunSynchronously
 
 
     // Extract all doom textures.
@@ -103,10 +103,12 @@ let init () =
 
     let cameraEnt = world.EntityManager.Spawn ()
     world.EntityManager.AddComponent cameraEnt (CameraComponent ())
-    world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (Vector3 (-1536.f, 3584.f, -500.f))))
+    world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (Vector3 (1536.f, -3584.f, 64.f * 50.f))))
 
 
     let flatUnit = 64.f
+
+    let mutable count = 0
 
     sectorPolygons
     |> Array.iter (fun (polygons, sector) ->
@@ -137,6 +139,7 @@ let init () =
                 if sector.LightLevel > 255 then 255
                 else sector.LightLevel
 
+            count <- count + 1
             let ent = world.EntityManager.Spawn ()
 
             world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
@@ -152,6 +155,8 @@ let init () =
         )
     )
 
+    printfn "COUNT: %A" count
+
     { 
         RenderUpdate = updateSys1
         User = UserState.Default
@@ -159,7 +164,14 @@ let init () =
     }
 
 let draw t (prev: ClientState) (curr: ClientState) =
+
+    let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
+
     curr.RenderUpdate t
+
+    stopwatch.Stop ()
+
+    printfn "%A" stopwatch.Elapsed.TotalMilliseconds
     //Renderer.clear ()
 
     //let projection = Matrix4x4.CreatePerspectiveFieldOfView (lerp prev.ViewDistance curr.ViewDistance t, (16.f / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose

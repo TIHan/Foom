@@ -6,15 +6,13 @@ open System.Numerics
 open Foom.Client
 
 [<EntryPoint>]
-let main argv = 
-    Runtime.GCSettings.LatencyMode <- Runtime.GCLatencyMode.Batch
-
+let main argv =
     let client = Client.init ()
 
     GameLoop.start 30.
         (fun time interval ->
             GC.Collect (0)
-        ) 
+        )
         (fun t ->
             Client.draw t client client
         )

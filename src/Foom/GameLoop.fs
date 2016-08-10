@@ -18,10 +18,12 @@ module GameLoop
             while queue.TryDequeue (&msg) do
                 msg ()
 
-    type private GameLoop<'T> = { 
-        LastTime: int64
-        UpdateTime: int64
-        UpdateAccumulator: int64 }
+    type private GameLoop<'T> = 
+        { 
+            LastTime: int64
+            UpdateTime: int64
+            UpdateAccumulator: int64 
+        }
 
     let start updateInterval (update: int64 -> int64 -> unit) (render: float32 -> unit) : unit =
         let targetUpdateInterval = (1000. / updateInterval) * 10000. |> int64
