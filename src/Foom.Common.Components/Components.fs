@@ -19,6 +19,10 @@ type TransformComponent (value: Matrix4x4) =
         and set value =
             transform.Translation <- value
 
+    member this.RotateX (degrees: float32) =
+        let radians = degrees * (float32 Math.PI / 180.f)
+        transform <- Matrix4x4.CreateRotationX (radians) * transform
+
     interface IEntityComponent
 
 [<Sealed>]

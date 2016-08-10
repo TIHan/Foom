@@ -36,6 +36,7 @@ let main argv =
                                 if y < 0 then DoomUnit * 5.f else DoomUnit * -5.f
 
                             transformComp.Position <- transformComp.Position + Vector3 (0.f, 0.f, zoom)
+                            transformComp.RotateX (zoom / 64.f)
                         )
                      )
 
