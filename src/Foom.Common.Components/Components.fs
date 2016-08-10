@@ -8,7 +8,16 @@ open Foom.Ecs
 [<Sealed>]
 type TransformComponent (value: Matrix4x4) =
 
-    member val Transform : Matrix4x4 = value with get, set
+    let mutable transform = value
+
+    member __.Transform : Matrix4x4 = transform
+
+    member this.Position 
+        with get () =
+            transform.Translation
+         
+        and set value =
+            transform.Translation <- value
 
     interface IEntityComponent
 

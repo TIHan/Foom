@@ -48,7 +48,7 @@ open Foom.Ecs.World
 open Foom.Renderer.EntitySystem
 open Foom.Common.Components
 
-let init () =
+let init (world: World) =
 
     // Load up doom wads.
 
@@ -95,9 +95,8 @@ let init () =
 
 
 
-    // Start up ECS.
+    // Add entity system
 
-    let world = World (65536)
     let sys1 = Foom.Renderer.EntitySystem.create ()
     let updateSys1 = world.AddSystem sys1
 

@@ -42,9 +42,10 @@ type MouseWheelEvent =
     val Y : int
 
 module Input =
-    val dispatchKeyboardEvent : KeyboardEvent -> unit
-    val dispatchMouseButtonEvent : MouseButtonEvent -> unit
-    val dispatchMouseWheelEvent : MouseWheelEvent -> unit
+    val private dispatchKeyboardEvent : KeyboardEvent -> unit
+    val private dispatchMouseButtonEvent : MouseButtonEvent -> unit
+    val private dispatchMouseWheelEvent : MouseWheelEvent -> unit
     val pollEvents : unit -> unit
-    val getMouseState : unit -> MouseState
+    val private getMouseState : unit -> MouseState
+
     val getState : unit -> InputState
