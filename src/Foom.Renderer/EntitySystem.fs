@@ -8,14 +8,23 @@ open System.Drawing
 open Foom.Ecs
 open Foom.Common.Components
 
+type Mesh =
+    {
+        PositionBufferId: int
+        PositionBufferLength: int
+
+        UvBufferId: int
+        UvBufferLength: int
+    }
+
 [<RequireQualifiedAccess>]
 type MeshState =
-    | ReadyToLoad of vertices: Vector3 []
-    | Loaded of bufferId: int
+    | ReadyToLoad of vertices: Vector3 [] * uv: Vector2 []
+    | Loaded of Mesh
 
-type MeshComponent (vertices: Vector3 []) =
+type MeshComponent (vertices, uv) =
 
-    member val State = MeshState.ReadyToLoad (vertices) with get, set
+    member val State = MeshState.ReadyToLoad (vertices, uv) with get, set
 
     interface IEntityComponent
 
@@ -42,11 +51,35 @@ type MaterialComponent (vertexShaderFileName: string, fragmentShaderFileName: st
 
 ////////
 
-let render (mvp: Matrix4x4) (entityManager: EntityManager) =
-    entityManager.ForEach<MeshComponent, MaterialComponent> (fun ent meshComp materialComp ->
+let render (modelView: Matrix4x4) (entityManager: EntityManager) =
+    entityManager.ForEach<MeshComponent, MaterialComponent, TransformComponent> (fun ent meshComp materialComp transformComp ->
+
+        let model = transformComp.Transform
+
+        let mvp = modelView * model |> Matrix4x4.Transpose
+
         match meshComp.State, materialComp.TextureState, materialComp.ShaderProgramState with
-        | MeshState.Loaded bufferId, TextureState.Loaded textureId, ShaderProgramState.Loaded programId ->
-            ()
+        | MeshState.Loaded mesh, TextureState.Loaded textureId, ShaderProgramState.Loaded programId ->
+
+            Renderer.useProgram programId
+
+            let uniformColor = Renderer.getUniformColor programId
+            let uniformProjection = Renderer.getUniformProjection programId
+
+            Renderer.setUniformProjection uniformProjection mvp
+            Renderer.setTexture programId textureId
+
+            Renderer.bindVbo mesh.PositionBufferId
+            Renderer.bindPosition programId
+
+            Renderer.bindVbo mesh.UvBufferId
+            Renderer.bindUv programId
+
+            Renderer.bindTexture textureId
+
+            Renderer.setUniformColor uniformColor (RenderColor.OfColor materialComp.Color)
+            Renderer.drawTriangles 0 mesh.PositionBufferLength
+
         | _ -> ()
     )
 
@@ -61,10 +94,22 @@ let meshQueue =
             |> Option.iter (fun meshComp ->
 
                 match meshComp.State with
-                | MeshState.ReadyToLoad vertices ->
+                | MeshState.ReadyToLoad (vertices, uv) ->
                     let vbo = Renderer.makeVbo ()
                     Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
-                    meshComp.State <- MeshState.Loaded (vbo)
+
+                    let vbo2 = Renderer.makeVbo ()
+                    Renderer.bufferVbo uv (sizeof<Vector2> * uv.Length) vbo2
+
+                    meshComp.State <- 
+                        MeshState.Loaded
+                            {
+                                PositionBufferId = vbo
+                                PositionBufferLength = vertices.Length
+
+                                UvBufferId = vbo2
+                                UvBufferLength = uv.Length
+                            }
                 | _ -> ()
 
             )
@@ -114,8 +159,6 @@ let create () =
                 Renderer.clear ()
 
                 let projection = Matrix4x4.CreatePerspectiveFieldOfView (1.f, (16.f / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose
-                let model = Matrix4x4.CreateTranslation (Vector3.Zero) |> Matrix4x4.Transpose
-                let mvp = (projection * model) |> Matrix4x4.Transpose
 
                 entityManager.TryFind<CameraComponent> (fun _ _ -> true)
                 |> Option.iter (fun (ent, cameraComp) ->
@@ -124,12 +167,13 @@ let create () =
                     |> Option.iter (fun transformComp ->
                         let mutable invertedTransform = transformComp.Transform
                         Matrix4x4.Invert(transformComp.Transform, &invertedTransform) |> ignore
+                        let invertedTransform = invertedTransform |> Matrix4x4.Transpose
 
-                        let mvp = (projection * invertedTransform * model) |> Matrix4x4.Transpose
+                        let modelView = (projection * invertedTransform) |> Matrix4x4.Transpose
 
                         Renderer.enableDepth ()
 
-                        render mvp entityManager
+                        render modelView entityManager
 
                         Renderer.disableDepth ()
                     )
