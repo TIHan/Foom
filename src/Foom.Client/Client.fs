@@ -103,7 +103,7 @@ let init () =
 
     let cameraEnt = world.EntityManager.Spawn ()
     world.EntityManager.AddComponent cameraEnt (CameraComponent ())
-    world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (Vector3 (-1536.f, 3584.f, -100.f))))
+    world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (Vector3 (-1536.f, 3584.f, -500.f))))
 
 
     let flatUnit = 64.f
@@ -117,7 +117,7 @@ let init () =
                 polygon
                 |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
                 |> Array.reduce Array.append
-                |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.FloorHeight))
+                |> Array.map (fun x -> Vector3 (x.X, x.Y, 0.f))
 
             let uv = Array.zeroCreate vertices.Length
 

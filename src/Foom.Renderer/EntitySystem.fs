@@ -165,7 +165,7 @@ let create () =
 
                     entityManager.TryGet<TransformComponent> (ent)
                     |> Option.iter (fun transformComp ->
-                        let mutable invertedTransform = transformComp.Transform
+                        let mutable invertedTransform = transformComp.Transform |> Matrix4x4.Transpose
                        // Matrix4x4.Invert(transformComp.Transform, &invertedTransform) |> ignore
                        // let invertedTransform = invertedTransform |> Matrix4x4.Transpose
 
