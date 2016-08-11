@@ -55,15 +55,6 @@ let main argv =
                             |> Option.iter (fun cameraRotComp ->
                                 cameraRotComp.X <- cameraRotComp.X + (single x * -1.f) * (float32 Math.PI / 180.f)
                                 cameraRotComp.Y <- cameraRotComp.Y + (single y * -1.f) * (float32 Math.PI / 180.f)
-
-                                let q = 
-                                    Quaternion.CreateFromYawPitchRoll (
-                                        cameraRotComp.X,
-                                        cameraRotComp.Y,
-                                        0.f
-                                    )
-
-                                transformComp.Rotation <- q
                             )
 
                         | KeyPressed x when x = 'w' -> isMovingForward <- true
@@ -79,6 +70,16 @@ let main argv =
                         | KeyReleased x when x = 'd' -> isMovingRight <- false
 
                         | _ -> ()
+                    )
+
+                    world.EntityManager.TryGet<CameraRotationComponent> (ent)
+                    |> Option.iter (fun cameraRotComp ->
+                        transformComp.Rotation <-
+                            Quaternion.CreateFromYawPitchRoll (
+                                cameraRotComp.X,
+                                cameraRotComp.Y,
+                                cameraRotComp.Z
+                            )
                     )
 
                     if isMovingForward then

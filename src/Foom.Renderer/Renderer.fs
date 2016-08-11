@@ -31,8 +31,8 @@ type RenderColor =
 
 [<Ferop>]
 [<ClangOsx (
-    "-DGL_GLEXT_PROTOTYPES -I/Library/Frameworks/SDL2.framework/Headers",
-    "-F/Library/Frameworks -framework Cocoa -framework OpenGL -framework IOKit -framework SDL2"
+    "-DGL_GLEXT_PROTOTYPES -I/usr/local/include/SDL2",
+    "-F/Library/Frameworks -framework Cocoa -framework OpenGL -framework IOKit -L/usr/local/lib/ -lSDL2"
 )>]
 [<GccLinux ("-I../include/SDL2", "-lSDL2")>]
 #if __64BIT__
