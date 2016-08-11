@@ -105,6 +105,7 @@ let init (world: World) =
     let cameraEnt = world.EntityManager.Spawn ()
     world.EntityManager.AddComponent cameraEnt (CameraComponent ())
     world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (Vector3 (1536.f, -3584.f, 64.f * 50.f))))
+    world.EntityManager.AddComponent cameraEnt (CameraRotationComponent())
 
     let flatUnit = 64.f
 

@@ -52,5 +52,30 @@ type CameraComponent () =
 
     interface IEntityComponent
 
+[<Sealed>]
+type CameraRotationComponent () =
+
+    let mutable angle = Vector3.Zero
+
+    member this.Angle
+        with get () = angle
+        and set value = angle <- value
+
+    member val AngleLerp = angle with get, set
+
+    member this.X 
+        with get () = angle.X
+        and set value = angle.X <- value
+
+    member this.Y 
+        with get () = angle.Y
+        and set value = angle.Y <- value
+
+    member this.Z 
+        with get () = angle.Z
+        and set value = angle.Z <- value
+
+    interface IEntityComponent
+
 
     

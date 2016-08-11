@@ -42,9 +42,20 @@ let main argv =
 
                     transformComp.TransformLerp <- transformComp.Transform
 
+                    world.EntityManager.TryGet<CameraRotationComponent> (ent)
+                    |> Option.iter (fun cameraRotComp ->
+                        cameraRotComp.AngleLerp <- cameraRotComp.Angle
+                    )
+
                     inputState.Events
                     |> List.iter (function
-                        //| MouseMoved (_, _, x, y) ->
+                        | MouseMoved (_, _, x, y) ->
+
+                            world.EntityManager.TryGet<CameraRotationComponent> (ent)
+                            |> Option.iter (fun cameraRotComp ->
+                                cameraRotComp.X <- cameraRotComp.X + (single x * -1.f) * (float32 Math.PI / 180.f)
+                                cameraRotComp.Y <- cameraRotComp.Y + (single y * -1.f) * (float32 Math.PI / 180.f)
+                            )
 
                         //    transformComp.ApplyYawPitchRoll (single x * -1.f, single y * -1.f, 0.f)
 
@@ -64,7 +75,7 @@ let main argv =
                     )
 
                     if isMovingForward then
-                        let v = Vector3.Transform (Vector3.UnitY * 64.f * 2.f, transformComp.Rotation ())
+                        let v = Vector3.Transform (Vector3.UnitZ * -64.f * 2.f, transformComp.Rotation ())
                         transformComp.Translate (v)
 
                     if isMovingLeft then
@@ -72,7 +83,7 @@ let main argv =
                         transformComp.Translate (v)
 
                     if isMovingBackward then
-                        let v = Vector3.Transform (Vector3.UnitY * -64.f * 2.f, transformComp.Rotation ())
+                        let v = Vector3.Transform (Vector3.UnitZ * 64.f * 2.f, transformComp.Rotation ())
                         transformComp.Translate (v)
 
                     if isMovingRight then

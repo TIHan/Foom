@@ -164,7 +164,14 @@ let create (app: Application) =
                     entityManager.TryGet<TransformComponent> (ent)
                     |> Option.iter (fun transformComp ->
 
-                        let transform = Matrix4x4.Lerp (transformComp.TransformLerp, transformComp.Transform, deltaTime)
+                        let transform = 
+                            match entityManager.TryGet<CameraRotationComponent> (ent) with
+                            | Some cameraRotComp ->
+                                let m1 = Matrix4x4.CreateFromYawPitchRoll (cameraRotComp.X, cameraRotComp.Y, cameraRotComp.Z)
+                                let m1Lerp = Matrix4x4.CreateFromYawPitchRoll (cameraRotComp.AngleLerp.X, cameraRotComp.AngleLerp.Y, cameraRotComp.AngleLerp.Z) 
+                                Matrix4x4.Lerp (m1Lerp * transformComp.TransformLerp, m1 * transformComp.Transform, deltaTime)
+                            | _ ->
+                                Matrix4x4.Lerp (transformComp.TransformLerp, transformComp.Transform, deltaTime)
 
                         let mutable invertedTransform = Matrix4x4.Identity
 
