@@ -55,9 +55,16 @@ let main argv =
                             |> Option.iter (fun cameraRotComp ->
                                 cameraRotComp.X <- cameraRotComp.X + (single x * -1.f) * (float32 Math.PI / 180.f)
                                 cameraRotComp.Y <- cameraRotComp.Y + (single y * -1.f) * (float32 Math.PI / 180.f)
-                            )
 
-                        //    transformComp.ApplyYawPitchRoll (single x * -1.f, single y * -1.f, 0.f)
+                                let q = 
+                                    Quaternion.CreateFromYawPitchRoll (
+                                        cameraRotComp.X,
+                                        cameraRotComp.Y,
+                                        0.f
+                                    )
+
+                                transformComp.Rotation <- q
+                            )
 
                         | KeyPressed x when x = 'w' -> isMovingForward <- true
                         | KeyReleased x when x = 'w' -> isMovingForward <- false
@@ -75,19 +82,19 @@ let main argv =
                     )
 
                     if isMovingForward then
-                        let v = Vector3.Transform (Vector3.UnitZ * -64.f * 2.f, transformComp.Rotation ())
+                        let v = Vector3.Transform (Vector3.UnitZ * -64.f * 2.f, transformComp.Rotation)
                         transformComp.Translate (v)
 
                     if isMovingLeft then
-                        let v = Vector3.Transform (Vector3.UnitX * -64.f * 2.f, transformComp.Rotation ())
+                        let v = Vector3.Transform (Vector3.UnitX * -64.f * 2.f, transformComp.Rotation)
                         transformComp.Translate (v)
 
                     if isMovingBackward then
-                        let v = Vector3.Transform (Vector3.UnitZ * 64.f * 2.f, transformComp.Rotation ())
+                        let v = Vector3.Transform (Vector3.UnitZ * 64.f * 2.f, transformComp.Rotation)
                         transformComp.Translate (v)
 
                     if isMovingRight then
-                        let v = Vector3.Transform (Vector3.UnitX * 64.f * 2.f, transformComp.Rotation ())
+                        let v = Vector3.Transform (Vector3.UnitX * 64.f * 2.f, transformComp.Rotation)
                         transformComp.Translate (v)
 
                 )

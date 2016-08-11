@@ -10,7 +10,11 @@ type TransformComponent (value: Matrix4x4) =
 
     let mutable transform = value
 
-    member __.Transform : Matrix4x4 = transform
+    member __.Transform 
+        with get () = transform
+
+        and set value =
+            transform <- value
 
     member val TransformLerp : Matrix4x4 = transform with get, set
 
@@ -43,7 +47,13 @@ type TransformComponent (value: Matrix4x4) =
     member this.Translate v =
         this.Position <- this.Position + v
 
-    member this.Rotation () = Quaternion.CreateFromRotationMatrix (transform)
+    member this.Rotation 
+        with get () = Quaternion.CreateFromRotationMatrix (transform)
+
+        and set value = 
+            let mutable m = Matrix4x4.CreateFromQuaternion (value)
+            m.Translation <- transform.Translation
+            transform <- m
 
     interface IEntityComponent
 
