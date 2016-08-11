@@ -11,11 +11,6 @@ type MouseButtonType =
     | X1 = 4
     | X2 = 5
 
-[<Struct>]
-type MouseState =
-    val X : int
-    val Y : int
-
 type InputEvent =
     | KeyPressed of char
     | KeyReleased of char
@@ -23,10 +18,10 @@ type InputEvent =
     | MouseButtonReleased of MouseButtonType
     | MouseWheelScrolled of 
         x: int * y: int
+    | MouseMoved of
+        x: int * y: int * xrel: int * yrel: int
 
-type InputState = 
-    { Events: InputEvent list 
-      Mouse: MouseState }
+type InputState = { Events: InputEvent list }
 
 [<Struct>]
 type KeyboardEvent =
@@ -46,6 +41,19 @@ type MouseWheelEvent =
     val X : int
     val Y : int
 
+[<Struct>]
+type MouseMoveEvent =
+    val X : int
+    val Y : int
+    val XRel : int
+    val YRel : int
+
+[<Struct>]
+type MousePosition =
+    val X : int
+    val Y : int
+    val XRel : int
+    val YRel : int
 
 [<Ferop>]
 [<ClangOsx (
@@ -86,8 +94,12 @@ module Input =
     let dispatchMouseWheelEvent (evt: MouseWheelEvent) : unit =
         inputEvents.Add (InputEvent.MouseWheelScrolled (evt.X, evt.Y))
 
+    [<Export>]
+    let dispatchMouseMoveEvent (evt: MouseMoveEvent) : unit =
+        inputEvents.Add (InputEvent.MouseMoved (evt.X, evt.Y, evt.XRel, evt.YRel))
+
     [<Import; MI (MIO.NoInlining)>]
-    let pollEvents () : unit =
+    let pollEvents (window: nativeint) : unit =
         C """
 SDL_Event e;
 while (SDL_PollEvent (&e))
@@ -150,25 +162,39 @@ while (SDL_PollEvent (&e))
 
         Input_dispatchMouseWheelEvent (evt);
     }
+    else if (e.type == SDL_MOUSEMOTION)
+    {
+        SDL_MouseMotionEvent* event = (SDL_MouseMotionEvent*)&e;
+
+        Input_MouseMoveEvent evt;
+        evt.X = event->x;
+        evt.Y = event->y;
+        evt.XRel = event->xrel;
+        evt.YRel = event->yrel;
+
+        Input_dispatchMouseMoveEvent (evt);
+    }
 } 
         """
 
     [<Import; MI (MIO.NoInlining)>]
-    let getMouseState () : MouseState =
+    let getMousePosition () : MousePosition =
         C """
-int32_t x;
-int32_t y;
-Input_MouseState state;
-SDL_GetMouseState (&x, &y);
-state.X = x;
-state.Y = y;
-return state;
+        int32_t x;
+        int32_t y;
+        int32_t xrel;
+        int32_t yrel;
+
+        Input_MousePosition pos;
+
+        SDL_GetMouseState (&pos.X, &pos.Y);
+        SDL_GetRelativeMouseState (&pos.XRel, &pos.YRel);
+
+        return pos;
         """
 
     let getState () : InputState =
-        let mouse = getMouseState ()
         let events = inputEvents |> List.ofSeq
         inputEvents.Clear ()
-        { Mouse = mouse
-          Events = events }
+        { Events = events }
         

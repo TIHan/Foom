@@ -145,8 +145,7 @@ let materialQueue =
      
     )
 
-let create () =
-    let app = Renderer.init ()
+let create (app: Application) =
 
     EntitySystem.create "Renderer"
         [
@@ -164,8 +163,13 @@ let create () =
 
                     entityManager.TryGet<TransformComponent> (ent)
                     |> Option.iter (fun transformComp ->
-                        let mutable invertedTransform = transformComp.Transform
-                        Matrix4x4.Invert(transformComp.Transform, &invertedTransform) |> ignore
+
+                        let transform = Matrix4x4.Lerp (transformComp.TransformLerp, transformComp.Transform, deltaTime)
+
+                        let mutable invertedTransform = Matrix4x4.Identity
+
+                        Matrix4x4.Invert(transform, &invertedTransform) |> ignore
+
                         let invertedTransform = invertedTransform |> Matrix4x4.Transpose
 
                         Renderer.enableDepth ()

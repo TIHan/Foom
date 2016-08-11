@@ -17,30 +17,69 @@ let main argv =
 
     let client = Client.init (world)
 
+    let mutable xpos = 0
+    let mutable prevXpos = 0
+
+    let mutable ypos = 0
+    let mutable prevYpos = 0
+
+    let mutable isMovingForward = false
+    let mutable isMovingLeft = false
+    let mutable isMovingRight = false
+    let mutable isMovingBackward = false
+
     GameLoop.start 30.
         (fun time interval ->
             GC.Collect (0)
-            Input.pollEvents ()
+
+            Input.pollEvents (client.Window)
             let inputState = Input.getState ()
 
-            inputState.Events
-            |> List.iter (function
-                | MouseWheelScrolled (x, y) ->
+            world.EntityManager.TryFind<CameraComponent> (fun _ _ -> true)
+            |> Option.iter (fun (ent, cameraComp) ->
+                world.EntityManager.TryGet<TransformComponent> (ent)
+                |> Option.iter (fun (transformComp) ->
 
-                    world.EntityManager.TryFind<CameraComponent> (fun _ _ -> true)
-                    |> Option.iter (fun (ent, cameraComp) ->
-                        world.EntityManager.TryGet<TransformComponent> (ent)
-                        |> Option.iter (fun (transformComp) ->
+                    transformComp.TransformLerp <- transformComp.Transform
 
-                            let zoom =
-                                if y < 0 then DoomUnit * 5.f else DoomUnit * -5.f
+                    inputState.Events
+                    |> List.iter (function
+                        //| MouseMoved (_, _, x, y) ->
 
-                            transformComp.Position <- transformComp.Position + Vector3 (0.f, 0.f, zoom)
-                            transformComp.RotateX (zoom / 64.f)
-                        )
-                     )
+                        //    transformComp.ApplyYawPitchRoll (single x * -1.f, single y * -1.f, 0.f)
 
-                | _ -> ()
+                        | KeyPressed x when x = 'w' -> isMovingForward <- true
+                        | KeyReleased x when x = 'w' -> isMovingForward <- false
+
+                        | KeyPressed x when x = 'a' -> isMovingLeft <- true
+                        | KeyReleased x when x = 'a' -> isMovingLeft <- false
+
+                        | KeyPressed x when x = 's' -> isMovingBackward <- true
+                        | KeyReleased x when x = 's' -> isMovingBackward <- false
+
+                        | KeyPressed x when x = 'd' -> isMovingRight <- true
+                        | KeyReleased x when x = 'd' -> isMovingRight <- false
+
+                        | _ -> ()
+                    )
+
+                    if isMovingForward then
+                        let v = Vector3.Transform (Vector3.UnitY * 64.f * 2.f, transformComp.Rotation ())
+                        transformComp.Translate (v)
+
+                    if isMovingLeft then
+                        let v = Vector3.Transform (Vector3.UnitX * -64.f * 2.f, transformComp.Rotation ())
+                        transformComp.Translate (v)
+
+                    if isMovingBackward then
+                        let v = Vector3.Transform (Vector3.UnitY * -64.f * 2.f, transformComp.Rotation ())
+                        transformComp.Translate (v)
+
+                    if isMovingRight then
+                        let v = Vector3.Transform (Vector3.UnitX * 64.f * 2.f, transformComp.Rotation ())
+                        transformComp.Translate (v)
+
+                )
             )
         )
         (fun t ->

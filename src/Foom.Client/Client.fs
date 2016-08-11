@@ -20,6 +20,7 @@ type UserState = {
 
 type ClientState = 
     {
+        Window: nativeint
         RenderUpdate: (float32 -> unit)
         User: UserState
         Level: Level 
@@ -97,13 +98,13 @@ let init (world: World) =
 
     // Add entity system
 
-    let sys1 = Foom.Renderer.EntitySystem.create ()
+    let app = Renderer.init ()
+    let sys1 = Foom.Renderer.EntitySystem.create (app)
     let updateSys1 = world.AddSystem sys1
 
     let cameraEnt = world.EntityManager.Spawn ()
     world.EntityManager.AddComponent cameraEnt (CameraComponent ())
     world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (Vector3 (1536.f, -3584.f, 64.f * 50.f))))
-
 
     let flatUnit = 64.f
 
@@ -157,6 +158,7 @@ let init (world: World) =
     printfn "COUNT: %A" count
 
     { 
+        Window = app.Window
         RenderUpdate = updateSys1
         User = UserState.Default
         Level = lvl
@@ -170,7 +172,7 @@ let draw t (prev: ClientState) (curr: ClientState) =
 
     stopwatch.Stop ()
 
-    printfn "%A" stopwatch.Elapsed.TotalMilliseconds
+    //printfn "%A" stopwatch.Elapsed.TotalMilliseconds
     //Renderer.clear ()
 
     //let projection = Matrix4x4.CreatePerspectiveFieldOfView (lerp prev.ViewDistance curr.ViewDistance t, (16.f / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose

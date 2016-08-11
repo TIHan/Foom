@@ -65,6 +65,8 @@ module GameLoop
                 { gl with 
                     LastTime = currentTime
                 }
+
+
        
             { gl with UpdateAccumulator = updateAcc }
             |> processUpdate

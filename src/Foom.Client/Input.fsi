@@ -12,16 +12,12 @@ type InputEvent =
     | KeyReleased of char
     | MouseButtonPressed of MouseButtonType
     | MouseButtonReleased of MouseButtonType
-    | MouseWheelScrolled of x: int * y: int
+    | MouseWheelScrolled of 
+        x: int * y: int
+    | MouseMoved of
+        x: int * y: int * xrel: int * yrel: int
 
-[<Struct>]
-type MouseState =
-    val X : int
-    val Y : int
-
-type InputState = 
-    { Events: InputEvent list 
-      Mouse: MouseState }
+type InputState = { Events: InputEvent list }
 
 [<Struct>]
 type KeyboardEvent =
@@ -41,11 +37,18 @@ type MouseWheelEvent =
     val X : int
     val Y : int
 
+[<Struct>]
+type MousePosition =
+    val X : int
+    val Y : int
+    val XRel : int
+    val YRel : int
+
 module Input =
     val private dispatchKeyboardEvent : KeyboardEvent -> unit
     val private dispatchMouseButtonEvent : MouseButtonEvent -> unit
     val private dispatchMouseWheelEvent : MouseWheelEvent -> unit
-    val pollEvents : unit -> unit
-    val private getMouseState : unit -> MouseState
 
+    val pollEvents : window: nativeint -> unit
+    val getMousePosition : unit -> MousePosition
     val getState : unit -> InputState
