@@ -74,11 +74,13 @@ let main argv =
 
                     world.EntityManager.TryGet<CameraRotationComponent> (ent)
                     |> Option.iter (fun cameraRotComp ->
-                        transformComp.Rotation <-
+                        transformComp.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+
+                        transformComp.Rotation <- transformComp.Rotation *
                             Quaternion.CreateFromYawPitchRoll (
                                 cameraRotComp.X,
                                 cameraRotComp.Y,
-                                cameraRotComp.Z
+                                0.f
                             )
                     )
 
@@ -97,7 +99,7 @@ let main argv =
                     if isMovingRight then
                         let v = Vector3.Transform (Vector3.UnitX * 64.f * 2.f, transformComp.Rotation)
                         transformComp.Translate (v)
-
+                       
                 )
             )
         )

@@ -65,7 +65,7 @@ type CameraComponent () =
 [<Sealed>]
 type CameraRotationComponent () =
 
-    let mutable angle = Vector3 (0.f, 90.f * (float32 Math.PI / 180.f), 0.f)
+    let mutable angle = Vector3 (0.f, 0.f, 0.f)
 
     member this.Angle
         with get () = angle
