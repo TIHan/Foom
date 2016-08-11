@@ -226,6 +226,8 @@ module Wad =
                         Linedefs = lines; 
                         FloorTextureName = sector.FloorTextureName
                         FloorHeight = sector.FloorHeight
+                        CeilingTextureName = sector.CeilingTextureName
+                        CeilingHeight = sector.CeilingHeight
                         LightLevel = sector.LightLevel
                     }
                 )

@@ -120,7 +120,7 @@ let init (world: World) =
                 polygon
                 |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
                 |> Array.reduce Array.append
-                |> Array.map (fun x -> Vector3 (x.X, x.Y, 0.f))
+                |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.FloorHeight))
 
             let uv = Array.zeroCreate vertices.Length
 
@@ -150,6 +150,51 @@ let init (world: World) =
                     "triangle.vertex",
                     "triangle.fragment",
                     sector.FloorTextureName + ".bmp",
+                    Color.FromArgb(lightLevel, lightLevel, lightLevel)
+                )
+            )
+        )
+    )
+
+    sectorPolygons
+    |> Array.iter (fun (polygons, sector) ->
+
+        polygons
+        |> List.iter (fun polygon ->
+            let vertices =
+                polygon
+                |> Array.map (fun x -> [|x.Z;x.Y;x.X|])
+                |> Array.reduce Array.append
+                |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.CeilingHeight))
+
+            let uv = Array.zeroCreate vertices.Length
+
+            let mutable i = 0
+            while (i < vertices.Length) do
+                let p1 = vertices.[i]
+                let p2 = vertices.[i + 1]
+                let p3 = vertices.[i + 2]
+
+                uv.[i] <- Vector2 (p1.X / flatUnit, p1.Y / flatUnit * -1.f)
+                uv.[i + 1] <- Vector2(p2.X / flatUnit, p2.Y / flatUnit * -1.f)
+                uv.[i + 2] <- Vector2(p3.X / flatUnit, p3.Y / flatUnit * -1.f)
+
+                i <- i + 3
+
+            let lightLevel =
+                if sector.LightLevel > 255 then 255
+                else sector.LightLevel
+
+            count <- count + 1
+            let ent = world.EntityManager.Spawn ()
+
+            world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
+            world.EntityManager.AddComponent ent (MeshComponent (vertices, uv))
+            world.EntityManager.AddComponent ent (
+                MaterialComponent (
+                    "triangle.vertex",
+                    "triangle.fragment",
+                    sector.CeilingTextureName + ".bmp",
                     Color.FromArgb(lightLevel, lightLevel, lightLevel)
                 )
             )
