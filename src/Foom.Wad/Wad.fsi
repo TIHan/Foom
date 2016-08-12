@@ -26,4 +26,4 @@ module Wad =
 
     val findLevel : levelName: string -> wad: Wad -> Async<Level>
 
-    val loadPatches : Wad -> unit
+    val loadPatches : Wad -> (DoomPicture * string) []

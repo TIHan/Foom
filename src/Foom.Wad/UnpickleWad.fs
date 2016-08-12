@@ -131,12 +131,21 @@ type TextureInfo =
         Name: string
     }
 
-type Texture =
+type DoomPictureHeader =
     {
         Width: int
         Height: int
         Top: int
         Left: int
+    }
+
+type DoomPicture =
+    {
+        Width: int
+        Height: int
+        Top: int
+        Left: int
+        Data: Pixel [,]
     }
 
 module UnpickleWad =
@@ -319,14 +328,49 @@ module UnpickleWad =
                     |> Array.map (fun name -> name.Trim().Trim('\000'))
         )
 
-    let uTexture lumpHeader : Unpickle<Texture> =
+    let uTexture : Unpickle<DoomPictureHeader> =
+        u_pipe4 u_uint16 u_uint16 u_uint16 u_uint16 <| 
+        fun width height top left ->
+            {
+                Width = int width
+                Height = int height
+                Top = int top
+                Left = int left
+            }
+
+    let uDoomPicture (lumpHeader: LumpHeader)  (palette: PaletteData) : Unpickle<DoomPicture> =
+
         goToLump lumpHeader (
-            u_pipe4 u_uint16 u_uint16 u_uint16 u_uint16 <| 
-            fun width height top left ->
-                {
-                    Width = int width
-                    Height = int height
-                    Top = int top
-                    Left = int left
-                }
+            u_lookAhead (
+                uTexture >>= fun texture -> 
+                    u_array texture.Width (u_uint32) 
+                    |>> fun columnArray -> (columnArray, texture)) >>= fun (columnArray, texture) ->
+               
+
+                        let data = Array2D.init texture.Width texture.Height (fun _ _ -> Pixel (0uy, 255uy, 255uy))
+
+                        u_arrayi texture.Width (fun i ->
+                            u_lookAhead (
+                                u_skipBytes (int64 columnArray.[i]) >>= fun () ->
+                                    u_pipe3 u_byte u_byte u_byte <| fun rowStart count _ ->
+
+                                        if rowStart <> 255uy then
+                                            u_arrayi (int count) (fun j ->
+                                                u_byte |>> fun p ->
+                                                    data.[i,j] <- palette.Pixels.[j]
+                                            )
+                                        else
+                                            fun _ -> Array.empty
+
+                            )
+                        ) |>> fun _ ->
+                            {
+                                Width = texture.Width
+                                Height = texture.Height
+                                Top = texture.Top
+                                Left = texture.Left
+                                Data = data
+                            }
+
         )
+      

@@ -156,12 +156,14 @@ module Wad =
 
         let patchNames = runUnpickle (uPatchNames pnamesLump) wad.stream |> Async.RunSynchronously
 
-        let textures =
-            patchNames
-            |> Array.map (fun x ->
-                runUnpickle (uTexture (findLump x)) wad.stream |> Async.RunSynchronously
+        patchNames
+        |> Array.map (fun patchName ->
+            let header = findLump patchName
+            (
+                runUnpickle (uDoomPicture header wad.defaultPaletteData.Value) wad.stream |> Async.RunSynchronously,
+                patchName
             )
-        ()
+        )
 
     let create stream = async {
         let! wadData = runUnpickle u_wad stream

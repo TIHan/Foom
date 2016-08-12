@@ -131,12 +131,13 @@ type TextureInfo =
         Name: string
     }
 
-type Texture =
+type DoomPicture =
     {
         Width: int
         Height: int
         Top: int
         Left: int
+        Data: Pixel [,]
     }
 
 module UnpickleWad =
@@ -167,4 +168,4 @@ module UnpickleWad =
 
     val uPatchNames : LumpHeader -> Unpickle<string []>
 
-    val uTexture : LumpHeader -> Unpickle<Texture>
+    val uDoomPicture : LumpHeader -> PaletteData -> Unpickle<DoomPicture>

@@ -28,5 +28,17 @@ let main argv =
     )
 
     Wad.loadPatches wad
+    |> Array.iter (fun (doomPicture, name) ->
+        let bmp = new Bitmap(doomPicture.Width, doomPicture.Height, Imaging.PixelFormat.Format32bppRgb)
 
+        doomPicture.Data
+        |> Array2D.iteri (fun i j pixel ->
+            bmp.SetPixel (i, j, Drawing.Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+        )
+
+        bmp.Save (name + ".bmp")
+        bmp.Dispose ()
+    )
+
+    printfn "done"
     0
