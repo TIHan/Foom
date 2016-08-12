@@ -99,5 +99,9 @@
       <Project>{FB77CA41-3C2E-4D41-826D-5FCF9EF10C88}</Project>
       <Name>Foom.Common.Components</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Pickler\Foom.Pickler.fsproj">
+      <Project>{4FC2B7B5-28CA-4322-84AB-49DDAD9613FC}</Project>
+      <Name>Foom.Pickler</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

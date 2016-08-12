@@ -82,7 +82,23 @@ module Wad =
             let! lumpPalettes = loadLump u_lumpPalettes lumpPaletteHeader wad.stream
             return { wad with defaultPaletteData = Some lumpPalettes.[0] }
         }
-        
+
+    let isFlat (lumpName: string) wad =
+        let lumpHeaders = wad.wadData.LumpHeaders
+        let lumpFlatsHeaderStartIndex = lumpHeaders |> Array.tryFindIndex (fun x -> x.Name.ToUpper () = "F_START" || x.Name.ToUpper () = "FF_START")
+        let lumpFlatsHeaderEndIndex = lumpHeaders |> Array.tryFindIndex (fun x -> x.Name.ToUpper () = "F_END" || x.Name.ToUpper () = "FF_END")
+
+        match lumpFlatsHeaderStartIndex, lumpFlatsHeaderEndIndex with
+        | Some lumpFlatsHeaderStartIndex, Some lumpFlatsHeaderEndIndex ->
+            let lumpFlatHeaders =
+                lumpHeaders.[(lumpFlatsHeaderStartIndex + 1)..(lumpFlatsHeaderEndIndex - 1)]
+                |> filterLumpHeaders
+
+            lumpFlatHeaders
+            |> Array.exists (fun x -> x.Name = lumpName)
+
+        | _ -> false
+
     let loadFlats wad =
         match wad.defaultPaletteData with
         | None ->
@@ -134,9 +150,9 @@ module Wad =
                 }
 
     let loadPatches wad =
-        let findLump (str: string) =
+        let tryFindLump (str: string) =
             wad.wadData.LumpHeaders
-            |> Array.find (fun x -> x.Name.ToUpper() = str.ToUpper())
+            |> Array.tryFind (fun x -> x.Name.ToUpper() = str.ToUpper())
 
         let texture1Lump =
             wad.wadData.LumpHeaders
@@ -144,7 +160,7 @@ module Wad =
 
         let texture2Lump =
             wad.wadData.LumpHeaders
-            |> Array.find (fun x -> x.Name.ToUpper() = "TEXTURE2")
+            |> Array.tryFind (fun x -> x.Name.ToUpper() = "TEXTURE2")
 
         let pnamesLump =
             wad.wadData.LumpHeaders
@@ -157,12 +173,15 @@ module Wad =
         let patchNames = runUnpickle (uPatchNames pnamesLump) wad.stream |> Async.RunSynchronously
 
         patchNames
-        |> Array.map (fun patchName ->
-            let header = findLump patchName
-            (
-                runUnpickle (uDoomPicture header wad.defaultPaletteData.Value) wad.stream |> Async.RunSynchronously,
-                patchName
-            )
+        |> Array.filter (fun x -> isFlat x wad |> not)
+        |> Array.choose (fun patchName ->
+            match tryFindLump patchName with
+            | Some header ->
+                (
+                    runUnpickle (uDoomPicture header wad.defaultPaletteData.Value) wad.stream |> Async.RunSynchronously,
+                    patchName
+                ) |> Some
+            | _ -> None
         )
 
     let create stream = async {

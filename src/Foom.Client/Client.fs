@@ -53,9 +53,9 @@ let init (world: World) =
 
     // Load up doom wads.
 
-    let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
+    let doom2Wad = Wad.create (System.IO.File.Open ("doom2.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
     let wad = Wad.createFromWad doom2Wad (System.IO.File.Open ("sunder.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
-    let lvl = Wad.findLevel "e1m1" doom2Wad |> Async.RunSynchronously
+    let lvl = Wad.findLevel "map01" doom2Wad |> Async.RunSynchronously
 
 
     // Extract all doom textures.
@@ -73,18 +73,49 @@ let init (world: World) =
         bmp.Dispose ()
     )
 
-    Wad.flats wad
-    |> Array.iter (fun tex ->
-        let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format24bppRgb)
+    //Wad.flats wad
+    //|> Array.iter (fun tex ->
+    //    let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format24bppRgb)
 
-        for i = 0 to 64 - 1 do
-            for j = 0 to 64 - 1 do
-                let pixel = tex.Pixels.[i + (j * 64)]
-                bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+    //    for i = 0 to 64 - 1 do
+    //        for j = 0 to 64 - 1 do
+    //            let pixel = tex.Pixels.[i + (j * 64)]
+    //            bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
 
-        bmp.Save(tex.Name + ".bmp")
+    //    bmp.Save(tex.Name + ".bmp")
+    //    bmp.Dispose ()
+    //)
+
+    let stuff = Wad.loadPatches doom2Wad
+
+    for i = 0 to stuff.Length - 1 do
+        let (doomPicture, name) = stuff.[i]
+        let bmp = new Bitmap(doomPicture.Width, doomPicture.Height, Imaging.PixelFormat.Format24bppRgb)
+
+        doomPicture.Data
+        |> Array2D.iteri (fun i j pixel ->
+            bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+        )
+
+        bmp.Save (name + ".bmp")
         bmp.Dispose ()
-    )
+
+    //let stuff = Wad.loadPatches wad
+
+    //for i = 0 to stuff.Length - 1 do
+    //    let (doomPicture, name) = stuff.[i]
+    //    let bmp = new Bitmap(doomPicture.Width, doomPicture.Height, Imaging.PixelFormat.Format24bppRgb)
+
+    //    doomPicture.Data
+    //    |> Array2D.iteri (fun i j pixel ->
+    //        bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+    //    )
+
+    //    bmp.Save (name + ".bmp")
+    //    bmp.Dispose ()
+
+
+    // Calculate polygons
 
     let sectorPolygons =
         lvl.Sectors

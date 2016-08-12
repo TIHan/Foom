@@ -357,8 +357,8 @@ module UnpickleWad =
                                         if rowStart <> 255uy then
                                             u_arrayi (int count) (fun j ->
                                                 u_byte |>> fun p ->
-                                                    data.[i,j + int rowStart] <- palette.Pixels.[int p]                                                 
-                                            )
+                                                    data.[i,j + int rowStart] <- palette.Pixels.[int p]                                                
+                                            ) .>> u_byte
                                         else
                                             fun _ -> Array.empty
 

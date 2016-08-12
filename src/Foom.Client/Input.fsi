@@ -44,10 +44,18 @@ type MousePosition =
     val XRel : int
     val YRel : int
 
+[<Struct>]
+type MouseMoveEvent =
+    val X : int
+    val Y : int
+    val XRel : int
+    val YRel : int
+
 module Input =
     val private dispatchKeyboardEvent : KeyboardEvent -> unit
     val private dispatchMouseButtonEvent : MouseButtonEvent -> unit
     val private dispatchMouseWheelEvent : MouseWheelEvent -> unit
+    val private dispatchMouseMoveEvent : MouseMoveEvent -> unit
 
     val pollEvents : window: nativeint -> unit
     val getMousePosition : unit -> MousePosition
