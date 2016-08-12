@@ -1,5 +1,7 @@
 ﻿namespace Foom.Wad.Level.Structures
 
+open System.Numerics
+
 open Foom.Wad.Geometry
 open Foom.Wad.Level
 open Foom.Wad.Level.Structures
@@ -16,6 +18,26 @@ type Sector =
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Sector =
+
+    let wallTriangles sector =
+        match LinedefTracer.run2 (sector.Linedefs) with
+        | [] -> []
+        | linedefs -> 
+            linedefs
+            |> List.map (fun linedef -> 
+                linedef.Linedefs
+                |> List.map (fun linedef ->
+                    [|
+                        Vector3 (linedef.Start, single sector.FloorHeight)
+                        Vector3 (linedef.End, single sector.FloorHeight)
+                        Vector3 (linedef.End, single sector.CeilingHeight)
+                        Vector3 (linedef.End, single sector.CeilingHeight)
+                        Vector3 (linedef.Start, single sector.CeilingHeight)
+                        Vector3 (linedef.Start, single sector.FloorHeight)
+                    |]
+                )
+                |> List.reduce Array.append
+            )
 
     let polygonFlats sector = 
         match LinedefTracer.run2 (sector.Linedefs) with
