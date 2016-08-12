@@ -352,12 +352,12 @@ module UnpickleWad =
                         u_arrayi texture.Width (fun i ->
                             u_lookAhead (
                                 u_skipBytes (int64 columnArray.[i]) >>= fun () ->
-                                    u_pipe3 u_byte u_byte u_byte <| fun rowStart count _ ->
+                                    u_pipe3 u_byte u_byte u_byte (fun rowStart count _ -> (rowStart, count)) >>= fun (rowStart, count) ->
 
                                         if rowStart <> 255uy then
                                             u_arrayi (int count) (fun j ->
                                                 u_byte |>> fun p ->
-                                                    data.[i,j] <- palette.Pixels.[j]
+                                                    data.[i,j + int rowStart] <- palette.Pixels.[int p]                                                 
                                             )
                                         else
                                             fun _ -> Array.empty
