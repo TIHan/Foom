@@ -4,6 +4,7 @@ open System
 open System.Numerics
 open Foom.Pickler.Core
 open Foom.Pickler.Unpickle
+open Foom.Wad.Level.Structures
 
 type Header = { IsPwad: bool; LumpCount: int; LumpOffset: int }
  
@@ -60,21 +61,13 @@ type LinedefDataFlags =
     | NerverShowsOnAutomap = 0x0080
     | AlwaysShowsOnAutomap = 0x0100
 
-type SidedefData = {
-    OffsetX: int
-    OffsetY: int
-    UpperTextureName: string
-    LowerTextureName: string
-    MiddleTextureName: string
-    SectorNumber: int }
-
 type DoomLinedefData = { 
     Flags: LinedefDataFlags
     SpecialType: int
     SectorTag: int }
 
 type LinedefData =
-    | Doom of x: Vector2 * y: Vector2 * front: SidedefData option * back: SidedefData option * DoomLinedefData
+    | Doom of x: Vector2 * y: Vector2 * front: Sidedef option * back: Sidedef option * DoomLinedefData
 
 type SectorDataType =
     | Normal = 0
@@ -106,7 +99,7 @@ type SectorData = {
 
 type LumpThings = { Things: ThingData [] }
 type LumpLinedefs = { Linedefs: LinedefData [] }
-type LumpSidedefs = { Sidedefs: SidedefData [] }
+type LumpSidedefs = { Sidedefs: Sidedef [] }
 type LumpVertices = { Vertices: Vector2 [] }
 type LumpSectors = { Sectors: SectorData [] }
 
@@ -154,7 +147,7 @@ module UnpickleWad =
 
     val u_lumpSidedefs : size: int -> offset: int64 -> Unpickle<LumpSidedefs>
 
-    val u_lumpLinedefs : vertices: Vector2 [] -> sidedefs: SidedefData [] -> size: int -> offset: int64 -> Unpickle<LumpLinedefs>
+    val u_lumpLinedefs : vertices: Vector2 [] -> sidedefs: Sidedef [] -> size: int -> offset: int64 -> Unpickle<LumpLinedefs>
 
     val u_lumpSectors : linedefs: LinedefData [] -> size: int -> offset: int64 -> Unpickle<LumpSectors>
 

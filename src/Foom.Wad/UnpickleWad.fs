@@ -4,6 +4,7 @@ open System
 open System.Numerics
 open Foom.Pickler.Core
 open Foom.Pickler.Unpickle
+open Foom.Wad.Level.Structures
 
 type Header = { IsPwad: bool; LumpCount: int; LumpOffset: int }
  
@@ -60,21 +61,13 @@ type LinedefDataFlags =
     | NerverShowsOnAutomap = 0x0080
     | AlwaysShowsOnAutomap = 0x0100
 
-type SidedefData = {
-    OffsetX: int
-    OffsetY: int
-    UpperTextureName: string
-    LowerTextureName: string
-    MiddleTextureName: string
-    SectorNumber: int }
-
 type DoomLinedefData = { 
     Flags: LinedefDataFlags
     SpecialType: int
     SectorTag: int }
 
 type LinedefData =
-    | Doom of x: Vector2 * y: Vector2 * front: SidedefData option * back: SidedefData option * DoomLinedefData
+    | Doom of x: Vector2 * y: Vector2 * front: Sidedef option * back: Sidedef option * DoomLinedefData
 
 type SectorDataType =
     | Normal = 0
@@ -106,7 +99,7 @@ type SectorData = {
 
 type LumpThings = { Things: ThingData [] }
 type LumpLinedefs = { Linedefs: LinedefData [] }
-type LumpSidedefs = { Sidedefs: SidedefData [] }
+type LumpSidedefs = { Sidedefs: Sidedef [] }
 type LumpVertices = { Vertices: Vector2 [] }
 type LumpSectors = { Sectors: SectorData [] }
 
@@ -208,7 +201,7 @@ module UnpickleWad =
 
     [<Literal>]
     let sidedefSize = 30
-    let u_sidedef : Unpickle<SidedefData> =
+    let u_sidedef : Unpickle<Sidedef> =
         u_pipe6 u_int16 u_int16 (u_string 8) (u_string 8) (u_string 8) u_int16 <|
         fun offsetX offsetY upperTexName lowerTexName middleTexName sectorNumber ->
             { OffsetX = int offsetX
@@ -218,7 +211,7 @@ module UnpickleWad =
               MiddleTextureName = middleTexName.Trim().Trim('\000')
               SectorNumber = int sectorNumber }
 
-    let u_sidedefs count offset : Unpickle<SidedefData []> =
+    let u_sidedefs count offset : Unpickle<Sidedef []> =
         u_skipBytes offset >>. u_array count u_sidedef
 
     let u_lumpSidedefs size offset : Unpickle<LumpSidedefs> =
@@ -226,7 +219,7 @@ module UnpickleWad =
 
     [<Literal>]
     let linedefSize = 14
-    let u_linedef (vertices: Vector2 []) (sidedefs: SidedefData []) : Unpickle<LinedefData> =
+    let u_linedef (vertices: Vector2 []) (sidedefs: Sidedef []) : Unpickle<LinedefData> =
         u_pipe7 u_uint16 u_uint16 u_int16 u_int16 u_int16 u_uint16 u_uint16 <|
         fun startVertex endVertex flags specialType sectorTag rightSidedef leftSidedef ->
             let data =
@@ -242,10 +235,10 @@ module UnpickleWad =
                 b,
                 data)
 
-    let u_linedefs (vertices: Vector2 []) (sidedefs: SidedefData []) count offset : Unpickle<LinedefData []> =
+    let u_linedefs (vertices: Vector2 []) (sidedefs: Sidedef []) count offset : Unpickle<LinedefData []> =
         u_skipBytes offset >>. u_array count (u_linedef vertices sidedefs)
         
-    let u_lumpLinedefs (vertices: Vector2 []) (sidedefs: SidedefData []) size offset : Unpickle<LumpLinedefs> =
+    let u_lumpLinedefs (vertices: Vector2 []) (sidedefs: Sidedef []) size offset : Unpickle<LumpLinedefs> =
         u_lookAhead (u_linedefs vertices sidedefs (size / linedefSize) offset) |>> fun linedefs -> { Linedefs = linedefs }
 
     [<Literal>]
