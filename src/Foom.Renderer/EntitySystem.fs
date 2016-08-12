@@ -125,10 +125,13 @@ let materialQueue =
                  
                     match materialComp.TextureState with
                     | TextureState.ReadyToLoad fileName ->
-                        use ptr = new Gdk.Pixbuf (fileName)
-                        let textureId = Renderer.createTexture 64 64 (ptr.Pixels)
+                        try
+                            use ptr = new Gdk.Pixbuf (fileName)
+                            let textureId = Renderer.createTexture 64 64 (ptr.Pixels)
 
-                        materialComp.TextureState <- TextureState.Loaded textureId
+                            materialComp.TextureState <- TextureState.Loaded textureId
+                        with | ex ->
+                            printfn "%A" ex.Message
                     | _ -> ()
 
                     match materialComp.ShaderProgramState with

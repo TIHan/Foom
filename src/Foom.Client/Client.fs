@@ -142,6 +142,63 @@ let init (world: World) =
 
     let mutable count = 0
 
+    lvl.Sectors
+    |> Array.iter (fun sector ->
+        sector
+        |> Sector.wallTriangles
+        |> Array.iter (fun (textureName, vertices) ->
+
+            match Wad.tryLoadGraphic "BODIES" doom2Wad with
+            | None -> ()
+            | Some (doomPicture, name) ->
+
+           
+            let bmp = new Bitmap(doomPicture.Width, doomPicture.Height, Imaging.PixelFormat.Format24bppRgb)
+
+            doomPicture.Data
+            |> Array2D.iteri (fun i j pixel ->
+                bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+            )
+
+            bmp.Save (name + ".bmp")
+            bmp.Dispose ()
+
+
+            let uv = Array.zeroCreate vertices.Length
+
+            let mutable i = 0
+            while (i < vertices.Length) do
+                let p1 = vertices.[i]
+                let p2 = vertices.[i + 1]
+                let p3 = vertices.[i + 2]
+
+                let q = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, 0.f * (single System.Math.PI / 180.f))
+
+                uv.[i] <- Vector2.Transform (Vector2 (0.f, 0.f), q)
+                uv.[i + 1] <- Vector2.Transform (Vector2(0.f, 1.f), q)
+                uv.[i + 2] <- Vector2.Transform (Vector2(1.f, 1.f), q)
+
+                i <- i + 3
+
+            let lightLevel =
+                if sector.LightLevel > 255 then 255
+                else sector.LightLevel
+
+            let ent = world.EntityManager.Spawn ()
+
+            world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
+            world.EntityManager.AddComponent ent (MeshComponent (vertices, uv))
+            world.EntityManager.AddComponent ent (
+                MaterialComponent (
+                    "triangle.vertex",
+                    "triangle.fragment",
+                    "BODIES" + ".bmp",
+                    Color.FromArgb(lightLevel, lightLevel, lightLevel)
+                )
+            )
+        )
+    )
+
     sectorPolygons
     |> Array.iter (fun (polygons, sector) ->
 

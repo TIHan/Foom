@@ -20,24 +20,34 @@ type Sector =
 module Sector =
 
     let wallTriangles sector =
-        match LinedefTracer.run2 (sector.Linedefs) with
-        | [] -> []
-        | linedefs -> 
-            linedefs
-            |> List.map (fun linedef -> 
-                linedef.Linedefs
-                |> List.map (fun linedef ->
-                    [|
-                        Vector3 (linedef.Start, single sector.FloorHeight)
-                        Vector3 (linedef.End, single sector.FloorHeight)
-                        Vector3 (linedef.End, single sector.CeilingHeight)
-                        Vector3 (linedef.End, single sector.CeilingHeight)
-                        Vector3 (linedef.Start, single sector.CeilingHeight)
-                        Vector3 (linedef.Start, single sector.FloorHeight)
-                    |]
-                )
-                |> List.reduce Array.append
-            )
+        sector.Linedefs
+        |> Array.choose (fun linedef ->
+            match linedef.FrontSidedef with
+            | Some frontSidedef ->
+
+                match linedef.BackSidedef with
+                | Some backSidedef ->
+                    None
+                | _ ->
+
+
+
+                    if frontSidedef.MiddleTextureName.Contains("-") |> not then
+                        (
+                            frontSidedef.MiddleTextureName,
+                            [|
+                                Vector3 (linedef.Start, single sector.FloorHeight)
+                                Vector3 (linedef.End, single sector.FloorHeight)
+                                Vector3 (linedef.End, single sector.CeilingHeight)
+                                Vector3 (linedef.End, single sector.CeilingHeight)
+                                Vector3 (linedef.Start, single sector.CeilingHeight)
+                                Vector3 (linedef.Start, single sector.FloorHeight)
+                            |]
+                        ) |> Some
+                    else None
+
+            | _ -> None
+        )
 
     let polygonFlats sector = 
         match LinedefTracer.run2 (sector.Linedefs) with

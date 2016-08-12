@@ -149,11 +149,20 @@ module Wad =
                     return { wad with flats = flats }
                 }
 
-    let loadPatches wad =
-        let tryFindLump (str: string) =
-            wad.wadData.LumpHeaders
-            |> Array.tryFind (fun x -> x.Name.ToUpper() = str.ToUpper())
+    let tryFindLump (str: string) wad =
+        wad.wadData.LumpHeaders
+        |> Array.tryFind (fun x -> x.Name.ToUpper() = str.ToUpper())
 
+    let tryLoadGraphic name wad =
+        match tryFindLump name wad with
+        | Some header ->
+            (
+                runUnpickle (uDoomPicture header wad.defaultPaletteData.Value) wad.stream |> Async.RunSynchronously,
+                name
+            ) |> Some
+        | _ -> None
+
+    let loadPatches wad =
         let texture1Lump =
             wad.wadData.LumpHeaders
             |> Array.find (fun x -> x.Name.ToUpper() = "TEXTURE1")
@@ -175,7 +184,7 @@ module Wad =
         patchNames
         |> Array.filter (fun x -> isFlat x wad |> not)
         |> Array.choose (fun patchName ->
-            match tryFindLump patchName with
+            match tryFindLump patchName wad with
             | Some header ->
                 (
                     runUnpickle (uDoomPicture header wad.defaultPaletteData.Value) wad.stream |> Async.RunSynchronously,
