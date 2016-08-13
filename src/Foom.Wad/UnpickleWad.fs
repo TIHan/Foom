@@ -122,6 +122,17 @@ type TextureHeader =
 type TextureInfo =
     {
         Name: string
+        IsMasked: bool
+        Width: int
+        Height: int
+        PatchCount: int
+    }
+
+type TexturePatch =
+    {
+        OriginX: int
+        OriginY: int
+        Patch: int
     }
 
 type DoomPictureHeader =
@@ -304,11 +315,21 @@ module UnpickleWad =
         )
 
     let uTextureInfos lumpHeader (textureHeader: TextureHeader) : Unpickle<TextureInfo []> =
+
+        let uInfo = 
+            u_pipe6 (u_string 8) (u_int32) (u_int16) (u_int16) (u_int32) (u_int16) <| 
+            fun name masked width height _ patchCount -> 
+            {
+                Name = name.Trim().Trim('\000') 
+                IsMasked = if masked = 1 then true else false
+                Width = int width
+                Height = int height
+                PatchCount = int patchCount
+            }
+
         goToLump lumpHeader (
             u_arrayi textureHeader.Offsets.Length (fun i ->
-                u_lookAhead (u_skipBytes (int64 textureHeader.Offsets.[i]) >>.
-                    (u_string 8) |>> fun name -> { Name = name.Trim().Trim('\000') }
-                )   
+                u_lookAhead (u_skipBytes (int64 textureHeader.Offsets.[i]) >>. uInfo)   
             )
         )
 

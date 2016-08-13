@@ -122,6 +122,10 @@ type TextureHeader =
 type TextureInfo =
     {
         Name: string
+        IsMasked: bool
+        Width: int
+        Height: int
+        PatchCount: int
     }
 
 type DoomPicture =

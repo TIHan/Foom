@@ -86,19 +86,19 @@ let init (world: World) =
     //    bmp.Dispose ()
     //)
 
-    //let stuff = Wad.loadPatches doom2Wad
+    let stuff = Wad.loadPatches doom2Wad
 
-    //for i = 0 to stuff.Length - 1 do
-    //    let (doomPicture, name) = stuff.[i]
-    //    let bmp = new Bitmap(doomPicture.Width, doomPicture.Height, Imaging.PixelFormat.Format24bppRgb)
+    for i = 0 to stuff.Length - 1 do
+        let (doomPicture, name) = stuff.[i]
+        let bmp = new Bitmap(doomPicture.Width, doomPicture.Height, Imaging.PixelFormat.Format24bppRgb)
 
-    //    doomPicture.Data
-    //    |> Array2D.iteri (fun i j pixel ->
-    //        bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-    //    )
+        doomPicture.Data
+        |> Array2D.iteri (fun i j pixel ->
+            bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+        )
 
-    //    bmp.Save (name + ".bmp")
-    //    bmp.Dispose ()
+        bmp.Save (name + ".bmp")
+        bmp.Dispose ()
 
     //let stuff = Wad.loadPatches wad
 
