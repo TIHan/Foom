@@ -119,13 +119,20 @@ type TextureHeader =
         Offsets: int []
     }
 
+type TexturePatch =
+    {
+        OriginX: int
+        OriginY: int
+        PatchNumber: int
+    }
+
 type TextureInfo =
     {
         Name: string
         IsMasked: bool
         Width: int
         Height: int
-        PatchCount: int
+        Patches: TexturePatch []
     }
 
 type DoomPicture =

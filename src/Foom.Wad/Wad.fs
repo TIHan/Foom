@@ -181,16 +181,42 @@ module Wad =
 
         let patchNames = runUnpickle (uPatchNames pnamesLump) wad.stream |> Async.RunSynchronously
 
-        patchNames
-        |> Array.filter (fun x -> isFlat x wad |> not)
-        |> Array.choose (fun patchName ->
-            match tryFindLump patchName wad with
-            | Some header ->
-                (
-                    runUnpickle (uDoomPicture header wad.defaultPaletteData.Value) wad.stream |> Async.RunSynchronously,
-                    patchName
-                ) |> Some
-            | _ -> None
+        let doomPictures =
+            patchNames
+            |> Array.map (fun patchName ->
+                if isFlat patchName wad then None
+                else
+                    match tryFindLump patchName wad with
+                    | Some header ->
+                        (
+                            runUnpickle (uDoomPicture header wad.defaultPaletteData.Value) wad.stream |> Async.RunSynchronously,
+                            patchName
+                        ) |> Some
+                    | _ -> None
+            )
+
+        textureInfos
+        |> Array.map (fun x ->
+            let tex = Array2D.init x.Width x.Height (fun _ _ -> Pixel (0uy, 255uy, 255uy))
+
+            x.Patches
+            |> Array.iter (fun patch ->
+                match doomPictures.[patch.PatchNumber] with
+                | Some (pic, _) ->
+
+                    pic.Data
+                    |> Array2D.iteri (fun i j pixel ->
+                        let i = i + patch.OriginX
+                        let j = j + patch.OriginY
+
+                        if i < x.Width && j < x.Height && i >= 0 && j >= 0 then
+                            tex.[i, j] <- pixel
+                    )
+
+                | _ -> ()
+            )
+
+            (tex, x.Name)
         )
 
     let create stream = async {

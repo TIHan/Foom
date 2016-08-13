@@ -23,9 +23,9 @@ type DoomThingDataFlags =
     | SkillLevelFourAndFive = 0x004
     | Deaf = 0x008
     | NotInSinglePlayer = 0x0010
-//    | NotInDeathmatch = 0x0020 // boom
-//    | NotInCoop = 0x0040 // boom
-//    | FriendlyMonster = 0x0080 // MBF
+    | NotInDeathmatch = 0x0020 // boom
+    | NotInCoop = 0x0040 // boom
+    | FriendlyMonster = 0x0080 // MBF
 
 [<Flags>]
 type HexenThingDataFlags =
@@ -119,20 +119,20 @@ type TextureHeader =
         Offsets: int []
     }
 
+type TexturePatch =
+    {
+        OriginX: int
+        OriginY: int
+        PatchNumber: int
+    }
+
 type TextureInfo =
     {
         Name: string
         IsMasked: bool
         Width: int
         Height: int
-        PatchCount: int
-    }
-
-type TexturePatch =
-    {
-        OriginX: int
-        OriginY: int
-        Patch: int
+        Patches: TexturePatch []
     }
 
 type DoomPictureHeader =
@@ -316,16 +316,28 @@ module UnpickleWad =
 
     let uTextureInfos lumpHeader (textureHeader: TextureHeader) : Unpickle<TextureInfo []> =
 
+
+        let uPatch =
+            u_pipe5 u_int16 u_int16 u_int16 u_int16 u_int16 <|
+            fun originX originY patch _ _ ->
+                {
+                    OriginX = int originX
+                    OriginY = int originY
+                    PatchNumber = int patch
+                }
+
         let uInfo = 
-            u_pipe6 (u_string 8) (u_int32) (u_int16) (u_int16) (u_int32) (u_int16) <| 
-            fun name masked width height _ patchCount -> 
-            {
-                Name = name.Trim().Trim('\000') 
-                IsMasked = if masked = 1 then true else false
-                Width = int width
-                Height = int height
-                PatchCount = int patchCount
-            }
+            u_pipe6 (u_string 8) (u_int32) (u_int16) (u_int16) (u_int32) (u_int16) 
+                (fun name masked width height _ patchCount -> (name, masked, width, height, patchCount)) 
+                    >>= fun (name, masked, width, height, patchCount) ->
+                        u_array (int patchCount) uPatch |>> fun patches ->
+                            {
+                                Name = name.Trim().Trim('\000') 
+                                IsMasked = if masked = 1 then true else false
+                                Width = int width
+                                Height = int height
+                                Patches = patches
+                            }
 
         goToLump lumpHeader (
             u_arrayi textureHeader.Offsets.Length (fun i ->

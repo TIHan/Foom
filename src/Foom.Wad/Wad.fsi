@@ -28,4 +28,4 @@ module Wad =
 
     val tryLoadGraphic : string -> Wad -> (DoomPicture * string) option
 
-    val loadPatches : Wad -> (DoomPicture * string) []
+    val loadPatches : Wad -> (Pixel [,] * string) []

@@ -89,10 +89,10 @@ let init (world: World) =
     let stuff = Wad.loadPatches doom2Wad
 
     for i = 0 to stuff.Length - 1 do
-        let (doomPicture, name) = stuff.[i]
-        let bmp = new Bitmap(doomPicture.Width, doomPicture.Height, Imaging.PixelFormat.Format24bppRgb)
+        let (data, name) = stuff.[i]
+        let bmp = new Bitmap(data |> Array2D.length1, data |> Array2D.length2, Imaging.PixelFormat.Format24bppRgb)
 
-        doomPicture.Data
+        data
         |> Array2D.iteri (fun i j pixel ->
             bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
         )
@@ -147,23 +147,6 @@ let init (world: World) =
         sector
         |> Sector.wallTriangles
         |> Array.iter (fun (textureName, vertices) ->
-
-            match Wad.tryLoadGraphic "BODIES" doom2Wad with
-            | None -> ()
-            | Some (doomPicture, name) ->
-
-           
-            let bmp = new Bitmap(doomPicture.Width, doomPicture.Height, Imaging.PixelFormat.Format24bppRgb)
-
-            doomPicture.Data
-            |> Array2D.iteri (fun i j pixel ->
-                bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-            )
-
-            bmp.Save (name + ".bmp")
-            bmp.Dispose ()
-
-
             let uv = Array.zeroCreate vertices.Length
 
             let mutable i = 0
@@ -192,7 +175,7 @@ let init (world: World) =
                 MaterialComponent (
                     "triangle.vertex",
                     "triangle.fragment",
-                    "BODIES" + ".bmp",
+                    textureName + ".bmp",
                     Color.FromArgb(lightLevel, lightLevel, lightLevel)
                 )
             )
