@@ -2,6 +2,7 @@
 open System.IO
 open System.Diagnostics
 open System.Numerics
+open System.Threading.Tasks
 
 open Foom.Client
 open Foom.Ecs
@@ -11,10 +12,9 @@ open Foom.Common.Components
 [<Literal>]
 let DoomUnit = 64.f
 
-[<EntryPoint>]
-let main argv =
-    let world = World (65536)
+let world = World (65536)
 
+let start (invoke: Task ref) =
     let client = Client.init (world)
 
     let mutable xpos = 0
@@ -31,6 +31,9 @@ let main argv =
     GameLoop.start 30.
         (fun time interval ->
             GC.Collect (0)
+
+            (!invoke).RunSynchronously ()
+            invoke := (new Task (fun () -> ()))
 
             Input.pollEvents (client.Window)
             let inputState = Input.getState ()
@@ -53,8 +56,8 @@ let main argv =
 
                             world.EntityManager.TryGet<CameraRotationComponent> (ent)
                             |> Option.iter (fun cameraRotComp ->
-                                cameraRotComp.X <- cameraRotComp.X + (single x * -1.f) * (float32 Math.PI / 180.f)
-                                cameraRotComp.Y <- cameraRotComp.Y + (single y * -1.f) * (float32 Math.PI / 180.f)
+                                cameraRotComp.X <- cameraRotComp.X + (single x * -0.25f) * (float32 Math.PI / 180.f)
+                                cameraRotComp.Y <- cameraRotComp.Y + (single y * -0.25f) * (float32 Math.PI / 180.f)
                             )
 
                         | KeyPressed x when x = 'w' -> isMovingForward <- true
@@ -104,6 +107,38 @@ let main argv =
             )
         )
         (fun t ->
+            //world.EntityManager.TryFind<CameraComponent> (fun _ _ -> true)
+            //|> Option.iter (fun (ent, cameraComp) ->
+            //    world.EntityManager.TryGet<TransformComponent> (ent)
+            //    |> Option.iter (fun (transformComp) ->
+
+            //        world.EntityManager.TryGet<CameraRotationComponent> (ent)
+            //        |> Option.iter (fun cameraRotComp ->
+
+            //            let mousePosition = Input.getMousePosition ()
+
+            //            let x = mousePosition.XRel
+            //            let y = mousePosition.YRel
+            //            cameraRotComp.X <- cameraRotComp.X + (single x * -0.25f) * (float32 Math.PI / 180.f)
+            //            cameraRotComp.Y <- cameraRotComp.Y + (single y * -0.25f) * (float32 Math.PI / 180.f)
+
+            //            transformComp.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+
+            //            transformComp.Rotation <- transformComp.Rotation *
+            //                Quaternion.CreateFromYawPitchRoll (
+            //                    cameraRotComp.X,
+            //                    cameraRotComp.Y,
+            //                    0.f
+            //                )
+            //        )
+                       
+            //    )
+            //)
+
             Client.draw t client client
         )
+
+[<EntryPoint>]
+let main argv =
+    start (new Task (fun () -> ()) |> ref)
     0
