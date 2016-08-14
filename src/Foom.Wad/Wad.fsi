@@ -12,6 +12,12 @@ type FlatTexture =
         Name: string
     }
 
+type Texture =
+    {
+        Data: Pixel [,]
+        Name: string
+    }
+
 [<Sealed>]
 type Wad
 
@@ -29,3 +35,5 @@ module Wad =
     val tryLoadGraphic : string -> Wad -> (DoomPicture * string) option
 
     val loadPatches : Wad -> (Pixel [,] * string) []
+
+    val tryFindTexture : textureName: string -> wad: Wad -> Texture option

@@ -147,6 +147,25 @@ let init (world: World) =
         sector
         |> Sector.wallTriangles
         |> Array.iter (fun (textureName, vertices) ->
+
+            match Wad.tryFindTexture textureName doom2Wad with
+            | None -> ()
+            | Some tex ->
+
+            let width = Array2D.length1 tex.Data
+            let height = Array2D.length2 tex.Data
+
+            let bmp = new Bitmap(width, height, Imaging.PixelFormat.Format24bppRgb)
+
+            tex.Data
+            |> Array2D.iteri (fun i j pixel ->
+                bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+            )
+
+            bmp.Save (tex.Name + ".bmp")
+            bmp.Dispose ()
+
+
             let uv = Array.zeroCreate vertices.Length
 
             let mutable i = 0
@@ -175,7 +194,7 @@ let init (world: World) =
                 MaterialComponent (
                     "triangle.vertex",
                     "triangle.fragment",
-                    textureName + ".bmp",
+                    tex.Name + ".bmp",
                     Color.FromArgb(lightLevel, lightLevel, lightLevel)
                 )
             )

@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.Numerics
 open System.Runtime.InteropServices
+open System.Collections.Generic
 
 open Foom.Wad.Pickler
 
@@ -22,8 +23,15 @@ type FlatTexture =
         Name: string
     }
 
+type Texture =
+    {
+        Data: Pixel [,]
+        Name: string
+    }
+
 type Wad = 
     {
+        mutable TextureInfoLookup: Dictionary<string, TextureInfo> option
         stream: Stream
         wadData: WadData
         defaultPaletteData: PaletteData option
@@ -162,6 +170,29 @@ module Wad =
             ) |> Some
         | _ -> None
 
+    let loadTextureInfos (wad: Wad) =
+        let texture1Lump =
+            wad.wadData.LumpHeaders
+            |> Array.find (fun x -> x.Name.ToUpper() = "TEXTURE1")
+
+        let texture2Lump =
+            wad.wadData.LumpHeaders
+            |> Array.tryFind (fun x -> x.Name.ToUpper() = "TEXTURE2")
+
+        let textureHeader = runUnpickle (uTextureHeader texture1Lump) wad.stream |> Async.RunSynchronously
+
+        let textureInfos = runUnpickle (uTextureInfos texture1Lump textureHeader) wad.stream |> Async.RunSynchronously
+
+        let textureInfoLookup = Dictionary ()
+
+        textureInfos
+        |> Array.iter (fun x -> 
+            textureInfoLookup.[x.Name] <- x
+            //textureInfoLookup.Add (x.Name, x)
+        )
+
+        wad.TextureInfoLookup <- Some textureInfoLookup
+
     let loadPatches wad =
         let texture1Lump =
             wad.wadData.LumpHeaders
@@ -219,11 +250,66 @@ module Wad =
             (tex, x.Name)
         )
 
+    let tryFindPatch patchName wad =
+        match tryFindLump patchName wad with
+        | Some header ->
+            (
+                runUnpickle (uDoomPicture header wad.defaultPaletteData.Value) wad.stream 
+                |> Async.RunSynchronously
+            ) |> Some
+        | _ -> None
+
+    let tryFindTexture name wad =
+        if wad.TextureInfoLookup.IsNone then
+            loadTextureInfos wad
+
+        match wad.TextureInfoLookup.Value.TryGetValue (name) with
+        | false, _ -> None
+        | true, info ->
+
+            let tex = Array2D.init info.Width info.Height (fun _ _ -> Pixel (0uy, 255uy, 255uy))
+
+            let pnamesLump =
+                wad.wadData.LumpHeaders
+                |> Array.find (fun x -> x.Name.ToUpper() = "PNAMES")
+
+            let patchNames = runUnpickle (uPatchNames pnamesLump) wad.stream |> Async.RunSynchronously
+
+            info.Patches
+            |> Array.iter (fun patch ->
+                match tryFindPatch patchNames.[patch.PatchNumber] wad with
+                | Some pic ->
+
+                    pic.Data
+                    |> Array2D.iteri (fun i j pixel ->
+                        let i = i + patch.OriginX
+                        let j = j + patch.OriginY
+
+                        if i < info.Width && j < info.Height && i >= 0 && j >= 0 then
+                            tex.[i, j] <- pixel
+                    )
+
+                | _ -> ()
+            )
+
+            {
+                Data = tex
+                Name = info.Name
+            } |> Some
+
+
+
     let create stream = async {
         let! wadData = runUnpickle u_wad stream
 
         return!
-            { stream = stream; wadData = wadData; defaultPaletteData = None; flats = [||] }
+            { 
+                TextureInfoLookup = None
+                stream = stream
+                wadData = wadData
+                defaultPaletteData = None
+                flats = [||] 
+            }
             |> (loadPalettes >=> loadFlats)
     }
 
@@ -232,7 +318,13 @@ module Wad =
             let! wadData = runUnpickle u_wad stream
 
             return!
-                { stream = stream; wadData = wadData; defaultPaletteData = wad.defaultPaletteData; flats = [||] }
+                { 
+                    TextureInfoLookup = None
+                    stream = stream
+                    wadData = wadData
+                    defaultPaletteData = wad.defaultPaletteData
+                    flats = [||] 
+                }
                 |> (loadFlats)
         }
 
