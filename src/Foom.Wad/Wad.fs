@@ -301,12 +301,11 @@ module Wad =
                             | LinedefData.Doom (x, y, f, b, data) -> 
                                 { Start = x
                                   End = y
-                                  FrontSidedef = match f with | Some f when f.SectorNumber = i -> Some (f) | _ -> None
-                                  BackSidedef = match b with | Some b when b.SectorNumber = i -> Some (b) | _ -> None }
-                                |> Some)
-                        |> Array.filter (fun x -> x.IsSome)
-                        |> Array.map (fun x -> x.Value)
+                                  FrontSidedef = f
+                                  BackSidedef = b }
+                                )
                     { 
+                        Id = i
                         Linedefs = lines; 
                         FloorTextureName = sector.FloorTextureName
                         FloorHeight = sector.FloorHeight

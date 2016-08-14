@@ -8,6 +8,7 @@ open Foom.Wad.Level.Structures
 
 type Sector = 
     {
+        Id: int
         Linedefs: Linedef [] 
         FloorTextureName: string
         FloorHeight: int
@@ -19,15 +20,37 @@ type Sector =
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Sector =
 
-    let wallTriangles sector =
+    let wallTriangles (sectors: Sector seq) sector =
+        let arr = ResizeArray<string * Vector3 []> ()
+
         sector.Linedefs
-        |> Array.choose (fun linedef ->
+        |> Array.iter (fun linedef ->
             match linedef.FrontSidedef with
             | Some frontSidedef ->
 
                 match linedef.BackSidedef with
                 | Some backSidedef ->
-                    None
+                    ()
+                    //if frontSidedef.UpperTextureName.Contains("-") |> not then
+                    //    failwith "yopac"
+
+
+                    //if frontSidedef.UpperTextureName.Contains("COMPUTE2") then
+                    //    let backSideSector = Seq.item frontSidedef.SectorNumber sectors
+
+                    //    (
+                    //        frontSidedef.UpperTextureName,
+                    //        [|
+                    //            Vector3 (linedef.Start, single backSideSector.CeilingHeight)
+                    //            Vector3 (linedef.End, single backSideSector.CeilingHeight)
+                    //            Vector3 (linedef.End, single sector.CeilingHeight)
+
+                    //            Vector3 (linedef.End, single sector.CeilingHeight)
+                    //            Vector3 (linedef.Start, single sector.CeilingHeight)
+                    //            Vector3 (linedef.Start, single backSideSector.CeilingHeight)
+                    //        |]
+                    //    ) |> arr.Add
+
                 | _ ->
 
 
@@ -40,26 +63,26 @@ module Sector =
                                 Vector3 (linedef.End, single sector.FloorHeight)
                                 Vector3 (linedef.End, single sector.CeilingHeight)
 
-                                //Vector3 (linedef.Start, single sector.FloorHeight)
                                 Vector3 (linedef.End, single sector.CeilingHeight)
                                 Vector3 (linedef.Start, single sector.CeilingHeight)
                                 Vector3 (linedef.Start, single sector.FloorHeight)
                             |]
-                        ) |> Some
-                    else None
-
-            | _ -> None
+                        )
+                        |> arr.Add
+            | _ -> ()
         )
 
+        arr
+
     let polygonFlats sector = 
-        match LinedefTracer.run2 (sector.Linedefs) with
+        match LinedefTracer.run2 (sector.Linedefs) sector.Id with
         | [] -> []
         | linedefPolygons ->
             let rec map (linedefPolygons: LinedefPolygon list) =
                 linedefPolygons
                 |> List.map (fun x -> 
                     {
-                        Polygon = x.Linedefs |> Polygon.ofLinedefs
+                        Polygon = (x.Linedefs, sector.Id) ||> Polygon.ofLinedefs
                         Children = map x.Inner
                     }
                 )

@@ -73,11 +73,24 @@ let init (world: World) =
         bmp.Dispose ()
     )
 
+    //Wad.flats wad
+    //|> Array.iter (fun tex ->
+    //    let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format24bppRgb)
+
+    //    for i = 0 to 64 - 1 do
+    //        for j = 0 to 64 - 1 do
+    //            let pixel = tex.Pixels.[i + (j * 64)]
+    //            bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+
+    //    bmp.Save(tex.Name + ".bmp")
+    //    bmp.Dispose ()
+    //)
+
     // Calculate polygons
 
     let sectorPolygons =
         lvl.Sectors
-        //[| lvl.Sectors.[240] |]
+        //[| lvl.Sectors.[343] |]
         |> Array.mapi (fun i s -> 
             System.Diagnostics.Debug.WriteLine ("Sector " + string i)
             (Sector.polygonFlats s, s)
@@ -93,7 +106,7 @@ let init (world: World) =
 
     let cameraEnt = world.EntityManager.Spawn ()
     world.EntityManager.AddComponent cameraEnt (CameraComponent ())
-    world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (Vector3 (1536.f, -3584.f, 64.f * 3.f))))
+    world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (Vector3 (-3680.f, -6704.f, 64.f * 3.f))))
     world.EntityManager.AddComponent cameraEnt (CameraRotationComponent())
 
     let flatUnit = 64.f
@@ -102,9 +115,9 @@ let init (world: World) =
 
     lvl.Sectors
     |> Array.iter (fun sector ->
-        sector
-        |> Sector.wallTriangles
-        |> Array.iter (fun (textureName, vertices) ->
+        //sector
+        Sector.wallTriangles lvl.Sectors sector
+        |> Seq.iter (fun (textureName, vertices) ->
 
             match Wad.tryFindTexture textureName doom2Wad with
             | None -> ()
