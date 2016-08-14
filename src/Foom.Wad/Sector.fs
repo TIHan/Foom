@@ -30,45 +30,57 @@ module Sector =
 
                 match linedef.BackSidedef with
                 | Some backSidedef ->
-                    ()
-                    //if frontSidedef.UpperTextureName.Contains("-") |> not then
-                    //    failwith "yopac"
 
+                    if frontSidedef.UpperTextureName.Contains("-") |> not then
+                        let backSideSector = Seq.item backSidedef.SectorNumber sectors
 
-                    //if frontSidedef.UpperTextureName.Contains("COMPUTE2") then
-                    //    let backSideSector = Seq.item frontSidedef.SectorNumber sectors
-
-                    //    (
-                    //        frontSidedef.UpperTextureName,
-                    //        [|
-                    //            Vector3 (linedef.Start, single backSideSector.CeilingHeight)
-                    //            Vector3 (linedef.End, single backSideSector.CeilingHeight)
-                    //            Vector3 (linedef.End, single sector.CeilingHeight)
-
-                    //            Vector3 (linedef.End, single sector.CeilingHeight)
-                    //            Vector3 (linedef.Start, single sector.CeilingHeight)
-                    //            Vector3 (linedef.Start, single backSideSector.CeilingHeight)
-                    //        |]
-                    //    ) |> arr.Add
-
-                | _ ->
-
-
-
-                    if frontSidedef.MiddleTextureName.Contains("-") |> not then
                         (
-                            frontSidedef.MiddleTextureName,
+                            frontSidedef.UpperTextureName,
                             [|
-                                Vector3 (linedef.Start, single sector.FloorHeight)
-                                Vector3 (linedef.End, single sector.FloorHeight)
+                                Vector3 (linedef.Start, single backSideSector.CeilingHeight)
+                                Vector3 (linedef.End, single backSideSector.CeilingHeight)
                                 Vector3 (linedef.End, single sector.CeilingHeight)
 
                                 Vector3 (linedef.End, single sector.CeilingHeight)
                                 Vector3 (linedef.Start, single sector.CeilingHeight)
-                                Vector3 (linedef.Start, single sector.FloorHeight)
+                                Vector3 (linedef.Start, single backSideSector.CeilingHeight)
                             |]
-                        )
-                        |> arr.Add
+                        ) |> arr.Add
+
+                    if frontSidedef.LowerTextureName.Contains("-") |> not then
+                        let backSideSector = Seq.item backSidedef.SectorNumber sectors
+
+                        (
+                            frontSidedef.LowerTextureName,
+                            [|
+                                Vector3 (linedef.End, single backSideSector.FloorHeight)
+                                Vector3 (linedef.Start, single backSideSector.FloorHeight)
+                                Vector3 (linedef.Start, single sector.FloorHeight)
+
+                                Vector3 (linedef.Start, single sector.FloorHeight)
+                                Vector3 (linedef.End, single sector.FloorHeight)
+                                Vector3 (linedef.End, single backSideSector.FloorHeight)
+                            |]
+                        ) |> arr.Add
+
+                | _ -> ()
+
+
+
+                if frontSidedef.MiddleTextureName.Contains("-") |> not then
+                    (
+                        frontSidedef.MiddleTextureName,
+                        [|
+                            Vector3 (linedef.Start, single sector.FloorHeight)
+                            Vector3 (linedef.End, single sector.FloorHeight)
+                            Vector3 (linedef.End, single sector.CeilingHeight)
+
+                            Vector3 (linedef.End, single sector.CeilingHeight)
+                            Vector3 (linedef.Start, single sector.CeilingHeight)
+                            Vector3 (linedef.Start, single sector.FloorHeight)
+                        |]
+                    )
+                    |> arr.Add
             | _ -> ()
         )
 
