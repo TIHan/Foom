@@ -139,10 +139,10 @@ let init (world: World) =
                 let v2 = Vector2 (p2.X, p2.Y)
                 let v3 = Vector2 (p3.X, p3.Y)
 
-                let one = (if p3.Z < p1.Z then v2.X else v1.X)
+                let one = 0.f
                 let two = (v2 - v1).Length ()
                 
-                let x = one / width
+                let x = 0.f
                 let y = (one + two) / width
 
                 if p3.Z < p1.Z then
