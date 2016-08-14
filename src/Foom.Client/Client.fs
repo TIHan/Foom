@@ -142,7 +142,7 @@ let init (world: World) =
                 let two = (v2 - v1).Length ()
 
                 let flipX =
-                    if (p1.Z = p2.Z) then -1.f
+                    if (p3.Z < p1.Z) then -1.f
                     else 1.f
 
                 uv.[i] <- Vector2 (v1.X / width * flipX, p1.Z / height * -1.f)
@@ -259,6 +259,20 @@ let init (world: World) =
             )
         )
     )
+
+    //let stuff = Wad.loadPatches doom2Wad
+
+    //for i = 0 to stuff.Length - 1 do
+    //    let (doomPicture, name) = stuff.[i]
+    //    let bmp = new Bitmap(doomPicture |> Array2D.length1, doomPicture |> Array2D.length2, Imaging.PixelFormat.Format24bppRgb)
+
+    //    doomPicture
+    //    |> Array2D.iteri (fun i j pixel ->
+    //        bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+    //    )
+
+    //    bmp.Save (name + ".bmp")
+    //    bmp.Dispose ()
 
     printfn "COUNT: %A" count
 

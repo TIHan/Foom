@@ -369,27 +369,53 @@ module UnpickleWad =
         goToLump lumpHeader (
             u_lookAhead (
                 uTexture >>= fun texture -> 
-                    u_array texture.Width (u_uint32) 
+                    u_lookAhead (u_array texture.Width (u_uint32)) 
                     |>> fun columnArray -> (columnArray, texture)) >>= fun (columnArray, texture) ->
-               
 
                         let data = Array2D.init texture.Width texture.Height (fun _ _ -> Pixel (0uy, 255uy, 255uy))
 
                         u_arrayi texture.Width (fun i ->
                             u_lookAhead (
-                                u_skipBytes (int64 columnArray.[i]) >>= fun () ->
-                                    u_pipe3 u_byte u_byte u_byte (fun rowStart count _ -> (rowStart, count)) >>= fun (rowStart, count) ->
+                                fun stream ->
 
-                                        if rowStart <> 255uy then
-                                            u_arrayi (int count) (fun j ->
-                                                u_byte |>> fun p ->
-                                                    data.[i,j + int rowStart] <- palette.Pixels.[int p]                                                
-                                            )
-                                        else
-                                            fun _ -> Array.empty
+                                    stream |> LiteReadStream.skip (int64 columnArray.[i])
+
+                                    let mutable rowStart = 0
+
+                                    while rowStart <> 255 do
+                                        rowStart <- stream |> LiteReadStream.readByte |> int
+
+                                        if rowStart < 255 then
+
+                                            let count = stream |> LiteReadStream.readByte |> int
+                                            stream |> LiteReadStream.readByte |> ignore
+
+                                            for j = 0 to count - 1 do
+                                                let p = stream |> LiteReadStream.readByte
+                                                let j = j + rowStart
+                                                if i < texture.Width && j < texture.Height then
+                                                    data.[i,j] <- palette.Pixels.[int p]
+                                            
+                                            stream |> LiteReadStream.readByte |> ignore
+
+
+                                    ()
+                                //u_skipBytes (int64 columnArray.[i]) >>= fun () ->
+                                //    u_pipe3 u_byte u_byte u_byte (fun rowStart count _ -> (rowStart, count)) >>= fun (rowStart, count) ->
+
+                                //        if rowStart <> 255uy then
+                                //            u_arrayi (int count + 4) (fun j ->
+                                //                let j = j + int rowStart
+                                //                u_byte |>> fun p ->
+                                //                    if i < texture.Width && j < texture.Height then
+                                //                        data.[i,j] <- palette.Pixels.[int p]                                    
+                                //            )
+                                //        else
+                                //            fun _ -> Array.empty
 
                             )
-                        ) |>> fun _ ->
+                        ) |>> fun columns ->
+
                             {
                                 Width = texture.Width
                                 Height = texture.Height

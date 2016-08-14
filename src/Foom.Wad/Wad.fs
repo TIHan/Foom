@@ -278,7 +278,7 @@ module Wad =
             let mutable previousOffsetX = 0
             let mutable previousOffsetY = 0
             info.Patches
-            |> Array.iteri (fun i patch ->
+            |> Array.iter (fun patch ->
                 match tryFindPatch patchNames.[patch.PatchNumber] wad with
                 | Some pic ->
 
@@ -288,13 +288,9 @@ module Wad =
                         let j = j + patch.OriginY
 
                         if i < info.Width && j < info.Height && i >= 0 && j >= 0 then
-                            //if tex.[i,j] = Pixel (0uy, 255uy, 255uy) && pixel <> Pixel (0uy, 255uy, 255uy) then
-                                tex.[i, j] <- pixel
+                            tex.[i, j] <- pixel
                                
                     )
-
-                    previousOffsetX <- patch.OriginX
-                    previousOffsetY <- patch.OriginY
 
                 | _ -> ()
             )
