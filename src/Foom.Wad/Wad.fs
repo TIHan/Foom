@@ -161,15 +161,6 @@ module Wad =
         wad.wadData.LumpHeaders
         |> Array.tryFind (fun x -> x.Name.ToUpper() = str.ToUpper())
 
-    let tryLoadGraphic name wad =
-        match tryFindLump name wad with
-        | Some header ->
-            (
-                runUnpickle (uDoomPicture header wad.defaultPaletteData.Value) wad.stream |> Async.RunSynchronously,
-                name
-            ) |> Some
-        | _ -> None
-
     let loadTextureInfos (wad: Wad) =
         let texture1Lump =
             wad.wadData.LumpHeaders
@@ -188,67 +179,9 @@ module Wad =
         textureInfos
         |> Array.iter (fun x -> 
             textureInfoLookup.[x.Name] <- x
-            //textureInfoLookup.Add (x.Name, x)
         )
 
         wad.TextureInfoLookup <- Some textureInfoLookup
-
-    let loadPatches wad =
-        let texture1Lump =
-            wad.wadData.LumpHeaders
-            |> Array.find (fun x -> x.Name.ToUpper() = "TEXTURE1")
-
-        let texture2Lump =
-            wad.wadData.LumpHeaders
-            |> Array.tryFind (fun x -> x.Name.ToUpper() = "TEXTURE2")
-
-        let pnamesLump =
-            wad.wadData.LumpHeaders
-            |> Array.find (fun x -> x.Name.ToUpper() = "PNAMES")
-
-        let textureHeader = runUnpickle (uTextureHeader texture1Lump) wad.stream |> Async.RunSynchronously
-
-        let textureInfos = runUnpickle (uTextureInfos texture1Lump textureHeader) wad.stream |> Async.RunSynchronously
-
-        let patchNames = runUnpickle (uPatchNames pnamesLump) wad.stream |> Async.RunSynchronously
-
-        let doomPictures =
-            patchNames
-            |> Array.map (fun patchName ->
-                if isFlat patchName wad then None
-                else
-                    match tryFindLump patchName wad with
-                    | Some header ->
-                        (
-                            runUnpickle (uDoomPicture header wad.defaultPaletteData.Value) wad.stream |> Async.RunSynchronously,
-                            patchName
-                        ) |> Some
-                    | _ -> None
-            )
-
-        textureInfos
-        |> Array.map (fun x ->
-            let tex = Array2D.init x.Width x.Height (fun _ _ -> Pixel (0uy, 255uy, 255uy))
-
-            x.Patches
-            |> Array.iter (fun patch ->
-                match doomPictures.[patch.PatchNumber] with
-                | Some (pic, _) ->
-
-                    pic.Data
-                    |> Array2D.iteri (fun i j pixel ->
-                        let i = i + patch.OriginX
-                        let j = j + patch.OriginY
-
-                        if i < x.Width && j < x.Height && i >= 0 && j >= 0 then
-                            tex.[i, j] <- pixel
-                    )
-
-                | _ -> ()
-            )
-
-            (tex, x.Name)
-        )
 
     let tryFindPatch patchName wad =
         match tryFindLump patchName wad with

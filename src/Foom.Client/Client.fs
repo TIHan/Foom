@@ -260,20 +260,6 @@ let init (world: World) =
         )
     )
 
-    //let stuff = Wad.loadPatches doom2Wad
-
-    //for i = 0 to stuff.Length - 1 do
-    //    let (doomPicture, name) = stuff.[i]
-    //    let bmp = new Bitmap(doomPicture |> Array2D.length1, doomPicture |> Array2D.length2, Imaging.PixelFormat.Format24bppRgb)
-
-    //    doomPicture
-    //    |> Array2D.iteri (fun i j pixel ->
-    //        bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-    //    )
-
-    //    bmp.Save (name + ".bmp")
-    //    bmp.Dispose ()
-
     printfn "COUNT: %A" count
 
     { 

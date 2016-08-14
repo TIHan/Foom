@@ -32,8 +32,4 @@ module Wad =
 
     val findLevel : levelName: string -> wad: Wad -> Async<Level>
 
-    val tryLoadGraphic : string -> Wad -> (DoomPicture * string) option
-
-    val loadPatches : Wad -> (Pixel [,] * string) []
-
     val tryFindTexture : textureName: string -> wad: Wad -> Texture option
