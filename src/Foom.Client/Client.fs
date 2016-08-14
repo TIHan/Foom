@@ -73,48 +73,6 @@ let init (world: World) =
         bmp.Dispose ()
     )
 
-    //Wad.flats wad
-    //|> Array.iter (fun tex ->
-    //    let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format24bppRgb)
-
-    //    for i = 0 to 64 - 1 do
-    //        for j = 0 to 64 - 1 do
-    //            let pixel = tex.Pixels.[i + (j * 64)]
-    //            bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-
-    //    bmp.Save(tex.Name + ".bmp")
-    //    bmp.Dispose ()
-    //)
-
-    let stuff = Wad.loadPatches doom2Wad
-
-    for i = 0 to stuff.Length - 1 do
-        let (data, name) = stuff.[i]
-        let bmp = new Bitmap(data |> Array2D.length1, data |> Array2D.length2, Imaging.PixelFormat.Format24bppRgb)
-
-        data
-        |> Array2D.iteri (fun i j pixel ->
-            bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-        )
-
-        bmp.Save (name + ".bmp")
-        bmp.Dispose ()
-
-    //let stuff = Wad.loadPatches wad
-
-    //for i = 0 to stuff.Length - 1 do
-    //    let (doomPicture, name) = stuff.[i]
-    //    let bmp = new Bitmap(doomPicture.Width, doomPicture.Height, Imaging.PixelFormat.Format24bppRgb)
-
-    //    doomPicture.Data
-    //    |> Array2D.iteri (fun i j pixel ->
-    //        bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-    //    )
-
-    //    bmp.Save (name + ".bmp")
-    //    bmp.Dispose ()
-
-
     // Calculate polygons
 
     let sectorPolygons =
@@ -174,11 +132,21 @@ let init (world: World) =
                 let p2 = vertices.[i + 1]
                 let p3 = vertices.[i + 2]
 
-                let q = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, 0.f * (single System.Math.PI / 180.f))
+                let width = single width
+                let height = single height
 
-                uv.[i] <- Vector2.Transform (Vector2 (0.f, 0.f), q)
-                uv.[i + 1] <- Vector2.Transform (Vector2(0.f, 1.f), q)
-                uv.[i + 2] <- Vector2.Transform (Vector2(1.f, 1.f), q)
+                let v1 = Vector2 (p1.X, p1.Y)
+                let v2 = Vector2 (p2.X, p2.Y)
+                let v3 = Vector2 (p3.X, p3.Y)
+
+                let two = (v2 - v1).Length ()//Vector2.Dot(v2 - v1, Vector2.UnitX)
+
+                //uv.[i] <- Vector2.Transform (Vector2 (p1.X / width, p1.Y / height), q)
+                //uv.[i + 1] <- Vector2.Transform (Vector2(p2.X / width, p2.Y / height), q)
+                //uv.[i + 2] <- Vector2.Transform (Vector2(p3.X / width, p3.Y / height), q)
+                uv.[i] <- Vector2 (v1.X / width * -1.f, p1.Z / height * -1.f)
+                uv.[i + 1] <- Vector2((v1.X + two) / width * -1.f, p2.Z / height * -1.f)
+                uv.[i + 2] <- Vector2((v1.X + two) / width * -1.f, p3.Z / height * -1.f)
 
                 i <- i + 3
 

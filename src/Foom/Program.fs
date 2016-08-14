@@ -88,19 +88,19 @@ let start (invoke: Task ref) =
                     )
 
                     if isMovingForward then
-                        let v = Vector3.Transform (Vector3.UnitZ * -64.f * 2.f, transformComp.Rotation)
+                        let v = Vector3.Transform (Vector3.UnitZ * -64.f * 1.f, transformComp.Rotation)
                         transformComp.Translate (v)
 
                     if isMovingLeft then
-                        let v = Vector3.Transform (Vector3.UnitX * -64.f * 2.f, transformComp.Rotation)
+                        let v = Vector3.Transform (Vector3.UnitX * -64.f * 1.f, transformComp.Rotation)
                         transformComp.Translate (v)
 
                     if isMovingBackward then
-                        let v = Vector3.Transform (Vector3.UnitZ * 64.f * 2.f, transformComp.Rotation)
+                        let v = Vector3.Transform (Vector3.UnitZ * 64.f * 1.f, transformComp.Rotation)
                         transformComp.Translate (v)
 
                     if isMovingRight then
-                        let v = Vector3.Transform (Vector3.UnitX * 64.f * 2.f, transformComp.Rotation)
+                        let v = Vector3.Transform (Vector3.UnitX * 64.f * 1.f, transformComp.Rotation)
                         transformComp.Translate (v)
                        
                 )

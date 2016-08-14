@@ -127,7 +127,7 @@ let materialQueue =
                     | TextureState.ReadyToLoad fileName ->
                         try
                             use ptr = new Gdk.Pixbuf (fileName)
-                            let textureId = Renderer.createTexture 64 64 (ptr.Pixels)
+                            let textureId = Renderer.createTexture ptr.Width ptr.Height (ptr.Pixels)
 
                             materialComp.TextureState <- TextureState.Loaded textureId
                         with | ex ->
@@ -159,7 +159,7 @@ let create (app: Application) =
 
                 Renderer.clear ()
 
-                let projection = Matrix4x4.CreatePerspectiveFieldOfView (1.f, (16.f / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose
+                let projection = Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.2f) / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose
 
                 entityManager.TryFind<CameraComponent> (fun _ _ -> true)
                 |> Option.iter (fun (ent, cameraComp) ->
