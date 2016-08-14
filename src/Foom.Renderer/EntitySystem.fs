@@ -159,7 +159,7 @@ let create (app: Application) =
 
                 Renderer.clear ()
 
-                let projection = Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.2f) / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose
+                let projection = Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose
 
                 entityManager.TryFind<CameraComponent> (fun _ _ -> true)
                 |> Option.iter (fun (ent, cameraComp) ->

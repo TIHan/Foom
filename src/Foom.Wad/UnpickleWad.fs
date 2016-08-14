@@ -355,7 +355,7 @@ module UnpickleWad =
         )
 
     let uTexture : Unpickle<DoomPictureHeader> =
-        u_pipe4 u_uint16 u_uint16 u_uint16 u_uint16 <| 
+        u_pipe4 u_uint16 u_uint16 u_int16 u_int16 <| 
         fun width height top left ->
             {
                 Width = int width
@@ -384,7 +384,7 @@ module UnpickleWad =
                                             u_arrayi (int count) (fun j ->
                                                 u_byte |>> fun p ->
                                                     data.[i,j + int rowStart] <- palette.Pixels.[int p]                                                
-                                            ) .>> u_byte
+                                            )
                                         else
                                             fun _ -> Array.empty
 

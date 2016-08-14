@@ -139,14 +139,15 @@ let init (world: World) =
                 let v2 = Vector2 (p2.X, p2.Y)
                 let v3 = Vector2 (p3.X, p3.Y)
 
-                let two = (v2 - v1).Length ()//Vector2.Dot(v2 - v1, Vector2.UnitX)
+                let two = (v2 - v1).Length ()
 
-                //uv.[i] <- Vector2.Transform (Vector2 (p1.X / width, p1.Y / height), q)
-                //uv.[i + 1] <- Vector2.Transform (Vector2(p2.X / width, p2.Y / height), q)
-                //uv.[i + 2] <- Vector2.Transform (Vector2(p3.X / width, p3.Y / height), q)
-                uv.[i] <- Vector2 (v1.X / width * -1.f, p1.Z / height * -1.f)
-                uv.[i + 1] <- Vector2((v1.X + two) / width * -1.f, p2.Z / height * -1.f)
-                uv.[i + 2] <- Vector2((v1.X + two) / width * -1.f, p3.Z / height * -1.f)
+                let flipX =
+                    if (p1.Z = p2.Z) then -1.f
+                    else 1.f
+
+                uv.[i] <- Vector2 (v1.X / width * flipX, p1.Z / height * -1.f)
+                uv.[i + 1] <- Vector2((v1.X + two) / width * flipX, p2.Z / height * -1.f)
+                uv.[i + 2] <- Vector2((v1.X + two) / width * flipX, p3.Z / height * -1.f)
 
                 i <- i + 3
 
