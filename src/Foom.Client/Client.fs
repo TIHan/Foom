@@ -139,15 +139,20 @@ let init (world: World) =
                 let v2 = Vector2 (p2.X, p2.Y)
                 let v3 = Vector2 (p3.X, p3.Y)
 
+                let one = (if p3.Z < p1.Z then v2.X else v1.X)
                 let two = (v2 - v1).Length ()
+                
+                let x = one / width
+                let y = (one + two) / width
 
-                let flipX =
-                    if (p3.Z < p1.Z) then -1.f
-                    else 1.f
-
-                uv.[i] <- Vector2 (v1.X / width * flipX, p1.Z / height * -1.f)
-                uv.[i + 1] <- Vector2((v1.X + two) / width * flipX, p2.Z / height * -1.f)
-                uv.[i + 2] <- Vector2((v1.X + two) / width * flipX, p3.Z / height * -1.f)
+                if p3.Z < p1.Z then
+                    uv.[i] <- Vector2 (y, p1.Z / height * -1.f)
+                    uv.[i + 1] <- Vector2(x, p2.Z / height * -1.f)
+                    uv.[i + 2] <- Vector2(x, p3.Z / height * -1.f)
+                else
+                    uv.[i] <- Vector2 (x, p1.Z / height * -1.f)
+                    uv.[i + 1] <- Vector2(y, p2.Z / height * -1.f)
+                    uv.[i + 2] <- Vector2(y, p3.Z / height * -1.f)
 
                 i <- i + 3
 

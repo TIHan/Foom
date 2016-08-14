@@ -39,6 +39,8 @@ module Sector =
                                 Vector3 (linedef.Start, single sector.FloorHeight)
                                 Vector3 (linedef.End, single sector.FloorHeight)
                                 Vector3 (linedef.End, single sector.CeilingHeight)
+
+                                //Vector3 (linedef.Start, single sector.FloorHeight)
                                 Vector3 (linedef.End, single sector.CeilingHeight)
                                 Vector3 (linedef.Start, single sector.CeilingHeight)
                                 Vector3 (linedef.Start, single sector.FloorHeight)
