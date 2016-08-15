@@ -153,29 +153,29 @@ let init (world: World) =
                 let v2 = Vector2 (p2.X, p2.Y)
                 let v3 = Vector2 (p3.X, p3.Y)
 
-                let one = 0.f
+                let one = 0.f + single renderLinedef.TextureOffsetX
                 let two = (v2 - v1).Length ()
 
                 let x, y, z1, z3 =
                     if renderLinedef.IsMiddle then
                         if p3.Z < p1.Z then
                             (one + two) / width, 
-                            0.f, 
+                            one / width, 
                             0.f,
                             ((abs (p1.Z - p3.Z)) / height * -1.f)
                         else
-                            0.f, 
+                            one / width, 
                             (one + two) / width, 
                             ((abs (p1.Z - p3.Z)) / height * -1.f),
                             0.f
                     else
                         if p3.Z < p1.Z then
                             (one + two) / width, 
-                            0.f, 
+                            one / width, 
                             1.f - ((abs (p1.Z - p3.Z)) / height * -1.f),
                             1.f
                         else
-                            0.f, 
+                            one / width, 
                             (one + two) / width, 
                             1.f,
                             1.f - ((abs (p1.Z - p3.Z)) / height * -1.f)
