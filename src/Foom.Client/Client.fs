@@ -117,9 +117,9 @@ let init (world: World) =
     |> Array.iter (fun sector ->
         //sector
         Sector.wallTriangles lvl.Sectors sector
-        |> Seq.iter (fun (textureName, vertices) ->
+        |> Seq.iter (fun renderLinedef ->
 
-            match Wad.tryFindTexture textureName doom2Wad with
+            match Wad.tryFindTexture renderLinedef.TextureName doom2Wad with
             | None -> ()
             | Some tex ->
 
@@ -137,6 +137,7 @@ let init (world: World) =
             bmp.Dispose ()
 
 
+            let vertices = renderLinedef.Vertices
             let uv = Array.zeroCreate vertices.Length
 
             let mutable i = 0
@@ -154,24 +155,29 @@ let init (world: World) =
 
                 let one = 0.f
                 let two = (v2 - v1).Length ()
-                
-                let x = 0.f
-                let y = (one + two) / width
 
-                if p3.Z < p1.Z then
-                    uv.[i] <- Vector2 (y, p1.Z / height * -1.f)
-                    uv.[i + 1] <- Vector2(x, p2.Z / height * -1.f)
-                    uv.[i + 2] <- Vector2(x, p3.Z / height * -1.f)
-                else
-                    uv.[i] <- Vector2 (x, p1.Z / height * -1.f)
-                    uv.[i + 1] <- Vector2(y, p2.Z / height * -1.f)
-                    uv.[i + 2] <- Vector2(y, p3.Z / height * -1.f)
+                let x, y, z1, z3 =
+                    if p3.Z < p1.Z then
+                        (one + two) / width, 
+                        0.f, 
+                        1.f - ((abs (p1.Z - p3.Z)) / height * -1.f),
+                        1.f
+                    else
+                        0.f, 
+                        (one + two) / width, 
+                        1.f,
+                        1.f - ((abs (p1.Z - p3.Z)) / height * -1.f)
+
+                uv.[i] <- Vector2 (x, z3)
+                uv.[i + 1] <- Vector2(y, z3)
+                uv.[i + 2] <- Vector2(y, z1)
 
                 i <- i + 3
 
+            let lightLevel = sector.LightLevel - 75
             let lightLevel =
-                if sector.LightLevel > 255 then 255
-                else sector.LightLevel
+                if lightLevel > 255 then 255
+                else lightLevel
 
             let ent = world.EntityManager.Spawn ()
 
@@ -213,9 +219,10 @@ let init (world: World) =
 
                 i <- i + 3
 
+            let lightLevel = sector.LightLevel - 75
             let lightLevel =
-                if sector.LightLevel > 255 then 255
-                else sector.LightLevel
+                if lightLevel > 255 then 255
+                else lightLevel
 
             count <- count + 1
             let ent = world.EntityManager.Spawn ()
@@ -258,9 +265,10 @@ let init (world: World) =
 
                 i <- i + 3
 
+            let lightLevel = sector.LightLevel - 75
             let lightLevel =
-                if sector.LightLevel > 255 then 255
-                else sector.LightLevel
+                if lightLevel > 255 then 255
+                else lightLevel
 
             count <- count + 1
             let ent = world.EntityManager.Spawn ()

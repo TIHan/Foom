@@ -17,11 +17,20 @@ type Sector =
         LightLevel: int
     }
 
+type RenderLinedef =
+    {
+        TextureName: string
+        TextureOffsetX: int
+        TextureOffsetY: int
+        Vertices: Vector3 []
+        IsMiddle: bool
+    }
+
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Sector =
 
     let wallTriangles (sectors: Sector seq) sector =
-        let arr = ResizeArray<string * Vector3 []> ()
+        let arr = ResizeArray<RenderLinedef> ()
 
         sector.Linedefs
         |> Array.iter (fun linedef ->
@@ -34,53 +43,65 @@ module Sector =
                     if frontSidedef.UpperTextureName.Contains("-") |> not then
                         let backSideSector = Seq.item backSidedef.SectorNumber sectors
 
-                        (
-                            frontSidedef.UpperTextureName,
-                            [|
-                                Vector3 (linedef.Start, single backSideSector.CeilingHeight)
-                                Vector3 (linedef.End, single backSideSector.CeilingHeight)
-                                Vector3 (linedef.End, single sector.CeilingHeight)
+                        {
+                            TextureName = frontSidedef.UpperTextureName
+                            TextureOffsetX = frontSidedef.OffsetX
+                            TextureOffsetY = frontSidedef.OffsetY
+                            Vertices =
+                                [|
+                                    Vector3 (linedef.Start, single backSideSector.CeilingHeight)
+                                    Vector3 (linedef.End, single backSideSector.CeilingHeight)
+                                    Vector3 (linedef.End, single sector.CeilingHeight)
 
-                                Vector3 (linedef.End, single sector.CeilingHeight)
-                                Vector3 (linedef.Start, single sector.CeilingHeight)
-                                Vector3 (linedef.Start, single backSideSector.CeilingHeight)
-                            |]
-                        ) |> arr.Add
+                                    Vector3 (linedef.End, single sector.CeilingHeight)
+                                    Vector3 (linedef.Start, single sector.CeilingHeight)
+                                    Vector3 (linedef.Start, single backSideSector.CeilingHeight)
+                                |]
+                            IsMiddle = false
+                        }
+                        |> arr.Add
 
                     if frontSidedef.LowerTextureName.Contains("-") |> not then
                         let backSideSector = Seq.item backSidedef.SectorNumber sectors
 
-                        (
-                            frontSidedef.LowerTextureName,
-                            [|
-                                Vector3 (linedef.End, single backSideSector.FloorHeight)
-                                Vector3 (linedef.Start, single backSideSector.FloorHeight)
-                                Vector3 (linedef.Start, single sector.FloorHeight)
+                        {
+                            TextureName = frontSidedef.LowerTextureName
+                            TextureOffsetX = frontSidedef.OffsetX
+                            TextureOffsetY = frontSidedef.OffsetY
+                            Vertices = 
+                                [|
+                                    Vector3 (linedef.End, single backSideSector.FloorHeight)
+                                    Vector3 (linedef.Start, single backSideSector.FloorHeight)
+                                    Vector3 (linedef.Start, single sector.FloorHeight)
 
-                                Vector3 (linedef.Start, single sector.FloorHeight)
-                                Vector3 (linedef.End, single sector.FloorHeight)
-                                Vector3 (linedef.End, single backSideSector.FloorHeight)
-                            |]
-                        ) |> arr.Add
+                                    Vector3 (linedef.Start, single sector.FloorHeight)
+                                    Vector3 (linedef.End, single sector.FloorHeight)
+                                    Vector3 (linedef.End, single backSideSector.FloorHeight)
+                                |]
+                            IsMiddle = false
+                        } |> arr.Add
 
                 | _ -> ()
 
 
 
                 if frontSidedef.MiddleTextureName.Contains("-") |> not then
-                    (
-                        frontSidedef.MiddleTextureName,
-                        [|
-                            Vector3 (linedef.Start, single sector.FloorHeight)
-                            Vector3 (linedef.End, single sector.FloorHeight)
-                            Vector3 (linedef.End, single sector.CeilingHeight)
+                    {
+                        TextureName = frontSidedef.MiddleTextureName
+                        TextureOffsetX = frontSidedef.OffsetX
+                        TextureOffsetY = frontSidedef.OffsetY
+                        Vertices = 
+                            [|
+                                Vector3 (linedef.Start, single sector.FloorHeight)
+                                Vector3 (linedef.End, single sector.FloorHeight)
+                                Vector3 (linedef.End, single sector.CeilingHeight)
 
-                            Vector3 (linedef.End, single sector.CeilingHeight)
-                            Vector3 (linedef.Start, single sector.CeilingHeight)
-                            Vector3 (linedef.Start, single sector.FloorHeight)
-                        |]
-                    )
-                    |> arr.Add
+                                Vector3 (linedef.End, single sector.CeilingHeight)
+                                Vector3 (linedef.Start, single sector.CeilingHeight)
+                                Vector3 (linedef.Start, single sector.FloorHeight)
+                            |]
+                        IsMiddle = true
+                    } |> arr.Add
             | _ -> ()
         )
 
