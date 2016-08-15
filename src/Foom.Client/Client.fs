@@ -135,66 +135,6 @@ let init (world: World) =
             bmp.Save (tex.Name + ".bmp")
             bmp.Dispose ()
 
-
-            let vertices = renderLinedef.Vertices
-            let uv = Array.zeroCreate vertices.Length
-
-            let mutable i = 0
-            while (i < vertices.Length) do
-                let p1 = vertices.[i]
-                let p2 = vertices.[i + 1]
-                let p3 = vertices.[i + 2]
-
-                let width = single width
-                let height = single height
-
-                let v1 = Vector2 (p1.X, p1.Y)
-                let v2 = Vector2 (p2.X, p2.Y)
-                let v3 = Vector2 (p3.X, p3.Y)
-
-                let one = 0.f + single renderLinedef.TextureOffsetX
-                let two = (v2 - v1).Length ()
-
-                let x, y, z1, z3 =
-
-                    // lower unpeg
-                    match renderLinedef.TextureAlignment with
-                    | LowerUnpegged ->
-                        let ofsY = single renderLinedef.TextureOffsetY / height * -1.f
-                        if p3.Z < p1.Z then
-                            (one + two) / width, 
-                            one / width, 
-                            0.f - ofsY,
-                            ((abs (p1.Z - p3.Z)) / height * -1.f) - ofsY
-                        else
-                            one / width, 
-                            (one + two) / width, 
-                            ((abs (p1.Z - p3.Z)) / height * -1.f) - ofsY,
-                            0.f - ofsY
-
-                    // upper unpeg
-                    | UpperUnpegged offsetY ->
-                        let z = single offsetY / height * -1.f
-                        let ofsY = single renderLinedef.TextureOffsetY / height * -1.f
-                        if p3.Z < p1.Z then
-                            (one + two) / width, 
-                            one / width, 
-                            (1.f - ((abs (p1.Z - p3.Z)) / height * -1.f)) - z - ofsY,
-                            1.f - z - ofsY
-                        else
-                            one / width, 
-                            (one + two) / width, 
-                            1.f - z - ofsY,
-                            (1.f - ((abs (p1.Z - p3.Z)) / height * -1.f)) - z - ofsY
-
-                
-
-                uv.[i] <- Vector2 (x, z3)
-                uv.[i + 1] <- Vector2(y, z3)
-                uv.[i + 2] <- Vector2(y, z1)
-
-                i <- i + 3
-
             let lightLevel = sector.LightLevel
             let lightLevel =
                 if lightLevel > 255 then 255
@@ -203,7 +143,7 @@ let init (world: World) =
             let ent = world.EntityManager.Spawn ()
 
             world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
-            world.EntityManager.AddComponent ent (MeshComponent (vertices, uv))
+            world.EntityManager.AddComponent ent (MeshComponent (renderLinedef.Vertices, Wall.createUV width height renderLinedef))
             world.EntityManager.AddComponent ent (
                 MaterialComponent (
                     "triangle.vertex",
