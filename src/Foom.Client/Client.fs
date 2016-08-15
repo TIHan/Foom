@@ -115,8 +115,7 @@ let init (world: World) =
 
     lvl.Sectors
     |> Array.iter (fun sector ->
-        //sector
-        Sector.wallTriangles lvl.Sectors sector
+        Level.createWalls sector lvl
         |> Seq.iter (fun renderLinedef ->
 
             match Wad.tryFindTexture renderLinedef.TextureName doom2Wad with
@@ -157,28 +156,36 @@ let init (world: World) =
                 let two = (v2 - v1).Length ()
 
                 let x, y, z1, z3 =
-                    if renderLinedef.IsMiddle then
+
+                    // lower unpeg
+                    match renderLinedef.TextureAlignment with
+                    | LowerUnpegged ->
+                        let ofsY = single renderLinedef.TextureOffsetY / height * -1.f
                         if p3.Z < p1.Z then
                             (one + two) / width, 
                             one / width, 
-                            0.f,
-                            ((abs (p1.Z - p3.Z)) / height * -1.f)
+                            0.f - ofsY,
+                            ((abs (p1.Z - p3.Z)) / height * -1.f) - ofsY
                         else
                             one / width, 
                             (one + two) / width, 
-                            ((abs (p1.Z - p3.Z)) / height * -1.f),
-                            0.f
-                    else
+                            ((abs (p1.Z - p3.Z)) / height * -1.f) - ofsY,
+                            0.f - ofsY
+
+                    // upper unpeg
+                    | UpperUnpegged offsetY ->
+                        let z = single offsetY / height * -1.f
+                        let ofsY = single renderLinedef.TextureOffsetY / height * -1.f
                         if p3.Z < p1.Z then
                             (one + two) / width, 
                             one / width, 
-                            1.f - ((abs (p1.Z - p3.Z)) / height * -1.f),
-                            1.f
+                            (1.f - ((abs (p1.Z - p3.Z)) / height * -1.f)) - z - ofsY,
+                            1.f - z - ofsY
                         else
                             one / width, 
                             (one + two) / width, 
-                            1.f,
-                            1.f - ((abs (p1.Z - p3.Z)) / height * -1.f)
+                            1.f - z - ofsY,
+                            (1.f - ((abs (p1.Z - p3.Z)) / height * -1.f)) - z - ofsY
 
                 
 
