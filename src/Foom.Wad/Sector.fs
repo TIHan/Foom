@@ -35,7 +35,7 @@ module Sector =
         sector.Linedefs
         |> Array.iter (fun linedef ->
             match linedef.FrontSidedef with
-            | Some frontSidedef when not (linedef.Flags.HasFlag(LinedefFlags.NerverShowsOnAutomap))  ->
+            | Some frontSidedef ->
 
                 match linedef.BackSidedef with
                 | Some backSidedef ->

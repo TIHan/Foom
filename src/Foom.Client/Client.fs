@@ -188,7 +188,7 @@ let init (world: World) =
 
                 i <- i + 3
 
-            let lightLevel = sector.LightLevel - 75
+            let lightLevel = sector.LightLevel
             let lightLevel =
                 if lightLevel > 255 then 255
                 else lightLevel
@@ -233,7 +233,7 @@ let init (world: World) =
 
                 i <- i + 3
 
-            let lightLevel = sector.LightLevel - 75
+            let lightLevel = sector.LightLevel
             let lightLevel =
                 if lightLevel > 255 then 255
                 else lightLevel
@@ -279,7 +279,7 @@ let init (world: World) =
 
                 i <- i + 3
 
-            let lightLevel = sector.LightLevel - 75
+            let lightLevel = sector.LightLevel
             let lightLevel =
                 if lightLevel > 255 then 255
                 else lightLevel
