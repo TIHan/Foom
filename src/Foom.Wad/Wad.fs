@@ -294,19 +294,9 @@ module Wad =
             let sectors : Sector [] =
                 lumpSectors.Sectors
                 |> Array.mapi (fun i sector ->
-                    let lines =
-                        sector.Linedefs
-                        |> Array.map (
-                            function 
-                            | LinedefData.Doom (x, y, f, b, data) -> 
-                                { Start = x
-                                  End = y
-                                  FrontSidedef = f
-                                  BackSidedef = b }
-                                )
                     { 
                         Id = i
-                        Linedefs = lines; 
+                        Linedefs = sector.Linedefs; 
                         FloorTextureName = sector.FloorTextureName
                         FloorHeight = sector.FloorHeight
                         CeilingTextureName = sector.CeilingTextureName

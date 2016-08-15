@@ -49,26 +49,6 @@ type ThingData =
     | Doom of DoomThingData
     | Hexen of HexenThingData
 
-[<Flags>]
-type LinedefDataFlags =
-    | BlocksPlayersAndMonsters = 0x0001
-    | BlocksMonsters = 0x0002
-    | TwoSided = 0x0004
-    | UpperTextureUnpegged = 0x0008
-    | LowerTextureUnpegged = 0x0010
-    | Secret = 0x0020
-    | BlocksSound = 0x0040
-    | NerverShowsOnAutomap = 0x0080
-    | AlwaysShowsOnAutomap = 0x0100
-
-type DoomLinedefData = { 
-    Flags: LinedefDataFlags
-    SpecialType: int
-    SectorTag: int }
-
-type LinedefData =
-    | Doom of x: Vector2 * y: Vector2 * front: Sidedef option * back: Sidedef option * DoomLinedefData
-
 type SectorDataType =
     | Normal = 0
     | BlinkLightRandom = 1
@@ -95,10 +75,10 @@ type SectorData = {
     LightLevel: int
     Type: SectorDataType;
     Tag: int
-    Linedefs: LinedefData [] }
+    Linedefs: Linedef [] }
 
 type LumpThings = { Things: ThingData [] }
-type LumpLinedefs = { Linedefs: LinedefData [] }
+type LumpLinedefs = { Linedefs: Linedef [] }
 type LumpSidedefs = { Sidedefs: Sidedef [] }
 type LumpVertices = { Vertices: Vector2 [] }
 type LumpSectors = { Sectors: SectorData [] }
@@ -160,7 +140,7 @@ module UnpickleWad =
 
     val u_lumpLinedefs : vertices: Vector2 [] -> sidedefs: Sidedef [] -> size: int -> offset: int64 -> Unpickle<LumpLinedefs>
 
-    val u_lumpSectors : linedefs: LinedefData [] -> size: int -> offset: int64 -> Unpickle<LumpSectors>
+    val u_lumpSectors : linedefs: Linedef [] -> size: int -> offset: int64 -> Unpickle<LumpSectors>
 
     val u_lumpPalettes : size: int -> offset: int64 -> Unpickle<PaletteData []>
 

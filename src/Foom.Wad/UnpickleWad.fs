@@ -49,26 +49,6 @@ type ThingData =
     | Doom of DoomThingData
     | Hexen of HexenThingData
 
-[<Flags>]
-type LinedefDataFlags =
-    | BlocksPlayersAndMonsters = 0x0001
-    | BlocksMonsters = 0x0002
-    | TwoSided = 0x0004
-    | UpperTextureUnpegged = 0x0008
-    | LowerTextureUnpegged = 0x0010
-    | Secret = 0x0020
-    | BlocksSound = 0x0040
-    | NerverShowsOnAutomap = 0x0080
-    | AlwaysShowsOnAutomap = 0x0100
-
-type DoomLinedefData = { 
-    Flags: LinedefDataFlags
-    SpecialType: int
-    SectorTag: int }
-
-type LinedefData =
-    | Doom of x: Vector2 * y: Vector2 * front: Sidedef option * back: Sidedef option * DoomLinedefData
-
 type SectorDataType =
     | Normal = 0
     | BlinkLightRandom = 1
@@ -95,10 +75,10 @@ type SectorData = {
     LightLevel: int
     Type: SectorDataType;
     Tag: int
-    Linedefs: LinedefData [] }
+    Linedefs: Linedef [] }
 
 type LumpThings = { Things: ThingData [] }
-type LumpLinedefs = { Linedefs: LinedefData [] }
+type LumpLinedefs = { Linedefs: Linedef [] }
 type LumpSidedefs = { Sidedefs: Sidedef [] }
 type LumpVertices = { Vertices: Vector2 [] }
 type LumpSectors = { Sectors: SectorData [] }
@@ -230,23 +210,22 @@ module UnpickleWad =
 
     [<Literal>]
     let linedefSize = 14
-    let u_linedef (vertices: Vector2 []) (sidedefs: Sidedef []) : Unpickle<LinedefData> =
+    let u_linedef (vertices: Vector2 []) (sidedefs: Sidedef []) : Unpickle<Linedef> =
         u_pipe7 u_uint16 u_uint16 u_int16 u_int16 u_int16 u_uint16 u_uint16 <|
         fun startVertex endVertex flags specialType sectorTag rightSidedef leftSidedef ->
-            let data =
-                { Flags = enum<LinedefDataFlags> (int flags)
-                  SpecialType = int specialType
-                  SectorTag = int sectorTag }
             let f = match int rightSidedef with | n when n <> 65535 -> Some sidedefs.[n] | _ -> None
             let b = match int leftSidedef with | n when n <> 65535 -> Some sidedefs.[n] | _ -> None
-            LinedefData.Doom (
-                vertices.[int startVertex],
-                vertices.[int endVertex],
-                f,
-                b,
-                data)
+            {
+                Start = vertices.[int startVertex]
+                End = vertices.[int endVertex]
+                FrontSidedef = f
+                BackSidedef = b
+                Flags = enum<LinedefFlags> (int flags)
+                SpecialType = int specialType
+                SectorTag = int sectorTag
+            }
 
-    let u_linedefs (vertices: Vector2 []) (sidedefs: Sidedef []) count offset : Unpickle<LinedefData []> =
+    let u_linedefs (vertices: Vector2 []) (sidedefs: Sidedef []) count offset : Unpickle<Linedef []> =
         u_skipBytes offset >>. u_array count (u_linedef vertices sidedefs)
         
     let u_lumpLinedefs (vertices: Vector2 []) (sidedefs: Sidedef []) size offset : Unpickle<LumpLinedefs> =
@@ -254,7 +233,7 @@ module UnpickleWad =
 
     [<Literal>]
     let sectorSize = 26
-    let u_sector (linedefs: LinedefData []) (i: int) : Unpickle<SectorData> =
+    let u_sector (linedefs: Linedef []) (i: int) : Unpickle<SectorData> =
         u_pipe7 u_int16 u_int16 (u_string 8) (u_string 8) u_int16 u_int16 u_int16 <|
         fun floorHeight ceilingHeight floorTexName ceilingTexName lightLevel typ tag ->
             { FloorHeight = int floorHeight
@@ -267,17 +246,17 @@ module UnpickleWad =
               Linedefs = 
                 linedefs
                 |> Array.filter (function
-                    | LinedefData.Doom (_, _, f, b, _) -> 
+                    | { FrontSidedef = f; BackSidedef = b } -> 
                         match f, b with
                         | Some f, Some b -> f.SectorNumber = i || b.SectorNumber = i
                         | Some f, _ -> f.SectorNumber = i
                         | _, Some b -> b.SectorNumber = i
                         | _ -> false) }
 
-    let u_sectors (linedefs: LinedefData []) count offset : Unpickle<SectorData []> =
+    let u_sectors (linedefs: Linedef []) count offset : Unpickle<SectorData []> =
         u_skipBytes offset >>. u_arrayi count (u_sector linedefs)
 
-    let u_lumpSectors (linedefs: LinedefData []) size offset : Unpickle<LumpSectors> =
+    let u_lumpSectors (linedefs: Linedef []) size offset : Unpickle<LumpSectors> =
         u_lookAhead (u_sectors linedefs (size / sectorSize) offset) |>> fun sectors -> { Sectors = sectors }
 
     [<Literal>]
