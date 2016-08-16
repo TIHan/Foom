@@ -299,7 +299,7 @@ glUniform4f (uniformColor, color.R, color.G, color.B, color.A);
         glBindTexture(GL_TEXTURE_2D, textureID);
          
         // Give the image to OpenGL
-        glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
          
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -324,6 +324,19 @@ glUniform4f (uniformColor, color.R, color.G, color.B, color.A);
         C """
         glDisable(GL_CULL_FACE);
         glDisable(GL_DEPTH_TEST);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let enableBlend () : unit =
+        C """
+        glEnable (GL_BLEND);
+        glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let disableBlend () : unit =
+        C """
+        glDisable (GL_BLEND);
         """
 
 module Backend =

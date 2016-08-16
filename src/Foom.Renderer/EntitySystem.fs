@@ -36,7 +36,7 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (entityManager: EntityManag
 
             Renderer.bindTexture textureId
 
-            Renderer.setUniformColor uniformColor (Color.FromArgb (0, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
+            Renderer.setUniformColor uniformColor (Color.FromArgb (255, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
             Renderer.drawTriangles 0 mesh.PositionBufferLength
 
         | _ -> ()
@@ -136,9 +136,11 @@ let create (app: Application) =
                         let invertedTransform = invertedTransform |> Matrix4x4.Transpose
 
                         Renderer.enableDepth ()
+                        //Renderer.enableBlend ()
 
                         render projection invertedTransform entityManager
 
+                        //Renderer.disableBlend ()
                         Renderer.disableDepth ()
                     )
                 )

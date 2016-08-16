@@ -63,12 +63,12 @@ let init (world: World) =
 
     Wad.flats doom2Wad
     |> Array.iter (fun tex ->
-        let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format24bppRgb)
+        let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format32bppArgb)
 
         for i = 0 to 64 - 1 do
             for j = 0 to 64 - 1 do
                 let pixel = tex.Pixels.[i + (j * 64)]
-                bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+                bmp.SetPixel (i, j, Color.FromArgb (255, int pixel.R, int pixel.G, int pixel.B))
 
         bmp.Save(tex.Name + ".bmp")
         bmp.Dispose ()
@@ -127,11 +127,14 @@ let init (world: World) =
             let width = Array2D.length1 tex.Data
             let height = Array2D.length2 tex.Data
 
-            let bmp = new Bitmap(width, height, Imaging.PixelFormat.Format24bppRgb)
+            let bmp = new Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
 
             tex.Data
             |> Array2D.iteri (fun i j pixel ->
-                bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+                if pixel = Foom.Wad.Pickler.Pixel.Cyan then
+                    bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
+                else
+                    bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
             )
 
             bmp.Save (tex.Name + ".bmp")

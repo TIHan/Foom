@@ -91,6 +91,8 @@ type Pixel =
 
     new : byte * byte * byte -> Pixel
 
+    static member Cyan : Pixel
+
 type PaletteData = { Pixels: Pixel [] }
 
 type TextureHeader =
