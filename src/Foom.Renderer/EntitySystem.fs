@@ -13,8 +13,8 @@ open Foom.Renderer.Components
 ////////
 
 let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (entityManager: EntityManager) =
-    let renderQueue = Queue<Mesh * int * int * Matrix4x4 * MaterialComponent> ()
-    let transparentQueue = ResizeArray<Mesh * int * int * Matrix4x4 * MaterialComponent> ()
+    let renderQueue = Queue<Mesh * int * int * Matrix4x4 * MaterialComponent * MeshComponent> ()
+    let transparentQueue = ResizeArray<Mesh * int * int * Matrix4x4 * MaterialComponent * MeshComponent> ()
 
     entityManager.ForEach<MeshComponent, MaterialComponent, TransformComponent> (fun ent meshComp materialComp transformComp ->
         let model = transformComp.Transform
@@ -25,9 +25,9 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
         | MeshState.Loaded mesh, TextureState.Loaded textureId, ShaderProgramState.Loaded programId ->
 
             if materialComp.IsTransparent then
-                transparentQueue.Add((mesh, textureId, programId, mvp, materialComp))
+                transparentQueue.Add((mesh, textureId, programId, mvp, materialComp, meshComp))
             else
-                renderQueue.Enqueue ((mesh, textureId, programId, mvp, materialComp))
+                renderQueue.Enqueue ((mesh, textureId, programId, mvp, materialComp, meshComp))
 
         | _ -> ()
     )
@@ -35,7 +35,7 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
     Renderer.enableDepth ()
 
     while (renderQueue.Count > 0) do
-        let mesh, textureId, programId, mvp, materialComp = renderQueue.Dequeue ()
+        let mesh, textureId, programId, mvp, materialComp, _ = renderQueue.Dequeue ()
 
         Renderer.useProgram programId
 
@@ -59,7 +59,10 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
     Renderer.enableBlend()
 
     transparentQueue
-    |> Seq.iter (fun (mesh, textureId, programId, mvp, materialComp) ->
+    |> Seq.sortByDescending (fun (_, _, _, _, _, mesh) ->
+        (mesh.Max - cameraModel.Translation).Length ()
+    )
+    |> Seq.iter (fun (mesh, textureId, programId, mvp, materialComp, _) ->
         Renderer.useProgram programId
 
         let uniformColor = Renderer.getUniformColor programId

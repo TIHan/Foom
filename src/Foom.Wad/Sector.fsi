@@ -29,8 +29,3 @@ type Sector =
     member CeilingHeight : int
 
     member LightLevel : int
-
-[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
-module Sector =
-
-    val polygonFlats : Sector -> Triangle2D [] seq

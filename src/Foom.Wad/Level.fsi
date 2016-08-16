@@ -18,6 +18,12 @@ type Wall =
         TextureAlignment: TextureAlignment
     }
 
+type Flat =
+    {
+        SectorId: int
+        Triangles: Triangle2D []
+    }
+
 [<NoComparison; ReferenceEquality>]
 type Level =
     internal {
@@ -32,6 +38,15 @@ module Wall =
     val createUV : width: int -> height: int -> Wall -> Vector2 []
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
+module Flat =
+
+    val createUV : width: int -> height: int -> Flat -> Vector2 []
+
+    val createFlippedUV : width: int -> height: int -> Flat -> Vector2 []
+
+[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Level =
+
+    val createFlats : sectorId: int -> Level -> Flat seq
 
     val createWalls : Sector -> Level -> Wall seq

@@ -87,7 +87,7 @@ let init (world: World) =
         //[| lvl.Sectors.[343] |]
         |> Seq.mapi (fun i s -> 
             System.Diagnostics.Debug.WriteLine ("Sector " + string i)
-            (Sector.polygonFlats s, s)
+            (Level.createFlats i lvl, s)
         )
 
 
@@ -163,24 +163,12 @@ let init (world: World) =
         polygons
         |> Seq.iter (fun polygon ->
             let vertices =
-                polygon
+                polygon.Triangles
                 |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
                 |> Array.reduce Array.append
                 |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.FloorHeight))
 
-            let uv = Array.zeroCreate vertices.Length
-
-            let mutable i = 0
-            while (i < vertices.Length) do
-                let p1 = vertices.[i]
-                let p2 = vertices.[i + 1]
-                let p3 = vertices.[i + 2]
-
-                uv.[i] <- Vector2 (p1.X / flatUnit, p1.Y / flatUnit * -1.f)
-                uv.[i + 1] <- Vector2(p2.X / flatUnit, p2.Y / flatUnit * -1.f)
-                uv.[i + 2] <- Vector2(p3.X / flatUnit, p3.Y / flatUnit * -1.f)
-
-                i <- i + 3
+            let uv = Flat.createUV 64 64 polygon
 
             let lightLevel = sector.LightLevel
             let lightLevel =
@@ -210,24 +198,25 @@ let init (world: World) =
         polygons
         |> Seq.iter (fun polygon ->
             let vertices =
-                polygon
+                polygon.Triangles
                 |> Array.map (fun x -> [|x.Z;x.Y;x.X|])
                 |> Array.reduce Array.append
                 |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.CeilingHeight))
 
-            let uv = Array.zeroCreate vertices.Length
+            let uv = Flat.createFlippedUV 64 64 polygon
+            //let uv = Array.zeroCreate vertices.Length
 
-            let mutable i = 0
-            while (i < vertices.Length) do
-                let p1 = vertices.[i]
-                let p2 = vertices.[i + 1]
-                let p3 = vertices.[i + 2]
+            //let mutable i = 0
+            //while (i < vertices.Length) do
+            //    let p1 = vertices.[i]
+            //    let p2 = vertices.[i + 1]
+            //    let p3 = vertices.[i + 2]
 
-                uv.[i] <- Vector2 (p1.X / flatUnit, p1.Y / flatUnit * -1.f)
-                uv.[i + 1] <- Vector2(p2.X / flatUnit, p2.Y / flatUnit * -1.f)
-                uv.[i + 2] <- Vector2(p3.X / flatUnit, p3.Y / flatUnit * -1.f)
+            //    uv.[i] <- Vector2 (p1.X / flatUnit, p1.Y / flatUnit * -1.f)
+            //    uv.[i + 1] <- Vector2(p2.X / flatUnit, p2.Y / flatUnit * -1.f)
+            //    uv.[i + 2] <- Vector2(p3.X / flatUnit, p3.Y / flatUnit * -1.f)
 
-                i <- i + 3
+            //    i <- i + 3
 
             let lightLevel = sector.LightLevel
             let lightLevel =

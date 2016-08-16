@@ -20,12 +20,49 @@ type Wall =
         TextureAlignment: TextureAlignment
     }
 
+type Flat =
+    {
+        SectorId: int
+        Triangles: Triangle2D []
+    }
+
 type Level =
     {
         sectors: Sector []
     }
 
     member this.Sectors = this.sectors |> Seq.ofArray
+
+[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
+module Flat =
+
+    let createUV width height (flat: Flat) =
+        let width = single width
+        let height = single height * -1.f
+        let uv = Array.zeroCreate (flat.Triangles.Length * sizeof<Triangle2D>)
+
+        flat.Triangles
+        |> Array.iteri (fun i tri ->
+            uv.[i * 3] <- Vector2 (tri.X.X / width, tri.X.Y / height)
+            uv.[i * 3 + 1] <- Vector2 (tri.Y.X / width, tri.Y.Y / height)
+            uv.[i * 3 + 2] <- Vector2 (tri.Z.X / width, tri.Z.Y / height)
+        )
+
+        uv
+
+    let createFlippedUV width height (flat: Flat) =
+        let width = single width
+        let height = single height * -1.f
+        let uv = Array.zeroCreate (flat.Triangles.Length * sizeof<Triangle2D>)
+
+        flat.Triangles
+        |> Array.iteri (fun i tri ->
+            uv.[i * 3] <- Vector2 (tri.Z.X / width, tri.Z.Y / height)
+            uv.[i * 3 + 1] <- Vector2 (tri.Y.X / width, tri.Y.Y / height)
+            uv.[i * 3 + 2] <- Vector2 (tri.X.X / width, tri.X.Y / height)
+        )
+
+        uv
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Wall =
@@ -93,6 +130,33 @@ module Wall =
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Level =
+
+    let createFlats sectorId level = 
+        match level.sectors |> Array.tryItem sectorId with
+        | None -> Seq.empty
+        | Some sector ->
+
+            match LinedefTracer.run2 (sector.Linedefs) sectorId with
+            | [] -> Seq.empty
+            | linedefPolygons ->
+                let rec map (linedefPolygons: LinedefPolygon list) =
+                    linedefPolygons
+                    |> List.map (fun x -> 
+                        {
+                            Polygon = (x.Linedefs, sectorId) ||> Polygon.ofLinedefs
+                            Children = map x.Inner
+                        }
+                    )
+
+                map linedefPolygons
+                |> Seq.map (Foom.Wad.Geometry.Triangulation.EarClipping.computeTree)
+                |> Seq.reduce Seq.append
+                |> Seq.map (fun triangles ->
+                    {
+                        SectorId = sectorId
+                        Triangles = triangles
+                    }
+                )
 
     let createWalls (sector: Sector) level =
         let arr = ResizeArray<Wall> ()
