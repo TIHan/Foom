@@ -273,10 +273,7 @@ type EntityManager =
         AnyComponentRemovedEvent: Event<AnyComponentRemoved>
 
         mutable CurrentIterations: int
-        PendingEntityRemovalQueue: Queue<Entity>
-        PendingComponentRemovalQueue: Queue<Entity * (Entity -> unit)>
-        PendingComponentAdditionsQueue: Queue<Entity * (Entity -> unit)>
-        PendingComponentAdditionQueue: Queue<unit -> unit>
+        PendingQueue: Queue<unit -> unit>
     }
 
     static member Create (eventManager: EventManager, maxEntityAmount) =
@@ -314,10 +311,7 @@ type EntityManager =
             AnyComponentAddedEvent = anyComponentAddedEvent
             AnyComponentRemovedEvent = anyComponentRemovedEvent
             CurrentIterations = 0
-            PendingEntityRemovalQueue = Queue ()
-            PendingComponentRemovalQueue = Queue ()
-            PendingComponentAdditionsQueue = Queue ()
-            PendingComponentAdditionQueue = Queue ()
+            PendingQueue = Queue ()
         }
 
     member inline this.IsValidEntity (entity: Entity) =
@@ -326,20 +320,8 @@ type EntityManager =
     member inline this.ResolvePendingQueues () =
         if this.CurrentIterations = 0 then
 
-            while this.PendingEntityRemovalQueue.Count > 0 do
-                let entity = this.PendingEntityRemovalQueue.Dequeue ()
-                this.Destroy entity
-
-            while this.PendingComponentRemovalQueue.Count > 0 do
-                let entity, remove = this.PendingComponentRemovalQueue.Dequeue ()
-                remove entity
-
-            while this.PendingComponentAdditionsQueue.Count > 0 do
-                let entity, f = this.PendingComponentAdditionsQueue.Dequeue ()
-                f entity
-
-            while this.PendingComponentAdditionQueue.Count > 0 do
-                let action = this.PendingComponentAdditionQueue.Dequeue ()
+            while this.PendingQueue.Count > 0 do
+                let action = this.PendingQueue.Dequeue ()
                 action ()
 
     member this.GetEntityLookupData<'T when 'T :> IEntityComponent and 'T : not struct> () : EntityLookupData<'T> =
@@ -412,7 +394,7 @@ type EntityManager =
     member this.AddComponent<'T when 'T :> IEntityComponent and 'T : not struct> (entity: Entity) (comp: 'T) =
         if this.CurrentIterations > 0 then
             let data = this.GetEntityLookupData<'T> ()
-            this.PendingComponentAdditionQueue.Enqueue (fun () -> this.AddComponent entity comp)
+            this.PendingQueue.Enqueue (fun () -> this.AddComponent entity comp)
         else
             if this.IsValidEntity entity then
                 let data = this.GetEntityLookupData<'T> ()
@@ -436,7 +418,7 @@ type EntityManager =
     member this.RemoveComponent<'T when 'T :> IEntityComponent and 'T : not struct> (entity: Entity) =
         if this.CurrentIterations > 0 then
             let data = this.GetEntityLookupData<'T> ()
-            this.PendingComponentRemovalQueue.Enqueue ((entity, data.RemoveComponent))
+            this.PendingQueue.Enqueue (fun () -> data.RemoveComponent (entity))
         else
             if this.IsValidEntity entity then
                 let data = this.GetEntityLookupData<'T> ()
@@ -485,7 +467,7 @@ type EntityManager =
 
     member this.Destroy (entity: Entity) =
         if this.CurrentIterations > 0 then
-            this.PendingEntityRemovalQueue.Enqueue entity
+            this.PendingQueue.Enqueue (fun () -> this.Destroy entity)
         else
             if this.IsValidEntity entity then
                 let removals = this.EntityRemovals.[entity.Index]

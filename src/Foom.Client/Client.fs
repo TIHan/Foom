@@ -1,6 +1,7 @@
 ﻿[<RequireQualifiedAccess>]
 module Foom.Client.Client
 
+open System.IO
 open System.Drawing
 open System.Numerics
 open System.Collections.Generic
@@ -66,18 +67,18 @@ let init (world: World) =
         bmp.Dispose ()
     )
 
-    //Wad.flats wad
-    //|> Array.iter (fun tex ->
-    //    let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format24bppRgb)
+    Wad.flats wad
+    |> Array.iter (fun tex ->
+        let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format32bppArgb)
 
-    //    for i = 0 to 64 - 1 do
-    //        for j = 0 to 64 - 1 do
-    //            let pixel = tex.Pixels.[i + (j * 64)]
-    //            bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+        for i = 0 to 64 - 1 do
+            for j = 0 to 64 - 1 do
+                let pixel = tex.Pixels.[i + (j * 64)]
+                bmp.SetPixel (i, j, Color.FromArgb (255, int pixel.R, int pixel.G, int pixel.B))
 
-    //    bmp.Save(tex.Name + ".bmp")
-    //    bmp.Dispose ()
-    //)
+        bmp.Save(tex.Name + ".bmp")
+        bmp.Dispose ()
+    )
 
     // Calculate polygons
 
@@ -112,6 +113,7 @@ let init (world: World) =
         |> Level.createWalls sector
         |> Seq.iter (fun renderLinedef ->
 
+        
             match Wad.tryFindTexture renderLinedef.TextureName doom2Wad with
             | None -> ()
             | Some tex ->
