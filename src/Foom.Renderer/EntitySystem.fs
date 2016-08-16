@@ -7,47 +7,7 @@ open System.Drawing
 
 open Foom.Ecs
 open Foom.Common.Components
-
-type Mesh =
-    {
-        PositionBufferId: int
-        PositionBufferLength: int
-
-        UvBufferId: int
-        UvBufferLength: int
-    }
-
-[<RequireQualifiedAccess>]
-type MeshState =
-    | ReadyToLoad of vertices: Vector3 [] * uv: Vector2 []
-    | Loaded of Mesh
-
-type MeshComponent (vertices, uv) =
-
-    member val State = MeshState.ReadyToLoad (vertices, uv) with get, set
-
-    interface IEntityComponent
-
-
-[<RequireQualifiedAccess>]
-type TextureState =
-    | ReadyToLoad of fileName: string
-    | Loaded of textureId: int
-
-[<RequireQualifiedAccess>]
-type ShaderProgramState =
-    | ReadyToLoad of vsFileName: string * fsFileName: string
-    | Loaded of programId: int
-
-type MaterialComponent (vertexShaderFileName: string, fragmentShaderFileName: string, textureFileName: string, color: Color) =
-
-    member val TextureState = TextureState.ReadyToLoad textureFileName with get, set
-
-    member val ShaderProgramState = ShaderProgramState.ReadyToLoad (vertexShaderFileName, fragmentShaderFileName) with get, set
-
-    member val Color = color
-
-    interface IEntityComponent
+open Foom.Renderer.Components
 
 ////////
 
@@ -76,7 +36,7 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (entityManager: EntityManag
 
             Renderer.bindTexture textureId
 
-            Renderer.setUniformColor uniformColor (RenderColor.OfColor materialComp.Color)
+            Renderer.setUniformColor uniformColor (Color.FromArgb (0, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
             Renderer.drawTriangles 0 mesh.PositionBufferLength
 
         | _ -> ()

@@ -48,6 +48,7 @@ open Foom.Ecs
 open Foom.Ecs.World
 open Foom.Renderer.EntitySystem
 open Foom.Common.Components
+open Foom.Renderer.Components
 
 let init (world: World) =
 
@@ -55,7 +56,7 @@ let init (world: World) =
 
     let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
     let wad = Wad.createFromWad doom2Wad (System.IO.File.Open ("sunder.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
-    let lvl = Wad.findLevel "e1m2" doom2Wad |> Async.RunSynchronously
+    let lvl = Wad.findLevel "e1m1" doom2Wad |> Async.RunSynchronously
 
 
     // Extract all doom textures.
@@ -138,8 +139,8 @@ let init (world: World) =
 
             let lightLevel = sector.LightLevel
             let lightLevel =
-                if lightLevel > 255 then 255
-                else lightLevel
+                if lightLevel > 255 then 255uy
+                else byte lightLevel
 
             let ent = world.EntityManager.Spawn ()
 
@@ -150,7 +151,7 @@ let init (world: World) =
                     "triangle.vertex",
                     "triangle.fragment",
                     tex.Name + ".bmp",
-                    Color.FromArgb(lightLevel, lightLevel, lightLevel)
+                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy }
                 )
             )
         )
@@ -183,8 +184,8 @@ let init (world: World) =
 
             let lightLevel = sector.LightLevel
             let lightLevel =
-                if lightLevel > 255 then 255
-                else lightLevel
+                if lightLevel > 255 then 255uy
+                else byte lightLevel
 
             count <- count + 1
             let ent = world.EntityManager.Spawn ()
@@ -196,7 +197,7 @@ let init (world: World) =
                     "triangle.vertex",
                     "triangle.fragment",
                     sector.FloorTextureName + ".bmp",
-                    Color.FromArgb(lightLevel, lightLevel, lightLevel)
+                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy }
                 )
             )
         )
@@ -229,8 +230,8 @@ let init (world: World) =
 
             let lightLevel = sector.LightLevel
             let lightLevel =
-                if lightLevel > 255 then 255
-                else lightLevel
+                if lightLevel > 255 then 255uy
+                else byte lightLevel
 
             count <- count + 1
             let ent = world.EntityManager.Spawn ()
@@ -242,7 +243,7 @@ let init (world: World) =
                     "triangle.vertex",
                     "triangle.fragment",
                     sector.CeilingTextureName + ".bmp",
-                    Color.FromArgb(lightLevel, lightLevel, lightLevel)
+                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy }
                 )
             )
         )

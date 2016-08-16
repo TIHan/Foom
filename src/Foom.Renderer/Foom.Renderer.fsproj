@@ -95,5 +95,9 @@
       <Project>{FB77CA41-3C2E-4D41-826D-5FCF9EF10C88}</Project>
       <Name>Foom.Common.Components</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Renderer.Components\Foom.Renderer.Components.fsproj">
+      <Project>{9B75DD43-5F71-4A53-B8EA-EDC02CB994BE}</Project>
+      <Name>Foom.Renderer.Components</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

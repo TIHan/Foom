@@ -220,7 +220,7 @@ module Wad =
                         let i = i + patch.OriginX
                         let j = j + patch.OriginY
 
-                        if i < info.Width && j < info.Height && i >= 0 && j >= 0 then
+                        if i < info.Width && j < info.Height && i >= 0 && j >= 0 && pixel <> Pixel (0uy, 255uy, 255uy) then
                             tex.[i, j] <- pixel
                                
                     )

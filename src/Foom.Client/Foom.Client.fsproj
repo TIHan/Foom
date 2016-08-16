@@ -97,5 +97,9 @@
       <Project>{4FC2B7B5-28CA-4322-84AB-49DDAD9613FC}</Project>
       <Name>Foom.Pickler</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Renderer.Components\Foom.Renderer.Components.fsproj">
+      <Project>{9B75DD43-5F71-4A53-B8EA-EDC02CB994BE}</Project>
+      <Name>Foom.Renderer.Components</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>
