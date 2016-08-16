@@ -20,10 +20,12 @@ type Wall =
         TextureAlignment: TextureAlignment
     }
 
-type Level = 
+type Level =
     {
-        Sectors: Sector [] 
+        sectors: Sector []
     }
+
+    member this.Sectors = this.sectors |> Seq.ofArray
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Wall =
@@ -92,11 +94,11 @@ module Wall =
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Level =
 
-    let createWalls sector level =
+    let createWalls (sector: Sector) level =
         let arr = ResizeArray<Wall> ()
 
         sector.Linedefs
-        |> Array.iter (fun linedef ->
+        |> Seq.iter (fun linedef ->
             match linedef.FrontSidedef with
             | Some frontSidedef ->
 
@@ -146,7 +148,7 @@ module Level =
                 | Some backSidedef ->
 
                     if frontSidedef.UpperTextureName.Contains("-") |> not then
-                        let backSideSector = Seq.item backSidedef.SectorNumber level.Sectors
+                        let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
 
                         {
                             TextureName = frontSidedef.UpperTextureName
@@ -171,7 +173,7 @@ module Level =
                         |> arr.Add
 
                     if frontSidedef.LowerTextureName.Contains("-") |> not then
-                        let backSideSector = Seq.item backSidedef.SectorNumber level.Sectors
+                        let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
 
                         {
                             TextureName = frontSidedef.LowerTextureName
@@ -208,7 +210,7 @@ module Level =
                     let floorHeight =
                         match linedef.BackSidedef with
                         | Some backSidedef -> 
-                            let backSideSector = Seq.item backSidedef.SectorNumber level.Sectors
+                            let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
                             backSideSector.FloorHeight
                         | _ -> sector.FloorHeight
                        

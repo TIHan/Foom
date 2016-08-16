@@ -55,7 +55,7 @@ let init (world: World) =
 
     let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
     let wad = Wad.createFromWad doom2Wad (System.IO.File.Open ("sunder.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
-    let lvl = Wad.findLevel "e1m1" doom2Wad |> Async.RunSynchronously
+    let lvl = Wad.findLevel "e1m2" doom2Wad |> Async.RunSynchronously
 
 
     // Extract all doom textures.
@@ -91,7 +91,7 @@ let init (world: World) =
     let sectorPolygons =
         lvl.Sectors
         //[| lvl.Sectors.[343] |]
-        |> Array.mapi (fun i s -> 
+        |> Seq.mapi (fun i s -> 
             System.Diagnostics.Debug.WriteLine ("Sector " + string i)
             (Sector.polygonFlats s, s)
         )
@@ -114,8 +114,9 @@ let init (world: World) =
     let mutable count = 0
 
     lvl.Sectors
-    |> Array.iter (fun sector ->
-        Level.createWalls sector lvl
+    |> Seq.iter (fun sector ->
+        lvl
+        |> Level.createWalls sector
         |> Seq.iter (fun renderLinedef ->
 
             match Wad.tryFindTexture renderLinedef.TextureName doom2Wad with
@@ -156,7 +157,7 @@ let init (world: World) =
     )
 
     sectorPolygons
-    |> Array.iter (fun (polygons, sector) ->
+    |> Seq.iter (fun (polygons, sector) ->
 
         polygons
         |> List.iter (fun polygon ->
@@ -202,7 +203,7 @@ let init (world: World) =
     )
 
     sectorPolygons
-    |> Array.iter (fun (polygons, sector) ->
+    |> Seq.iter (fun (polygons, sector) ->
 
         polygons
         |> List.iter (fun polygon ->

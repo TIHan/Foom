@@ -1,5 +1,6 @@
 ﻿namespace Foom.Wad.Level.Structures
 
+[<NoComparison; ReferenceEquality>]
 type Sidedef = {
     OffsetX: int
     OffsetY: int

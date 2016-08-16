@@ -295,15 +295,15 @@ module Wad =
                 lumpSectors.Sectors
                 |> Array.mapi (fun i sector ->
                     { 
-                        Id = i
-                        Linedefs = sector.Linedefs; 
-                        FloorTextureName = sector.FloorTextureName
-                        FloorHeight = sector.FloorHeight
-                        CeilingTextureName = sector.CeilingTextureName
-                        CeilingHeight = sector.CeilingHeight
-                        LightLevel = sector.LightLevel
+                        id = i
+                        linedefs = sector.Linedefs; 
+                        floorTextureName = sector.FloorTextureName
+                        floorHeight = sector.FloorHeight
+                        ceilingTextureName = sector.CeilingTextureName
+                        ceilingHeight = sector.CeilingHeight
+                        lightLevel = sector.LightLevel
                     }
                 )
 
-            return { Sectors = sectors }
+            return { sectors = sectors }
         }

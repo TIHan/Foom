@@ -17,7 +17,6 @@ type LinedefFlags =
     | NerverShowsOnAutomap = 0x0080
     | AlwaysShowsOnAutomap = 0x0100
 
-[<NoComparison; ReferenceEquality>]
 type Linedef = 
     {
         Start: Vector2

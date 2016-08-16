@@ -18,10 +18,13 @@ type Wall =
         TextureAlignment: TextureAlignment
     }
 
-type Level = 
-    {
-        Sectors: Sector [] 
+[<NoComparison; ReferenceEquality>]
+type Level =
+    internal {
+        sectors: Sector []
     }
+
+    member Sectors : Sector seq
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Wall =

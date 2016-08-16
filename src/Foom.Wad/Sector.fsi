@@ -4,16 +4,31 @@ open System.Numerics
 
 open Foom.Wad.Geometry
 
+[<NoComparison; ReferenceEquality>]
 type Sector = 
-    {
-        Id: int
-        Linedefs: Linedef [] 
-        FloorTextureName: string
-        FloorHeight: int
-        CeilingTextureName: string
-        CeilingHeight: int
-        LightLevel: int
-    }
+    internal {
+        id: int
+        linedefs: Linedef [] 
+        floorTextureName: string
+        floorHeight: int
+        ceilingTextureName: string
+        ceilingHeight: int
+        lightLevel: int
+    } 
+
+    member Id : int
+
+    member Linedefs : Linedef seq
+
+    member FloorTextureName : string
+
+    member FloorHeight : int
+
+    member CeilingTextureName : string
+
+    member CeilingHeight : int
+
+    member LightLevel : int
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Sector =
