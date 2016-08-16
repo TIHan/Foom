@@ -132,7 +132,7 @@ let init (world: World) =
             let mutable isTransparent = false
             tex.Data
             |> Array2D.iteri (fun i j pixel ->
-                if pixel = Foom.Wad.Pickler.Pixel.Cyan then
+                if pixel = Pixel.Cyan then
                     bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
                     isTransparent <- true
                 else

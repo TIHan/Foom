@@ -19,4 +19,4 @@ module LinedefTracer =
 
 module Polygon =
 
-    val ofLinedefs : Linedef list -> int -> Polygon
+    val ofLinedefs : Linedef list -> int -> Polygon2D

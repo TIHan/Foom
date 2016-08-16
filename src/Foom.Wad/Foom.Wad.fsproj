@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -41,8 +40,8 @@
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
   <ItemGroup>
     <Compile Include="Vec2.fs" />
-    <Compile Include="Polygon.fsi" />
-    <Compile Include="Polygon.fs" />
+    <Compile Include="Geometry.fsi" />
+    <Compile Include="Geometry.fs" />
     <Compile Include="EarClipping.fsi" />
     <Compile Include="EarClipping.fs" />
     <Compile Include="Sidedef.fsi" />
@@ -55,6 +54,8 @@
     <Compile Include="Sector.fs" />
     <Compile Include="Level.fsi" />
     <Compile Include="Level.fs" />
+    <Compile Include="Pixel.fsi" />
+    <Compile Include="Pixel.fs" />
     <Compile Include="UnpickleWad.fsi" />
     <Compile Include="UnpickleWad.fs" />
     <Compile Include="Wad.fsi" />

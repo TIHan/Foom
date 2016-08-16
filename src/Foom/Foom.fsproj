@@ -103,10 +103,6 @@
       <Project>{FB77CA41-3C2E-4D41-826D-5FCF9EF10C88}</Project>
       <Name>Foom.Common.Components</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Foom.Pickler\Foom.Pickler.fsproj">
-      <Project>{4FC2B7B5-28CA-4322-84AB-49DDAD9613FC}</Project>
-      <Name>Foom.Pickler</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Foom.Client.Desktop.Input\Foom.Client.Desktop.Input.fsproj">
       <Project>{9B962272-2018-4C8C-9E62-528CDC8DB87E}</Project>
       <Name>Foom.Client.Desktop.Input</Name>

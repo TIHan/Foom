@@ -6,17 +6,6 @@ open System.Numerics
 
 open Foom.Wad.Geometry
 
-[<Struct>]
-type Triangle2D =
-
-    val X : Vector2
-
-    val Y : Vector2
-
-    val Z : Vector2
-
-    new (x, y, z) = { X = x; Y = y; Z = z }
-
 type Ray =
     {
         Origin: Vector2
@@ -93,7 +82,7 @@ let rayIntersection (ray: Ray) (vertices: Vector2 []) =
         |> Some
 
 let inline pointInsideTriangle p v =
-    Polygon.isPointInside p (Polygon.create v)
+    Polygon2D.isPointInside p (Polygon2D.create v)
 
 
 let computeVertices (vertices: Vector2 seq) f =
@@ -157,7 +146,7 @@ let compute polygon =
 
     let triangles = ResizeArray<Triangle2D> ()
 
-    computeVertices (Polygon.vertices polygon) (fun x y z ->
+    computeVertices (polygon.Vertices) (fun x y z ->
         triangles.Add (Triangle2D (x, y, z))
     )
 
@@ -170,15 +159,14 @@ let compute polygon =
 
         Some result
 
-let decomposeTree (tree: PolygonTree) =
+let decomposeTree (tree: Polygon2DTree) =
 
-    let mutable vertices = tree.Polygon |> Polygon.vertices
+    let mutable vertices = tree.Polygon.Vertices
 
     tree.Children
     |> List.sortByDescending (fun childTree -> 
         let yopac =
-            childTree.Polygon 
-            |> Polygon.vertices 
+            childTree.Polygon.Vertices 
             |> Array.maxBy (fun x -> x.X)
 
         yopac.X
@@ -190,7 +178,7 @@ let decomposeTree (tree: PolygonTree) =
 
         if true then
 
-            let childVertices = childTree.Polygon |> Polygon.vertices
+            let childVertices = childTree.Polygon.Vertices
 
             let childMax = childVertices |> Array.maxBy (fun x -> x.X)
 
@@ -252,7 +240,7 @@ let decomposeTree (tree: PolygonTree) =
 
                 let linkedList = vertices |> System.Collections.Generic.List
 
-                if not (Polygon.isArrangedClockwise (Polygon.create childVertices)) then
+                if not (Polygon2D.isArrangedClockwise (Polygon2D.create childVertices)) then
                     failwith "butt"
 
                 let mutable ii = childMaxIndex
@@ -293,9 +281,9 @@ let decomposeTree (tree: PolygonTree) =
             | _ -> ()
     )  
 
-    Polygon.create vertices
+    Polygon2D.create vertices
 
-let computeTree (tree: PolygonTree) =
+let computeTree (tree: Polygon2DTree) =
 
     if tree.Children.IsEmpty then
         match compute tree.Polygon with

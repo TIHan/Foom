@@ -4,35 +4,25 @@ open System
 open System.Numerics
 
 [<Struct>]
-type Edge = 
+type Triangle2D =
+
     val X : Vector2
+
     val Y : Vector2
 
-    new (x, y) = { X = x; Y = y }
+    val Z : Vector2
 
-type Polygon =
+    new (x, y, z) = { X = x; Y = y; Z = z }
+
+type Polygon2D =
     {
         Vertices: Vector2 []
     }
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
-module Polygon =
+module Polygon2D =
 
     let create vertices = { Vertices = vertices }
-
-    let vertices polygon = polygon.Vertices
-
-    let edges poly =
-        let vertices = vertices poly
-        let length = vertices.Length
-
-        vertices
-        |> Array.mapi (fun i y ->
-            let x =
-                match i with
-                | 0 -> vertices.[length - 1]
-                | _ -> vertices.[i - 1]
-            Edge (x, y))
 
     let sign = function
         | x when x <= 0.f -> false
@@ -41,7 +31,7 @@ module Polygon =
     let inline cross v1 v2 = (Vector3.Cross (Vector3(v1, 0.f), Vector3(v2, 0.f))).Z
         
     let isArrangedClockwise poly =
-        let vertices = vertices poly
+        let vertices = poly.Vertices
         let length = vertices.Length
 
         vertices
@@ -56,7 +46,7 @@ module Polygon =
 
     // http://alienryderflex.com/polygon/
     let isPointInside (point: Vector2) poly =
-        let vertices = vertices poly
+        let vertices = poly.Vertices
         let mutable j = vertices.Length - 1
         let mutable c = false
 
@@ -75,8 +65,8 @@ module Polygon =
             j <- i
         c
 
-type PolygonTree = 
+type Polygon2DTree = 
     {
-        Polygon: Polygon
-        Children: PolygonTree list
+        Polygon: Polygon2D
+        Children: Polygon2DTree list
     }

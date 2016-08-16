@@ -223,4 +223,4 @@ module Polygon =
             |> List.map (fun x -> 
                 if x.FrontSidedef.IsSome && x.FrontSidedef.Value.SectorNumber = sectorId then x.Start else x.End) 
             |> Array.ofList
-        Polygon.create vertices
+        Polygon2D.create vertices

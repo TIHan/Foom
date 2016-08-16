@@ -1,4 +1,4 @@
-﻿namespace Foom.Wad.Pickler
+﻿module internal Foom.Wad.Pickler
 
 open System
 open System.Numerics
@@ -82,16 +82,6 @@ type LumpLinedefs = { Linedefs: Linedef [] }
 type LumpSidedefs = { Sidedefs: Sidedef [] }
 type LumpVertices = { Vertices: Vector2 [] }
 type LumpSectors = { Sectors: SectorData [] }
-
-[<Struct>]
-type Pixel =
-    val R : byte
-    val G : byte
-    val B : byte
-
-    new : byte * byte * byte -> Pixel
-
-    static member Cyan : Pixel
 
 type PaletteData = { Pixels: Pixel [] }
 
