@@ -36,7 +36,7 @@ module Sector =
 
     let polygonFlats (sector: Sector) = 
         match LinedefTracer.run2 (sector.Linedefs) sector.id with
-        | [] -> []
+        | [] -> Seq.empty
         | linedefPolygons ->
             let rec map (linedefPolygons: LinedefPolygon list) =
                 linedefPolygons
@@ -48,5 +48,5 @@ module Sector =
                 )
 
             map linedefPolygons
-            |> List.map Foom.Wad.Geometry.Triangulation.EarClipping.computeTree
-            |> List.reduce (@)
+            |> Seq.map Foom.Wad.Geometry.Triangulation.EarClipping.computeTree
+            |> Seq.reduce Seq.append

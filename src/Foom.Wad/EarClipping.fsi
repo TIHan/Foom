@@ -5,4 +5,4 @@ open Foom.Wad.Geometry
 
 val compute : Polygon2D -> Triangle2D [] option
 
-val computeTree : Polygon2DTree -> (Triangle2D []) list
+val computeTree : Polygon2DTree -> Triangle2D [] seq

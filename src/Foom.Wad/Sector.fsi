@@ -33,4 +33,4 @@ type Sector =
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Sector =
 
-    val polygonFlats : Sector -> Triangle2D [] list
+    val polygonFlats : Sector -> Triangle2D [] seq

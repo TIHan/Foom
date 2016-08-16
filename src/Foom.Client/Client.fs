@@ -11,18 +11,10 @@ open Foom.Wad.Geometry
 open Foom.Wad.Level
 open Foom.Wad.Level.Structures
 
-let inline lerp x y t = x + (y - x) * t
-
-type UserState = {
-    IsMapMoving: bool } with
-
-    static member Default = { IsMapMoving = false }
-
 type ClientState = 
     {
         Window: nativeint
         RenderUpdate: (float32 -> unit)
-        User: UserState
         Level: Level 
     }
 
@@ -167,7 +159,7 @@ let init (world: World) =
     |> Seq.iter (fun (polygons, sector) ->
 
         polygons
-        |> List.iter (fun polygon ->
+        |> Seq.iter (fun polygon ->
             let vertices =
                 polygon
                 |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
@@ -214,7 +206,7 @@ let init (world: World) =
     |> Seq.iter (fun (polygons, sector) ->
 
         polygons
-        |> List.iter (fun polygon ->
+        |> Seq.iter (fun polygon ->
             let vertices =
                 polygon
                 |> Array.map (fun x -> [|x.Z;x.Y;x.X|])
@@ -262,7 +254,6 @@ let init (world: World) =
     { 
         Window = app.Window
         RenderUpdate = updateSys1
-        User = UserState.Default
         Level = lvl
     }
 
@@ -275,16 +266,3 @@ let draw t (prev: ClientState) (curr: ClientState) =
     stopwatch.Stop ()
 
     //printfn "%A" stopwatch.Elapsed.TotalMilliseconds
-    //Renderer.clear ()
-
-    //let projection = Matrix4x4.CreatePerspectiveFieldOfView (lerp prev.ViewDistance curr.ViewDistance t, (16.f / 9.f), 1.f, System.Single.MaxValue) |> Matrix4x4.Transpose
-    //let rotation = Matrix4x4.CreateRotationX (-90.f * 0.0174533f) |> Matrix4x4.Transpose
-    //let camera = Matrix4x4.CreateTranslation (Vector3 (0.f, -64.f * 8.f, 0.f) * -1.f) |> Matrix4x4.Transpose
-    //let model = Matrix4x4.CreateTranslation (lerp prev.ViewPosition curr.ViewPosition t) |> Matrix4x4.Transpose
-    //let mvp = (projection * rotation * camera * model) |> Matrix4x4.Transpose
-
-    //Renderer.enableDepth ()
-    //curr.Renderer.DrawVbo mvp
-    //Renderer.disableDepth ()
-
-    //Renderer.draw curr.Renderer.Application

@@ -39,9 +39,9 @@
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
   <ItemGroup>
-    <Compile Include="Vec2.fs" />
     <Compile Include="Geometry.fsi" />
     <Compile Include="Geometry.fs" />
+    <Compile Include="Vec2.fs" />
     <Compile Include="EarClipping.fsi" />
     <Compile Include="EarClipping.fs" />
     <Compile Include="Sidedef.fsi" />

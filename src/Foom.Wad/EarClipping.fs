@@ -287,9 +287,9 @@ let computeTree (tree: Polygon2DTree) =
 
     if tree.Children.IsEmpty then
         match compute tree.Polygon with
-        | None -> [ ]
+        | None -> Seq.empty
         | Some triangles ->
-            [ triangles ]
+            [ triangles ] |> List.toSeq
     else
 
 
@@ -318,3 +318,4 @@ let computeTree (tree: Polygon2DTree) =
             triangles
             |> Seq.toArray
         ]
+        |> List.toSeq
