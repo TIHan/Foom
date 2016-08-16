@@ -129,10 +129,12 @@ let init (world: World) =
 
             let bmp = new Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
 
+            let mutable isTransparent = false
             tex.Data
             |> Array2D.iteri (fun i j pixel ->
                 if pixel = Foom.Wad.Pickler.Pixel.Cyan then
                     bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
+                    isTransparent <- true
                 else
                     bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
             )
@@ -154,7 +156,8 @@ let init (world: World) =
                     "triangle.vertex",
                     "triangle.fragment",
                     tex.Name + ".bmp",
-                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy }
+                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
+                    isTransparent
                 )
             )
         )
@@ -200,7 +203,8 @@ let init (world: World) =
                     "triangle.vertex",
                     "triangle.fragment",
                     sector.FloorTextureName + ".bmp",
-                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy }
+                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
+                    false
                 )
             )
         )
@@ -246,7 +250,8 @@ let init (world: World) =
                     "triangle.vertex",
                     "triangle.fragment",
                     sector.CeilingTextureName + ".bmp",
-                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy }
+                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
+                    false
                 )
             )
         )

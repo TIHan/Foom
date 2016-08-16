@@ -4,6 +4,7 @@ open System
 open System.Numerics
 open System.IO
 open System.Drawing
+open System.Collections.Generic
 
 open Foom.Ecs
 open Foom.Common.Components
@@ -11,7 +12,10 @@ open Foom.Renderer.Components
 
 ////////
 
-let render (projection: Matrix4x4) (view: Matrix4x4) (entityManager: EntityManager) =
+let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (entityManager: EntityManager) =
+    let renderQueue = Queue<Mesh * int * int * Matrix4x4 * MaterialComponent> ()
+    let transparentQueue = ResizeArray<Mesh * int * int * Matrix4x4 * MaterialComponent> ()
+
     entityManager.ForEach<MeshComponent, MaterialComponent, TransformComponent> (fun ent meshComp materialComp transformComp ->
         let model = transformComp.Transform
 
@@ -20,27 +24,64 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (entityManager: EntityManag
         match meshComp.State, materialComp.TextureState, materialComp.ShaderProgramState with
         | MeshState.Loaded mesh, TextureState.Loaded textureId, ShaderProgramState.Loaded programId ->
 
-            Renderer.useProgram programId
-
-            let uniformColor = Renderer.getUniformColor programId
-            let uniformProjection = Renderer.getUniformProjection programId
-
-            Renderer.setUniformProjection uniformProjection mvp
-            Renderer.setTexture programId textureId
-
-            Renderer.bindVbo mesh.PositionBufferId
-            Renderer.bindPosition programId
-
-            Renderer.bindVbo mesh.UvBufferId
-            Renderer.bindUv programId
-
-            Renderer.bindTexture textureId
-
-            Renderer.setUniformColor uniformColor (Color.FromArgb (255, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
-            Renderer.drawTriangles 0 mesh.PositionBufferLength
+            if materialComp.IsTransparent then
+                transparentQueue.Add((mesh, textureId, programId, mvp, materialComp))
+            else
+                renderQueue.Enqueue ((mesh, textureId, programId, mvp, materialComp))
 
         | _ -> ()
     )
+
+    Renderer.enableDepth ()
+
+    while (renderQueue.Count > 0) do
+        let mesh, textureId, programId, mvp, materialComp = renderQueue.Dequeue ()
+
+        Renderer.useProgram programId
+
+        let uniformColor = Renderer.getUniformColor programId
+        let uniformProjection = Renderer.getUniformProjection programId
+
+        Renderer.setUniformProjection uniformProjection mvp
+        Renderer.setTexture programId textureId
+
+        Renderer.bindVbo mesh.PositionBufferId
+        Renderer.bindPosition programId
+
+        Renderer.bindVbo mesh.UvBufferId
+        Renderer.bindUv programId
+
+        Renderer.bindTexture textureId
+
+        Renderer.setUniformColor uniformColor (Color.FromArgb (255, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
+        Renderer.drawTriangles 0 mesh.PositionBufferLength
+
+    Renderer.enableBlend()
+
+    transparentQueue
+    |> Seq.iter (fun (mesh, textureId, programId, mvp, materialComp) ->
+        Renderer.useProgram programId
+
+        let uniformColor = Renderer.getUniformColor programId
+        let uniformProjection = Renderer.getUniformProjection programId
+
+        Renderer.setUniformProjection uniformProjection mvp
+        Renderer.setTexture programId textureId
+
+        Renderer.bindVbo mesh.PositionBufferId
+        Renderer.bindPosition programId
+
+        Renderer.bindVbo mesh.UvBufferId
+        Renderer.bindUv programId
+
+        Renderer.bindTexture textureId
+
+        Renderer.setUniformColor uniformColor (Color.FromArgb (255, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
+        Renderer.drawTriangles 0 mesh.PositionBufferLength
+    )
+    Renderer.disableBlend()
+
+    Renderer.disableDepth ()
 
 
 
@@ -135,13 +176,7 @@ let create (app: Application) =
 
                         let invertedTransform = invertedTransform |> Matrix4x4.Transpose
 
-                        Renderer.enableDepth ()
-                        //Renderer.enableBlend ()
-
-                        render projection invertedTransform entityManager
-
-                        //Renderer.disableBlend ()
-                        Renderer.disableDepth ()
+                        render projection invertedTransform transformComp.Transform entityManager
                     )
                 )
 

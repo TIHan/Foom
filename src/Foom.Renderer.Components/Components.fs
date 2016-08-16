@@ -43,13 +43,15 @@ type ShaderProgramState =
     | ReadyToLoad of vsFileName: string * fsFileName: string
     | Loaded of programId: int
 
-type MaterialComponent (vertexShaderFileName: string, fragmentShaderFileName: string, textureFileName: string, color: Color) =
+type MaterialComponent (vertexShaderFileName: string, fragmentShaderFileName: string, textureFileName: string, color: Color, isTransparent: bool) =
 
     member val TextureState = TextureState.ReadyToLoad textureFileName with get, set
 
     member val ShaderProgramState = ShaderProgramState.ReadyToLoad (vertexShaderFileName, fragmentShaderFileName) with get, set
 
     member val Color = color
+
+    member val IsTransparent = isTransparent
 
     interface IEntityComponent
 
