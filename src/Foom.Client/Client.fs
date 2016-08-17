@@ -261,15 +261,62 @@ let init (world: World) =
                 false
             )
 
+    let mutable minX = 0.f
+    let mutable maxX = 0.f
+    let mutable minY = 0.f
+    let mutable maxY = 0.f
+
+    let mutable first = false
     sectorPolygons
     |> Seq.iter (fun (flats, _) ->
 
         flats
-        |> Seq.iter (fun flat ->
+        |> Seq.iteri (fun i flat ->
             let aabb = Flat.createAABB2D flat
-            spawnBounds aabb
+
+            if first then
+                if aabb.Min.X < minX then
+                    minX <- aabb.Min.X
+                elif aabb.Max.X > maxX then
+                    maxX <- aabb.Max.X
+
+                if aabb.Min.Y < minY then
+                    minY <- aabb.Min.Y
+                elif aabb.Max.Y > maxY then
+                    maxY <- aabb.Max.Y
+            else
+                minX <- aabb.Min.X
+                minY <- aabb.Min.Y
+                maxX <- aabb.Max.X
+                maxY <- aabb.Max.Y
+                first <- true
+
+            //spawnBounds aabb
         )
     )
+
+    let mapAABB =
+        {
+            Min = Vector2 (minX, minY)
+            Max = Vector2 (maxX, maxY)
+        }
+        |> AABB2D.FromAAB2D
+
+
+
+    let quadTree = QuadTree<Flat>.Create (mapAABB, 1)
+
+    sectorPolygons 
+    |> Seq.iter (fun (flats, _) ->
+
+        flats
+        |> Seq.iteri (fun i flat ->
+            let aabb = Flat.createAABB2D flat
+            quadTree.Insert(flat, aabb) |> ignore
+        )
+     )
+
+    quadTree.ForEachBounds (spawnBounds)
 
     { 
         Window = app.Window

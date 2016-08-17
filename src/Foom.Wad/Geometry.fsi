@@ -51,7 +51,7 @@ type AABB2D =
 
     member Contains : Vector2 -> bool
 
-    member Intersects : AABB2D -> bool
+    member Contains : AABB2D -> bool
 
     static member FromAAB2D : AAB2D -> AABB2D 
 
@@ -65,3 +65,5 @@ type QuadTree<'T> =
     member Insert : 'T * AABB2D -> bool
 
     member Query : AABB2D -> ResizeArray<'T>
+
+    member ForEachBounds : (AABB2D -> unit) -> unit

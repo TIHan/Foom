@@ -87,17 +87,30 @@ type AABB2D =
 
     member this.Max = this.Center - this.HalfSize
 
-    member this.Contains v =
-        let distance = this.Center - v
+    // TODO: Yea, this is commented out. Let's fix this later.
+    member this.Contains (v: Vector2) =
+        v.X > this.Min.X && v.X < this.Max.X &&
+        v.Y > this.Min.Y && v.Y < this.Max.Y
+    //if(vecPoint.x > tBox.m_vecMin.x && vecPoint.x < tBox.m_vecMax.x &&
+    //vecPoint.y > tBox.m_vecMin.y && vecPoint.y < tBox.m_vecMax.y &&
+    //vecPoint.z > tBox.m_vecMin.z && vecPoint.z < tBox.m_vecMax.z)
+    //{
+    //    return true;
+    //}
+        //let distance = this.Center - v
 
-        abs distance.X <= this.HalfSize.X &&
-        abs distance.Y <= this.HalfSize.Y
+        //(this.Center + this.HalfSize).Length () > distance.Length ()
+        ////let x = abs distance.X
+        ////let y = abs distance.Y
+        ////abs distance.X <= this.HalfSize.X &&
+        ////abs distance.Y <= this.HalfSize.Y
 
-    member this.Intersects (aabb: AABB2D) =
-        if   abs (this.Center.X - aabb.Center.X) > (this.HalfSize.X + aabb.HalfSize.X) then false
-        elif abs (this.Center.Y - aabb.Center.Y) > (this.HalfSize.Y + aabb.HalfSize.Y) then false
-        else
-            true
+    member this.Contains (aabb: AABB2D) =
+        let p1 = this.Contains (aabb.Max)
+        let p2 = this.Contains (aabb.Min)
+        let p3 = this.Contains (Vector2 (aabb.Max.X, aabb.Min.Y))
+        let p4 = this.Contains (Vector2 (aabb.Min.X, aabb.Max.Y))
+        p1 || p2 || p3 || p4
 
     static member FromAAB2D (aab: AAB2D) =
         {
@@ -105,6 +118,7 @@ type AABB2D =
             HalfSize = (aab.Min - aab.Max) * 0.5f
         }
 
+// Note: I probably built this wrong.  
 type QuadTree<'T> =
     {
         Capacity: int
@@ -182,12 +196,13 @@ type QuadTree<'T> =
 
 
     member this.Insert (item: 'T, aabb: AABB2D) =
-        if (this.Bounds.Intersects (aabb) |> not) then
+        if (this.Bounds.Contains (aabb) |> not) then
             false
         else
 
             if (this.Items.Count < this.Capacity) then
                 this.Items.Add (item)
+                this.ItemsBounds.Add (aabb)
                 true
             else
 
@@ -202,20 +217,29 @@ type QuadTree<'T> =
 
     member this.Query (range: AABB2D) =
 
-        if (this.Bounds.Intersects (range) |> not) then
+        if (this.Bounds.Contains (range) |> not) then
             ResizeArray<'T> ()
         else
             let items = ResizeArray<'T> ()
 
             for i = 0 to this.Items.Count - 1 do
                 let item = this.ItemsBounds.[i]
-                if (range.Intersects (item)) then
+                if (range.Contains (item)) then
                     items.Add (this.Items.[i]) |> ignore
 
-            if this.NorthWest.IsNone then
+            if this.NorthWest.IsSome then
                 items.AddRange (this.NorthWest.Value.Query (range))
                 items.AddRange (this.NorthEast.Value.Query (range))
                 items.AddRange (this.SouthWest.Value.Query (range))
                 items.AddRange (this.SouthEast.Value.Query (range))
 
             items
+
+    member this.ForEachBounds f =
+        f this.Bounds
+
+        if this.NorthWest.IsSome then
+            this.NorthWest.Value.ForEachBounds f
+            this.NorthEast.Value.ForEachBounds f
+            this.SouthWest.Value.ForEachBounds f
+            this.SouthEast.Value.ForEachBounds f
