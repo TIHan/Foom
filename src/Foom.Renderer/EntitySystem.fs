@@ -86,7 +86,51 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
 
     Renderer.disableDepth ()
 
+    entityManager.ForEach<MaterialComponent, WireframeComponent> (fun ent materialComp wireframeComp ->
 
+        let mvp = (projection * view) |> Matrix4x4.Transpose
+
+        match wireframeComp.State, materialComp.ShaderProgramState with
+        | WireframeState.Loaded mesh, ShaderProgramState.Loaded programId ->
+            Renderer.useProgram programId
+
+            let uniformColor = Renderer.getUniformColor programId
+            let uniformProjection = Renderer.getUniformProjection programId
+
+            Renderer.setUniformProjection uniformProjection mvp
+
+            Renderer.bindVbo mesh.PositionBufferId
+            Renderer.bindPosition programId
+
+            Renderer.setUniformColor uniformColor (Color.FromArgb (255, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
+            Renderer.drawArrays 0 mesh.PositionBufferLength
+        | _ -> ()
+    )
+
+let wireframeQueue =
+    eventQueue (fun entityManager eventManager ->
+
+        fun (deltaTime: float32) (componentAdded: Events.ComponentAdded<WireframeComponent>) ->
+
+            entityManager.TryGet<WireframeComponent> (componentAdded.Entity)
+            |> Option.iter (fun meshComp ->
+
+                match meshComp.State with
+                | WireframeState.ReadyToLoad (vertices) ->
+                    let vbo = Renderer.makeVbo ()
+                    Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
+
+                    meshComp.State <- 
+                        WireframeState.Loaded
+                            {
+                                PositionBufferId = vbo
+                                PositionBufferLength = vertices.Length
+                            }
+                | _ -> ()
+
+            )
+     
+    )
 
 let meshQueue =
     eventQueue (fun entityManager eventManager ->
@@ -156,6 +200,7 @@ let create (app: Application) =
 
     EntitySystem.create "Renderer"
         [
+            wireframeQueue
             meshQueue
             materialQueue
 

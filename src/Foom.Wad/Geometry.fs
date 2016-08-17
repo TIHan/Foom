@@ -70,3 +70,152 @@ type Polygon2DTree =
         Polygon: Polygon2D
         Children: Polygon2DTree list
     }
+
+type AAB2D =
+    {
+        Min: Vector2
+        Max: Vector2
+    }
+
+type AABB2D =
+    {
+        Center: Vector2
+        HalfSize: Vector2
+    }
+
+    member this.Min = this.Center + this.HalfSize
+
+    member this.Max = this.Center - this.HalfSize
+
+    member this.Contains v =
+        let distance = this.Center - v
+
+        abs distance.X <= this.HalfSize.X &&
+        abs distance.Y <= this.HalfSize.Y
+
+    member this.Intersects (aabb: AABB2D) =
+        if   abs (this.Center.X - aabb.Center.X) > (this.HalfSize.X + aabb.HalfSize.X) then false
+        elif abs (this.Center.Y - aabb.Center.Y) > (this.HalfSize.Y + aabb.HalfSize.Y) then false
+        else
+            true
+
+    static member FromAAB2D (aab: AAB2D) =
+        {
+            Center = (aab.Min + aab.Max) * 0.5f
+            HalfSize = (aab.Min - aab.Max) * 0.5f
+        }
+
+type QuadTree<'T> =
+    {
+        Capacity: int
+        Bounds: AABB2D
+
+        mutable NorthWest: QuadTree<'T> option
+        mutable NorthEast: QuadTree<'T> option
+        mutable SouthWest: QuadTree<'T> option
+        mutable SouthEast: QuadTree<'T> option
+
+        Items: ResizeArray<'T>
+        ItemsBounds: ResizeArray<AABB2D>
+    }
+    
+    static member Create (bounds, capacity) : QuadTree<'T> =
+        {
+            Capacity = capacity
+            Bounds = bounds
+            NorthWest = None
+            NorthEast = None
+            SouthWest = None
+            SouthEast = None
+
+            Items = ResizeArray ()
+            ItemsBounds = ResizeArray<AABB2D> ()
+        }
+
+    member this.Subdivide () =
+        let half = this.Bounds.HalfSize / 2.f
+
+        let northWest =
+            {
+                Center = 
+                    Vector2 (
+                        this.Bounds.Center.X - half.X,
+                        this.Bounds.Center.Y + half.Y
+                    )
+                HalfSize = half
+            }
+
+        let northEast =
+            {
+                Center = 
+                    Vector2 (
+                        this.Bounds.Center.X + half.X,
+                        this.Bounds.Center.Y + half.Y
+                    )
+                HalfSize = half
+            }
+
+        let southWest =
+            {
+                Center = 
+                    Vector2 (
+                        this.Bounds.Center.X - half.X,
+                        this.Bounds.Center.Y - half.Y
+                    )
+                HalfSize = half
+            }
+
+        let southEast =
+            {
+                Center = 
+                    Vector2 (
+                        this.Bounds.Center.X + half.X,
+                        this.Bounds.Center.Y - half.Y
+                    )
+                HalfSize = half
+            }
+        
+        this.NorthWest <- QuadTree<'T>.Create (northWest, this.Capacity) |> Some
+        this.NorthEast <- QuadTree<'T>.Create (northEast, this.Capacity) |> Some
+        this.SouthWest <- QuadTree<'T>.Create (southWest, this.Capacity) |> Some
+        this.SouthEast <- QuadTree<'T>.Create (southEast, this.Capacity) |> Some
+
+
+    member this.Insert (item: 'T, aabb: AABB2D) =
+        if (this.Bounds.Intersects (aabb) |> not) then
+            false
+        else
+
+            if (this.Items.Count < this.Capacity) then
+                this.Items.Add (item)
+                true
+            else
+
+                if this.NorthWest.IsNone then
+                    this.Subdivide ()
+
+                this.NorthWest.Value.Insert (item, aabb) |> ignore
+                this.NorthEast.Value.Insert (item, aabb) |> ignore
+                this.SouthWest.Value.Insert (item, aabb) |> ignore
+                this.SouthEast.Value.Insert (item, aabb) |> ignore
+                true
+
+    member this.Query (range: AABB2D) =
+
+        if (this.Bounds.Intersects (range) |> not) then
+            ResizeArray<'T> ()
+        else
+            let items = ResizeArray<'T> ()
+
+            for i = 0 to this.Items.Count - 1 do
+                let item = this.ItemsBounds.[i]
+                if (range.Intersects (item)) then
+                    items.Add (this.Items.[i]) |> ignore
+
+            if this.NorthWest.IsNone then
+                items.AddRange (this.NorthWest.Value.Query (range))
+                items.AddRange (this.NorthEast.Value.Query (range))
+                items.AddRange (this.SouthWest.Value.Query (range))
+                items.AddRange (this.SouthEast.Value.Query (range))
+
+            items

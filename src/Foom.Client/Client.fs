@@ -204,19 +204,6 @@ let init (world: World) =
                 |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.CeilingHeight))
 
             let uv = Flat.createFlippedUV 64 64 polygon
-            //let uv = Array.zeroCreate vertices.Length
-
-            //let mutable i = 0
-            //while (i < vertices.Length) do
-            //    let p1 = vertices.[i]
-            //    let p2 = vertices.[i + 1]
-            //    let p3 = vertices.[i + 2]
-
-            //    uv.[i] <- Vector2 (p1.X / flatUnit, p1.Y / flatUnit * -1.f)
-            //    uv.[i + 1] <- Vector2(p2.X / flatUnit, p2.Y / flatUnit * -1.f)
-            //    uv.[i + 2] <- Vector2(p3.X / flatUnit, p3.Y / flatUnit * -1.f)
-
-            //    i <- i + 3
 
             let lightLevel = sector.LightLevel
             let lightLevel =
@@ -241,6 +228,48 @@ let init (world: World) =
     )
 
     printfn "COUNT: %A" count
+
+    let spawnBounds (aabb: AABB2D) =
+        let v1 = Vector3 (aabb.Max.X, aabb.Max.Y, 0.f)
+        let v2 = Vector3 (aabb.Min.X, aabb.Max.Y, 0.f)
+        let v3 = Vector3 (aabb.Min.X, aabb.Min.Y, 0.f)
+        let v4 = Vector3 (aabb.Max.X, aabb.Min.Y, 0.f)
+
+        let ent1 = world.EntityManager.Spawn ()
+
+        world.EntityManager.AddComponent ent1 <| 
+            WireframeComponent(
+                [|
+                    v1
+                    v2
+
+                    v2
+                    v3
+
+                    v3
+                    v4
+
+                    v4
+                    v1
+                |]
+            )
+        world.EntityManager.AddComponent ent1 <|
+            MaterialComponent(
+                "v.vertex", 
+                "f.fragment", "", 
+                { R = 255uy; G = 255uy; B = 255uy; A = 255uy },
+                false
+            )
+
+    sectorPolygons
+    |> Seq.iter (fun (flats, _) ->
+
+        flats
+        |> Seq.iter (fun flat ->
+            let aabb = Flat.createAABB2D flat
+            spawnBounds aabb
+        )
+    )
 
     { 
         Window = app.Window

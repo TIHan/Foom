@@ -7,7 +7,6 @@ open Foom.Wad.Geometry
 [<NoComparison; ReferenceEquality>]
 type Sector = 
     internal {
-        id: int
         linedefs: Linedef [] 
         floorTextureName: string
         floorHeight: int
@@ -15,8 +14,6 @@ type Sector =
         ceilingHeight: int
         lightLevel: int
     } 
-
-    member Id : int
 
     member Linedefs : Linedef seq
 

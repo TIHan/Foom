@@ -12,6 +12,23 @@ type Color =
         A: byte
     }
 
+type Wireframe =
+    {
+        PositionBufferId: int
+        PositionBufferLength: int
+    }
+
+[<RequireQualifiedAccess>]
+type WireframeState =
+    | ReadyToLoad of vertices: Vector3 []
+    | Loaded of Wireframe
+
+type WireframeComponent (vertices: Vector3 []) =
+
+    member val State = WireframeState.ReadyToLoad (vertices) with get, set
+
+    interface IEntityComponent
+
 type Mesh =
     {
         PositionBufferId: int

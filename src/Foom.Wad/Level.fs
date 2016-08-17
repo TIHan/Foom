@@ -64,6 +64,38 @@ module Flat =
 
         uv
 
+    let createAABB2D (flat: Flat) =
+        let triangles = flat.Triangles
+        let firstV = triangles.[0].X
+
+        let mutable minX = firstV.X
+        let mutable minY = firstV.Y
+        let mutable maxX = firstV.X
+        let mutable maxY = firstV.Y
+
+        let f (v: Vector2) =
+            if v.X < minX then
+                minX <- v.X
+            elif v.X > maxX then
+               maxX <- v.X
+
+            if v.Y < minY then
+                minY <- v.Y
+            elif v.Y > maxY then
+               maxY <- v.Y
+
+        triangles
+        |> Array.iter (fun tri ->
+            f tri.X
+            f tri.Y
+        )
+
+        {
+            Min = Vector2 (minX, minY)
+            Max = Vector2 (maxX, maxY)
+        }
+        |> AABB2D.FromAAB2D
+
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Wall =
 

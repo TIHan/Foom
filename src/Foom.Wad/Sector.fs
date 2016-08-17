@@ -8,7 +8,6 @@ open Foom.Wad.Level.Structures
 
 type Sector = 
     {
-        id: int
         linedefs: Linedef []
         floorTextureName: string
         floorHeight: int
@@ -16,8 +15,6 @@ type Sector =
         ceilingHeight: int
         lightLevel: int
     } 
-
-    member this.Id = this.id
 
     member this.Linedefs = this.linedefs |> Seq.ofArray
 
