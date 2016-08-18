@@ -6,6 +6,7 @@ open System.Drawing
 open System.Numerics
 open System.Collections.Generic
 
+open Foom.Physics
 open Foom.Renderer
 open Foom.Wad
 open Foom.Wad.Geometry
@@ -99,9 +100,10 @@ let init (world: World) =
     let sys1 = Foom.Renderer.EntitySystem.create (app)
     let updateSys1 = world.AddSystem sys1
 
+    let defaultPosition = Vector3 (1568.f, -3520.f, 64.f * 3.f)
     let cameraEnt = world.EntityManager.Spawn ()
     world.EntityManager.AddComponent cameraEnt (CameraComponent ())
-    world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (Vector3 (-3680.f, -6704.f, 64.f * 3.f))))
+    world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (defaultPosition)))
     world.EntityManager.AddComponent cameraEnt (CameraRotationComponent())
 
     let flatUnit = 64.f
@@ -306,11 +308,21 @@ let init (world: World) =
 
     spawnBounds mapBounds
 
+    let physicsWorld = Physics.init ()
+    let capsule = Physics.addCapsule defaultPosition 8.f 8.f 8.f Vector3.Zero physicsWorld
+
     let sectorChecks =
         EntitySystem.create "SectorChecks" 
             [
                 update (fun entityManager eventManager deltaTime ->
-                    ()
+                    Physics.step deltaTime physicsWorld
+
+                    let position = Physics.getCapsulePosition capsule
+
+                    match entityManager.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true) with
+                    | Some (ent, _, transformComp) ->
+                        transformComp.Position <- position
+                    | _ -> ()
                 )
             ]
 

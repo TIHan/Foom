@@ -108,7 +108,7 @@ let start (invoke: Task ref) =
 
             let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 
-            client.Update (TimeSpan.FromTicks(interval).TotalMilliseconds |> single)
+            client.Update (TimeSpan.FromTicks(interval).TotalSeconds |> single)
 
             stopwatch.Stop ()
 

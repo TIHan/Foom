@@ -96,5 +96,9 @@
       <Project>{9B75DD43-5F71-4A53-B8EA-EDC02CB994BE}</Project>
       <Name>Foom.Renderer.Components</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Physics\Foom.Physics.fsproj">
+      <Project>{19FE1AF7-C093-4D09-B594-514870A14939}</Project>
+      <Name>Foom.Physics</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>
