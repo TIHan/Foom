@@ -64,8 +64,12 @@ module Flat =
 
         uv
 
-    let createAABB2D (flat: Flat) =
+    let createBoundingBox2D (flat: Flat) =
         let triangles = flat.Triangles
+
+        if triangles.Length = 0 then
+            failwith "Flat has no triangles."
+
         let firstV = triangles.[0].X
 
         let mutable minX = firstV.X
@@ -94,7 +98,6 @@ module Flat =
             Min = Vector2 (minX, minY)
             Max = Vector2 (maxX, maxY)
         }
-        |> AABB2D.FromAAB2D
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Wall =

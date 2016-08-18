@@ -44,7 +44,7 @@ module Flat =
 
     val createFlippedUV : width: int -> height: int -> Flat -> Vector2 []
 
-    val createAABB2D : Flat -> AABB2D
+    val createBoundingBox2D : Flat -> BoundingBox2D
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Level =

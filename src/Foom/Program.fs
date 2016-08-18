@@ -105,6 +105,14 @@ let start (invoke: Task ref) =
                        
                 )
             )
+
+            let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
+
+            client.Update (TimeSpan.FromTicks(interval).TotalMilliseconds |> single)
+
+            stopwatch.Stop ()
+
+            printfn "%A" stopwatch.Elapsed.TotalMilliseconds
         )
         (fun t ->
             //world.EntityManager.TryFind<CameraComponent> (fun _ _ -> true)

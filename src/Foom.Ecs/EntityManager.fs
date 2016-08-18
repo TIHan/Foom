@@ -528,32 +528,6 @@ type EntityManager =
 
     //************************************************************************************************************************
 
-    member this.TryFind<'T when 'T :> IEntityComponent and 'T : not struct> (predicate: (Entity -> 'T -> bool)) : (Entity * 'T) option =
-        let mutable data = Unchecked.defaultof<IEntityLookupData>
-        if this.Lookup.TryGetValue (typeof<'T>, &data) then
-            let data = data :?> EntityLookupData<'T>
-
-            this.CurrentIterations <- this.CurrentIterations + 1
-
-            let rec tryFind result = function
-                | i when i >= data.Entities.Count -> result
-                | i ->
-                    let entity = data.Entities.Buffer.[i]
-
-                    if this.ActiveIndices.[entity.Index] && data.Active.[entity.Index] && predicate entity data.Components.Buffer.[i] then 
-                        tryFind (Some (entity, data.Components.Buffer.[i])) data.Entities.Count
-                    else
-                        tryFind result (i + 1)
-
-            let result = tryFind None 0
-
-            this.CurrentIterations <- this.CurrentIterations - 1
-            this.ResolvePendingQueues ()
-
-            result
-        else
-            None
-
     member this.ForEach<'T when 'T :> IEntityComponent and 'T : not struct> (f: Entity -> 'T -> unit) : unit =
         this.CurrentIterations <- this.CurrentIterations + 1
 
@@ -593,3 +567,23 @@ type EntityManager =
 
         this.CurrentIterations <- this.CurrentIterations - 1
         this.ResolvePendingQueues ()
+
+    member this.TryFind<'T when 'T :> IEntityComponent and 'T : not struct> (predicate: (Entity -> 'T -> bool)) : (Entity * 'T) option =
+        let mutable item = None
+
+        this.ForEach<'T> (fun entity comp ->
+            if item.IsNone && predicate entity comp then
+                item <- Some (entity, comp)
+        )
+
+        item
+
+    member this.TryFind<'T1, 'T2 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct> (predicate: (Entity -> 'T1 -> 'T2 -> bool)) : (Entity * 'T1 * 'T2) option =
+        let mutable item = None
+
+        this.ForEach<'T1, 'T2> (fun entity comp1 comp2 ->
+            if item.IsNone && predicate entity comp1 comp2 then
+                item <- Some (entity, comp1, comp2)
+        )
+
+        item

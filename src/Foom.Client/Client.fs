@@ -15,6 +15,7 @@ open Foom.Wad.Level.Structures
 type ClientState = 
     {
         Window: nativeint
+        Update: (float32 -> unit)
         RenderUpdate: (float32 -> unit)
         Level: Level 
     }
@@ -107,55 +108,55 @@ let init (world: World) =
 
     let mutable count = 0
 
-    lvl.Sectors
-    |> Seq.iter (fun sector ->
-        lvl
-        |> Level.createWalls sector
-        |> Seq.iter (fun renderLinedef ->
+    //lvl.Sectors
+    //|> Seq.iter (fun sector ->
+    //    lvl
+    //    |> Level.createWalls sector
+    //    |> Seq.iter (fun renderLinedef ->
 
         
-            match Wad.tryFindTexture renderLinedef.TextureName doom2Wad with
-            | None -> ()
-            | Some tex ->
+    //        match Wad.tryFindTexture renderLinedef.TextureName doom2Wad with
+    //        | None -> ()
+    //        | Some tex ->
 
-            let width = Array2D.length1 tex.Data
-            let height = Array2D.length2 tex.Data
+    //        let width = Array2D.length1 tex.Data
+    //        let height = Array2D.length2 tex.Data
 
-            let bmp = new Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
+    //        let bmp = new Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
 
-            let mutable isTransparent = false
-            tex.Data
-            |> Array2D.iteri (fun i j pixel ->
-                if pixel = Pixel.Cyan then
-                    bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
-                    isTransparent <- true
-                else
-                    bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-            )
+    //        let mutable isTransparent = false
+    //        tex.Data
+    //        |> Array2D.iteri (fun i j pixel ->
+    //            if pixel = Pixel.Cyan then
+    //                bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
+    //                isTransparent <- true
+    //            else
+    //                bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+    //        )
 
-            bmp.Save (tex.Name + ".bmp")
-            bmp.Dispose ()
+    //        bmp.Save (tex.Name + ".bmp")
+    //        bmp.Dispose ()
 
-            let lightLevel = sector.LightLevel
-            let lightLevel =
-                if lightLevel > 255 then 255uy
-                else byte lightLevel
+    //        let lightLevel = sector.LightLevel
+    //        let lightLevel =
+    //            if lightLevel > 255 then 255uy
+    //            else byte lightLevel
 
-            let ent = world.EntityManager.Spawn ()
+    //        let ent = world.EntityManager.Spawn ()
 
-            world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
-            world.EntityManager.AddComponent ent (MeshComponent (renderLinedef.Vertices, Wall.createUV width height renderLinedef))
-            world.EntityManager.AddComponent ent (
-                MaterialComponent (
-                    "triangle.vertex",
-                    "triangle.fragment",
-                    tex.Name + ".bmp",
-                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
-                    isTransparent
-                )
-            )
-        )
-    )
+    //        world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
+    //        world.EntityManager.AddComponent ent (MeshComponent (renderLinedef.Vertices, Wall.createUV width height renderLinedef))
+    //        world.EntityManager.AddComponent ent (
+    //            MaterialComponent (
+    //                "triangle.vertex",
+    //                "triangle.fragment",
+    //                tex.Name + ".bmp",
+    //                { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
+    //                isTransparent
+    //            )
+    //        )
+    //    )
+    //)
 
     sectorPolygons
     |> Seq.iter (fun (polygons, sector) ->
@@ -192,48 +193,50 @@ let init (world: World) =
         )
     )
 
-    sectorPolygons
-    |> Seq.iter (fun (polygons, sector) ->
+    //sectorPolygons
+    //|> Seq.iter (fun (polygons, sector) ->
 
-        polygons
-        |> Seq.iter (fun polygon ->
-            let vertices =
-                polygon.Triangles
-                |> Array.map (fun x -> [|x.Z;x.Y;x.X|])
-                |> Array.reduce Array.append
-                |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.CeilingHeight))
+    //    polygons
+    //    |> Seq.iter (fun polygon ->
+    //        let vertices =
+    //            polygon.Triangles
+    //            |> Array.map (fun x -> [|x.Z;x.Y;x.X|])
+    //            |> Array.reduce Array.append
+    //            |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.CeilingHeight))
 
-            let uv = Flat.createFlippedUV 64 64 polygon
+    //        let uv = Flat.createFlippedUV 64 64 polygon
 
-            let lightLevel = sector.LightLevel
-            let lightLevel =
-                if lightLevel > 255 then 255uy
-                else byte lightLevel
+    //        let lightLevel = sector.LightLevel
+    //        let lightLevel =
+    //            if lightLevel > 255 then 255uy
+    //            else byte lightLevel
 
-            count <- count + 1
-            let ent = world.EntityManager.Spawn ()
+    //        count <- count + 1
+    //        let ent = world.EntityManager.Spawn ()
 
-            world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
-            world.EntityManager.AddComponent ent (MeshComponent (vertices, uv))
-            world.EntityManager.AddComponent ent (
-                MaterialComponent (
-                    "triangle.vertex",
-                    "triangle.fragment",
-                    sector.CeilingTextureName + ".bmp",
-                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
-                    false
-                )
-            )
-        )
-    )
+    //        world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
+    //        world.EntityManager.AddComponent ent (MeshComponent (vertices, uv))
+    //        world.EntityManager.AddComponent ent (
+    //            MaterialComponent (
+    //                "triangle.vertex",
+    //                "triangle.fragment",
+    //                sector.CeilingTextureName + ".bmp",
+    //                { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
+    //                false
+    //            )
+    //        )
+    //    )
+    //)
 
     printfn "COUNT: %A" count
 
-    let spawnBounds (aabb: AABB2D) =
-        let v1 = Vector3 (aabb.Max.X, aabb.Max.Y, 0.f)
-        let v2 = Vector3 (aabb.Min.X, aabb.Max.Y, 0.f)
-        let v3 = Vector3 (aabb.Min.X, aabb.Min.Y, 0.f)
-        let v4 = Vector3 (aabb.Max.X, aabb.Min.Y, 0.f)
+    let spawnBounds (bounds: BoundingBox2D) =
+        let max = bounds.Max
+        let min = bounds.Min
+        let v1 = Vector3 (max.X, max.Y, 0.f)
+        let v2 = Vector3 (min.X, max.Y, 0.f)
+        let v3 = Vector3 (min.X, min.Y, 0.f)
+        let v4 = Vector3 (max.X, min.Y, 0.f)
 
         let ent1 = world.EntityManager.Spawn ()
 
@@ -272,54 +275,48 @@ let init (world: World) =
 
         flats
         |> Seq.iteri (fun i flat ->
-            let aabb = Flat.createAABB2D flat
-
+            let bounds = Flat.createBoundingBox2D flat
+            spawnBounds bounds
+            let min = bounds.Min
+            let max = bounds.Max
             if first then
-                if aabb.Min.X < minX then
-                    minX <- aabb.Min.X
-                elif aabb.Max.X > maxX then
-                    maxX <- aabb.Max.X
+                if min.X < minX then
+                    minX <- min.X
+                elif max.X > maxX then
+                    maxX <- max.X
 
-                if aabb.Min.Y < minY then
-                    minY <- aabb.Min.Y
-                elif aabb.Max.Y > maxY then
-                    maxY <- aabb.Max.Y
+                if min.Y < minY then
+                    minY <- min.Y
+                elif max.Y > maxY then
+                    maxY <- max.Y
             else
-                minX <- aabb.Min.X
-                minY <- aabb.Min.Y
-                maxX <- aabb.Max.X
-                maxY <- aabb.Max.Y
+                minX <- min.X
+                minY <- min.Y
+                maxX <- max.X
+                maxY <- max.Y
                 first <- true
-
-            //spawnBounds aabb
         )
     )
 
-    let mapAABB =
+    let mapBounds = 
         {
             Min = Vector2 (minX, minY)
             Max = Vector2 (maxX, maxY)
         }
-        |> AABB2D.FromAAB2D
 
+    spawnBounds mapBounds
 
-
-    let quadTree = QuadTree<Flat>.Create (mapAABB, 1)
-
-    sectorPolygons 
-    |> Seq.iter (fun (flats, _) ->
-
-        flats
-        |> Seq.iteri (fun i flat ->
-            let aabb = Flat.createAABB2D flat
-            quadTree.Insert(flat, aabb) |> ignore
-        )
-     )
-
-    quadTree.ForEachBounds (spawnBounds)
+    let sectorChecks =
+        EntitySystem.create "SectorChecks" 
+            [
+                update (fun entityManager eventManager deltaTime ->
+                    ()
+                )
+            ]
 
     { 
         Window = app.Window
+        Update = world.AddSystem sectorChecks
         RenderUpdate = updateSys1
         Level = lvl
     }

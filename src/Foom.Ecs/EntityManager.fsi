@@ -137,9 +137,6 @@ type EntityManager =
 
     //************************************************************************************************************************
 
-    /// Attempts to find a component of type 'T and its corresponding Entity based on the criteria.
-    member TryFind<'T when 'T :> IEntityComponent and 'T : not struct> : predicate: (Entity -> 'T -> bool) -> (Entity * 'T) option
-
     /// Iterate entities that have a component of type 'T.
     member ForEach<'T when 'T :> IEntityComponent and 'T : not struct> : (Entity -> 'T -> unit) -> unit
 
@@ -154,6 +151,12 @@ type EntityManager =
 
     /// Iterate entities that have components of type 'T1, 'T2, 'T3, and 'T4.
     member ForEach<'T1, 'T2, 'T3, 'T4 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T3 :> IEntityComponent and 'T4 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct and 'T3 : not struct and 'T4 : not struct> : (Entity -> 'T1 -> 'T2 -> 'T3 -> 'T4 -> unit) -> unit
+
+    /// Attempts to find a component of type 'T and its corresponding Entity based on the criteria.
+    member TryFind<'T when 'T :> IEntityComponent and 'T : not struct> : predicate: (Entity -> 'T -> bool) -> (Entity * 'T) option
+
+    /// Attempts to find a component of type 'T1 and 'T2 and its corresponding Entity based on the criteria.
+    member TryFind<'T1, 'T2 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct> : predicate: (Entity -> 'T1 -> 'T2 -> bool) -> (Entity * 'T1 * 'T2) option
 
     // Components
 

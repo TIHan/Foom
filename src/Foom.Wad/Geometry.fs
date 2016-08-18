@@ -3,6 +3,10 @@
 open System
 open System.Numerics
 
+// https://github.com/MonoGame/MonoGame
+// Some source from MonoGame converted to F#. 
+// Thanks MonoGame for your hard work.
+
 [<Struct>]
 type Triangle2D =
 
@@ -71,175 +75,48 @@ type Polygon2DTree =
         Children: Polygon2DTree list
     }
 
-type AAB2D =
+type ContainmentType =
+    | Disjoint
+    | Contains
+    | Intersects
+
+type BoundingBox2D =
     {
         Min: Vector2
         Max: Vector2
     }
 
-type AABB2D =
-    {
-        Center: Vector2
-        HalfSize: Vector2
-    }
+    member this.Contains (point: Vector2) =
+        //first we get if point is out of box
+        if (point.X < this.Min.X
+            || point.X > this.Max.X
+            || point.Y < this.Min.Y
+            || point.Y > this.Max.Y) then
+            ContainmentType.Disjoint
 
-    member this.Min = this.Center + this.HalfSize
-
-    member this.Max = this.Center - this.HalfSize
-
-    // TODO: Yea, this is commented out. Let's fix this later.
-    member this.Contains (v: Vector2) =
-        v.X > this.Min.X && v.X < this.Max.X &&
-        v.Y > this.Min.Y && v.Y < this.Max.Y
-    //if(vecPoint.x > tBox.m_vecMin.x && vecPoint.x < tBox.m_vecMax.x &&
-    //vecPoint.y > tBox.m_vecMin.y && vecPoint.y < tBox.m_vecMax.y &&
-    //vecPoint.z > tBox.m_vecMin.z && vecPoint.z < tBox.m_vecMax.z)
-    //{
-    //    return true;
-    //}
-        //let distance = this.Center - v
-
-        //(this.Center + this.HalfSize).Length () > distance.Length ()
-        ////let x = abs distance.X
-        ////let y = abs distance.Y
-        ////abs distance.X <= this.HalfSize.X &&
-        ////abs distance.Y <= this.HalfSize.Y
-
-    member this.Contains (aabb: AABB2D) =
-        let p1 = this.Contains (aabb.Max)
-        let p2 = this.Contains (aabb.Min)
-        let p3 = this.Contains (Vector2 (aabb.Max.X, aabb.Min.Y))
-        let p4 = this.Contains (Vector2 (aabb.Min.X, aabb.Max.Y))
-        p1 || p2 || p3 || p4
-
-    static member FromAAB2D (aab: AAB2D) =
-        {
-            Center = (aab.Min + aab.Max) * 0.5f
-            HalfSize = (aab.Min - aab.Max) * 0.5f
-        }
-
-// Note: I probably built this wrong.  
-type QuadTree<'T> =
-    {
-        Capacity: int
-        Bounds: AABB2D
-
-        mutable NorthWest: QuadTree<'T> option
-        mutable NorthEast: QuadTree<'T> option
-        mutable SouthWest: QuadTree<'T> option
-        mutable SouthEast: QuadTree<'T> option
-
-        Items: ResizeArray<'T>
-        ItemsBounds: ResizeArray<AABB2D>
-    }
-    
-    static member Create (bounds, capacity) : QuadTree<'T> =
-        {
-            Capacity = capacity
-            Bounds = bounds
-            NorthWest = None
-            NorthEast = None
-            SouthWest = None
-            SouthEast = None
-
-            Items = ResizeArray ()
-            ItemsBounds = ResizeArray<AABB2D> ()
-        }
-
-    member this.Subdivide () =
-        let half = this.Bounds.HalfSize / 2.f
-
-        let northWest =
-            {
-                Center = 
-                    Vector2 (
-                        this.Bounds.Center.X - half.X,
-                        this.Bounds.Center.Y + half.Y
-                    )
-                HalfSize = half
-            }
-
-        let northEast =
-            {
-                Center = 
-                    Vector2 (
-                        this.Bounds.Center.X + half.X,
-                        this.Bounds.Center.Y + half.Y
-                    )
-                HalfSize = half
-            }
-
-        let southWest =
-            {
-                Center = 
-                    Vector2 (
-                        this.Bounds.Center.X - half.X,
-                        this.Bounds.Center.Y - half.Y
-                    )
-                HalfSize = half
-            }
-
-        let southEast =
-            {
-                Center = 
-                    Vector2 (
-                        this.Bounds.Center.X + half.X,
-                        this.Bounds.Center.Y - half.Y
-                    )
-                HalfSize = half
-            }
-        
-        this.NorthWest <- QuadTree<'T>.Create (northWest, this.Capacity) |> Some
-        this.NorthEast <- QuadTree<'T>.Create (northEast, this.Capacity) |> Some
-        this.SouthWest <- QuadTree<'T>.Create (southWest, this.Capacity) |> Some
-        this.SouthEast <- QuadTree<'T>.Create (southEast, this.Capacity) |> Some
-
-
-    member this.Insert (item: 'T, aabb: AABB2D) =
-        if (this.Bounds.Contains (aabb) |> not) then
-            false
+        //or if point is on box because coordonate of point is lesser or equal
+        elif (point.X = this.Min.X
+            || point.X = this.Max.X
+            || point.Y = this.Min.Y
+            || point.Y = this.Max.Y) then
+            ContainmentType.Intersects
         else
+            ContainmentType.Contains
 
-            if (this.Items.Count < this.Capacity) then
-                this.Items.Add (item)
-                this.ItemsBounds.Add (aabb)
-                true
-            else
+    member this.Intersects b =
+        //test if all corner is in the same side of a face by just checking min and max
+        if (b.Max.X < this.Min.X
+            || b.Min.X > this.Max.X
+            || b.Max.Y < this.Min.Y
+            || b.Min.Y > this.Max.Y) then
+            ContainmentType.Disjoint
 
-                if this.NorthWest.IsNone then
-                    this.Subdivide ()
+        elif (b.Min.X >= this.Min.X
+            && b.Max.X <= this.Max.X
+            && b.Min.Y >= this.Min.Y
+            && b.Max.Y <= this.Max.Y) then
+            ContainmentType.Contains
 
-                this.NorthWest.Value.Insert (item, aabb) |> ignore
-                this.NorthEast.Value.Insert (item, aabb) |> ignore
-                this.SouthWest.Value.Insert (item, aabb) |> ignore
-                this.SouthEast.Value.Insert (item, aabb) |> ignore
-                true
-
-    member this.Query (range: AABB2D) =
-
-        if (this.Bounds.Contains (range) |> not) then
-            ResizeArray<'T> ()
         else
-            let items = ResizeArray<'T> ()
+            ContainmentType.Intersects
 
-            for i = 0 to this.Items.Count - 1 do
-                let item = this.ItemsBounds.[i]
-                if (range.Contains (item)) then
-                    items.Add (this.Items.[i]) |> ignore
-
-            if this.NorthWest.IsSome then
-                items.AddRange (this.NorthWest.Value.Query (range))
-                items.AddRange (this.NorthEast.Value.Query (range))
-                items.AddRange (this.SouthWest.Value.Query (range))
-                items.AddRange (this.SouthEast.Value.Query (range))
-
-            items
-
-    member this.ForEachBounds f =
-        f this.Bounds
-
-        if this.NorthWest.IsSome then
-            this.NorthWest.Value.ForEachBounds f
-            this.NorthEast.Value.ForEachBounds f
-            this.SouthWest.Value.ForEachBounds f
-            this.SouthEast.Value.ForEachBounds f

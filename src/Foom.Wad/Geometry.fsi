@@ -33,37 +33,17 @@ type Polygon2DTree =
         Children: Polygon2DTree list
     }
 
-type AAB2D =
+type ContainmentType =
+    | Disjoint
+    | Contains
+    | Intersects
+
+type BoundingBox2D =
     {
         Min: Vector2
         Max: Vector2
     }
 
-type AABB2D =
-    {
-        Center: Vector2
-        HalfSize: Vector2
-    }
+    member Contains : Vector2 -> ContainmentType
 
-    member Min : Vector2
-
-    member Max : Vector2
-
-    member Contains : Vector2 -> bool
-
-    member Contains : AABB2D -> bool
-
-    static member FromAAB2D : AAB2D -> AABB2D 
-
-[<Sealed>]
-type QuadTree<'T> =
-
-    static member Create : AABB2D * int -> QuadTree<'T>
-
-    member Subdivide : unit -> unit
-
-    member Insert : 'T * AABB2D -> bool
-
-    member Query : AABB2D -> ResizeArray<'T>
-
-    member ForEachBounds : (AABB2D -> unit) -> unit
+    member Intersects : BoundingBox2D -> ContainmentType
