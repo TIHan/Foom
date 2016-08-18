@@ -1,6 +1,7 @@
 ﻿[<RequireQualifiedAccess>]
 module Foom.Client.Client
 
+open System
 open System.IO
 open System.Drawing
 open System.Numerics
@@ -110,55 +111,55 @@ let init (world: World) =
 
     let mutable count = 0
 
-    //lvl.Sectors
-    //|> Seq.iter (fun sector ->
-    //    lvl
-    //    |> Level.createWalls sector
-    //    |> Seq.iter (fun renderLinedef ->
+    lvl.Sectors
+    |> Seq.iter (fun sector ->
+        lvl
+        |> Level.createWalls sector
+        |> Seq.iter (fun renderLinedef ->
 
         
-    //        match Wad.tryFindTexture renderLinedef.TextureName doom2Wad with
-    //        | None -> ()
-    //        | Some tex ->
+            match Wad.tryFindTexture renderLinedef.TextureName doom2Wad with
+            | None -> ()
+            | Some tex ->
 
-    //        let width = Array2D.length1 tex.Data
-    //        let height = Array2D.length2 tex.Data
+            let width = Array2D.length1 tex.Data
+            let height = Array2D.length2 tex.Data
 
-    //        let bmp = new Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
+            let bmp = new Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
 
-    //        let mutable isTransparent = false
-    //        tex.Data
-    //        |> Array2D.iteri (fun i j pixel ->
-    //            if pixel = Pixel.Cyan then
-    //                bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
-    //                isTransparent <- true
-    //            else
-    //                bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-    //        )
+            let mutable isTransparent = false
+            tex.Data
+            |> Array2D.iteri (fun i j pixel ->
+                if pixel = Pixel.Cyan then
+                    bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
+                    isTransparent <- true
+                else
+                    bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+            )
 
-    //        bmp.Save (tex.Name + ".bmp")
-    //        bmp.Dispose ()
+            bmp.Save (tex.Name + ".bmp")
+            bmp.Dispose ()
 
-    //        let lightLevel = sector.LightLevel
-    //        let lightLevel =
-    //            if lightLevel > 255 then 255uy
-    //            else byte lightLevel
+            let lightLevel = sector.LightLevel
+            let lightLevel =
+                if lightLevel > 255 then 255uy
+                else byte lightLevel
 
-    //        let ent = world.EntityManager.Spawn ()
+            let ent = world.EntityManager.Spawn ()
 
-    //        world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
-    //        world.EntityManager.AddComponent ent (MeshComponent (renderLinedef.Vertices, Wall.createUV width height renderLinedef))
-    //        world.EntityManager.AddComponent ent (
-    //            MaterialComponent (
-    //                "triangle.vertex",
-    //                "triangle.fragment",
-    //                tex.Name + ".bmp",
-    //                { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
-    //                isTransparent
-    //            )
-    //        )
-    //    )
-    //)
+            world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
+            world.EntityManager.AddComponent ent (MeshComponent (renderLinedef.Vertices, Wall.createUV width height renderLinedef))
+            world.EntityManager.AddComponent ent (
+                MaterialComponent (
+                    "triangle.vertex",
+                    "triangle.fragment",
+                    tex.Name + ".bmp",
+                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
+                    isTransparent
+                )
+            )
+        )
+    )
 
     sectorPolygons
     |> Seq.iter (fun (polygons, sector) ->
@@ -195,40 +196,40 @@ let init (world: World) =
         )
     )
 
-    //sectorPolygons
-    //|> Seq.iter (fun (polygons, sector) ->
+    sectorPolygons
+    |> Seq.iter (fun (polygons, sector) ->
 
-    //    polygons
-    //    |> Seq.iter (fun polygon ->
-    //        let vertices =
-    //            polygon.Triangles
-    //            |> Array.map (fun x -> [|x.Z;x.Y;x.X|])
-    //            |> Array.reduce Array.append
-    //            |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.CeilingHeight))
+        polygons
+        |> Seq.iter (fun polygon ->
+            let vertices =
+                polygon.Triangles
+                |> Array.map (fun x -> [|x.Z;x.Y;x.X|])
+                |> Array.reduce Array.append
+                |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.CeilingHeight))
 
-    //        let uv = Flat.createFlippedUV 64 64 polygon
+            let uv = Flat.createFlippedUV 64 64 polygon
 
-    //        let lightLevel = sector.LightLevel
-    //        let lightLevel =
-    //            if lightLevel > 255 then 255uy
-    //            else byte lightLevel
+            let lightLevel = sector.LightLevel
+            let lightLevel =
+                if lightLevel > 255 then 255uy
+                else byte lightLevel
 
-    //        count <- count + 1
-    //        let ent = world.EntityManager.Spawn ()
+            count <- count + 1
+            let ent = world.EntityManager.Spawn ()
 
-    //        world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
-    //        world.EntityManager.AddComponent ent (MeshComponent (vertices, uv))
-    //        world.EntityManager.AddComponent ent (
-    //            MaterialComponent (
-    //                "triangle.vertex",
-    //                "triangle.fragment",
-    //                sector.CeilingTextureName + ".bmp",
-    //                { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
-    //                false
-    //            )
-    //        )
-    //    )
-    //)
+            world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
+            world.EntityManager.AddComponent ent (MeshComponent (vertices, uv))
+            world.EntityManager.AddComponent ent (
+                MaterialComponent (
+                    "triangle.vertex",
+                    "triangle.fragment",
+                    sector.CeilingTextureName + ".bmp",
+                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
+                    false
+                )
+            )
+        )
+    )
 
     printfn "COUNT: %A" count
 
@@ -306,10 +307,10 @@ let init (world: World) =
             Max = Vector2 (maxX, maxY)
         }
 
-    spawnBounds mapBounds
+    //spawnBounds mapBounds
 
     let physicsWorld = Physics.init ()
-    let capsule = Physics.addCapsule defaultPosition 8.f (64.f * 56.f) 8.f Vector3.Zero physicsWorld
+    let capsule = Physics.addCapsuleController defaultPosition (24.f) (20.f) physicsWorld
 
     sectorPolygons
     |> Seq.iter (fun (flats, sector) ->
@@ -325,18 +326,131 @@ let init (world: World) =
         )
     )
 
+    //sectorPolygons
+    //|> Seq.iter (fun (flats, sector) ->
+    //    flats
+    //    |> Seq.iter (fun flat ->
+    //        let vertices =
+    //            flat.Triangles
+    //            |> Array.map (fun x -> [|x.Z;x.Y;x.X|])
+    //            |> Array.reduce Array.append
+    //            |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.CeilingHeight))
+
+    //        Physics.addTriangles vertices vertices.Length physicsWorld
+    //    )
+    //)
+
+    //lvl.Sectors
+    //|> Seq.iter (fun sector ->
+    //    lvl
+    //    |> Level.createWalls sector
+    //    |> Seq.iter (fun wall ->
+    //        Physics.addTriangles wall.Vertices wall.Vertices.Length physicsWorld
+    //    )
+    //)
+
+    let mutable xpos = 0
+    let mutable prevXpos = 0
+
+    let mutable ypos = 0
+    let mutable prevYpos = 0
+
+    let mutable isMovingForward = false
+    let mutable isMovingLeft = false
+    let mutable isMovingRight = false
+    let mutable isMovingBackward = false
+
     let sectorChecks =
         EntitySystem.create "SectorChecks" 
             [
                 update (fun entityManager eventManager deltaTime ->
-                    Physics.step deltaTime physicsWorld
 
-                    let position = Physics.getCapsulePosition capsule
+                    Input.pollEvents (app.Window)
+                    let inputState = Input.getState ()
 
-                    match entityManager.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true) with
-                    | Some (ent, _, transformComp) ->
-                        transformComp.Position <- position
-                    | _ -> ()
+                    world.EntityManager.TryFind<CameraComponent> (fun _ _ -> true)
+                    |> Option.iter (fun (ent, cameraComp) ->
+                        world.EntityManager.TryGet<TransformComponent> (ent)
+                        |> Option.iter (fun (transformComp) ->
+
+                            transformComp.TransformLerp <- transformComp.Transform
+
+                            world.EntityManager.TryGet<CameraRotationComponent> (ent)
+                            |> Option.iter (fun cameraRotComp ->
+                                cameraRotComp.AngleLerp <- cameraRotComp.Angle
+                            )
+
+                            inputState.Events
+                            |> List.iter (function
+                                | MouseMoved (_, _, x, y) ->
+
+                                    world.EntityManager.TryGet<CameraRotationComponent> (ent)
+                                    |> Option.iter (fun cameraRotComp ->
+                                        cameraRotComp.X <- cameraRotComp.X + (single x * -0.25f) * (float32 Math.PI / 180.f)
+                                        cameraRotComp.Y <- cameraRotComp.Y + (single y * -0.25f) * (float32 Math.PI / 180.f)
+                                    )
+
+                                | KeyPressed x when x = 'w' -> isMovingForward <- true
+                                | KeyReleased x when x = 'w' -> isMovingForward <- false
+
+                                | KeyPressed x when x = 'a' -> isMovingLeft <- true
+                                | KeyReleased x when x = 'a' -> isMovingLeft <- false
+
+                                | KeyPressed x when x = 's' -> isMovingBackward <- true
+                                | KeyReleased x when x = 's' -> isMovingBackward <- false
+
+                                | KeyPressed x when x = 'd' -> isMovingRight <- true
+                                | KeyReleased x when x = 'd' -> isMovingRight <- false
+
+                                | _ -> ()
+                            )
+
+                            world.EntityManager.TryGet<CameraRotationComponent> (ent)
+                            |> Option.iter (fun cameraRotComp ->
+                                transformComp.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+
+                                transformComp.Rotation <- transformComp.Rotation *
+                                    Quaternion.CreateFromYawPitchRoll (
+                                        cameraRotComp.X,
+                                        cameraRotComp.Y,
+                                        0.f
+                                    )
+                            )
+
+                            if isMovingForward then
+                                let v = Vector3.Transform (Vector3.UnitZ * -64.f, transformComp.Rotation)
+                                //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
+                                transformComp.Translate (v)
+
+                            if isMovingLeft then
+                                let v = Vector3.Transform (Vector3.UnitX * -64.f, transformComp.Rotation)
+                                //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
+                                transformComp.Translate (v)
+
+                            if isMovingBackward then
+                                let v = Vector3.Transform (Vector3.UnitZ * 64.f, transformComp.Rotation)
+                                //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
+                                transformComp.Translate (v)
+
+                            if isMovingRight then
+                                let v = Vector3.Transform (Vector3.UnitX * 64.f, transformComp.Rotation)
+                                //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
+                                transformComp.Translate (v)
+                               
+                        )
+                    )
+
+                    //Physics.preStepKinematicController capsule physicsWorld
+                    Physics.stepKinematicController deltaTime capsule physicsWorld
+                    //Physics.step deltaTime physicsWorld
+                    //Physics.stepKinematicController deltaTime capsule physicsWorld
+
+                    //let position = Physics.getKinematicControllerPosition capsule
+
+                    //match entityManager.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true) with
+                    //| Some (ent, _, transformComp) ->
+                    //    transformComp.Position <- position + Vector3 (0.f, 0.f, 56.f / 2.f)
+                    //| _ -> ()
                 )
             ]
 
