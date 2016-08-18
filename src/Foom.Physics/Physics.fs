@@ -83,6 +83,28 @@ module Physics =
         position.Z = origin.getZ();
         return position;
         """
+
+    [<Import; MI(MIO.NoInlining)>]
+    let addTriangles (vertices: Vector3 []) (length: int) (world: PhysicsWorld) : unit =
+        C """
+        btTriangleMesh* trimesh = new btTriangleMesh();
+
+        for (int i = 0; i < length; i = i + 3)
+        {
+            btVector3 v1 = btVector3(vertices[i].X, vertices[i].Y, vertices[i].Z);
+            btVector3 v2 = btVector3(vertices[i + 1].X, vertices[i + 1].Y, vertices[i + 1].Z);
+            btVector3 v3 = btVector3(vertices[i + 2].X, vertices[i + 2].Y, vertices[i + 2].Z);
+            trimesh->addTriangle (v1, v2, v3);
+        }
+
+        btTransform   trans;
+        trans.setIdentity();
+
+        btCollisionShape* trimeshShape  = new btBvhTriangleMeshShape( trimesh, true );
+
+        btRigidBody* body= new btRigidBody( 0, 0, trimeshShape, btVector3(0,0,0) );
+        ((btDiscreteDynamicsWorld*)world.World)->addRigidBody( body );
+        """
     
     
 

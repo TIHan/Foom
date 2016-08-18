@@ -309,7 +309,21 @@ let init (world: World) =
     spawnBounds mapBounds
 
     let physicsWorld = Physics.init ()
-    let capsule = Physics.addCapsule defaultPosition 8.f 8.f 8.f Vector3.Zero physicsWorld
+    let capsule = Physics.addCapsule defaultPosition 8.f (64.f * 56.f) 8.f Vector3.Zero physicsWorld
+
+    sectorPolygons
+    |> Seq.iter (fun (flats, sector) ->
+        flats
+        |> Seq.iter (fun flat ->
+            let vertices =
+                flat.Triangles
+                |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
+                |> Array.reduce Array.append
+                |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.FloorHeight))
+
+            Physics.addTriangles vertices vertices.Length physicsWorld
+        )
+    )
 
     let sectorChecks =
         EntitySystem.create "SectorChecks" 
