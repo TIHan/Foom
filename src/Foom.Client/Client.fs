@@ -122,7 +122,7 @@ let init (world: World) =
 
     let defaultPosition = Vector3 (1568.f, -3520.f, 64.f * 3.f)
     let cameraEnt = world.EntityManager.Spawn ()
-    world.EntityManager.AddComponent cameraEnt (CameraComponent ())
+    world.EntityManager.AddComponent cameraEnt (CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 32.f, System.Single.MaxValue)))
     world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (defaultPosition)))
 
     let flatUnit = 64.f
@@ -425,9 +425,9 @@ let init (world: World) =
                         )
                     )
 
-                    //Physics.preStepKinematicController capsule physicsWorld
+                    Physics.preStepKinematicController capsule physicsWorld
                     Physics.stepKinematicController deltaTime capsule physicsWorld
-                    //Physics.step deltaTime physicsWorld
+                    Physics.step deltaTime physicsWorld
                     //Physics.stepKinematicController deltaTime capsule physicsWorld
 
                     //let position = Physics.getKinematicControllerPosition capsule

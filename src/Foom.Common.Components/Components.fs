@@ -58,9 +58,11 @@ type TransformComponent (value: Matrix4x4) =
     interface IEntityComponent
 
 [<Sealed>]
-type CameraComponent () =
+type CameraComponent (projection) =
 
     let mutable angle = Vector3 (0.f, 0.f, 0.f)
+
+    member val Projection : Matrix4x4 = projection with get, set
 
     member this.Angle
         with get () = angle
