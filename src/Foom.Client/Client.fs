@@ -46,42 +46,61 @@ open Foom.Renderer.EntitySystem
 open Foom.Common.Components
 open Foom.Renderer.Components
 
+let exportFlatTextures (wad: Wad) =
+    wad
+    |> Wad.iterFlatTextureName (fun name ->
+        Wad.tryFindFlatTexture name wad
+        |> Option.iter (fun tex ->
+            let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format32bppArgb)
+
+            for i = 0 to 64 - 1 do
+                for j = 0 to 64 - 1 do
+                    let pixel = tex.Pixels.[i + (j * 64)]
+                    bmp.SetPixel (i, j, Color.FromArgb (255, int pixel.R, int pixel.G, int pixel.B))
+
+            bmp.Save(tex.Name + ".bmp")
+            bmp.Dispose ()
+        )
+    )
+
+let exportTextures (wad: Wad) =
+    wad
+    |> Wad.iterTextureName (fun name ->
+        Wad.tryFindTexture name wad
+        |> Option.iter (fun tex ->
+            let width = Array2D.length1 tex.Data
+            let height = Array2D.length2 tex.Data
+
+            let bmp = new Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
+
+            let mutable isTransparent = false
+
+            tex.Data
+            |> Array2D.iteri (fun i j pixel ->
+                if pixel = Pixel.Cyan then
+                    bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
+                else
+                    bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+            )
+
+            bmp.Save (tex.Name + ".bmp")
+            bmp.Dispose ()
+        )
+    )
+
+
 let init (world: World) =
 
     // Load up doom wads.
 
-    let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
-    let wad = Wad.createFromWad doom2Wad (System.IO.File.Open ("sunder.wad", System.IO.FileMode.Open)) |> Async.RunSynchronously
-    let lvl = Wad.findLevel "e1m1" doom2Wad |> Async.RunSynchronously
+    let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open))
+    doom2Wad |> exportFlatTextures
+    doom2Wad |> exportTextures
+
+    let lvl = Wad.findLevel "e1m1" doom2Wad
 
 
     // Extract all doom textures.
-
-    Wad.flats doom2Wad
-    |> Array.iter (fun tex ->
-        let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format32bppArgb)
-
-        for i = 0 to 64 - 1 do
-            for j = 0 to 64 - 1 do
-                let pixel = tex.Pixels.[i + (j * 64)]
-                bmp.SetPixel (i, j, Color.FromArgb (255, int pixel.R, int pixel.G, int pixel.B))
-
-        bmp.Save(tex.Name + ".bmp")
-        bmp.Dispose ()
-    )
-
-    Wad.flats wad
-    |> Array.iter (fun tex ->
-        let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format32bppArgb)
-
-        for i = 0 to 64 - 1 do
-            for j = 0 to 64 - 1 do
-                let pixel = tex.Pixels.[i + (j * 64)]
-                bmp.SetPixel (i, j, Color.FromArgb (255, int pixel.R, int pixel.G, int pixel.B))
-
-        bmp.Save(tex.Name + ".bmp")
-        bmp.Dispose ()
-    )
 
     // Calculate polygons
 
@@ -116,48 +135,30 @@ let init (world: World) =
         lvl
         |> Level.createWalls sector
         |> Seq.iter (fun renderLinedef ->
-
-        
             match Wad.tryFindTexture renderLinedef.TextureName doom2Wad with
-            | None -> ()
             | Some tex ->
+                let width = Array2D.length1 tex.Data
+                let height = Array2D.length2 tex.Data
 
-            let width = Array2D.length1 tex.Data
-            let height = Array2D.length2 tex.Data
+                let lightLevel = sector.LightLevel
+                let lightLevel =
+                    if lightLevel > 255 then 255uy
+                    else byte lightLevel
 
-            let bmp = new Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
+                let ent = world.EntityManager.Spawn ()
 
-            let mutable isTransparent = false
-            tex.Data
-            |> Array2D.iteri (fun i j pixel ->
-                if pixel = Pixel.Cyan then
-                    bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
-                    isTransparent <- true
-                else
-                    bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-            )
-
-            bmp.Save (tex.Name + ".bmp")
-            bmp.Dispose ()
-
-            let lightLevel = sector.LightLevel
-            let lightLevel =
-                if lightLevel > 255 then 255uy
-                else byte lightLevel
-
-            let ent = world.EntityManager.Spawn ()
-
-            world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
-            world.EntityManager.AddComponent ent (MeshComponent (renderLinedef.Vertices, Wall.createUV width height renderLinedef))
-            world.EntityManager.AddComponent ent (
-                MaterialComponent (
-                    "triangle.vertex",
-                    "triangle.fragment",
-                    tex.Name + ".bmp",
-                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
-                    isTransparent
+                world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
+                world.EntityManager.AddComponent ent (MeshComponent (renderLinedef.Vertices, Wall.createUV width height renderLinedef))
+                world.EntityManager.AddComponent ent (
+                    MaterialComponent (
+                        "triangle.vertex",
+                        "triangle.fragment",
+                        renderLinedef.TextureName + ".bmp",
+                        { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
+                        false
+                    )
                 )
-            )
+            | _ -> ()
         )
     )
 

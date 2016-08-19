@@ -24,12 +24,14 @@ type Wad
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Wad =
 
-    val create : Stream -> Async<Wad>
+    val create : Stream -> Wad
 
-    val createFromWad : Wad -> Stream -> Async<Wad>
-
-    val flats : Wad -> FlatTexture []
-
-    val findLevel : levelName: string -> wad: Wad -> Async<Level>
+    val findLevel : levelName: string -> wad: Wad -> Level
 
     val tryFindTexture : textureName: string -> wad: Wad -> Texture option
+
+    val tryFindFlatTexture : textureName: string -> wad: Wad -> FlatTexture option
+
+    val iterFlatTextureName : (string -> unit) -> wad: Wad -> unit
+
+    val iterTextureName : (string -> unit) -> wad: Wad -> unit
