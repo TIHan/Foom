@@ -112,8 +112,6 @@ let init (world: World) =
             (Level.createFlats i lvl, s)
         )
 
-
-
     // Add entity system
 
     let app = Renderer.init ()
@@ -140,6 +138,7 @@ let init (world: World) =
                 let height = Array2D.length2 tex.Data
 
                 let lightLevel = sector.LightLevel
+                let lightLevel = lightLevel * lightLevel / 255
                 let lightLevel =
                     if lightLevel > 255 then 255uy
                     else byte lightLevel
@@ -174,6 +173,7 @@ let init (world: World) =
             let uv = Flat.createUV 64 64 polygon
 
             let lightLevel = sector.LightLevel
+            let lightLevel = lightLevel * lightLevel / 255
             let lightLevel =
                 if lightLevel > 255 then 255uy
                 else byte lightLevel
@@ -208,6 +208,7 @@ let init (world: World) =
             let uv = Flat.createFlippedUV 64 64 polygon
 
             let lightLevel = sector.LightLevel
+            let lightLevel = lightLevel * lightLevel / 255
             let lightLevel =
                 if lightLevel > 255 then 255uy
                 else byte lightLevel
