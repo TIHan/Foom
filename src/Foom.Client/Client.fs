@@ -17,7 +17,7 @@ open Foom.Wad.Level.Structures
 type ClientState = 
     {
         Window: nativeint
-        Update: (float32 -> unit)
+        Update: (float32 * float32 -> unit)
         RenderUpdate: (float32 -> unit)
         Level: Level 
     }
@@ -120,9 +120,9 @@ let init (world: World) =
     let sys1 = Foom.Renderer.EntitySystem.create (app)
     let updateSys1 = world.AddSystem sys1
 
-    let defaultPosition = Vector3 (1568.f, -3520.f, 64.f * 3.f)
+    let defaultPosition = Vector3 (1056.f, -3552.f, 0.f)
     let cameraEnt = world.EntityManager.Spawn ()
-    world.EntityManager.AddComponent cameraEnt (CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 32.f, System.Single.MaxValue)))
+    world.EntityManager.AddComponent cameraEnt (CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, System.Single.MaxValue)))
     world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (defaultPosition)))
 
     let flatUnit = 64.f
@@ -275,7 +275,7 @@ let init (world: World) =
         flats
         |> Seq.iteri (fun i flat ->
             let bounds = Flat.createBoundingBox2D flat
-            spawnBounds bounds
+            //spawnBounds bounds
             let min = bounds.Min
             let max = bounds.Max
             if first then
@@ -306,7 +306,7 @@ let init (world: World) =
     //spawnBounds mapBounds
 
     let physicsWorld = Physics.init ()
-    let capsule = Physics.addCapsuleController defaultPosition (24.f) (20.f) physicsWorld
+    let capsule = Physics.addCapsuleController defaultPosition (33.f) (0.f) physicsWorld
 
     sectorPolygons
     |> Seq.iter (fun (flats, sector) ->
@@ -322,28 +322,28 @@ let init (world: World) =
         )
     )
 
-    //sectorPolygons
-    //|> Seq.iter (fun (flats, sector) ->
-    //    flats
-    //    |> Seq.iter (fun flat ->
-    //        let vertices =
-    //            flat.Triangles
-    //            |> Array.map (fun x -> [|x.Z;x.Y;x.X|])
-    //            |> Array.reduce Array.append
-    //            |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.CeilingHeight))
+    sectorPolygons
+    |> Seq.iter (fun (flats, sector) ->
+        flats
+        |> Seq.iter (fun flat ->
+            let vertices =
+                flat.Triangles
+                |> Array.map (fun x -> [|x.Z;x.Y;x.X|])
+                |> Array.reduce Array.append
+                |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.CeilingHeight))
 
-    //        Physics.addTriangles vertices vertices.Length physicsWorld
-    //    )
-    //)
+            Physics.addTriangles vertices vertices.Length physicsWorld
+        )
+    )
 
-    //lvl.Sectors
-    //|> Seq.iter (fun sector ->
-    //    lvl
-    //    |> Level.createWalls sector
-    //    |> Seq.iter (fun wall ->
-    //        Physics.addTriangles wall.Vertices wall.Vertices.Length physicsWorld
-    //    )
-    //)
+    lvl.Sectors
+    |> Seq.iter (fun sector ->
+        lvl
+        |> Level.createWalls sector
+        |> Seq.iter (fun wall ->
+            Physics.addTriangles wall.Vertices wall.Vertices.Length physicsWorld
+        )
+    )
 
     let mutable xpos = 0
     let mutable prevXpos = 0
@@ -356,13 +356,17 @@ let init (world: World) =
     let mutable isMovingRight = false
     let mutable isMovingBackward = false
 
+    let mutable didPreStep = false
+
     let sectorChecks =
         EntitySystem.create "SectorChecks" 
             [
-                update (fun entityManager eventManager deltaTime ->
+                update (fun entityManager eventManager (time, deltaTime) ->
 
                     Input.pollEvents (app.Window)
                     let inputState = Input.getState ()
+
+                    let mutable acc = Vector3.Zero
 
                     world.EntityManager.TryFind<CameraComponent> (fun _ _ -> true)
                     |> Option.iter (fun (ent, cameraComp) ->
@@ -402,40 +406,52 @@ let init (world: World) =
                                     0.f
                                 )
 
+                            
                             if isMovingForward then
-                                let v = Vector3.Transform (Vector3.UnitZ * -64.f, transformComp.Rotation)
+                                let v = Vector3.Transform (Vector3.UnitZ * -5.f, transformComp.Rotation)
+                                acc <- (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
-                                transformComp.Translate (v)
+                                //transformComp.Translate (v)
 
                             if isMovingLeft then
-                                let v = Vector3.Transform (Vector3.UnitX * -64.f, transformComp.Rotation)
+                                let v = Vector3.Transform (Vector3.UnitX * -5.f, transformComp.Rotation)
+                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
-                                transformComp.Translate (v)
+                                //transformComp.Translate (v)
 
                             if isMovingBackward then
-                                let v = Vector3.Transform (Vector3.UnitZ * 64.f, transformComp.Rotation)
+                                let v = Vector3.Transform (Vector3.UnitZ * 5.f, transformComp.Rotation)
+                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
-                                transformComp.Translate (v)
+                                //transformComp.Translate (v)
 
                             if isMovingRight then
-                                let v = Vector3.Transform (Vector3.UnitX * 64.f, transformComp.Rotation)
+                                let v = Vector3.Transform (Vector3.UnitX * 5.f, transformComp.Rotation)
+                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
-                                transformComp.Translate (v)
+                                //transformComp.Translate (v)
                                
+                            acc <- acc + Vector3.UnitZ * -2.f
+                            Physics.setKinematicControllerWalkDirection acc capsule
                         )
                     )
 
-                    Physics.preStepKinematicController capsule physicsWorld
+                    if not didPreStep then
+                        Physics.preStepKinematicController capsule physicsWorld
                     Physics.stepKinematicController deltaTime capsule physicsWorld
                     Physics.step deltaTime physicsWorld
                     //Physics.stepKinematicController deltaTime capsule physicsWorld
 
-                    //let position = Physics.getKinematicControllerPosition capsule
+                    let position = Physics.getKinematicControllerPosition capsule
 
-                    //match entityManager.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true) with
-                    //| Some (ent, _, transformComp) ->
-                    //    transformComp.Position <- position + Vector3 (0.f, 0.f, 56.f / 2.f)
-                    //| _ -> ()
+                    match entityManager.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true) with
+                    | Some (ent, _, transformComp) ->
+                        transformComp.Position <- position + Vector3(0.f, 0.f, (56.f / 2.f))
+                        let v1 = Vector2 (transformComp.Position.X, transformComp.Position.Y)
+                        let v2 = Vector2 (transformComp.TransformLerp.Translation.X, transformComp.TransformLerp.Translation.Y)
+
+                        transformComp.Position <- transformComp.Position + Vector3(0.f, 0.f, 8.f * sin((v1 - v2).Length() * time))
+                    | _ -> ()
                 )
             ]
 

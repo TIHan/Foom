@@ -62,10 +62,12 @@ module Physics =
         t.setIdentity();
         t.setOrigin(btVector3(position.X,position.Y,position.Z));
 
-        btConvexShape *capsule = new btCapsuleShapeZ(radius, height);
+        //btConvexShape *capsule = new btCapsuleShape(radius, height);
+        //capsule->setMargin(16);
+
         btDiscreteDynamicsWorld* world = ((btDiscreteDynamicsWorld*)pworld.World);
 
-        //btConvexShape* capsule = new btCylinderShape(btVector3(PLAYER_CAPSULE_RADIUS,PLAYER_CAPSULE_HEIGHT/2,PLAYER_CAPSULE_RADIUS));
+        btConvexShape* capsule = new btCylinderShape(btVector3(16, 16, 16));
         
         ghostBody = new btPairCachingGhostObject();
         ghostBody->setWorldTransform(t);
@@ -74,9 +76,9 @@ module Physics =
         ghostBody->setCollisionFlags (btCollisionObject::CF_CHARACTER_OBJECT);
      
         //alocate the character object
-        characterController = new btKinematicCharacterController(ghostBody,capsule,btScalar(24));
+        characterController = new btKinematicCharacterController(ghostBody,capsule,btScalar(24), 2);
         characterController->setUseGhostSweepTest(false);
-       // characterController->setGravity(0);
+        characterController->setGravity(0.f);
         
         world->addCollisionObject(ghostBody, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::StaticFilter|btBroadphaseProxy::DefaultFilter);
         world->addAction(characterController);
@@ -116,6 +118,13 @@ module Physics =
     let stepKinematicController (deltaTime: float32) (controller: KinematicController) (pworld: PhysicsWorld) : unit =
         C """
         ((btKinematicCharacterController*)controller.Ptr)->playerStep (((btDiscreteDynamicsWorld*)pworld.World), deltaTime);
+        """
+
+
+    [<Import; MI(MIO.NoInlining)>]
+    let setKinematicControllerWalkDirection (v: Vector3) (controller: KinematicController) : unit =
+        C """
+        ((btKinematicCharacterController*)controller.Ptr)->setWalkDirection(btVector3(v.X,v.Y,v.Z));
         """
 
 
