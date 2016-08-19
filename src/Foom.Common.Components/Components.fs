@@ -60,11 +60,6 @@ type TransformComponent (value: Matrix4x4) =
 [<Sealed>]
 type CameraComponent () =
 
-    interface IEntityComponent
-
-[<Sealed>]
-type CameraRotationComponent () =
-
     let mutable angle = Vector3 (0.f, 0.f, 0.f)
 
     member this.Angle
@@ -73,19 +68,17 @@ type CameraRotationComponent () =
 
     member val AngleLerp = angle with get, set
 
-    member this.X 
+    member this.AngleX 
         with get () = angle.X
         and set value = angle.X <- value
 
-    member this.Y 
+    member this.AngleY 
         with get () = angle.Y
         and set value = angle.Y <- value
 
-    member this.Z 
+    member this.AngleZ 
         with get () = angle.Z
         and set value = angle.Z <- value
 
     interface IEntityComponent
-
-
     

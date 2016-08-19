@@ -124,7 +124,6 @@ let init (world: World) =
     let cameraEnt = world.EntityManager.Spawn ()
     world.EntityManager.AddComponent cameraEnt (CameraComponent ())
     world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (defaultPosition)))
-    world.EntityManager.AddComponent cameraEnt (CameraRotationComponent())
 
     let flatUnit = 64.f
 
@@ -154,8 +153,7 @@ let init (world: World) =
                         "triangle.vertex",
                         "triangle.fragment",
                         renderLinedef.TextureName + ".bmp",
-                        { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
-                        false
+                        { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy }
                     )
                 )
             | _ -> ()
@@ -190,8 +188,7 @@ let init (world: World) =
                     "triangle.vertex",
                     "triangle.fragment",
                     sector.FloorTextureName + ".bmp",
-                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
-                    false
+                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy }
                 )
             )
         )
@@ -225,8 +222,7 @@ let init (world: World) =
                     "triangle.vertex",
                     "triangle.fragment",
                     sector.CeilingTextureName + ".bmp",
-                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy },
-                    false
+                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy }
                 )
             )
         )
@@ -264,8 +260,7 @@ let init (world: World) =
             MaterialComponent(
                 "v.vertex", 
                 "f.fragment", "", 
-                { R = 255uy; G = 255uy; B = 255uy; A = 255uy },
-                false
+                { R = 255uy; G = 255uy; B = 255uy; A = 255uy }
             )
 
     let mutable minX = 0.f
@@ -375,21 +370,13 @@ let init (world: World) =
                         |> Option.iter (fun (transformComp) ->
 
                             transformComp.TransformLerp <- transformComp.Transform
-
-                            world.EntityManager.TryGet<CameraRotationComponent> (ent)
-                            |> Option.iter (fun cameraRotComp ->
-                                cameraRotComp.AngleLerp <- cameraRotComp.Angle
-                            )
+                            cameraComp.AngleLerp <- cameraComp.Angle
 
                             inputState.Events
                             |> List.iter (function
                                 | MouseMoved (_, _, x, y) ->
-
-                                    world.EntityManager.TryGet<CameraRotationComponent> (ent)
-                                    |> Option.iter (fun cameraRotComp ->
-                                        cameraRotComp.X <- cameraRotComp.X + (single x * -0.25f) * (float32 Math.PI / 180.f)
-                                        cameraRotComp.Y <- cameraRotComp.Y + (single y * -0.25f) * (float32 Math.PI / 180.f)
-                                    )
+                                    cameraComp.AngleX <- cameraComp.AngleX + (single x * -0.25f) * (float32 Math.PI / 180.f)
+                                    cameraComp.AngleY <- cameraComp.AngleY + (single y * -0.25f) * (float32 Math.PI / 180.f)
 
                                 | KeyPressed x when x = 'w' -> isMovingForward <- true
                                 | KeyReleased x when x = 'w' -> isMovingForward <- false
@@ -406,17 +393,14 @@ let init (world: World) =
                                 | _ -> ()
                             )
 
-                            world.EntityManager.TryGet<CameraRotationComponent> (ent)
-                            |> Option.iter (fun cameraRotComp ->
-                                transformComp.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+                            transformComp.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
 
-                                transformComp.Rotation <- transformComp.Rotation *
-                                    Quaternion.CreateFromYawPitchRoll (
-                                        cameraRotComp.X,
-                                        cameraRotComp.Y,
-                                        0.f
-                                    )
-                            )
+                            transformComp.Rotation <- transformComp.Rotation *
+                                Quaternion.CreateFromYawPitchRoll (
+                                    cameraComp.AngleX,
+                                    cameraComp.AngleY,
+                                    0.f
+                                )
 
                             if isMovingForward then
                                 let v = Vector3.Transform (Vector3.UnitZ * -64.f, transformComp.Rotation)

@@ -23,12 +23,7 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
 
         match meshComp.State, materialComp.TextureState, materialComp.ShaderProgramState with
         | MeshState.Loaded mesh, TextureState.Loaded textureId, ShaderProgramState.Loaded programId ->
-
-            if materialComp.IsTransparent then
-                transparentQueue.Add((mesh, textureId, programId, mvp, materialComp, meshComp))
-            else
                 renderQueue.Enqueue ((mesh, textureId, programId, mvp, materialComp, meshComp))
-
         | _ -> ()
     )
 
@@ -55,34 +50,6 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
 
         Renderer.setUniformColor uniformColor (Color.FromArgb (255, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
         Renderer.drawTriangles 0 mesh.PositionBufferLength
-
-    Renderer.enableBlend()
-
-    transparentQueue
-    |> Seq.sortByDescending (fun (_, _, _, _, _, mesh) ->
-        (mesh.Max - cameraModel.Translation).Length ()
-    )
-    |> Seq.iter (fun (mesh, textureId, programId, mvp, materialComp, _) ->
-        Renderer.useProgram programId
-
-        let uniformColor = Renderer.getUniformColor programId
-        let uniformProjection = Renderer.getUniformProjection programId
-
-        Renderer.setUniformProjection uniformProjection mvp
-        Renderer.setTexture programId textureId
-
-        Renderer.bindVbo mesh.PositionBufferId
-        Renderer.bindPosition programId
-
-        Renderer.bindVbo mesh.UvBufferId
-        Renderer.bindUv programId
-
-        Renderer.bindTexture textureId
-
-        Renderer.setUniformColor uniformColor (Color.FromArgb (255, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
-        Renderer.drawTriangles 0 mesh.PositionBufferLength
-    )
-    Renderer.disableBlend()
 
     Renderer.disableDepth ()
 
