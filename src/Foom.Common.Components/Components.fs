@@ -64,6 +64,10 @@ type CameraComponent (projection) =
 
     member val Projection : Matrix4x4 = projection with get, set
 
+    member val HeightOffset : single = 0.f with get, set
+
+    member val HeightOffsetLerp : single = 0.f with get, set
+
     member this.Angle
         with get () = angle
         and set value = angle <- value

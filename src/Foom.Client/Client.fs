@@ -218,30 +218,34 @@ let init (world: World) =
 
                             
                             if isMovingForward then
-                                let v = Vector3.Transform (Vector3.UnitZ * -10.f, transformComp.Rotation)
+                                let v = Vector3.Transform (-Vector3.UnitZ, transformComp.Rotation)
                                 acc <- (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingLeft then
-                                let v = Vector3.Transform (Vector3.UnitX * -10.f, transformComp.Rotation)
+                                let v = Vector3.Transform (-Vector3.UnitX, transformComp.Rotation)
                                 acc <- acc + (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingBackward then
-                                let v = Vector3.Transform (Vector3.UnitZ * 10.f, transformComp.Rotation)
+                                let v = Vector3.Transform (Vector3.UnitZ, transformComp.Rotation)
                                 acc <- acc + (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingRight then
-                                let v = Vector3.Transform (Vector3.UnitX * 10.f, transformComp.Rotation)
+                                let v = Vector3.Transform (Vector3.UnitX, transformComp.Rotation)
                                 acc <- acc + (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
                                
-                            //acc <- acc + Vector3.UnitZ * -2.f
+                            acc <- 
+                                if acc <> Vector3.Zero then
+                                    acc |> Vector3.Normalize |> (*) 5.f
+                                else
+                                    acc
                             Physics.setKinematicControllerWalkDirection acc capsule
                         )
                     )
@@ -251,17 +255,18 @@ let init (world: World) =
                         didPreStep <- true
                     Physics.stepKinematicController deltaTime capsule physicsWorld
                     Physics.step deltaTime physicsWorld
-                    //Physics.stepKinematicController deltaTime capsule physicsWorld
 
                     let position = Physics.getKinematicControllerPosition capsule
 
                     match entityManager.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true) with
-                    | Some (ent, _, transformComp) ->
-                        transformComp.Position <- position
+                    | Some (ent, cameraComp, transformComp) ->
+                        transformComp.Position <- position + Vector3.UnitZ * 26.f
                         let v1 = Vector2 (transformComp.Position.X, transformComp.Position.Y)
                         let v2 = Vector2 (transformComp.TransformLerp.Translation.X, transformComp.TransformLerp.Translation.Y)
                         ()
-                        //transformComp.Position <- transformComp.Position + Vector3(0.f, 0.f, 8.f * sin((v1 - v2).Length() * time))
+
+                        cameraComp.HeightOffsetLerp <- cameraComp.HeightOffset
+                        cameraComp.HeightOffset <- sin(8.f * time) * (v1 - v2).Length()
                     | _ -> ()
                 )
             ]

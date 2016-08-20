@@ -163,6 +163,8 @@ let materialQueue =
      
     )
 
+let inline lerp x y t = x + (y - x) * t
+
 let create (app: Application) =
 
     EntitySystem.create "Renderer"
@@ -181,8 +183,11 @@ let create (app: Application) =
                     entityManager.TryGet<TransformComponent> (ent)
                     |> Option.iter (fun transformComp ->
 
+                        let heightOffset = lerp cameraComp.HeightOffsetLerp cameraComp.HeightOffset deltaTime
+
                         let projection = cameraComp.Projection |> Matrix4x4.Transpose
-                        let transform = Matrix4x4.Lerp (transformComp.TransformLerp, transformComp.Transform, deltaTime)
+                        let mutable transform = Matrix4x4.Lerp (transformComp.TransformLerp, transformComp.Transform, deltaTime)
+                        transform.Translation <- transform.Translation + Vector3(0.f,0.f,heightOffset)
 
                         let mutable invertedTransform = Matrix4x4.Identity
 
