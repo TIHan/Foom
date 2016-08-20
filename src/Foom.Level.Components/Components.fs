@@ -10,6 +10,7 @@ open Foom.Wad.Level
 
 type DoomLevelTexture =
     {
+        IsFlat: bool
         TextureName: string
         CreateUV: int -> int -> Vector2 []
     }
@@ -42,6 +43,7 @@ type DoomLevelComponent (level: Level) =
                             match flat.FloorTextureName with
                             | Some name ->
                                 {
+                                    IsFlat = true
                                     TextureName = name
                                     CreateUV = fun width height -> Flat.createUV width height flat 
                                 } |> Some
@@ -69,8 +71,9 @@ type DoomLevelComponent (level: Level) =
                             match flat.CeilingTextureName with
                             | Some name ->
                                 {
+                                    IsFlat = true
                                     TextureName = name
-                                    CreateUV = fun width height -> Flat.createUV width height flat 
+                                    CreateUV = fun width height -> Flat.createFlippedUV width height flat 
                                 } |> Some
                             | _ -> None
                         {
@@ -96,6 +99,7 @@ type DoomLevelComponent (level: Level) =
                             match wall.TextureName with
                             | Some name ->
                                 {
+                                    IsFlat = false
                                     TextureName = name
                                     CreateUV = fun width height -> Wall.createUV width height wall
                                 } |> Some

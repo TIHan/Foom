@@ -18,12 +18,6 @@ open Microsoft.FSharp.NativeInterop
 
 #nowarn "9"
 
-type FlatTexture =
-    {
-        Pixels: Pixel []
-        Name: string
-    }
-
 type Texture =
     {
         Data: Pixel [,]
@@ -158,8 +152,15 @@ module Wad =
 
                 let bytes = loadLump u_lumpRaw h wad.stream
 
-                let pixels = bytes |> Array.map (fun y -> palette.Pixels.[int y])
-                Some { Pixels = pixels; Name = h.Name }
+                {
+                    Name = h.Name
+                    Data =
+                        let pixels = Array2D.zeroCreate<Pixel> 64 64
+                        for i = 0 to 64 - 1 do
+                            for j = 0 to 64 - 1 do
+                                pixels.[i, j] <- palette.Pixels.[int bytes.[i * j + j]]
+                        pixels
+                } |> Some
 
     let tryFindPatch patchName wad =
         match tryFindLump patchName wad with
@@ -174,19 +175,7 @@ module Wad =
             loadTextureInfos wad
 
         match wad.TextureInfoLookup.Value.TryGetValue (name) with
-        | false, _ -> 
-            match tryFindFlatTexture name wad with
-            | Some flatTexture ->
-                {
-                    Name = flatTexture.Name
-                    Data =
-                        let pixels = Array2D.zeroCreate<Pixel> 64 64
-                        for i = 0 to 64 - 1 do
-                            for j = 0 to 64 - 1 do
-                                pixels.[i, j] <- flatTexture.Pixels.[i * j + j]
-                        pixels
-                } |> Some
-            | _ -> None
+        | false, _ -> None
         | true, info ->
 
             let tex = Array2D.init info.Width info.Height (fun _ _ -> Pixel.Cyan)

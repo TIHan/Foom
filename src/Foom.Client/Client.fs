@@ -52,14 +52,22 @@ let exportFlatTextures (wad: Wad) =
     |> Wad.iterFlatTextureName (fun name ->
         Wad.tryFindFlatTexture name wad
         |> Option.iter (fun tex ->
-            let bmp = new Bitmap(64, 64, Imaging.PixelFormat.Format32bppArgb)
+            let width = Array2D.length1 tex.Data
+            let height = Array2D.length2 tex.Data
 
-            for i = 0 to 64 - 1 do
-                for j = 0 to 64 - 1 do
-                    let pixel = tex.Pixels.[i + (j * 64)]
-                    bmp.SetPixel (i, j, Color.FromArgb (255, int pixel.R, int pixel.G, int pixel.B))
+            let bmp = new Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
 
-            bmp.Save(tex.Name + ".bmp")
+            let mutable isTransparent = false
+
+            tex.Data
+            |> Array2D.iteri (fun i j pixel ->
+                if pixel = Pixel.Cyan then
+                    bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
+                else
+                    bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
+            )
+
+            bmp.Save (tex.Name + ".bmp")
             bmp.Dispose ()
         )
     )
@@ -92,7 +100,10 @@ let exportTextures (wad: Wad) =
 let spawnDoomLevelStaticGeometryMesh (geo: DoomLevelStaticGeometry) (wad: Wad) (em: EntityManager) =
     match geo.Texture with
     | Some texture ->
-            match Wad.tryFindTexture texture.TextureName wad with
+            let tex = 
+                if texture.IsFlat then Wad.tryFindFlatTexture texture.TextureName wad
+                else Wad.tryFindTexture texture.TextureName wad
+            match tex with
             | Some tex ->
                 let width = Array2D.length1 tex.Data
                 let height = Array2D.length2 tex.Data
@@ -120,8 +131,8 @@ let init (world: World) =
     // Load up doom wads.
 
     let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open))
-    //doom2Wad |> exportFlatTextures
-    //doom2Wad |> exportTextures
+    doom2Wad |> exportFlatTextures
+    doom2Wad |> exportTextures
     let e1m1Wad = Wad.create (System.IO.File.Open ("e1m1.wad", System.IO.FileMode.Open))
 
     let lvl = Wad.findLevel "e1m1" e1m1Wad
