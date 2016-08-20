@@ -13,6 +13,7 @@ type PhysicsWorld =
 type KinematicController =
 
     val Ptr : nativeint
+    val ShapePtr : nativeint
     val GhostObjectPtr : nativeint
 
 [<Ferop>]
@@ -62,13 +63,14 @@ module Physics =
         t.setIdentity();
         t.setOrigin(btVector3(position.X,position.Y,position.Z));
 
-        //btConvexShape *capsule = new btCapsuleShape(radius, height);
+        //btConvexShape *capsule = new btCapsuleShapeZ(radius, height);
         //capsule->setMargin(16);
 
         btDiscreteDynamicsWorld* world = ((btDiscreteDynamicsWorld*)pworld.World);
 
-        btConvexShape* capsule = new btCylinderShape(btVector3(16, 16, 16));
-        
+        btScalar h = ((56 - 24) / 2);
+        btConvexShape* capsule = new btCylinderShapeZ(btVector3(16, 16, h));
+
         ghostBody = new btPairCachingGhostObject();
         ghostBody->setWorldTransform(t);
         ghostBody->setCollisionShape(capsule);
@@ -76,15 +78,17 @@ module Physics =
         ghostBody->setCollisionFlags (btCollisionObject::CF_CHARACTER_OBJECT);
      
         //alocate the character object
-        characterController = new btKinematicCharacterController(ghostBody,capsule,btScalar(24), 2);
+        characterController = new btKinematicCharacterController(ghostBody,capsule,btScalar(24),btVector3(0,0,1));//2);
         characterController->setUseGhostSweepTest(false);
-        characterController->setGravity(0.f);
+        characterController->setFallSpeed(150);
+        characterController->setGravity(btVector3(0,0,-1024));
         
         world->addCollisionObject(ghostBody, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::StaticFilter|btBroadphaseProxy::DefaultFilter);
         world->addAction(characterController);
 
         Physics_KinematicController controller;
         controller.Ptr = characterController;
+        controller.ShapePtr = capsule;
         controller.GhostObjectPtr = ghostBody;
         return controller;
         """
@@ -127,6 +131,11 @@ module Physics =
         ((btKinematicCharacterController*)controller.Ptr)->setWalkDirection(btVector3(v.X,v.Y,v.Z));
         """
 
+    [<Import; MI(MIO.NoInlining)>]
+    let getKinematicControllerHalfHeight (controller: KinematicController) : float32 =
+        C """
+        return ((btCapsuleShape*)controller.ShapePtr)->getHalfHeight();
+        """
 
     [<Import; MI(MIO.NoInlining)>]
     let addTriangles (vertices: Vector3 []) (length: int) (world: PhysicsWorld) : unit =

@@ -96,8 +96,9 @@ let init (world: World) =
     let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open))
     doom2Wad |> exportFlatTextures
     doom2Wad |> exportTextures
+    let e1m1Wad = Wad.create (System.IO.File.Open ("e1m1.wad", System.IO.FileMode.Open))
 
-    let lvl = Wad.findLevel "e1m1" doom2Wad
+    let lvl = Wad.findLevel "e1m1" e1m1Wad
 
 
     // Extract all doom textures.
@@ -118,7 +119,7 @@ let init (world: World) =
     let sys1 = Foom.Renderer.EntitySystem.create (app)
     let updateSys1 = world.AddSystem sys1
 
-    let defaultPosition = Vector3 (1056.f, -3552.f, 0.f)
+    let defaultPosition = Vector3 (1056.f, -3552.f, 20.f)
     let cameraEnt = world.EntityManager.Spawn ()
     world.EntityManager.AddComponent cameraEnt (CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, System.Single.MaxValue)))
     world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (defaultPosition)))
@@ -307,7 +308,7 @@ let init (world: World) =
     //spawnBounds mapBounds
 
     let physicsWorld = Physics.init ()
-    let capsule = Physics.addCapsuleController defaultPosition (33.f) (0.f) physicsWorld
+    let capsule = Physics.addCapsuleController defaultPosition (10.f) (36.f) physicsWorld
 
     sectorPolygons
     |> Seq.iter (fun (flats, sector) ->
@@ -409,36 +410,37 @@ let init (world: World) =
 
                             
                             if isMovingForward then
-                                let v = Vector3.Transform (Vector3.UnitZ * -5.f, transformComp.Rotation)
+                                let v = Vector3.Transform (Vector3.UnitZ * -10.f, transformComp.Rotation)
                                 acc <- (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingLeft then
-                                let v = Vector3.Transform (Vector3.UnitX * -5.f, transformComp.Rotation)
+                                let v = Vector3.Transform (Vector3.UnitX * -10.f, transformComp.Rotation)
                                 acc <- acc + (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingBackward then
-                                let v = Vector3.Transform (Vector3.UnitZ * 5.f, transformComp.Rotation)
+                                let v = Vector3.Transform (Vector3.UnitZ * 10.f, transformComp.Rotation)
                                 acc <- acc + (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingRight then
-                                let v = Vector3.Transform (Vector3.UnitX * 5.f, transformComp.Rotation)
+                                let v = Vector3.Transform (Vector3.UnitX * 10.f, transformComp.Rotation)
                                 acc <- acc + (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
                                
-                            acc <- acc + Vector3.UnitZ * -2.f
+                            //acc <- acc + Vector3.UnitZ * -2.f
                             Physics.setKinematicControllerWalkDirection acc capsule
                         )
                     )
 
                     if not didPreStep then
                         Physics.preStepKinematicController capsule physicsWorld
+                        didPreStep <- true
                     Physics.stepKinematicController deltaTime capsule physicsWorld
                     Physics.step deltaTime physicsWorld
                     //Physics.stepKinematicController deltaTime capsule physicsWorld
@@ -447,11 +449,11 @@ let init (world: World) =
 
                     match entityManager.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true) with
                     | Some (ent, _, transformComp) ->
-                        transformComp.Position <- position + Vector3(0.f, 0.f, (56.f / 2.f))
+                        transformComp.Position <- position
                         let v1 = Vector2 (transformComp.Position.X, transformComp.Position.Y)
                         let v2 = Vector2 (transformComp.TransformLerp.Translation.X, transformComp.TransformLerp.Translation.Y)
-
-                        transformComp.Position <- transformComp.Position + Vector3(0.f, 0.f, 8.f * sin((v1 - v2).Length() * time))
+                        ()
+                        //transformComp.Position <- transformComp.Position + Vector3(0.f, 0.f, 8.f * sin((v1 - v2).Length() * time))
                     | _ -> ()
                 )
             ]
