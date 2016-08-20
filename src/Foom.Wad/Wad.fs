@@ -174,7 +174,19 @@ module Wad =
             loadTextureInfos wad
 
         match wad.TextureInfoLookup.Value.TryGetValue (name) with
-        | false, _ -> None
+        | false, _ -> 
+            match tryFindFlatTexture name wad with
+            | Some flatTexture ->
+                {
+                    Name = flatTexture.Name
+                    Data =
+                        let pixels = Array2D.zeroCreate<Pixel> 64 64
+                        for i = 0 to 64 - 1 do
+                            for j = 0 to 64 - 1 do
+                                pixels.[i, j] <- flatTexture.Pixels.[i * j + j]
+                        pixels
+                } |> Some
+            | _ -> None
         | true, info ->
 
             let tex = Array2D.init info.Width info.Height (fun _ _ -> Pixel.Cyan)

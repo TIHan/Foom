@@ -11,7 +11,7 @@ type TextureAlignment =
 
 type Wall =
     {
-        TextureName: string
+        TextureName: string option
         TextureOffsetX: int
         TextureOffsetY: int
         Vertices: Vector3 []
@@ -22,6 +22,10 @@ type Flat =
     {
         SectorId: int
         Triangles: Triangle2D []
+        FloorHeight: int
+        CeilingHeight: int
+        FloorTextureName: string option
+        CeilingTextureName: string option
     }
 
 [<NoComparison; ReferenceEquality>]

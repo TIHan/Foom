@@ -104,5 +104,9 @@
       <Project>{9B962272-2018-4C8C-9E62-528CDC8DB87E}</Project>
       <Name>Foom.Client.Desktop.Input</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Level.Components\Foom.Level.Components.fsproj">
+      <Project>{4AA248F8-5CB9-415A-A0D0-42CBC7241D2E}</Project>
+      <Name>Foom.Level.Components</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

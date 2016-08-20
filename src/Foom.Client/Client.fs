@@ -45,6 +45,7 @@ open Foom.Ecs.World
 open Foom.Renderer.EntitySystem
 open Foom.Common.Components
 open Foom.Renderer.Components
+open Foom.Level.Components
 
 let exportFlatTextures (wad: Wad) =
     wad
@@ -88,30 +89,43 @@ let exportTextures (wad: Wad) =
         )
     )
 
+let spawnDoomLevelStaticGeometryMesh (geo: DoomLevelStaticGeometry) (wad: Wad) (em: EntityManager) =
+    match geo.Texture with
+    | Some texture ->
+            match Wad.tryFindTexture texture.TextureName wad with
+            | Some tex ->
+                let width = Array2D.length1 tex.Data
+                let height = Array2D.length2 tex.Data
+
+                let ent = em.Spawn ()
+        
+                em.AddComponent ent (TransformComponent (Matrix4x4.Identity))
+                em.AddComponent ent (MeshComponent (geo.Vertices, texture.CreateUV width height))
+                em.AddComponent ent (
+                    MaterialComponent (
+                        "triangle.vertex",
+                        "triangle.fragment",
+                        texture.TextureName + ".bmp",
+                        { R = geo.LightLevel; G = geo.LightLevel; B = geo.LightLevel; A = 0uy }
+                    )
+                )
+
+
+            | _ -> ()
+
+    | _ -> ()
 
 let init (world: World) =
 
     // Load up doom wads.
 
     let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open))
-    doom2Wad |> exportFlatTextures
-    doom2Wad |> exportTextures
+    //doom2Wad |> exportFlatTextures
+    //doom2Wad |> exportTextures
     let e1m1Wad = Wad.create (System.IO.File.Open ("e1m1.wad", System.IO.FileMode.Open))
 
     let lvl = Wad.findLevel "e1m1" e1m1Wad
-
-
-    // Extract all doom textures.
-
-    // Calculate polygons
-
-    let sectorPolygons =
-        lvl.Sectors
-        //[| lvl.Sectors.[343] |]
-        |> Seq.mapi (fun i s -> 
-            System.Diagnostics.Debug.WriteLine ("Sector " + string i)
-            (Level.createFlats i lvl, s)
-        )
+    let doomLevelComp = DoomLevelComponent (lvl)
 
     // Add entity system
 
@@ -124,234 +138,17 @@ let init (world: World) =
     world.EntityManager.AddComponent cameraEnt (CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, System.Single.MaxValue)))
     world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (defaultPosition)))
 
-    let flatUnit = 64.f
-
-    let mutable count = 0
-
-    lvl.Sectors
-    |> Seq.iter (fun sector ->
-        lvl
-        |> Level.createWalls sector
-        |> Seq.iter (fun renderLinedef ->
-            match Wad.tryFindTexture renderLinedef.TextureName doom2Wad with
-            | Some tex ->
-                let width = Array2D.length1 tex.Data
-                let height = Array2D.length2 tex.Data
-
-                let lightLevel = sector.LightLevel
-                let lightLevel = lightLevel * lightLevel / 255
-                let lightLevel =
-                    if lightLevel > 255 then 255uy
-                    else byte lightLevel
-
-                let ent = world.EntityManager.Spawn ()
-
-                world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
-                world.EntityManager.AddComponent ent (MeshComponent (renderLinedef.Vertices, Wall.createUV width height renderLinedef))
-                world.EntityManager.AddComponent ent (
-                    MaterialComponent (
-                        "triangle.vertex",
-                        "triangle.fragment",
-                        renderLinedef.TextureName + ".bmp",
-                        { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy }
-                    )
-                )
-            | _ -> ()
-        )
-    )
-
-    sectorPolygons
-    |> Seq.iter (fun (polygons, sector) ->
-
-        polygons
-        |> Seq.iter (fun polygon ->
-            let vertices =
-                polygon.Triangles
-                |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
-                |> Array.reduce Array.append
-                |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.FloorHeight))
-
-            let uv = Flat.createUV 64 64 polygon
-
-            let lightLevel = sector.LightLevel
-            let lightLevel = lightLevel * lightLevel / 255
-            let lightLevel =
-                if lightLevel > 255 then 255uy
-                else byte lightLevel
-
-            count <- count + 1
-            let ent = world.EntityManager.Spawn ()
-
-            world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
-            world.EntityManager.AddComponent ent (MeshComponent (vertices, uv))
-            world.EntityManager.AddComponent ent (
-                MaterialComponent (
-                    "triangle.vertex",
-                    "triangle.fragment",
-                    sector.FloorTextureName + ".bmp",
-                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy }
-                )
-            )
-        )
-    )
-
-    sectorPolygons
-    |> Seq.iter (fun (polygons, sector) ->
-
-        polygons
-        |> Seq.iter (fun polygon ->
-            let vertices =
-                polygon.Triangles
-                |> Array.map (fun x -> [|x.Z;x.Y;x.X|])
-                |> Array.reduce Array.append
-                |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.CeilingHeight))
-
-            let uv = Flat.createFlippedUV 64 64 polygon
-
-            let lightLevel = sector.LightLevel
-            let lightLevel = lightLevel * lightLevel / 255
-            let lightLevel =
-                if lightLevel > 255 then 255uy
-                else byte lightLevel
-
-            count <- count + 1
-            let ent = world.EntityManager.Spawn ()
-
-            world.EntityManager.AddComponent ent (TransformComponent (Matrix4x4.Identity))
-            world.EntityManager.AddComponent ent (MeshComponent (vertices, uv))
-            world.EntityManager.AddComponent ent (
-                MaterialComponent (
-                    "triangle.vertex",
-                    "triangle.fragment",
-                    sector.CeilingTextureName + ".bmp",
-                    { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy }
-                )
-            )
-        )
-    )
-
-    printfn "COUNT: %A" count
-
-    let spawnBounds (bounds: BoundingBox2D) =
-        let max = bounds.Max
-        let min = bounds.Min
-        let v1 = Vector3 (max.X, max.Y, 0.f)
-        let v2 = Vector3 (min.X, max.Y, 0.f)
-        let v3 = Vector3 (min.X, min.Y, 0.f)
-        let v4 = Vector3 (max.X, min.Y, 0.f)
-
-        let ent1 = world.EntityManager.Spawn ()
-
-        world.EntityManager.AddComponent ent1 <| 
-            WireframeComponent(
-                [|
-                    v1
-                    v2
-
-                    v2
-                    v3
-
-                    v3
-                    v4
-
-                    v4
-                    v1
-                |]
-            )
-        world.EntityManager.AddComponent ent1 <|
-            MaterialComponent(
-                "v.vertex", 
-                "f.fragment", "", 
-                { R = 255uy; G = 255uy; B = 255uy; A = 255uy }
-            )
-
-    let mutable minX = 0.f
-    let mutable maxX = 0.f
-    let mutable minY = 0.f
-    let mutable maxY = 0.f
-
-    let mutable first = false
-    sectorPolygons
-    |> Seq.iter (fun (flats, _) ->
-
-        flats
-        |> Seq.iteri (fun i flat ->
-            let bounds = Flat.createBoundingBox2D flat
-            //spawnBounds bounds
-            let min = bounds.Min
-            let max = bounds.Max
-            if first then
-                if min.X < minX then
-                    minX <- min.X
-                elif max.X > maxX then
-                    maxX <- max.X
-
-                if min.Y < minY then
-                    minY <- min.Y
-                elif max.Y > maxY then
-                    maxY <- max.Y
-            else
-                minX <- min.X
-                minY <- min.Y
-                maxX <- max.X
-                maxY <- max.Y
-                first <- true
-        )
-    )
-
-    let mapBounds = 
-        {
-            Min = Vector2 (minX, minY)
-            Max = Vector2 (maxX, maxY)
-        }
-
-    //spawnBounds mapBounds
-
     let physicsWorld = Physics.init ()
     let capsule = Physics.addCapsuleController defaultPosition (10.f) (36.f) physicsWorld
 
-    sectorPolygons
-    |> Seq.iter (fun (flats, sector) ->
-        flats
-        |> Seq.iter (fun flat ->
-            let vertices =
-                flat.Triangles
-                |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
-                |> Array.reduce Array.append
-                |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.FloorHeight))
 
-            Physics.addTriangles vertices vertices.Length physicsWorld
-        )
+    doomLevelComp.StaticGeometry
+    |> Seq.iter (fun geo ->
+        spawnDoomLevelStaticGeometryMesh geo doom2Wad world.EntityManager
+
+        Physics.addTriangles geo.Vertices geo.Vertices.Length physicsWorld
     )
 
-    sectorPolygons
-    |> Seq.iter (fun (flats, sector) ->
-        flats
-        |> Seq.iter (fun flat ->
-            let vertices =
-                flat.Triangles
-                |> Array.map (fun x -> [|x.Z;x.Y;x.X|])
-                |> Array.reduce Array.append
-                |> Array.map (fun x -> Vector3 (x.X, x.Y, single sector.CeilingHeight))
-
-            Physics.addTriangles vertices vertices.Length physicsWorld
-        )
-    )
-
-    lvl.Sectors
-    |> Seq.iter (fun sector ->
-        lvl
-        |> Level.createWalls sector
-        |> Seq.iter (fun wall ->
-            Physics.addTriangles wall.Vertices wall.Vertices.Length physicsWorld
-        )
-    )
-
-    let mutable xpos = 0
-    let mutable prevXpos = 0
-
-    let mutable ypos = 0
-    let mutable prevYpos = 0
 
     let mutable isMovingForward = false
     let mutable isMovingLeft = false

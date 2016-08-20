@@ -13,7 +13,7 @@ type TextureAlignment =
 
 type Wall =
     {
-        TextureName: string
+        TextureName: string option
         TextureOffsetX: int
         TextureOffsetY: int
         Vertices: Vector3 []
@@ -24,6 +24,10 @@ type Flat =
     {
         SectorId: int
         Triangles: Triangle2D []
+        FloorHeight: int
+        CeilingHeight: int
+        FloorTextureName: string option
+        CeilingTextureName: string option
     }
 
 type Level =
@@ -190,6 +194,10 @@ module Level =
                     {
                         SectorId = sectorId
                         Triangles = triangles
+                        FloorHeight = sector.FloorHeight
+                        CeilingHeight = sector.CeilingHeight
+                        FloorTextureName = Some sector.FloorTextureName
+                        CeilingTextureName = Some sector.CeilingTextureName
                     }
                 )
 
@@ -207,7 +215,7 @@ module Level =
 
                 let addMiddleWithVertices (floorHeight: int) (ceilingHeight: int) (sidedef: Sidedef) vertices =
                     {
-                        TextureName = sidedef.MiddleTextureName
+                        TextureName = Some sidedef.MiddleTextureName
                         TextureOffsetX = sidedef.OffsetX
                         TextureOffsetY = sidedef.OffsetY
                         Vertices = vertices
@@ -250,7 +258,7 @@ module Level =
                         let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
 
                         {
-                            TextureName = frontSidedef.UpperTextureName
+                            TextureName = Some frontSidedef.UpperTextureName
                             TextureOffsetX = frontSidedef.OffsetX
                             TextureOffsetY = frontSidedef.OffsetY
                             Vertices =
@@ -275,7 +283,7 @@ module Level =
                         let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
 
                         {
-                            TextureName = frontSidedef.LowerTextureName
+                            TextureName = Some frontSidedef.LowerTextureName
                             TextureOffsetX = frontSidedef.OffsetX
                             TextureOffsetY = frontSidedef.OffsetY
                             Vertices = 
