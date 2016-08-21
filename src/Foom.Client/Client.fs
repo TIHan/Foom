@@ -140,7 +140,6 @@ let init (world: World) =
     doom2Wad |> exportTextures
 
     let lvl = Wad.findLevel "e1m1" doom2Wad
-    let doomLevelComp = DoomLevelComponent (lvl)
 
     // Add entity system
 
@@ -157,12 +156,7 @@ let init (world: World) =
     let capsule = Physics.addCapsuleController defaultPosition (10.f) (36.f) physicsWorld
 
 
-    doomLevelComp.StaticGeometry
-    |> Seq.iter (fun geo ->
-        spawnDoomLevelStaticGeometryMesh geo doom2Wad world.EntityManager
 
-        Physics.addTriangles geo.Vertices geo.Vertices.Length physicsWorld
-    )
 
 
     let mutable isMovingForward = false
@@ -172,9 +166,22 @@ let init (world: World) =
 
     let mutable didPreStep = false
 
-    let sectorChecks =
-        EntitySystem.create "SectorChecks" 
+    let clientSystem =
+        EntitySystem.create "Client" 
             [
+                eventQueue (fun entityManager eventManager ->
+                    
+                    eventManager.Publish (LoadDoomLevelRequested (lvl))    
+
+                    fun (_, _) (evt: LoadDoomLevelRequested) ->
+                        evt.StaticGeometry ()
+                        |> Seq.iter (fun geo ->
+                            spawnDoomLevelStaticGeometryMesh geo doom2Wad world.EntityManager
+                    
+                            Physics.addTriangles geo.Vertices geo.Vertices.Length physicsWorld
+                        )
+                )
+
                 update (fun entityManager eventManager (time, deltaTime) ->
 
                     Input.pollEvents (app.Window)
@@ -280,7 +287,7 @@ let init (world: World) =
 
     { 
         Window = app.Window
-        Update = world.AddSystem sectorChecks
+        Update = world.AddSystem clientSystem
         RenderUpdate = updateSys1
         Level = lvl
     }

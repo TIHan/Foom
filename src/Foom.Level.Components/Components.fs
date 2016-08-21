@@ -22,7 +22,7 @@ type DoomLevelStaticGeometry =
         Vertices: Vector3 []
     }
 
-type DoomLevelComponent (level: Level) =
+type LoadDoomLevelRequested (level: Level) =
 
     let calculateStaticGeometry =
         lazy
@@ -115,6 +115,6 @@ type DoomLevelComponent (level: Level) =
             )
             |> Seq.reduce Seq.append
 
-    member this.StaticGeometry = calculateStaticGeometry.Force()
+    member this.StaticGeometry () = calculateStaticGeometry.Force()
 
-    interface IEntityComponent
+    interface IEntitySystemEvent
