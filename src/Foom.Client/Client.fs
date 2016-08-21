@@ -100,14 +100,14 @@ let spawnDoomLevelStaticGeometryMesh (geo: LevelStaticGeometry) (wad: Wad) (em: 
     match geo.Texture with
     | Some texture ->
             let tex = 
-                if texture.IsFlat then Wad.tryFindFlatTexture texture.TextureName wad
+                if geo.IsFlat then Wad.tryFindFlatTexture texture.TextureName wad
                 else Wad.tryFindTexture texture.TextureName wad
             match tex with
             | Some tex ->
                 let width = Array2D.length1 tex.Data
                 let height = Array2D.length2 tex.Data
                 let texName = 
-                    if texture.IsFlat then 
+                    if geo.IsFlat then 
                         texture.TextureName + "_flat.bmp"
                     else 
                         texture.TextureName + ".bmp"
@@ -170,16 +170,19 @@ let init (world: World) =
                     wad |> exportTextures
                 )
 
-                Sys.handleLoadLevelRequests (fun entityManager wad geo ->
-                    spawnDoomLevelStaticGeometryMesh geo wad world.EntityManager
-            
-                    Physics.addTriangles geo.Vertices geo.Vertices.Length physicsWorld
+                Sys.handleLoadLevelRequests (fun entityManager wad sectorId geos ->
+                    geos
+                    |> Seq.iter (fun geo ->
+                        spawnDoomLevelStaticGeometryMesh geo wad entityManager
+                
+                        Physics.addTriangles geo.Vertices geo.Vertices.Length physicsWorld
+                    )
                 )
 
                 // Initialize
                 update (fun _ eventManager ->
                     eventManager.Publish (LoadWadRequested ("doom.wad"))
-                    eventManager.Publish (LoadLevelRequested ("e4m5")) 
+                    eventManager.Publish (LoadLevelRequested ("e1m1")) 
                     fun _ -> ()
                 )
 

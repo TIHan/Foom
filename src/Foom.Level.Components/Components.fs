@@ -11,13 +11,13 @@ open Foom.Wad.Level
 
 type LevelTexture =
     {
-        IsFlat: bool
         TextureName: string
         CreateUV: int -> int -> Vector2 []
     }
 
 type LevelStaticGeometry =
     {
+        IsFlat: bool
         Texture: LevelTexture option
         LightLevel: byte
         Vertices: Vector3 []
@@ -25,10 +25,10 @@ type LevelStaticGeometry =
 
 type LoadLevelRequested (name: string) =
 
-    let calculateStaticGeometry (level: Level) =
+    let calculateStaticGeometry f (level: Level) =
         lazy
             level.Sectors
-            |> Seq.mapi (fun i sector ->
+            |> Seq.iteri (fun i sector ->
                 let flats = Level.createFlats i level
                 let walls = Level.createWalls i level
 
@@ -39,12 +39,12 @@ type LoadLevelRequested (name: string) =
                             match flat.FloorTextureName with
                             | Some name ->
                                 {
-                                    IsFlat = true
                                     TextureName = name
                                     CreateUV = fun width height -> Flat.createUV width height flat 
                                 } |> Some
                             | _ -> None
                         {
+                            IsFlat = true
                             Texture = texture
                             LightLevel = Level.lightLevelBySectorId flat.SectorId level
                             Vertices = 
@@ -67,12 +67,12 @@ type LoadLevelRequested (name: string) =
                             match flat.CeilingTextureName with
                             | Some name ->
                                 {
-                                    IsFlat = true
                                     TextureName = name
                                     CreateUV = fun width height -> Flat.createFlippedUV width height flat 
                                 } |> Some
                             | _ -> None
                         {
+                            IsFlat = true
                             Texture = texture
                             LightLevel = Level.lightLevelBySectorId flat.SectorId level
                             Vertices = 
@@ -95,12 +95,12 @@ type LoadLevelRequested (name: string) =
                             match wall.TextureName with
                             | Some name ->
                                 {
-                                    IsFlat = false
                                     TextureName = name
                                     CreateUV = fun width height -> Wall.createUV width height wall
                                 } |> Some
                             | _ -> None
                         {
+                            IsFlat = false
                             Texture = texture
                             LightLevel = Level.lightLevelBySectorId wall.SectorId level
                             Vertices = wall.Vertices
@@ -113,10 +113,10 @@ type LoadLevelRequested (name: string) =
                     wallGeometry
                 |]
                 |> Array.reduce Seq.append
+                |> f i
             )
-            |> Seq.reduce Seq.append
 
-    member this.StaticGeometry (level: Level) = (calculateStaticGeometry level).Force()
+    member this.StaticGeometry f (level: Level) = (calculateStaticGeometry f level).Force()
 
     member this.Name = name
 
@@ -157,7 +157,6 @@ module Sys =
             match entityManager.TryFind<WadComponent> (fun _ _ -> true) with
             | Some (_, wadComp) ->
                 Wad.findLevel evt.Name wadComp.Wad
-                |> evt.StaticGeometry
-                |> Seq.iter (f entityManager wadComp.Wad)
+                |> evt.StaticGeometry (fun sectorId geos -> f entityManager wadComp.Wad sectorId geos)
             | _ -> ()
         )

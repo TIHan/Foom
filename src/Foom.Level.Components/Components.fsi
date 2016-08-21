@@ -11,13 +11,13 @@ open Foom.Wad.Level
 
 type LevelTexture =
     {
-        IsFlat: bool
         TextureName: string
         CreateUV: int -> int -> Vector2 []
     }
 
 type LevelStaticGeometry =
     {
+        IsFlat: bool
         Texture: LevelTexture option
         LightLevel: byte
         Vertices: Vector3 []
@@ -45,4 +45,4 @@ module Sys =
 
     val handleWadLoaded : (EntityManager -> Wad -> unit) -> Sys<_>
 
-    val handleLoadLevelRequests : (EntityManager -> Wad -> LevelStaticGeometry -> unit) -> Sys<_>
+    val handleLoadLevelRequests : (EntityManager -> Wad -> int -> LevelStaticGeometry seq -> unit) -> Sys<_>
