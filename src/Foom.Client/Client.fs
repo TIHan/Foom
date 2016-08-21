@@ -243,7 +243,7 @@ let init (world: World) =
                                
                             acc <- 
                                 if acc <> Vector3.Zero then
-                                    acc |> Vector3.Normalize |> (*) 5.f
+                                    acc |> Vector3.Normalize |> (*) 4.5f
                                 else
                                     acc
                             Physics.setKinematicControllerWalkDirection acc capsule

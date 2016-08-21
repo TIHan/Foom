@@ -40,6 +40,18 @@ let smoothStep (value1: float32) value2 amount =
 
 let inline lerp (x: float32) y t = x + (y - x) * t
 
+// TODO: Needs some work. Needs a way to set previousValue externally.
+type LerpEasing (duration: float32) =
+
+    let mutable previousTime = 0.f
+    let mutable previousValue = 0.f
+
+    member this.Update (target, currentTime) =
+        let t = currentTime - previousTime
+        previousValue <- lerp previousValue target (t / duration)
+        previousTime <- currentTime
+        previousValue
+
 // https://raw.githubusercontent.com/ms-iot/pid-controller/master/PidController/PidController/PidController.cs
 type PidController (gainProportional, gainIntegral, gainDerivative, outputMax, outputMin) =
 

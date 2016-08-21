@@ -166,6 +166,8 @@ let materialQueue =
 
 let create (app: Application) : EntitySystem<float32 * float32> =
 
+    let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
+
     EntitySystem.create "Renderer"
         [
             wireframeQueue
@@ -186,7 +188,13 @@ let create (app: Application) : EntitySystem<float32 * float32> =
 
                         let projection = cameraComp.Projection |> Matrix4x4.Transpose
                         let mutable transform = Matrix4x4.Lerp (transformComp.TransformLerp, transformComp.Transform, deltaTime)
-                        transform.Translation <- transform.Translation + Vector3(0.f,0.f,heightOffset)
+
+                        let mutable v = transform.Translation
+
+
+                        v.Z <- zEasing.Update (transformComp.Position.Z, time)
+
+                        transform.Translation <- v + Vector3(0.f,0.f,heightOffset)
 
                         let mutable invertedTransform = Matrix4x4.Identity
 
