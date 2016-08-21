@@ -101,7 +101,7 @@ module Wad =
 
             lumpFlatHeaders
             |> Array.iter (fun x ->
-                dict.[x.Name] <- x
+                dict.[x.Name.ToUpper ()] <- x
             )
 
             wad.FlatHeaderLookup <- Some dict
@@ -118,7 +118,7 @@ module Wad =
             let textureInfos = runUnpickle (uTextureInfos textureLump textureHeader) wad.stream
             textureInfos
             |> Array.iter (fun x -> 
-                textureInfoLookup.[x.Name] <- x
+                textureInfoLookup.[x.Name.ToUpper ()] <- x
             )
 
         wad.wadData.LumpHeaders
@@ -130,7 +130,8 @@ module Wad =
 
         wad.TextureInfoLookup <- Some textureInfoLookup
 
-    let tryFindFlatTexture name wad =
+    let tryFindFlatTexture (name: string) wad =
+        let name = name.ToUpper ()
         if wad.FlatHeaderLookup.IsNone then
             loadFlatHeaders wad
 
@@ -168,7 +169,8 @@ module Wad =
             ) |> Some
         | _ -> None
 
-    let tryFindTexture name wad =
+    let tryFindTexture (name: string) wad =
+        let name = name.ToUpper ()
         if wad.TextureInfoLookup.IsNone then
             loadTextureInfos wad
 
