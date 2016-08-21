@@ -19,7 +19,6 @@ type ClientState =
         Window: nativeint
         Update: (float32 * float32 -> unit)
         RenderUpdate: (float32 * float32 -> unit)
-        Level: Level 
     }
 
 // These are sectors to look for and test to ensure things are working as they should.
@@ -97,7 +96,7 @@ let exportTextures (wad: Wad) =
         )
     )
 
-let spawnDoomLevelStaticGeometryMesh (geo: DoomLevelStaticGeometry) (wad: Wad) (em: EntityManager) =
+let spawnDoomLevelStaticGeometryMesh (geo: LevelStaticGeometry) (wad: Wad) (em: EntityManager) =
     match geo.Texture with
     | Some texture ->
             let tex = 
@@ -135,11 +134,6 @@ let init (world: World) =
 
     // Load up doom wads.
 
-    let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open))
-    doom2Wad |> exportFlatTextures
-    doom2Wad |> exportTextures
-
-    let lvl = Wad.findLevel "e1m1" doom2Wad
 
     // Add entity system
 
@@ -169,17 +163,24 @@ let init (world: World) =
     let clientSystem =
         EntitySystem.create "Client" 
             [
-                eventQueue (fun entityManager eventManager ->
-                    
-                    eventManager.Publish (LoadDoomLevelRequested (lvl))    
+                Sys.handleLoadWadRequests (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
 
-                    fun (_, _) (evt: LoadDoomLevelRequested) ->
-                        evt.StaticGeometry ()
-                        |> Seq.iter (fun geo ->
-                            spawnDoomLevelStaticGeometryMesh geo doom2Wad world.EntityManager
-                    
-                            Physics.addTriangles geo.Vertices geo.Vertices.Length physicsWorld
-                        )
+                Sys.handleWadLoaded (fun _ wad ->
+                    wad |> exportFlatTextures
+                    wad |> exportTextures
+                )
+
+                Sys.handleLoadLevelRequests (fun entityManager wad geo ->
+                    spawnDoomLevelStaticGeometryMesh geo wad world.EntityManager
+            
+                    Physics.addTriangles geo.Vertices geo.Vertices.Length physicsWorld
+                )
+
+                // Initialize
+                update (fun _ eventManager ->
+                    eventManager.Publish (LoadWadRequested ("doom.wad"))
+                    eventManager.Publish (LoadLevelRequested ("e1m1")) 
+                    fun _ -> ()
                 )
 
                 update (fun entityManager eventManager (time, deltaTime) ->
@@ -289,7 +290,6 @@ let init (world: World) =
         Window = app.Window
         Update = world.AddSystem clientSystem
         RenderUpdate = updateSys1
-        Level = lvl
     }
 
 let draw currentTime t (prev: ClientState) (curr: ClientState) =

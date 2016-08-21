@@ -1,6 +1,7 @@
 ﻿namespace Foom.Level.Components
 
 open System
+open System.IO
 open System.Numerics
 
 open Foom.Ecs
@@ -8,23 +9,23 @@ open Foom.Wad
 open Foom.Wad.Geometry
 open Foom.Wad.Level
 
-type DoomLevelTexture =
+type LevelTexture =
     {
         IsFlat: bool
         TextureName: string
         CreateUV: int -> int -> Vector2 []
     }
 
-type DoomLevelStaticGeometry =
+type LevelStaticGeometry =
     {
-        Texture: DoomLevelTexture option
+        Texture: LevelTexture option
         LightLevel: byte
         Vertices: Vector3 []
     }
 
-type LoadDoomLevelRequested (level: Level) =
+type LoadLevelRequested (name: string) =
 
-    let calculateStaticGeometry =
+    let calculateStaticGeometry (level: Level) =
         lazy
             level.Sectors
             |> Seq.mapi (fun i sector ->
@@ -115,6 +116,48 @@ type LoadDoomLevelRequested (level: Level) =
             )
             |> Seq.reduce Seq.append
 
-    member this.StaticGeometry () = calculateStaticGeometry.Force()
+    member this.StaticGeometry (level: Level) = (calculateStaticGeometry level).Force()
+
+    member this.Name = name
 
     interface IEntitySystemEvent
+
+type WadComponent (wad: Wad) =
+
+    member this.Wad = wad
+
+    interface IEntityComponent
+
+type LoadWadRequested (name: string) =
+
+    member this.Name = name
+
+    interface IEntitySystemEvent
+
+module Sys =
+
+    let handleLoadWadRequests (openWad: string -> Stream) =
+        eventQueue (fun entityManager _ (evt: LoadWadRequested) ->
+            let wad = Wad.create (openWad (evt.Name))
+            let ent = entityManager.Spawn ()
+
+            entityManager.AddComponent ent (WadComponent (wad))
+        )
+
+    let handleWadLoaded f =
+        eventQueue (fun entityManager _ (evt: Events.ComponentAdded<WadComponent>) ->
+            entityManager.TryGet<WadComponent> (evt.Entity)
+            |> Option.iter (fun wadComp ->
+                f entityManager wadComp.Wad
+            )
+        )
+
+    let handleLoadLevelRequests f =
+        eventQueue (fun entityManager _ (evt: LoadLevelRequested) ->
+            match entityManager.TryFind<WadComponent> (fun _ _ -> true) with
+            | Some (_, wadComp) ->
+                Wad.findLevel evt.Name wadComp.Wad
+                |> evt.StaticGeometry
+                |> Seq.iter (f entityManager wadComp.Wad)
+            | _ -> ()
+        )

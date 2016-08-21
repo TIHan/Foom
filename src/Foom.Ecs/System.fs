@@ -30,12 +30,12 @@ type EntitySystem<'Update> =
 [<AutoOpen>]
 module SysOperators =
 
-    let eventQueue (f: EntityManager -> EventManager -> 'Update -> #IEntitySystemEvent -> unit) = 
+    let eventQueue (f: EntityManager -> 'Update -> #IEntitySystemEvent -> unit) = 
         Sys (fun context ->
             let queue = ConcurrentQueue<'T> ()
             context.EventManager.GetEvent<'T>().Publish.Add queue.Enqueue
 
-            let f = f context.EntityManager context.EventManager
+            let f = f context.EntityManager
 
             (fun updateData ->
                 let mutable item = Unchecked.defaultof<#IEntitySystemEvent>

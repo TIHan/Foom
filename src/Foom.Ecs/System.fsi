@@ -28,7 +28,7 @@ type EntitySystem<'Update> =
 [<AutoOpen>]
 module SysOperators =
 
-    val eventQueue : (EntityManager -> EventManager -> 'Update -> #IEntitySystemEvent -> unit) -> Sys<'Update>
+    val eventQueue : (EntityManager -> 'Update -> #IEntitySystemEvent -> unit) -> Sys<'Update>
 
     val update : (EntityManager -> EventManager -> 'Update -> unit) -> Sys<'Update>
 

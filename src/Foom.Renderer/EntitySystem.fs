@@ -76,7 +76,7 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
     )
 
 let wireframeQueue =
-    eventQueue (fun entityManager eventManager ->
+    eventQueue (fun entityManager ->
 
         fun (_, deltaTime: float32) (componentAdded: Events.ComponentAdded<WireframeComponent>) ->
 
@@ -101,7 +101,7 @@ let wireframeQueue =
     )
 
 let meshQueue =
-    eventQueue (fun entityManager eventManager ->
+    eventQueue (fun entityManager ->
 
         fun (_, deltaTime: float32) (componentAdded: Events.ComponentAdded<MeshComponent>) ->
 
@@ -132,7 +132,7 @@ let meshQueue =
     )
 
 let materialQueue =
-    eventQueue (fun entityManager eventManager ->
+    eventQueue (fun entityManager ->
 
         fun (_, deltaTime: float32) (componentAdded: Events.ComponentAdded<MaterialComponent>) ->
 
