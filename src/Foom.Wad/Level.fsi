@@ -11,6 +11,7 @@ type TextureAlignment =
 
 type Wall =
     {
+        SectorId: int
         TextureName: string option
         TextureOffsetX: int
         TextureOffsetY: int
@@ -52,6 +53,8 @@ module Flat =
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Level =
+
+    val lightLevelBySectorId : sectorId: int -> Level -> byte
 
     val createFlats : sectorId: int -> Level -> Flat seq
 

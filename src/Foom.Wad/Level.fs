@@ -13,6 +13,7 @@ type TextureAlignment =
 
 type Wall =
     {
+        SectorId: int
         TextureName: string option
         TextureOffsetX: int
         TextureOffsetY: int
@@ -170,6 +171,13 @@ module Wall =
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Level =
 
+    let lightLevelBySectorId sectorId (level: Level) =
+        let sector = level.sectors.[sectorId]
+        let lightLevel = sector.LightLevel
+        let lightLevel = lightLevel * lightLevel / 255
+        if lightLevel > 255 then 255uy
+        else byte lightLevel
+
     let createFlats sectorId level = 
         match level.sectors |> Array.tryItem sectorId with
         | None -> Seq.empty
@@ -215,6 +223,7 @@ module Level =
 
                 let addMiddleWithVertices (floorHeight: int) (ceilingHeight: int) (sidedef: Sidedef) vertices =
                     {
+                        SectorId = sidedef.SectorNumber
                         TextureName = Some sidedef.MiddleTextureName
                         TextureOffsetX = sidedef.OffsetX
                         TextureOffsetY = sidedef.OffsetY
@@ -258,6 +267,7 @@ module Level =
                         let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
 
                         {
+                            SectorId = frontSidedef.SectorNumber
                             TextureName = Some frontSidedef.UpperTextureName
                             TextureOffsetX = frontSidedef.OffsetX
                             TextureOffsetY = frontSidedef.OffsetY
@@ -279,10 +289,37 @@ module Level =
                         }
                         |> arr.Add
 
+                    if backSidedef.UpperTextureName.Contains("-") |> not then
+                        let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
+
+                        {
+                            SectorId = backSidedef.SectorNumber
+                            TextureName = Some backSidedef.UpperTextureName
+                            TextureOffsetX = backSidedef.OffsetX
+                            TextureOffsetY = backSidedef.OffsetY
+                            Vertices =
+                                [|
+                                    Vector3 (linedef.End, single sector.CeilingHeight)
+                                    Vector3 (linedef.Start, single sector.CeilingHeight)
+                                    Vector3 (linedef.Start, single backSideSector.CeilingHeight)
+
+                                    Vector3 (linedef.Start, single backSideSector.CeilingHeight)
+                                    Vector3 (linedef.End, single backSideSector.CeilingHeight)
+                                    Vector3 (linedef.End, single sector.CeilingHeight)
+                                |]
+                            TextureAlignment = 
+                                if not isUpperUnpegged then
+                                    LowerUnpegged
+                                else
+                                    UpperUnpegged 0
+                        }
+                        |> arr.Add
+
                     if frontSidedef.LowerTextureName.Contains("-") |> not then
                         let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
 
                         {
+                            SectorId = frontSidedef.SectorNumber
                             TextureName = Some frontSidedef.LowerTextureName
                             TextureOffsetX = frontSidedef.OffsetX
                             TextureOffsetY = frontSidedef.OffsetY
@@ -306,6 +343,34 @@ module Level =
                                     UpperUnpegged 0
                         } |> arr.Add
 
+                       
+                    if backSidedef.LowerTextureName.Contains("-") |> not then
+                        let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
+
+                        {
+                            SectorId = backSidedef.SectorNumber
+                            TextureName = Some backSidedef.LowerTextureName
+                            TextureOffsetX = backSidedef.OffsetX
+                            TextureOffsetY = backSidedef.OffsetY
+                            Vertices = 
+                                [|
+                                    Vector3 (linedef.Start, single sector.FloorHeight)
+                                    Vector3 (linedef.End, single sector.FloorHeight)
+                                    Vector3 (linedef.End, single backSideSector.FloorHeight)
+
+                                    Vector3 (linedef.End, single backSideSector.FloorHeight)
+                                    Vector3 (linedef.Start, single backSideSector.FloorHeight)
+                                    Vector3 (linedef.Start, single sector.FloorHeight)
+                                |]
+                            TextureAlignment = 
+                                if isLowerUnpegged then
+                                    if isTwoSided then
+                                        UpperUnpegged (abs (backSideSector.CeilingHeight - sector.FloorHeight))
+                                    else
+                                        LowerUnpegged
+                                else
+                                    UpperUnpegged 0
+                        } |> arr.Add
                 
 
                 | _ -> ()

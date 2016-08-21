@@ -139,7 +139,7 @@ let init (world: World) =
     doom2Wad |> exportFlatTextures
     doom2Wad |> exportTextures
 
-    let lvl = Wad.findLevel "e4m5" doom2Wad
+    let lvl = Wad.findLevel "e1m1" doom2Wad
     let doomLevelComp = DoomLevelComponent (lvl)
 
     // Add entity system

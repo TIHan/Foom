@@ -30,11 +30,6 @@ type DoomLevelComponent (level: Level) =
             |> Seq.mapi (fun i sector ->
                 let flats = Level.createFlats i level
                 let walls = Level.createWalls sector level
-                let lightLevel = sector.LightLevel
-                let lightLevel = lightLevel * lightLevel / 255
-                let lightLevel =
-                    if lightLevel > 255 then 255uy
-                    else byte lightLevel
 
                 let floorGeometry =
                     flats
@@ -50,7 +45,7 @@ type DoomLevelComponent (level: Level) =
                             | _ -> None
                         {
                             Texture = texture
-                            LightLevel = lightLevel
+                            LightLevel = Level.lightLevelBySectorId flat.SectorId level
                             Vertices = 
                                 flat.Triangles
                                 |> Seq.map (fun tri ->
@@ -78,7 +73,7 @@ type DoomLevelComponent (level: Level) =
                             | _ -> None
                         {
                             Texture = texture
-                            LightLevel = lightLevel
+                            LightLevel = Level.lightLevelBySectorId flat.SectorId level
                             Vertices = 
                                 flat.Triangles
                                 |> Seq.map (fun tri ->
@@ -106,7 +101,7 @@ type DoomLevelComponent (level: Level) =
                             | _ -> None
                         {
                             Texture = texture
-                            LightLevel = lightLevel
+                            LightLevel = Level.lightLevelBySectorId wall.SectorId level
                             Vertices = wall.Vertices
                         }
                     )
