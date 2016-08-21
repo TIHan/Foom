@@ -67,7 +67,7 @@ let exportFlatTextures (wad: Wad) =
                     bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
             )
 
-            bmp.Save (tex.Name + ".bmp")
+            bmp.Save (tex.Name + "_flat.bmp")
             bmp.Dispose ()
         )
     )
@@ -107,6 +107,11 @@ let spawnDoomLevelStaticGeometryMesh (geo: DoomLevelStaticGeometry) (wad: Wad) (
             | Some tex ->
                 let width = Array2D.length1 tex.Data
                 let height = Array2D.length2 tex.Data
+                let texName = 
+                    if texture.IsFlat then 
+                        texture.TextureName + "_flat.bmp"
+                    else 
+                        texture.TextureName + ".bmp"
 
                 let ent = em.Spawn ()
         
@@ -116,7 +121,7 @@ let spawnDoomLevelStaticGeometryMesh (geo: DoomLevelStaticGeometry) (wad: Wad) (
                     MaterialComponent (
                         "triangle.vertex",
                         "triangle.fragment",
-                        texture.TextureName + ".bmp",
+                        texName,
                         { R = geo.LightLevel; G = geo.LightLevel; B = geo.LightLevel; A = 0uy }
                     )
                 )
@@ -133,9 +138,8 @@ let init (world: World) =
     let doom2Wad = Wad.create (System.IO.File.Open ("doom.wad", System.IO.FileMode.Open))
     doom2Wad |> exportFlatTextures
     doom2Wad |> exportTextures
-    let e1m1Wad = Wad.create (System.IO.File.Open ("e1m1.wad", System.IO.FileMode.Open))
 
-    let lvl = Wad.findLevel "e1m1" e1m1Wad
+    let lvl = Wad.findLevel "e4m5" doom2Wad
     let doomLevelComp = DoomLevelComponent (lvl)
 
     // Add entity system
@@ -219,34 +223,36 @@ let init (world: World) =
                             
                             if isMovingForward then
                                 let v = Vector3.Transform (-Vector3.UnitZ, transformComp.Rotation)
-                                acc <- (Vector3 (v.X, v.Y, 0.f))
+                                acc <- (Vector3 (v.X, v.Y, v.Z))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingLeft then
                                 let v = Vector3.Transform (-Vector3.UnitX, transformComp.Rotation)
-                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
+                                acc <- acc + (Vector3 (v.X, v.Y, v.Z))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingBackward then
                                 let v = Vector3.Transform (Vector3.UnitZ, transformComp.Rotation)
-                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
+                                acc <- acc + (Vector3 (v.X, v.Y, v.Z))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingRight then
                                 let v = Vector3.Transform (Vector3.UnitX, transformComp.Rotation)
-                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
+                                acc <- acc + (Vector3 (v.X, v.Y, v.Z))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
                                
                             acc <- 
                                 if acc <> Vector3.Zero then
-                                    acc |> Vector3.Normalize |> (*) 4.5f
+                                    acc |> Vector3.Normalize |> (*) 20.f
                                 else
                                     acc
-                            Physics.setKinematicControllerWalkDirection acc capsule
+
+                            transformComp.Translate(acc)
+                            //Physics.setKinematicControllerWalkDirection acc capsule
                         )
                     )
 
@@ -260,7 +266,7 @@ let init (world: World) =
 
                     match entityManager.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true) with
                     | Some (ent, cameraComp, transformComp) ->
-                        transformComp.Position <- position + Vector3.UnitZ * 26.f
+                        //transformComp.Position <- position + Vector3.UnitZ * 26.f
 
                         let v1 = Vector2 (transformComp.Position.X, transformComp.Position.Y)
                         let v2 = Vector2 (transformComp.TransformLerp.Translation.X, transformComp.TransformLerp.Translation.Y)
@@ -268,7 +274,6 @@ let init (world: World) =
 
                         cameraComp.HeightOffsetLerp <- cameraComp.HeightOffset
                         cameraComp.HeightOffset <- sin(8.f * time) * (v1 - v2).Length()
-                        //printfn "VLUAEEEE: %A" value
                     | _ -> ()
                 )
             ]

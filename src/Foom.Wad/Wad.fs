@@ -111,24 +111,22 @@ module Wad =
         |> Array.tryFind (fun x -> x.Name.ToUpper() = str.ToUpper())
 
     let loadTextureInfos (wad: Wad) =
-        let texture1Lump =
-            wad.wadData.LumpHeaders
-            |> Array.find (fun x -> x.Name.ToUpper() = "TEXTURE1")
-
-        let texture2Lump =
-            wad.wadData.LumpHeaders
-            |> Array.tryFind (fun x -> x.Name.ToUpper() = "TEXTURE2")
-
-        let textureHeader = runUnpickle (uTextureHeader texture1Lump) wad.stream
-
-        let textureInfos = runUnpickle (uTextureInfos texture1Lump textureHeader) wad.stream
-
         let textureInfoLookup = Dictionary ()
 
-        textureInfos
-        |> Array.iter (fun x -> 
-            textureInfoLookup.[x.Name] <- x
+        let readTextureLump (textureLump: LumpHeader) =
+            let textureHeader = runUnpickle (uTextureHeader textureLump) wad.stream
+            let textureInfos = runUnpickle (uTextureInfos textureLump textureHeader) wad.stream
+            textureInfos
+            |> Array.iter (fun x -> 
+                textureInfoLookup.[x.Name] <- x
+            )
+
+        wad.wadData.LumpHeaders
+        |> Array.filter (fun x ->
+            let name = x.Name.ToUpper ()
+            name = "TEXTURE1" || name = "TEXTURE2"
         )
+        |> Array.iter (readTextureLump)
 
         wad.TextureInfoLookup <- Some textureInfoLookup
 
@@ -158,7 +156,7 @@ module Wad =
                         let pixels = Array2D.zeroCreate<Pixel> 64 64
                         for i = 0 to 64 - 1 do
                             for j = 0 to 64 - 1 do
-                                pixels.[i, j] <- palette.Pixels.[int bytes.[i * j + j]]
+                                pixels.[i, j] <- palette.Pixels.[int bytes.[i + j * 64]]
                         pixels
                 } |> Some
 
@@ -265,6 +263,9 @@ module Wad =
         { sectors = sectors }
 
     let iterFlatTextureName f wad =
+        if wad.FlatHeaderLookup.IsNone then
+            loadFlatHeaders wad
+
         match wad.FlatHeaderLookup with
         | Some lookup ->
             lookup.Keys
@@ -272,6 +273,9 @@ module Wad =
         | _ -> ()
 
     let iterTextureName f wad =
+        if wad.TextureInfoLookup.IsNone then
+            loadTextureInfos wad
+
         match wad.TextureInfoLookup with
         | Some lookup ->
             lookup.Keys
