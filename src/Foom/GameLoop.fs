@@ -25,7 +25,7 @@ module GameLoop
             UpdateAccumulator: int64 
         }
 
-    let start updateInterval (update: int64 -> int64 -> unit) (render: float32 -> unit) : unit =
+    let start updateInterval (update: int64 -> int64 -> unit) (render: int64 -> float32 -> unit) : unit =
         let targetUpdateInterval = (1000. / updateInterval) * 10000. |> int64
         let skip = (1000. / 5.) * 10000. |> int64
 
@@ -60,7 +60,7 @@ module GameLoop
                     gl
 
             let processRender gl =
-                render (single gl.UpdateAccumulator / single targetUpdateInterval)
+                render currentTime (single gl.UpdateAccumulator / single targetUpdateInterval)
 
                 { gl with 
                     LastTime = currentTime

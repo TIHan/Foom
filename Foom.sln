@@ -33,6 +33,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libs", "Libs", "{CDAC4EAC-F
 EndProject
 Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Level.Components", "src\Foom.Level.Components\Foom.Level.Components.fsproj", "{4AA248F8-5CB9-415A-A0D0-42CBC7241D2E}"
 EndProject
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Math", "src\Foom.Math\Foom.Math.fsproj", "{B94F520E-B150-45A7-ADA1-E2945BE9A743}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -175,6 +177,18 @@ Global
 		{4AA248F8-5CB9-415A-A0D0-42CBC7241D2E}.Release|iPhoneSimulator.Build.0 = Release|Any CPU
 		{4AA248F8-5CB9-415A-A0D0-42CBC7241D2E}.Debug|iPhone.ActiveCfg = Debug|Any CPU
 		{4AA248F8-5CB9-415A-A0D0-42CBC7241D2E}.Debug|iPhone.Build.0 = Debug|Any CPU
+		{B94F520E-B150-45A7-ADA1-E2945BE9A743}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B94F520E-B150-45A7-ADA1-E2945BE9A743}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B94F520E-B150-45A7-ADA1-E2945BE9A743}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B94F520E-B150-45A7-ADA1-E2945BE9A743}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B94F520E-B150-45A7-ADA1-E2945BE9A743}.Debug|iPhoneSimulator.ActiveCfg = Debug|Any CPU
+		{B94F520E-B150-45A7-ADA1-E2945BE9A743}.Debug|iPhoneSimulator.Build.0 = Debug|Any CPU
+		{B94F520E-B150-45A7-ADA1-E2945BE9A743}.Release|iPhone.ActiveCfg = Release|Any CPU
+		{B94F520E-B150-45A7-ADA1-E2945BE9A743}.Release|iPhone.Build.0 = Release|Any CPU
+		{B94F520E-B150-45A7-ADA1-E2945BE9A743}.Release|iPhoneSimulator.ActiveCfg = Release|Any CPU
+		{B94F520E-B150-45A7-ADA1-E2945BE9A743}.Release|iPhoneSimulator.Build.0 = Release|Any CPU
+		{B94F520E-B150-45A7-ADA1-E2945BE9A743}.Debug|iPhone.ActiveCfg = Debug|Any CPU
+		{B94F520E-B150-45A7-ADA1-E2945BE9A743}.Debug|iPhone.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -187,5 +201,6 @@ Global
 		{9B75DD43-5F71-4A53-B8EA-EDC02CB994BE} = {F9C6B635-4726-4C88-90B5-D6CDF3185FBE}
 		{CDAC4EAC-FDCE-4D71-B473-4EEDF7A20D0C} = {F9C6B635-4726-4C88-90B5-D6CDF3185FBE}
 		{4AA248F8-5CB9-415A-A0D0-42CBC7241D2E} = {F9C6B635-4726-4C88-90B5-D6CDF3185FBE}
+		{B94F520E-B150-45A7-ADA1-E2945BE9A743} = {CDAC4EAC-FDCE-4D71-B473-4EEDF7A20D0C}
 	EndGlobalSection
 EndGlobal

@@ -18,7 +18,7 @@ type ClientState =
     {
         Window: nativeint
         Update: (float32 * float32 -> unit)
-        RenderUpdate: (float32 -> unit)
+        RenderUpdate: (float32 * float32 -> unit)
         Level: Level 
     }
 
@@ -261,12 +261,14 @@ let init (world: World) =
                     match entityManager.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true) with
                     | Some (ent, cameraComp, transformComp) ->
                         transformComp.Position <- position + Vector3.UnitZ * 26.f
+
                         let v1 = Vector2 (transformComp.Position.X, transformComp.Position.Y)
                         let v2 = Vector2 (transformComp.TransformLerp.Translation.X, transformComp.TransformLerp.Translation.Y)
                         ()
 
                         cameraComp.HeightOffsetLerp <- cameraComp.HeightOffset
                         cameraComp.HeightOffset <- sin(8.f * time) * (v1 - v2).Length()
+                        //printfn "VLUAEEEE: %A" value
                     | _ -> ()
                 )
             ]
@@ -278,11 +280,11 @@ let init (world: World) =
         Level = lvl
     }
 
-let draw t (prev: ClientState) (curr: ClientState) =
+let draw currentTime t (prev: ClientState) (curr: ClientState) =
 
     let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 
-    curr.RenderUpdate t
+    curr.RenderUpdate (currentTime, t)
 
     stopwatch.Stop ()
 

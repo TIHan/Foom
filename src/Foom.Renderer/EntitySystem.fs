@@ -7,6 +7,7 @@ open System.Drawing
 open System.Collections.Generic
 
 open Foom.Ecs
+open Foom.Math
 open Foom.Common.Components
 open Foom.Renderer.Components
 
@@ -77,7 +78,7 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
 let wireframeQueue =
     eventQueue (fun entityManager eventManager ->
 
-        fun (deltaTime: float32) (componentAdded: Events.ComponentAdded<WireframeComponent>) ->
+        fun (_, deltaTime: float32) (componentAdded: Events.ComponentAdded<WireframeComponent>) ->
 
             entityManager.TryGet<WireframeComponent> (componentAdded.Entity)
             |> Option.iter (fun meshComp ->
@@ -102,7 +103,7 @@ let wireframeQueue =
 let meshQueue =
     eventQueue (fun entityManager eventManager ->
 
-        fun (deltaTime: float32) (componentAdded: Events.ComponentAdded<MeshComponent>) ->
+        fun (_, deltaTime: float32) (componentAdded: Events.ComponentAdded<MeshComponent>) ->
 
             entityManager.TryGet<MeshComponent> (componentAdded.Entity)
             |> Option.iter (fun meshComp ->
@@ -133,7 +134,7 @@ let meshQueue =
 let materialQueue =
     eventQueue (fun entityManager eventManager ->
 
-        fun (deltaTime: float32) (componentAdded: Events.ComponentAdded<MaterialComponent>) ->
+        fun (_, deltaTime: float32) (componentAdded: Events.ComponentAdded<MaterialComponent>) ->
 
             entityManager.TryGet<MaterialComponent> (componentAdded.Entity)
             |> Option.iter (fun materialComp ->
@@ -163,9 +164,7 @@ let materialQueue =
      
     )
 
-let inline lerp x y t = x + (y - x) * t
-
-let create (app: Application) =
+let create (app: Application) : EntitySystem<float32 * float32> =
 
     EntitySystem.create "Renderer"
         [
@@ -173,7 +172,7 @@ let create (app: Application) =
             meshQueue
             materialQueue
 
-            update (fun entityManager eventManager deltaTime ->
+            update (fun entityManager eventManager ((time, deltaTime): float32 * float32) ->
 
                 Renderer.clear ()
 
@@ -183,7 +182,7 @@ let create (app: Application) =
                     entityManager.TryGet<TransformComponent> (ent)
                     |> Option.iter (fun transformComp ->
 
-                        let heightOffset = lerp cameraComp.HeightOffsetLerp cameraComp.HeightOffset deltaTime
+                        let heightOffset = Mathf.lerp cameraComp.HeightOffsetLerp cameraComp.HeightOffset deltaTime
 
                         let projection = cameraComp.Projection |> Matrix4x4.Transpose
                         let mutable transform = Matrix4x4.Lerp (transformComp.TransformLerp, transformComp.Transform, deltaTime)

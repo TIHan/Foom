@@ -99,5 +99,9 @@
       <Project>{9B75DD43-5F71-4A53-B8EA-EDC02CB994BE}</Project>
       <Name>Foom.Renderer.Components</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Math\Foom.Math.fsproj">
+      <Project>{B94F520E-B150-45A7-ADA1-E2945BE9A743}</Project>
+      <Name>Foom.Math</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

@@ -35,7 +35,7 @@ let start (invoke: Task ref) =
 
             printfn "%A" stopwatch.Elapsed.TotalMilliseconds
         )
-        (fun t ->
+        (fun currentTime t ->
             //world.EntityManager.TryFind<CameraComponent> (fun _ _ -> true)
             //|> Option.iter (fun (ent, cameraComp) ->
             //    world.EntityManager.TryGet<TransformComponent> (ent)
@@ -64,7 +64,7 @@ let start (invoke: Task ref) =
             //    )
             //)
 
-            Client.draw t client client
+            Client.draw (TimeSpan.FromTicks(currentTime).TotalSeconds |> single) t client client
         )
 
 [<EntryPoint>]
