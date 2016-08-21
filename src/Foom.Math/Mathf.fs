@@ -1,4 +1,5 @@
-﻿[<RequireQualifiedAccess>] module Foom.Math.Mathf
+﻿[<RequireQualifiedAccess>] 
+module Foom.Math.Mathf
 
 let inline clamp (value: float32) min max =
     if value < min then min
@@ -38,3 +39,47 @@ let smoothStep (value1: float32) value2 amount =
     hermite value1 0.f value2 0.f result
 
 let inline lerp (x: float32) y t = x + (y - x) * t
+
+// https://raw.githubusercontent.com/ms-iot/pid-controller/master/PidController/PidController/PidController.cs
+type PidController (gainProportional, gainIntegral, gainDerivative, outputMax, outputMin) =
+
+    let mutable processVariable = 0.f
+
+    let mutable processVariableLast = 0.f
+
+    let mutable integralTerm = 0.f
+
+    member val GainProportional = gainProportional with get, set
+
+    member val GainIntegral = gainIntegral with get, set
+
+    member val GainDerivative = gainDerivative with get, set
+
+    member val OutputMax = outputMax with get, set
+
+    member val OutputMin = outputMin with get, set
+
+    member val SetPoint = 0.f with get, set
+
+    member this.ProcessVariable
+        with get () = processVariable
+        and set value =
+            processVariableLast <- processVariable
+            processVariable <- value
+
+    member this.ControlVariable =
+        let error = this.SetPoint - processVariable
+
+        integralTerm <- integralTerm + (this.GainIntegral * error)
+
+        if (integralTerm > outputMax) then integralTerm <- outputMax
+        if (integralTerm < outputMin) then integralTerm <- outputMin
+
+        let dInput = processVariable - processVariableLast
+
+        let mutable output = this.GainProportional * error + integralTerm - this.GainDerivative * dInput
+
+        if (output > this.OutputMax) then output <- this.OutputMax
+        if (output < this.OutputMin) then output <- this.OutputMin
+
+        output
