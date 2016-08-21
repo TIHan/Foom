@@ -58,4 +58,4 @@ module Level =
 
     val createFlats : sectorId: int -> Level -> Flat seq
 
-    val createWalls : Sector -> Level -> Wall seq
+    val createWalls : sectorId: int -> Level -> Wall seq

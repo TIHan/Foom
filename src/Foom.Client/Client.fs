@@ -179,7 +179,7 @@ let init (world: World) =
                 // Initialize
                 update (fun _ eventManager ->
                     eventManager.Publish (LoadWadRequested ("doom.wad"))
-                    eventManager.Publish (LoadLevelRequested ("e1m1")) 
+                    eventManager.Publish (LoadLevelRequested ("e4m5")) 
                     fun _ -> ()
                 )
 
@@ -231,36 +231,36 @@ let init (world: World) =
                             
                             if isMovingForward then
                                 let v = Vector3.Transform (-Vector3.UnitZ, transformComp.Rotation)
-                                acc <- (Vector3 (v.X, v.Y, 0.f))
+                                acc <- (Vector3 (v.X, v.Y, v.Z))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingLeft then
                                 let v = Vector3.Transform (-Vector3.UnitX, transformComp.Rotation)
-                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
+                                acc <- acc + (Vector3 (v.X, v.Y, v.Z))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingBackward then
                                 let v = Vector3.Transform (Vector3.UnitZ, transformComp.Rotation)
-                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
+                                acc <- acc + (Vector3 (v.X, v.Y, v.Z))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingRight then
                                 let v = Vector3.Transform (Vector3.UnitX, transformComp.Rotation)
-                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
+                                acc <- acc + (Vector3 (v.X, v.Y, v.Z))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
                                
                             acc <- 
                                 if acc <> Vector3.Zero then
-                                    acc |> Vector3.Normalize |> (*) 4.5f
+                                    acc |> Vector3.Normalize |> (*) 20.5f
                                 else
                                     acc
 
-                            //transformComp.Translate(acc)
-                            Physics.setKinematicControllerWalkDirection acc capsule
+                            transformComp.Translate(acc)
+                           // Physics.setKinematicControllerWalkDirection acc capsule
                         )
                     )
 
@@ -274,7 +274,7 @@ let init (world: World) =
 
                     match entityManager.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true) with
                     | Some (ent, cameraComp, transformComp) ->
-                        transformComp.Position <- position + Vector3.UnitZ * 26.f
+                       // transformComp.Position <- position + Vector3.UnitZ * 26.f
 
                         let v1 = Vector2 (transformComp.Position.X, transformComp.Position.Y)
                         let v2 = Vector2 (transformComp.TransformLerp.Translation.X, transformComp.TransformLerp.Translation.Y)

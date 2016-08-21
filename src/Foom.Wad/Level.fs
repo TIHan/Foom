@@ -209,8 +209,9 @@ module Level =
                     }
                 )
 
-    let createWalls (sector: Sector) level =
+    let createWalls (sectorId: int) level =
         let arr = ResizeArray<Wall> ()
+        let sector = level.sectors.[sectorId]
 
         sector.Linedefs
         |> Seq.iter (fun linedef ->
@@ -256,16 +257,84 @@ module Level =
                         Vector3 (linedef.End, single floorHeight)
                     |]
 
+            match linedef.BackSidedef with
+            | Some backSidedef when backSidedef.SectorNumber = sectorId ->
+
+                match linedef.FrontSidedef with
+                | Some frontSidedef ->
+                    let frontSideSector = Seq.item frontSidedef.SectorNumber level.sectors
+
+                    if backSidedef.UpperTextureName.Contains("-") |> not && frontSideSector.CeilingHeight < sector.CeilingHeight then
+
+                        {
+                            SectorId = backSidedef.SectorNumber
+                            TextureName = Some backSidedef.UpperTextureName
+                            TextureOffsetX = backSidedef.OffsetX
+                            TextureOffsetY = backSidedef.OffsetY
+                            Vertices =
+                                [|
+                                    Vector3 (linedef.End, single frontSideSector.CeilingHeight)
+                                    Vector3 (linedef.Start, single frontSideSector.CeilingHeight)
+                                    Vector3 (linedef.Start, single sector.ceilingHeight)
+
+                                    Vector3 (linedef.Start, single sector.CeilingHeight)
+                                    Vector3 (linedef.End, single sector.CeilingHeight)
+                                    Vector3 (linedef.End, single frontSideSector.CeilingHeight)
+                                |]
+                            TextureAlignment = 
+                                if not isUpperUnpegged then
+                                    LowerUnpegged
+                                else
+                                    UpperUnpegged 0
+                        }
+                        |> arr.Add
+                       
+                    if backSidedef.LowerTextureName.Contains("-") |> not && frontSideSector.FloorHeight > sector.FloorHeight then
+                        let frontSideSector = Seq.item frontSidedef.SectorNumber level.sectors
+
+                        {
+                            SectorId = backSidedef.SectorNumber
+                            TextureName = Some backSidedef.LowerTextureName
+                            TextureOffsetX = backSidedef.OffsetX
+                            TextureOffsetY = backSidedef.OffsetY
+                            Vertices = 
+                                [|
+                                    Vector3 (linedef.End, single sector.FloorHeight)
+                                    Vector3 (linedef.Start, single sector.FloorHeight)
+                                    Vector3 (linedef.Start, single frontSideSector.FloorHeight)
+
+                                    Vector3 (linedef.Start, single frontSideSector.FloorHeight)
+                                    Vector3 (linedef.End, single frontSideSector.FloorHeight)
+                                    Vector3 (linedef.End, single sector.FloorHeight)
+                                |]
+                            TextureAlignment = 
+                                if isLowerUnpegged then
+                                    if isTwoSided then
+                                        UpperUnpegged (abs (sector.CeilingHeight - frontSideSector.FloorHeight))
+                                    else
+                                        LowerUnpegged
+                                else
+                                    UpperUnpegged 0
+                        } |> arr.Add
+            
+                | _ -> ()
+
+                if backSidedef.MiddleTextureName.Contains("-") |> not then
+
+                    match linedef.FrontSidedef with
+                    | Some frontSidedef ->
+                        let frontSideSector = Seq.item frontSidedef.SectorNumber level.sectors
+
+                        addMiddleBack sector.FloorHeight frontSideSector.CeilingHeight backSidedef
+                    | _ -> ()
+
+            | _ -> ()
+
             match linedef.FrontSidedef with
-            | Some frontSidedef ->
-
-
-         
-
+            | Some frontSidedef when frontSidedef.SectorNumber = sectorId ->
 
                 match linedef.BackSidedef with
                 | Some backSidedef ->
-
                     if frontSidedef.UpperTextureName.Contains("-") |> not then
                         let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
 
@@ -283,32 +352,6 @@ module Level =
                                     Vector3 (linedef.End, single sector.CeilingHeight)
                                     Vector3 (linedef.Start, single sector.CeilingHeight)
                                     Vector3 (linedef.Start, single backSideSector.CeilingHeight)
-                                |]
-                            TextureAlignment = 
-                                if not isUpperUnpegged then
-                                    LowerUnpegged
-                                else
-                                    UpperUnpegged 0
-                        }
-                        |> arr.Add
-
-                    if backSidedef.UpperTextureName.Contains("-") |> not then
-                        let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
-
-                        {
-                            SectorId = backSidedef.SectorNumber
-                            TextureName = Some backSidedef.UpperTextureName
-                            TextureOffsetX = backSidedef.OffsetX
-                            TextureOffsetY = backSidedef.OffsetY
-                            Vertices =
-                                [|
-                                    Vector3 (linedef.End, single sector.CeilingHeight)
-                                    Vector3 (linedef.Start, single sector.CeilingHeight)
-                                    Vector3 (linedef.Start, single backSideSector.CeilingHeight)
-
-                                    Vector3 (linedef.Start, single backSideSector.CeilingHeight)
-                                    Vector3 (linedef.End, single backSideSector.CeilingHeight)
-                                    Vector3 (linedef.End, single sector.CeilingHeight)
                                 |]
                             TextureAlignment = 
                                 if not isUpperUnpegged then
@@ -346,39 +389,7 @@ module Level =
                                     UpperUnpegged 0
                         } |> arr.Add
 
-                       
-                    if backSidedef.LowerTextureName.Contains("-") |> not then
-                        let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
-
-                        {
-                            SectorId = backSidedef.SectorNumber
-                            TextureName = Some backSidedef.LowerTextureName
-                            TextureOffsetX = backSidedef.OffsetX
-                            TextureOffsetY = backSidedef.OffsetY
-                            Vertices = 
-                                [|
-                                    Vector3 (linedef.Start, single sector.FloorHeight)
-                                    Vector3 (linedef.End, single sector.FloorHeight)
-                                    Vector3 (linedef.End, single backSideSector.FloorHeight)
-
-                                    Vector3 (linedef.End, single backSideSector.FloorHeight)
-                                    Vector3 (linedef.Start, single backSideSector.FloorHeight)
-                                    Vector3 (linedef.Start, single sector.FloorHeight)
-                                |]
-                            TextureAlignment = 
-                                if isLowerUnpegged then
-                                    if isTwoSided then
-                                        UpperUnpegged (abs (backSideSector.CeilingHeight - sector.FloorHeight))
-                                    else
-                                        LowerUnpegged
-                                else
-                                    UpperUnpegged 0
-                        } |> arr.Add
-                
-
                 | _ -> ()
-
-
 
                 if frontSidedef.MiddleTextureName.Contains("-") |> not then
 
@@ -390,11 +401,6 @@ module Level =
                         | _ -> sector.FloorHeight
                        
                     addMiddleFront floorHeight sector.CeilingHeight frontSidedef
-
-                    linedef.BackSidedef
-                    |> Option.iter (fun backSidedef ->
-                        addMiddleBack floorHeight sector.CeilingHeight backSidedef
-                    )
 
             | _ -> ()
         )

@@ -30,7 +30,7 @@ type LoadLevelRequested (name: string) =
             level.Sectors
             |> Seq.mapi (fun i sector ->
                 let flats = Level.createFlats i level
-                let walls = Level.createWalls sector level
+                let walls = Level.createWalls i level
 
                 let floorGeometry =
                     flats
