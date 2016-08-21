@@ -214,50 +214,53 @@ module Level =
 
         sector.Linedefs
         |> Seq.iter (fun linedef ->
+            let isLowerUnpegged = linedef.Flags.HasFlag(LinedefFlags.LowerTextureUnpegged)
+            let isUpperUnpegged = linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged)
+            let isTwoSided = linedef.Flags.HasFlag(LinedefFlags.TwoSided)
+
+            let addMiddleWithVertices (floorHeight: int) (ceilingHeight: int) (sidedef: Sidedef) vertices =
+                {
+                    SectorId = sidedef.SectorNumber
+                    TextureName = Some sidedef.MiddleTextureName
+                    TextureOffsetX = sidedef.OffsetX
+                    TextureOffsetY = sidedef.OffsetY
+                    Vertices = vertices
+                    TextureAlignment =
+                        if isLowerUnpegged then
+                            LowerUnpegged
+                        else
+                            UpperUnpegged 0
+                } |> arr.Add
+
+            let addMiddleFront floorHeight ceilingHeight sidedef =
+                addMiddleWithVertices floorHeight ceilingHeight sidedef
+                    [|
+                        Vector3 (linedef.Start, single floorHeight)
+                        Vector3 (linedef.End, single floorHeight)
+                        Vector3 (linedef.End, single ceilingHeight)
+
+                        Vector3 (linedef.End, single ceilingHeight)
+                        Vector3 (linedef.Start, single ceilingHeight)
+                        Vector3 (linedef.Start, single floorHeight)
+                    |]
+
+            let addMiddleBack floorHeight ceilingHeight sidedef =
+                addMiddleWithVertices floorHeight ceilingHeight sidedef <|
+                    [|
+                        Vector3 (linedef.End, single floorHeight)
+                        Vector3 (linedef.Start, single floorHeight)
+                        Vector3 (linedef.Start, single ceilingHeight)
+
+                        Vector3 (linedef.Start, single ceilingHeight)
+                        Vector3 (linedef.End, single ceilingHeight)
+                        Vector3 (linedef.End, single floorHeight)
+                    |]
+
             match linedef.FrontSidedef with
             | Some frontSidedef ->
 
-                let isLowerUnpegged = linedef.Flags.HasFlag(LinedefFlags.LowerTextureUnpegged)
-                let isUpperUnpegged = linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged)
-                let isTwoSided = linedef.Flags.HasFlag(LinedefFlags.TwoSided)
 
-                let addMiddleWithVertices (floorHeight: int) (ceilingHeight: int) (sidedef: Sidedef) vertices =
-                    {
-                        SectorId = sidedef.SectorNumber
-                        TextureName = Some sidedef.MiddleTextureName
-                        TextureOffsetX = sidedef.OffsetX
-                        TextureOffsetY = sidedef.OffsetY
-                        Vertices = vertices
-                        TextureAlignment =
-                            if isLowerUnpegged then
-                                LowerUnpegged
-                            else
-                                UpperUnpegged 0
-                    } |> arr.Add
-
-                let addMiddleFront floorHeight ceilingHeight sidedef =
-                    addMiddleWithVertices floorHeight ceilingHeight sidedef
-                        [|
-                            Vector3 (linedef.Start, single floorHeight)
-                            Vector3 (linedef.End, single floorHeight)
-                            Vector3 (linedef.End, single ceilingHeight)
-
-                            Vector3 (linedef.End, single ceilingHeight)
-                            Vector3 (linedef.Start, single ceilingHeight)
-                            Vector3 (linedef.Start, single floorHeight)
-                        |]
-
-                let addMiddleBack floorHeight ceilingHeight sidedef =
-                    addMiddleWithVertices floorHeight ceilingHeight sidedef <|
-                        [|
-                            Vector3 (linedef.End, single floorHeight)
-                            Vector3 (linedef.Start, single floorHeight)
-                            Vector3 (linedef.Start, single ceilingHeight)
-
-                            Vector3 (linedef.Start, single ceilingHeight)
-                            Vector3 (linedef.End, single ceilingHeight)
-                            Vector3 (linedef.End, single floorHeight)
-                        |]
+         
 
 
                 match linedef.BackSidedef with

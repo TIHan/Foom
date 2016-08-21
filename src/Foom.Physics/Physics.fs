@@ -80,8 +80,8 @@ module Physics =
         //alocate the character object
         characterController = new btKinematicCharacterController(ghostBody,capsule,btScalar(24),btVector3(0,0,1));//2);
         characterController->setUseGhostSweepTest(false);
-        characterController->setFallSpeed(150);
-        characterController->setGravity(btVector3(0,0,-1024));
+        characterController->setFallSpeed(100);
+        characterController->setGravity(btVector3(0,0,-1000));
         
         world->addCollisionObject(ghostBody, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::StaticFilter|btBroadphaseProxy::DefaultFilter);
         world->addAction(characterController);
