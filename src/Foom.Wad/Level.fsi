@@ -19,14 +19,25 @@ type Wall =
         TextureAlignment: TextureAlignment
     }
 
+type Ceiling =
+    {
+        Vertices: Vector3 []
+        Height: int
+        TextureName: string option
+    }
+
+type Floor =
+    {
+        Vertices: Vector3 []
+        Height: int
+        TextureName: string option
+    }
+
 type Flat =
     {
         SectorId: int
-        Triangles: Triangle2D []
-        FloorHeight: int
-        CeilingHeight: int
-        FloorTextureName: string option
-        CeilingTextureName: string option
+        Ceiling: Ceiling
+        Floor: Floor
     }
 
 [<NoComparison; ReferenceEquality>]
@@ -45,11 +56,9 @@ module Wall =
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Flat =
 
-    val createUV : width: int -> height: int -> Flat -> Vector2 []
+    val createFloorUV : width: int -> height: int -> Flat -> Vector2 []
 
-    val createFlippedUV : width: int -> height: int -> Flat -> Vector2 []
-
-    val createBoundingBox2D : Flat -> BoundingBox2D
+    val createCeilingUV : width: int -> height: int -> Flat -> Vector2 []
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Level =

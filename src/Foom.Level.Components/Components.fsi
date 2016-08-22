@@ -9,19 +9,8 @@ open Foom.Wad
 open Foom.Wad.Geometry
 open Foom.Wad.Level
 
-type LevelTexture =
-    {
-        TextureName: string
-        CreateUV: int -> int -> Vector2 []
-    }
-
-type LevelStaticGeometry =
-    {
-        IsFlat: bool
-        Texture: LevelTexture option
-        LightLevel: byte
-        Vertices: Vector3 []
-    }
+type SectorGeometry =
+    | Static of Flat seq * Wall seq * lightLevel: byte
 
 type LoadLevelRequested =
 
@@ -45,4 +34,4 @@ module Sys =
 
     val handleWadLoaded : (EntityManager -> Wad -> unit) -> Sys<_>
 
-    val handleLoadLevelRequests : (EntityManager -> Wad -> int -> LevelStaticGeometry seq -> unit) -> Sys<_>
+    val handleLoadLevelRequests : (EntityManager -> Wad -> int -> SectorGeometry -> unit) -> Sys<_>

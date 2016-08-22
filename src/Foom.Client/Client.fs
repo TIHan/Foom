@@ -96,39 +96,77 @@ let exportTextures (wad: Wad) =
         )
     )
 
-let spawnDoomLevelStaticGeometryMesh (geo: LevelStaticGeometry) (wad: Wad) (em: EntityManager) =
-    match geo.Texture with
-    | Some texture ->
-            let tex = 
-                if geo.IsFlat then Wad.tryFindFlatTexture texture.TextureName wad
-                else Wad.tryFindTexture texture.TextureName wad
-            match tex with
-            | Some tex ->
-                let width = Array2D.length1 tex.Data
-                let height = Array2D.length2 tex.Data
-                let texName = 
-                    if geo.IsFlat then 
-                        texture.TextureName + "_flat.bmp"
-                    else 
-                        texture.TextureName + ".bmp"
+let tryFindFlatTexture name wad =
+    match name with
+    | Some name ->
+        match Wad.tryFindFlatTexture name wad with
+        | Some tex -> Some tex
+        | _ -> None
+    | _ -> None
 
-                let ent = em.Spawn ()
-        
-                em.AddComponent ent (TransformComponent (Matrix4x4.Identity))
-                em.AddComponent ent (MeshComponent (geo.Vertices, texture.CreateUV width height))
-                em.AddComponent ent (
-                    MaterialComponent (
-                        "triangle.vertex",
-                        "triangle.fragment",
-                        texName,
-                        { R = geo.LightLevel; G = geo.LightLevel; B = geo.LightLevel; A = 0uy }
-                    )
-                )
+let tryFindTexture name wad =
+    match name with
+    | Some name ->
+        match Wad.tryFindTexture name wad with
+        | Some tex -> Some tex
+        | _ -> None
+    | _ -> None
 
+let spawnMesh vertices uv texturePath lightLevel (em: EntityManager) =
+    let ent = em.Spawn ()
 
-            | _ -> ()
+    em.AddComponent ent (TransformComponent (Matrix4x4.Identity))
+    em.AddComponent ent (MeshComponent (vertices, uv))
+    em.AddComponent ent (
+        MaterialComponent (
+            "triangle.vertex",
+            "triangle.fragment",
+            texturePath,
+            { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy }
+        )
+    )
 
-    | _ -> ()
+let spawnCeilingMesh (flat: Flat) lightLevel wad em =
+    tryFindFlatTexture flat.Ceiling.TextureName wad
+    |> Option.iter (fun tex ->
+        let width = Array2D.length1 tex.Data
+        let height = Array2D.length2 tex.Data
+        let texturePath = tex.Name + "_flat.bmp"
+
+        spawnMesh flat.Ceiling.Vertices (Flat.createCeilingUV width height flat) texturePath lightLevel em
+    )
+
+let spawnFloorMesh (flat: Flat) lightLevel wad em =
+    tryFindFlatTexture flat.Floor.TextureName wad
+    |> Option.iter (fun tex ->
+        let width = Array2D.length1 tex.Data
+        let height = Array2D.length2 tex.Data
+        let texturePath = tex.Name + "_flat.bmp"
+
+        spawnMesh flat.Floor.Vertices (Flat.createFloorUV width height flat) texturePath lightLevel em
+    )
+
+let spawnWallMesh (wall: Wall) lightLevel wad em =
+    tryFindTexture wall.TextureName wad
+    |> Option.iter (fun tex ->
+        let width = Array2D.length1 tex.Data
+        let height = Array2D.length2 tex.Data
+        let texturePath = tex.Name + ".bmp"
+
+        spawnMesh wall.Vertices (Wall.createUV width height wall) texturePath lightLevel em
+    )
+
+let spawnSectorGeometryMesh (geo: SectorGeometry) (wad: Wad) (em: EntityManager) =
+    match geo with
+    | Static (flats, walls, lightLevel) ->
+        flats
+        |> Seq.iter (fun flat ->
+            spawnCeilingMesh flat lightLevel wad em
+            spawnFloorMesh flat lightLevel wad em
+        )
+
+        walls
+        |> Seq.iter (fun wall -> spawnWallMesh wall lightLevel wad em)
 
 let init (world: World) =
 
@@ -170,13 +208,10 @@ let init (world: World) =
                     wad |> exportTextures
                 )
 
-                Sys.handleLoadLevelRequests (fun entityManager wad sectorId geos ->
-                    geos
-                    |> Seq.iter (fun geo ->
-                        spawnDoomLevelStaticGeometryMesh geo wad entityManager
-                
-                        Physics.addTriangles geo.Vertices geo.Vertices.Length physicsWorld
-                    )
+                Sys.handleLoadLevelRequests (fun entityManager wad sectorId sectorGeo ->
+                    spawnSectorGeometryMesh sectorGeo wad entityManager
+            
+                    //Physics.addTriangles geo.Vertices geo.Vertices.Length physicsWorld
                 )
 
                 // Initialize

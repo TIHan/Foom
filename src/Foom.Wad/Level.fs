@@ -21,14 +21,25 @@ type Wall =
         TextureAlignment: TextureAlignment
     }
 
+type Ceiling =
+    {
+        Vertices: Vector3 []
+        Height: int
+        TextureName: string option
+    }
+
+type Floor =
+    {
+        Vertices: Vector3 []
+        Height: int
+        TextureName: string option
+    }
+
 type Flat =
     {
         SectorId: int
-        Triangles: Triangle2D []
-        FloorHeight: int
-        CeilingHeight: int
-        FloorTextureName: string option
-        CeilingTextureName: string option
+        Ceiling: Ceiling
+        Floor: Floor
     }
 
 type Level =
@@ -41,68 +52,47 @@ type Level =
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Flat =
 
-    let createUV width height (flat: Flat) =
+    let createFloorUV width height (flat: Flat) =
+        let vertices = flat.Floor.Vertices
         let width = single width
         let height = single height * -1.f
-        let uv = Array.zeroCreate (flat.Triangles.Length * sizeof<Triangle2D>)
+        let uv = Array.zeroCreate (vertices.Length * sizeof<Vector3>)
 
-        flat.Triangles
-        |> Array.iteri (fun i tri ->
-            uv.[i * 3] <- Vector2 (tri.X.X / width, tri.X.Y / height)
-            uv.[i * 3 + 1] <- Vector2 (tri.Y.X / width, tri.Y.Y / height)
-            uv.[i * 3 + 2] <- Vector2 (tri.Z.X / width, tri.Z.Y / height)
-        )
+        let mutable i = 0
+        while i < vertices.Length do
+
+            let v1 = vertices.[i]
+            let v2 = vertices.[i + 1]
+            let v3 = vertices.[i + 2]
+
+            uv.[i] <- Vector2 (v1.X / width, v1.Y / height)
+            uv.[i + 1] <- Vector2 (v2.X / width, v2.Y / height)
+            uv.[i + 2] <- Vector2 (v3.X / width, v3.Y / height)
+
+            i <- i + 3
 
         uv
 
-    let createFlippedUV width height (flat: Flat) =
+    let createCeilingUV width height (flat: Flat) =
+        let vertices = flat.Ceiling.Vertices
         let width = single width
         let height = single height * -1.f
-        let uv = Array.zeroCreate (flat.Triangles.Length * sizeof<Triangle2D>)
+        let uv = Array.zeroCreate (vertices.Length * sizeof<Vector3>)
 
-        flat.Triangles
-        |> Array.iteri (fun i tri ->
-            uv.[i * 3] <- Vector2 (tri.Z.X / width, tri.Z.Y / height)
-            uv.[i * 3 + 1] <- Vector2 (tri.Y.X / width, tri.Y.Y / height)
-            uv.[i * 3 + 2] <- Vector2 (tri.X.X / width, tri.X.Y / height)
-        )
+        let mutable i = 0
+        while i < vertices.Length do
+
+            let v1 = vertices.[i]
+            let v2 = vertices.[i + 1]
+            let v3 = vertices.[i + 2]
+
+            uv.[i] <- Vector2 (v1.X / width, v1.Y / height)
+            uv.[i + 1] <- Vector2 (v2.X / width, v2.Y / height)
+            uv.[i + 2] <- Vector2 (v3.X / width, v3.Y / height)
+
+            i <- i + 3
 
         uv
-
-    let createBoundingBox2D (flat: Flat) =
-        let triangles = flat.Triangles
-
-        if triangles.Length = 0 then
-            failwith "Flat has no triangles."
-
-        let firstV = triangles.[0].X
-
-        let mutable minX = firstV.X
-        let mutable minY = firstV.Y
-        let mutable maxX = firstV.X
-        let mutable maxY = firstV.Y
-
-        let f (v: Vector2) =
-            if v.X < minX then
-                minX <- v.X
-            elif v.X > maxX then
-               maxX <- v.X
-
-            if v.Y < minY then
-                minY <- v.Y
-            elif v.Y > maxY then
-               maxY <- v.Y
-
-        triangles
-        |> Array.iter (fun tri ->
-            f tri.X
-            f tri.Y
-        )
-
-        {
-            Min = Vector2 (minX, minY)
-            Max = Vector2 (maxX, maxY)
-        }
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Wall =
@@ -195,17 +185,52 @@ module Level =
                         }
                     )
 
-                map linedefPolygons
-                |> Seq.map (Foom.Wad.Geometry.Triangulation.EarClipping.computeTree)
-                |> Seq.reduce Seq.append
+                let sectorTriangles = 
+                    map linedefPolygons
+                    |> Seq.map (Foom.Wad.Geometry.Triangulation.EarClipping.computeTree)
+                    |> Seq.reduce Seq.append
+
+                sectorTriangles
                 |> Seq.map (fun triangles ->
+                  
+                    let ceiling =
+                        {
+                            Ceiling.Vertices =
+                                triangles
+                                |> Seq.map (fun tri ->
+                                    [|
+                                        Vector3 (tri.Z.X, tri.Z.Y, single sector.CeilingHeight)
+                                        Vector3 (tri.Y.X, tri.Y.Y, single sector.CeilingHeight)
+                                        Vector3 (tri.X.X, tri.X.Y, single sector.CeilingHeight)
+                                    |]
+                                )
+                                |> Seq.reduce Array.append
+
+                            Height = sector.CeilingHeight
+                            TextureName = Some sector.CeilingTextureName
+                        }
+
+                    let floor =
+                        {
+                            Floor.Vertices =
+                                triangles
+                                |> Seq.map (fun tri ->
+                                    [|
+                                        Vector3 (tri.X.X, tri.X.Y, single sector.FloorHeight)
+                                        Vector3 (tri.Y.X, tri.Y.Y, single sector.FloorHeight)
+                                        Vector3 (tri.Z.X, tri.Z.Y, single sector.FloorHeight)
+                                    |]
+                                )
+                                |> Seq.reduce Array.append
+                               
+                            Height = sector.FloorHeight
+                            TextureName = Some sector.FloorTextureName
+                        }
+
                     {
                         SectorId = sectorId
-                        Triangles = triangles
-                        FloorHeight = sector.FloorHeight
-                        CeilingHeight = sector.CeilingHeight
-                        FloorTextureName = Some sector.FloorTextureName
-                        CeilingTextureName = Some sector.CeilingTextureName
+                        Ceiling = ceiling
+                        Floor = floor
                     }
                 )
 
