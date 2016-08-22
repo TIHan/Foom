@@ -211,7 +211,18 @@ let init (world: World) =
                 Sys.handleLoadLevelRequests (fun entityManager wad sectorId sectorGeo ->
                     spawnSectorGeometryMesh sectorGeo wad entityManager
             
-                    //Physics.addTriangles geo.Vertices geo.Vertices.Length physicsWorld
+                    match sectorGeo with
+                    | Static (flats, walls, _) ->
+                        flats
+                        |> Seq.iter (fun flat ->
+                            Physics.addTriangles flat.Floor.Vertices flat.Floor.Vertices.Length physicsWorld
+                            Physics.addTriangles flat.Ceiling.Vertices flat.Ceiling.Vertices.Length physicsWorld
+                        )
+
+                        walls
+                        |> Seq.iter (fun wall ->
+                            Physics.addTriangles wall.Vertices wall.Vertices.Length physicsWorld
+                        )
                 )
 
                 // Initialize
@@ -269,36 +280,36 @@ let init (world: World) =
                             
                             if isMovingForward then
                                 let v = Vector3.Transform (-Vector3.UnitZ, transformComp.Rotation)
-                                acc <- (Vector3 (v.X, v.Y, v.Z))
+                                acc <- (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingLeft then
                                 let v = Vector3.Transform (-Vector3.UnitX, transformComp.Rotation)
-                                acc <- acc + (Vector3 (v.X, v.Y, v.Z))
+                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingBackward then
                                 let v = Vector3.Transform (Vector3.UnitZ, transformComp.Rotation)
-                                acc <- acc + (Vector3 (v.X, v.Y, v.Z))
+                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingRight then
                                 let v = Vector3.Transform (Vector3.UnitX, transformComp.Rotation)
-                                acc <- acc + (Vector3 (v.X, v.Y, v.Z))
+                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
                                
                             acc <- 
                                 if acc <> Vector3.Zero then
-                                    acc |> Vector3.Normalize |> (*) 20.5f
+                                    acc |> Vector3.Normalize |> (*) 4.5f
                                 else
                                     acc
 
-                            transformComp.Translate(acc)
-                           // Physics.setKinematicControllerWalkDirection acc capsule
+                            //transformComp.Translate(acc)
+                            Physics.setKinematicControllerWalkDirection acc capsule
                         )
                     )
 
@@ -312,7 +323,7 @@ let init (world: World) =
 
                     match entityManager.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true) with
                     | Some (ent, cameraComp, transformComp) ->
-                       // transformComp.Position <- position + Vector3.UnitZ * 26.f
+                        transformComp.Position <- position + Vector3.UnitZ * 26.f
 
                         let v1 = Vector2 (transformComp.Position.X, transformComp.Position.Y)
                         let v2 = Vector2 (transformComp.TransformLerp.Translation.X, transformComp.TransformLerp.Translation.Y)
