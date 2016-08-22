@@ -11,6 +11,10 @@ type TextureAlignment =
     | UpperUnpegged of offsetY: int
     | LowerUnpegged
 
+type WallSpecial =
+    | Nothing
+    | Door of ceilingSectorId: int
+
 type Wall =
     {
         SectorId: int
@@ -19,6 +23,7 @@ type Wall =
         TextureOffsetY: int
         Vertices: Vector3 []
         TextureAlignment: TextureAlignment
+        Special: WallSpecial
     }
 
 type Ceiling =
@@ -244,6 +249,12 @@ module Level =
             let isUpperUnpegged = linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged)
             let isTwoSided = linedef.Flags.HasFlag(LinedefFlags.TwoSided)
 
+            let special =
+                if linedef.SpecialType = 1 && linedef.BackSidedef.IsSome then
+                    Door (linedef.BackSidedef.Value.SectorNumber)
+                else
+                    Nothing
+
             let addMiddleWithVertices (floorHeight: int) (ceilingHeight: int) (sidedef: Sidedef) vertices =
                 {
                     SectorId = sidedef.SectorNumber
@@ -256,6 +267,7 @@ module Level =
                             LowerUnpegged
                         else
                             UpperUnpegged 0
+                    Special = special
                 } |> arr.Add
 
             let addMiddleFront floorHeight ceilingHeight sidedef =
@@ -311,6 +323,7 @@ module Level =
                                     LowerUnpegged
                                 else
                                     UpperUnpegged 0
+                            Special = special
                         }
                         |> arr.Add
                        
@@ -340,6 +353,7 @@ module Level =
                                         LowerUnpegged
                                 else
                                     UpperUnpegged 0
+                            Special = special
                         } |> arr.Add
             
                 | _ -> ()
@@ -383,6 +397,7 @@ module Level =
                                     LowerUnpegged
                                 else
                                     UpperUnpegged 0
+                            Special = special
                         }
                         |> arr.Add
 
@@ -412,6 +427,7 @@ module Level =
                                         LowerUnpegged
                                 else
                                     UpperUnpegged 0
+                            Special = special
                         } |> arr.Add
 
                 | _ -> ()

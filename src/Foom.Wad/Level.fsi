@@ -9,6 +9,10 @@ type TextureAlignment =
     | UpperUnpegged of offsetY: int
     | LowerUnpegged
 
+type WallSpecial =
+    | Nothing
+    | Door of ceilingSectorId: int
+
 type Wall =
     {
         SectorId: int
@@ -17,6 +21,7 @@ type Wall =
         TextureOffsetY: int
         Vertices: Vector3 []
         TextureAlignment: TextureAlignment
+        Special: WallSpecial
     }
 
 type Ceiling =
