@@ -15,6 +15,7 @@ type WallSpecial =
     | Nothing
     | Door of ceilingSectorId: int
 
+// TODO: Will be split up into three parts. Upper, Middle, and Lower.
 type Wall =
     {
         SectorId: int
@@ -40,6 +41,7 @@ type Floor =
         TextureName: string option
     }
 
+// TODO: Remove Flat. Ceiling and Floor will be independent.
 type Flat =
     {
         SectorId: int
@@ -172,6 +174,18 @@ module Level =
         let lightLevel = lightLevel * lightLevel / 255
         if lightLevel > 255 then 255uy
         else byte lightLevel
+
+    let adjacentSectors sectorId level =
+        level.sectors.[sectorId].linedefs
+        |> Seq.choose (fun linedef ->
+            match linedef.FrontSidedef, linedef.BackSidedef with
+            | Some frontSidedef, Some backSidedef when frontSidedef.SectorNumber = sectorId ->
+                Some backSidedef.SectorNumber
+            | Some frontSidedef, Some backSidedef when backSidedef.SectorNumber = sectorId ->
+                Some frontSidedef.SectorNumber
+            | _ -> None
+        )
+        |> Seq.distinct
 
     let createFlats sectorId level = 
         match level.sectors |> Array.tryItem sectorId with

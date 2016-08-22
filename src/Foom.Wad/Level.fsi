@@ -70,6 +70,8 @@ module Level =
 
     val lightLevelBySectorId : sectorId: int -> Level -> byte
 
+    val adjacentSectors : sectorId: int -> Level -> int seq
+
     val createFlats : sectorId: int -> Level -> Flat seq
 
     val createWalls : sectorId: int -> Level -> Wall seq

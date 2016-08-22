@@ -64,7 +64,7 @@ module Sys =
         eventQueue (fun entityManager _ (evt: LoadLevelRequested) ->
             match entityManager.TryFind<WadComponent> (fun _ _ -> true) with
             | Some (_, wadComp) ->
-                Wad.findLevel evt.Name wadComp.Wad
-                |> evt.StaticGeometry (fun sectorId geos -> f entityManager wadComp.Wad sectorId geos)
+                let level = Wad.findLevel evt.Name wadComp.Wad
+                evt.StaticGeometry (fun sectorId geos -> f entityManager wadComp.Wad sectorId geos) level
             | _ -> ()
         )
