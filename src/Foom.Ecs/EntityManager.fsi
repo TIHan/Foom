@@ -28,19 +28,6 @@ type Entity =
 /// A marker for component data.
 type IEntityComponent = interface end
 
-/// Similar to Entity, but is typed on a specific component.
-/// Can make querying for the specific component of the given entity faster (no dictionary lookup).
-[<Sealed>]
-type EntityRef<'T when 'T :> IEntityComponent and 'T : not struct> =
-
-    /// The Entity that refers to EntityRef.
-    member Entity : Entity
-
-/// Defines what entities with the specified component type that Entity Manager is interested in.
-/// Can make querying for the entities faster (no dictionary lookup).
-[<Sealed>]
-type Aspect<'T when 'T :> IEntityComponent and 'T : not struct>
-
 /// Common events published by the Entity Manager.
 module Events = 
 
@@ -112,22 +99,8 @@ type EntityManager =
 
     //************************************************************************************************************************
 
-    /// Attempts to find an EntityRef of component type 'T.
-    member TryGetEntityRef<'T when 'T :> IEntityComponent and 'T : not struct> : Entity -> EntityRef<'T> option
-
-    /// Gets an Aspect of component type 'T.
-    member GetAspect<'T when 'T :> IEntityComponent and 'T : not struct> : unit -> Aspect<'T>
-
-    //************************************************************************************************************************
-
     /// Attempts to find a component of type 'T based on the specified Entity.
     member TryGet<'T when 'T :> IEntityComponent and 'T : not struct> : Entity -> 'T option
-
-    /// Attempts to find a component of type 'T based on the specified EntityRef.
-    member TryGet<'T when 'T :> IEntityComponent and 'T : not struct> : EntityRef<'T> -> 'T option
-
-    /// Attempts to find a component of type 'T based on the specified Aspect and Entity.
-    member TryGet<'T when 'T :> IEntityComponent and 'T : not struct> : Aspect<'T> * Entity -> 'T option
 
     /// Checks to see if the Entity is valid.
     member IsValid : Entity -> bool
@@ -139,9 +112,6 @@ type EntityManager =
 
     /// Iterate entities that have a component of type 'T.
     member ForEach<'T when 'T :> IEntityComponent and 'T : not struct> : (Entity -> 'T -> unit) -> unit
-
-    /// Iterate entities that have a component of type 'T on the Aspect.
-    member ForEach<'T when 'T :> IEntityComponent and 'T : not struct> : Aspect<'T> * (Entity -> 'T -> unit) -> unit
 
     /// Iterate entities that have components of type 'T1 and 'T2.
     member ForEach<'T1, 'T2 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct> : (Entity -> 'T1 -> 'T2 -> unit) -> unit

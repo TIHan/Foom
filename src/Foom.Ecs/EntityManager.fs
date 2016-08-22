@@ -155,101 +155,6 @@ type EntityLookupData<'T when 'T :> IEntityComponent and 'T : not struct> =
 
         member this.Entities = this.Entities
 
-type EntityRef<'T when 'T :> IEntityComponent and 'T : not struct> =
-    {
-        entity: Entity
-        data: EntityLookupData<'T>
-    }
-
-    member this.Entity = this.entity
-
-    override this.ToString () = String.Format ("(Entity #{0}) (Component #{1})", this.Entity.Id, typeof<'T>.Name)
-
-type Aspect<'T when 'T :> IEntityComponent and 'T : not struct> =
-    {
-        Data: EntityLookupData<'T>
-    }
-
-module Internal =
-
-    let inline iter<'T when 'T :> IEntityComponent and 'T : not struct> (f: Entity -> 'T -> unit) (data: EntityLookupData<'T>) (activeIndices: bool []) =
-
-        let inline iter i =
-            let entity = data.Entities.Buffer.[i]
-
-            if data.Active.[entity.Index] && activeIndices.[entity.Index] then
-                f entity data.Components.Buffer.[i]
-
-        for i = 0 to data.Entities.Count - 1 do iter i
-
-    let inline iter2<'T1, 'T2 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct> (f: Entity -> 'T1 -> 'T2 -> unit) (data: IEntityLookupData) (data1: EntityLookupData<'T1>) (data2: EntityLookupData<'T2>) (activeIndices: bool []) : unit =
-
-        let inline iter i =
-            let entity = data.Entities.Buffer.[i]
-
-            if activeIndices.[entity.Index] then
-                let comp1Index = data1.IndexLookup.[entity.Index]
-                let comp2Index = data2.IndexLookup.[entity.Index]
-
-                if comp1Index >= 0 && comp2Index >= 0 && data1.Active.[entity.Index] && data2.Active.[entity.Index] then
-                    f entity data1.Components.Buffer.[comp1Index] data2.Components.Buffer.[comp2Index]
-
-        for i = 0 to data.Entities.Count - 1 do iter i
-
-    let inline iter3<'T1, 'T2, 'T3 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T3 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct and 'T3 : not struct> (f: Entity -> 'T1 -> 'T2 -> 'T3 -> unit) (data: IEntityLookupData) (data1: EntityLookupData<'T1>) (data2: EntityLookupData<'T2>) (data3: EntityLookupData<'T3>) (activeIndices: bool []) : unit =
-
-        let inline iter i =
-            let entity = data.Entities.Buffer.[i]
-
-            if activeIndices.[entity.Index] then
-                let comp1Index = data1.IndexLookup.[entity.Index]
-                let comp2Index = data2.IndexLookup.[entity.Index]
-                let comp3Index = data3.IndexLookup.[entity.Index]
-
-                if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 && data1.Active.[entity.Index] && data2.Active.[entity.Index] && data3.Active.[entity.Index] then
-                    f entity data1.Components.Buffer.[comp1Index] data2.Components.Buffer.[comp2Index] data3.Components.Buffer.[comp3Index]
-
-        for i = 0 to data.Entities.Count - 1 do iter i
-
-    let inline iter4<'T1, 'T2, 'T3, 'T4 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T3 :> IEntityComponent and 'T4 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct and 'T3 : not struct and 'T4 : not struct> (f: Entity -> 'T1 -> 'T2 -> 'T3 -> 'T4 -> unit) (data: IEntityLookupData) (data1: EntityLookupData<'T1>) (data2: EntityLookupData<'T2>) (data3: EntityLookupData<'T3>) (data4: EntityLookupData<'T4>) (activeIndices: bool []) : unit =
-
-        let inline iter i =
-            let entity = data.Entities.Buffer.[i]
-
-            if activeIndices.[entity.Index] then
-                let comp1Index = data1.IndexLookup.[entity.Index]
-                let comp2Index = data2.IndexLookup.[entity.Index]
-                let comp3Index = data3.IndexLookup.[entity.Index]
-                let comp4Index = data4.IndexLookup.[entity.Index]
-
-                if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 && comp4Index >= 0 && data1.Active.[entity.Index] && data2.Active.[entity.Index] && data3.Active.[entity.Index] && data4.Active.[entity.Index] then
-                    f entity data1.Components.Buffer.[comp1Index] data2.Components.Buffer.[comp2Index] data3.Components.Buffer.[comp3Index] data4.Components.Buffer.[comp4Index]
-
-        for i = 0 to data.Entities.Count - 1 do iter i
-
-    let inline isValidEntity (entity: Entity) (activeVersions: uint32 []) =
-        not (entity.Index.Equals 0u) && activeVersions.[entity.Index].Equals entity.Version
-
-    let inline tryGet<'T when 'T :> IEntityComponent and 'T : not struct> (entity: Entity) (data: EntityLookupData<'T>) (activeVersions: uint32 []) =
-        if isValidEntity entity activeVersions then
-            let index = data.IndexLookup.[entity.Index]
-            if index >= 0 then
-                Some data.Components.Buffer.[index]
-            else
-                None
-        else
-            None
-
-    let inline tryGetEntityRef<'T when 'T :> IEntityComponent and 'T : not struct> (entity: Entity) (data: EntityLookupData<'T>) (activeVersions: uint32 []) =
-        if isValidEntity entity activeVersions then
-            let index = data.IndexLookup.[entity.Index]
-            if index >= 0 then
-                Some ({ entity = entity; data = data })
-            else
-                None
-        else
-            None
-
 [<ReferenceEquality>]
 type EntityManager =
     {
@@ -352,7 +257,14 @@ type EntityManager =
         let mutable data = Unchecked.defaultof<IEntityLookupData>
         if this.Lookup.TryGetValue (typeof<'T>, &data) then
             let data = data :?> EntityLookupData<'T>
-            Internal.iter f data this.ActiveIndices
+
+            let inline iter i =
+                let entity = data.Entities.Buffer.[i]
+
+                if data.Active.[entity.Index] && this.ActiveIndices.[entity.Index] then
+                    f entity data.Components.Buffer.[i]
+
+            for i = 0 to data.Entities.Count - 1 do iter i
 
     member inline this.Iterate<'T1, 'T2 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct> (f) : unit =
         let mutable data1 = Unchecked.defaultof<IEntityLookupData>
@@ -361,7 +273,18 @@ type EntityManager =
             let data = [|data1;data2|] |> Array.minBy (fun x -> x.Entities.Count)
             let data1 = data1 :?> EntityLookupData<'T1>
             let data2 = data2 :?> EntityLookupData<'T2>
-            Internal.iter2 f data data1 data2 this.ActiveIndices
+
+            let inline iter i =
+                let entity = data.Entities.Buffer.[i]
+    
+                if this.ActiveIndices.[entity.Index] then
+                    let comp1Index = data1.IndexLookup.[entity.Index]
+                    let comp2Index = data2.IndexLookup.[entity.Index]
+    
+                    if comp1Index >= 0 && comp2Index >= 0 && data1.Active.[entity.Index] && data2.Active.[entity.Index] then
+                        f entity data1.Components.Buffer.[comp1Index] data2.Components.Buffer.[comp2Index]
+    
+            for i = 0 to data.Entities.Count - 1 do iter i
 
     member inline this.Iterate<'T1, 'T2, 'T3 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T3 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct and 'T3 : not struct> (f) : unit =
         let mutable data1 = Unchecked.defaultof<IEntityLookupData>
@@ -373,7 +296,19 @@ type EntityManager =
             let data1 = data1 :?> EntityLookupData<'T1>
             let data2 = data2 :?> EntityLookupData<'T2>
             let data3 = data3 :?> EntityLookupData<'T3>
-            Internal.iter3 f data data1 data2 data3 this.ActiveIndices
+
+            let inline iter i =
+                let entity = data.Entities.Buffer.[i]
+    
+                if this.ActiveIndices.[entity.Index] then
+                    let comp1Index = data1.IndexLookup.[entity.Index]
+                    let comp2Index = data2.IndexLookup.[entity.Index]
+                    let comp3Index = data3.IndexLookup.[entity.Index]
+    
+                    if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 && data1.Active.[entity.Index] && data2.Active.[entity.Index] && data3.Active.[entity.Index] then
+                        f entity data1.Components.Buffer.[comp1Index] data2.Components.Buffer.[comp2Index] data3.Components.Buffer.[comp3Index]
+    
+            for i = 0 to data.Entities.Count - 1 do iter i
 
     member inline this.Iterate<'T1, 'T2, 'T3, 'T4 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T3 :> IEntityComponent and 'T4 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct and 'T3 : not struct and 'T4 : not struct> (f) : unit =
         let mutable data1 = Unchecked.defaultof<IEntityLookupData>
@@ -387,7 +322,20 @@ type EntityManager =
             let data2 = data2 :?> EntityLookupData<'T2>
             let data3 = data3 :?> EntityLookupData<'T3>
             let data4 = data4 :?> EntityLookupData<'T4>
-            Internal.iter4 f data data1 data2 data3 data4 this.ActiveIndices
+
+            let inline iter i =
+                let entity = data.Entities.Buffer.[i]
+    
+                if this.ActiveIndices.[entity.Index] then
+                    let comp1Index = data1.IndexLookup.[entity.Index]
+                    let comp2Index = data2.IndexLookup.[entity.Index]
+                    let comp3Index = data3.IndexLookup.[entity.Index]
+                    let comp4Index = data4.IndexLookup.[entity.Index]
+    
+                    if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 && comp4Index >= 0 && data1.Active.[entity.Index] && data2.Active.[entity.Index] && data3.Active.[entity.Index] && data4.Active.[entity.Index] then
+                        f entity data1.Components.Buffer.[comp1Index] data2.Components.Buffer.[comp2Index] data3.Components.Buffer.[comp3Index] data4.Components.Buffer.[comp4Index]
+    
+            for i = 0 to data.Entities.Count - 1 do iter i
 
     // Components
 
@@ -486,33 +434,20 @@ type EntityManager =
 
     //************************************************************************************************************************
 
-    member this.TryGetEntityRef<'T when 'T :> IEntityComponent and 'T : not struct> (entity: Entity) : EntityRef<'T> option =
-        let mutable data = Unchecked.defaultof<IEntityLookupData>
-        if this.Lookup.TryGetValue (typeof<'T>, &data) then
-            Internal.tryGetEntityRef<'T> entity (downcast data) this.ActiveVersions
-        else
-            None
-
-    member this.GetAspect<'T when 'T :> IEntityComponent and 'T : not struct> () : Aspect<'T> =
-        let data = this.GetEntityLookupData<'T> ()
-        {
-            Data = data
-        }
-
-    //************************************************************************************************************************
-
     member this.TryGet<'T when 'T :> IEntityComponent and 'T : not struct> (entity: Entity) : 'T option =
         let mutable data = Unchecked.defaultof<IEntityLookupData>
         if this.Lookup.TryGetValue (typeof<'T>, &data) then
-            Internal.tryGet<'T> entity (downcast data) this.ActiveVersions
+            let data = data :?> EntityLookupData<'T>
+            if this.IsValidEntity entity then
+                let index = data.IndexLookup.[entity.Index]
+                if index >= 0 then
+                    Some data.Components.Buffer.[index]
+                else
+                    None
+            else
+                None
         else
             None
-
-    member this.TryGet (entityRef: EntityRef<'T>) =
-        Internal.tryGet<'T> entityRef.entity entityRef.data this.ActiveVersions
-
-    member this.TryGet (aspect: Aspect<'T>, entity: Entity) =
-        Internal.tryGet<'T> entity aspect.Data this.ActiveVersions
 
     member this.IsValid entity =
         this.IsValidEntity entity
@@ -523,8 +458,7 @@ type EntityManager =
             let data = data :?> EntityLookupData<'T>
             data.Active.[entity.Index]
         else
-            false
-    
+            false   
 
     //************************************************************************************************************************
 
@@ -532,14 +466,6 @@ type EntityManager =
         this.CurrentIterations <- this.CurrentIterations + 1
 
         this.Iterate<'T> (f)
-
-        this.CurrentIterations <- this.CurrentIterations - 1
-        this.ResolvePendingQueues ()
-
-    member this.ForEach<'T when 'T :> IEntityComponent and 'T : not struct> (aspect: Aspect<'T>, f: Entity -> 'T -> unit) =
-        this.CurrentIterations <- this.CurrentIterations + 1
-
-        Internal.iter f aspect.Data this.ActiveIndices
 
         this.CurrentIterations <- this.CurrentIterations - 1
         this.ResolvePendingQueues ()
