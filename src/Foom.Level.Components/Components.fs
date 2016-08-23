@@ -20,12 +20,14 @@ type LoadWadRequested (name: string) =
 
     interface IEntitySystemEvent
 
+[<Sealed>]
 type LevelComponent (level: Level) =
 
     member this.Level = level
 
     interface IEntityComponent
 
+[<Sealed>]
 type WadComponent (wad: Wad) =
 
     member this.Wad = wad
@@ -43,7 +45,7 @@ module Request =
 module Sys =
 
     let handleLoadWadRequests (openWad: string -> Stream) =
-        eventQueue (fun entityManager _ (evt: LoadWadRequested) ->
+        eventQueue (fun (evt: LoadWadRequested) _ entityManager ->
             let wad = Wad.create (openWad (evt.Name))
             let ent = entityManager.Spawn ()
 
@@ -51,7 +53,7 @@ module Sys =
         )
 
     let handleWadLoaded f =
-        eventQueue (fun entityManager _ (evt: Events.ComponentAdded<WadComponent>) ->
+        eventQueue (fun (evt: Events.ComponentAdded<WadComponent>) _ entityManager ->
             entityManager.TryGet<WadComponent> (evt.Entity)
             |> Option.iter (fun wadComp ->
                 f wadComp.Wad entityManager
@@ -59,7 +61,7 @@ module Sys =
         )
 
     let handleLoadLevelRequests f =
-        eventQueue (fun entityManager _ (evt: LoadLevelRequested) ->
+        eventQueue (fun (evt: LoadLevelRequested) _ entityManager ->
             match entityManager.TryFind<WadComponent> (fun _ _ -> true) with
             | Some (ent, wadComp) ->
                 let level = Wad.findLevel evt.Name wadComp.Wad

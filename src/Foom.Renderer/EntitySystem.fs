@@ -76,9 +76,7 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
     )
 
 let wireframeQueue =
-    eventQueue (fun entityManager ->
-
-        fun (_, deltaTime: float32) (componentAdded: Events.ComponentAdded<WireframeComponent>) ->
+    eventQueue (fun (componentAdded: Events.ComponentAdded<WireframeComponent>) (_, deltaTime: float32) entityManager ->
 
             entityManager.TryGet<WireframeComponent> (componentAdded.Entity)
             |> Option.iter (fun meshComp ->
@@ -101,9 +99,7 @@ let wireframeQueue =
     )
 
 let meshQueue =
-    eventQueue (fun entityManager ->
-
-        fun (_, deltaTime: float32) (componentAdded: Events.ComponentAdded<MeshComponent>) ->
+    eventQueue (fun (componentAdded: Events.ComponentAdded<MeshComponent>) (_, deltaTime: float32) entityManager ->
 
             entityManager.TryGet<MeshComponent> (componentAdded.Entity)
             |> Option.iter (fun meshComp ->
@@ -132,9 +128,7 @@ let meshQueue =
     )
 
 let materialQueue =
-    eventQueue (fun entityManager ->
-
-        fun (_, deltaTime: float32) (componentAdded: Events.ComponentAdded<MaterialComponent>) ->
+    eventQueue (fun (componentAdded: Events.ComponentAdded<MaterialComponent>) (_, deltaTime: float32) entityManager ->
 
             entityManager.TryGet<MaterialComponent> (componentAdded.Entity)
             |> Option.iter (fun materialComp ->
@@ -174,7 +168,7 @@ let create (app: Application) : EntitySystem<float32 * float32> =
             meshQueue
             materialQueue
 
-            update (fun entityManager eventManager ((time, deltaTime): float32 * float32) ->
+            update (fun ((time, deltaTime): float32 * float32) entityManager eventManager ->
 
                 Renderer.clear ()
 

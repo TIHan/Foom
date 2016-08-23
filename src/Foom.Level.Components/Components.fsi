@@ -8,6 +8,16 @@ open Foom.Ecs
 open Foom.Wad
 open Foom.Wad.Level
 
+[<Sealed>]
+type LevelComponent =
+
+    interface IEntityComponent
+
+[<Sealed>]
+type WadComponent =
+
+    interface IEntityComponent
+
 module Request =
 
     val loadLevel : name: string -> EventManager -> unit

@@ -219,13 +219,15 @@ let init (world: World) =
                 )
 
                 // Initialize
-                update (fun _ eventManager ->
-                    Request.loadWad "doom.wad" eventManager
-                    Request.loadLevel "e1m1" eventManager 
-                    fun _ -> ()
+                update (fun _ entityManager eventManager ->
+                    match entityManager.TryFind<WadComponent> (fun _ _ -> true) with
+                    | None ->
+                        Request.loadWad "doom.wad" eventManager
+                        Request.loadLevel "e1m1" eventManager 
+                    | _ -> ()
                 )
 
-                update (fun entityManager eventManager (time, deltaTime) ->
+                update (fun (time, deltaTime) entityManager eventManager ->
 
                     Input.pollEvents (app.Window)
                     let inputState = Input.getState ()
