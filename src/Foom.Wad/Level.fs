@@ -192,24 +192,24 @@ module Level =
             |> Seq.map (Foom.Wad.Triangulation.EarClipping.computeTree)
             |> Seq.reduce Seq.append
 
+    let getAdjacentSectors sector level =
+        sector.Linedefs
+        |> List.choose (fun linedef ->
+            match linedef.FrontSidedef, linedef.BackSidedef with
+            | Some frontSidedef, Some backSidedef when frontSidedef.SectorNumber = sector.Id ->
+                Some level.sectors.[backSidedef.SectorNumber]
+            | Some frontSidedef, Some backSidedef when backSidedef.SectorNumber = sector.Id ->
+                Some level.sectors.[frontSidedef.SectorNumber]
+            | _ -> None
+        )
+        |> List.distinctBy (fun sector -> sector.Id)
+
     let lightLevelBySectorId sectorId (level: Level) =
         let sector = level.sectors.[sectorId]
         let lightLevel = sector.LightLevel
         let lightLevel = lightLevel * lightLevel / 255
         if lightLevel > 255 then 255uy
         else byte lightLevel
-
-    let adjacentSectors sectorId level =
-        level.sectors.[sectorId].Linedefs
-        |> Seq.choose (fun linedef ->
-            match linedef.FrontSidedef, linedef.BackSidedef with
-            | Some frontSidedef, Some backSidedef when frontSidedef.SectorNumber = sectorId ->
-                Some backSidedef.SectorNumber
-            | Some frontSidedef, Some backSidedef when backSidedef.SectorNumber = sectorId ->
-                Some frontSidedef.SectorNumber
-            | _ -> None
-        )
-        |> Seq.distinct
 
     let createFlats sectorId level = 
         match level.sectors |> Array.tryItem sectorId with

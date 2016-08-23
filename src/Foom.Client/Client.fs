@@ -155,18 +155,6 @@ let spawnWallMesh (wall: Wall) lightLevel wad em =
         spawnMesh wall.Vertices (Wall.createUV width height wall) texturePath lightLevel em
     )
 
-let spawnSectorGeometryMesh (geo: SectorGeometry) (wad: Wad) (em: EntityManager) =
-    match geo with
-    | Static (flats, walls, lightLevel) ->
-        flats
-        |> Seq.iter (fun flat ->
-            spawnCeilingMesh flat lightLevel wad em
-            spawnFloorMesh flat lightLevel wad em
-        )
-
-        walls
-        |> Seq.iter (fun wall -> spawnWallMesh wall lightLevel wad em)
-
 let init (world: World) =
 
     // Load up doom wads.
@@ -202,26 +190,32 @@ let init (world: World) =
             [
                 Sys.handleLoadWadRequests (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
 
-                Sys.handleWadLoaded (fun _ wad ->
+                Sys.handleWadLoaded (fun wad _ ->
                     wad |> exportFlatTextures
                     wad |> exportTextures
                 )
 
-                Sys.handleLoadLevelRequests (fun entityManager wad sectorId sectorGeo ->
-                    spawnSectorGeometryMesh sectorGeo wad entityManager
-            
-                    match sectorGeo with
-                    | Static (flats, walls, _) ->
-                        flats
+                Sys.handleLoadLevelRequests (fun wad level em ->
+                    level
+                    |> Level.iteriSector (fun i sector ->
+                        let lightLevel = Level.lightLevelBySectorId sector.Id level
+
+                        Level.createFlats i level
                         |> Seq.iter (fun flat ->
+                            spawnCeilingMesh flat lightLevel wad em
+                            spawnFloorMesh flat lightLevel wad em
+
                             Physics.addTriangles flat.Floor.Vertices flat.Floor.Vertices.Length physicsWorld
                             Physics.addTriangles flat.Ceiling.Vertices flat.Ceiling.Vertices.Length physicsWorld
                         )
 
-                        walls
-                        |> Seq.iter (fun wall ->
+                        Level.createWalls i level
+                        |> Seq.iter (fun wall -> 
+                            spawnWallMesh wall lightLevel wad em
+
                             Physics.addTriangles wall.Vertices wall.Vertices.Length physicsWorld
                         )
+                    )
                 )
 
                 // Initialize
@@ -279,36 +273,36 @@ let init (world: World) =
                             
                             if isMovingForward then
                                 let v = Vector3.Transform (-Vector3.UnitZ, transformComp.Rotation)
-                                acc <- (Vector3 (v.X, v.Y, v.Z))
+                                acc <- (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingLeft then
                                 let v = Vector3.Transform (-Vector3.UnitX, transformComp.Rotation)
-                                acc <- acc + (Vector3 (v.X, v.Y, v.Z))
+                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingBackward then
                                 let v = Vector3.Transform (Vector3.UnitZ, transformComp.Rotation)
-                                acc <- acc + (Vector3 (v.X, v.Y, v.Z))
+                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
 
                             if isMovingRight then
                                 let v = Vector3.Transform (Vector3.UnitX, transformComp.Rotation)
-                                acc <- acc + (Vector3 (v.X, v.Y, v.Z))
+                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
                                 //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
                                 //transformComp.Translate (v)
                                
                             acc <- 
                                 if acc <> Vector3.Zero then
-                                    acc |> Vector3.Normalize |> (*) 20.5f
+                                    acc |> Vector3.Normalize |> (*) 4.5f
                                 else
                                     acc
 
-                            transformComp.Translate(acc)
-                            //Physics.setKinematicControllerWalkDirection acc capsule
+                            //transformComp.Translate(acc)
+                            Physics.setKinematicControllerWalkDirection acc capsule
                         )
                     )
 
@@ -322,7 +316,7 @@ let init (world: World) =
 
                     match entityManager.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true) with
                     | Some (ent, cameraComp, transformComp) ->
-                        //transformComp.Position <- position + Vector3.UnitZ * 26.f
+                        transformComp.Position <- position + Vector3.UnitZ * 26.f
 
                         let v1 = Vector2 (transformComp.Position.X, transformComp.Position.Y)
                         let v2 = Vector2 (transformComp.TransformLerp.Translation.X, transformComp.TransformLerp.Translation.Y)

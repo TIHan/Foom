@@ -8,9 +8,6 @@ open Foom.Ecs
 open Foom.Wad
 open Foom.Wad.Level
 
-type SectorGeometry =
-    | Static of Flat seq * Wall seq * lightLevel: byte
-
 type LoadLevelRequested =
 
     new : name: string -> LoadLevelRequested
@@ -31,6 +28,6 @@ module Sys =
 
     val handleLoadWadRequests : openWad: (string -> Stream) -> Sys<_>
 
-    val handleWadLoaded : (EntityManager -> Wad -> unit) -> Sys<_>
+    val handleWadLoaded : (Wad -> EntityManager -> unit) -> Sys<_>
 
-    val handleLoadLevelRequests : (EntityManager -> Wad -> int -> SectorGeometry -> unit) -> Sys<_>
+    val handleLoadLevelRequests : (Wad -> Level -> EntityManager -> unit) -> Sys<_>

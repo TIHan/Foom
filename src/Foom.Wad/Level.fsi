@@ -72,9 +72,9 @@ module Level =
 
     val iteriSector : (int -> Sector -> unit) -> Level -> unit
 
-    val lightLevelBySectorId : sectorId: int -> Level -> byte
+    val getAdjacentSectors : sector: Sector -> Level -> Sector list
 
-    val adjacentSectors : sectorId: int -> Level -> int seq
+    val lightLevelBySectorId : sectorId: int -> Level -> byte
 
     val createFlats : sectorId: int -> Level -> Flat seq
 
