@@ -8,21 +8,11 @@ open Foom.Ecs
 open Foom.Wad
 open Foom.Wad.Level
 
-type LoadLevelRequested =
+module Request =
 
-    new : name: string -> LoadLevelRequested
+    val loadLevel : name: string -> EventManager -> unit
 
-    member Name : string
-
-    interface IEntitySystemEvent
-
-type LoadWadRequested =
-
-    new : name: string -> LoadWadRequested
-
-    member Name : string
-
-    interface IEntitySystemEvent
+    val loadWad : fileName: string -> EventManager -> unit
 
 module Sys =
 

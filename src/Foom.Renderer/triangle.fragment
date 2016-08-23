@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 uniform vec4 uni_color;
 uniform sampler2D uni_texture;

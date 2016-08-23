@@ -32,6 +32,14 @@ type WadComponent (wad: Wad) =
 
     interface IEntityComponent
 
+module Request =
+
+    let loadLevel name (eventManager: EventManager) =
+        eventManager.Publish (LoadLevelRequested name)
+
+    let loadWad fileName (eventManager: EventManager) =
+        eventManager.Publish (LoadWadRequested fileName)
+
 module Sys =
 
     let handleLoadWadRequests (openWad: string -> Stream) =
@@ -53,8 +61,9 @@ module Sys =
     let handleLoadLevelRequests f =
         eventQueue (fun entityManager _ (evt: LoadLevelRequested) ->
             match entityManager.TryFind<WadComponent> (fun _ _ -> true) with
-            | Some (_, wadComp) ->
+            | Some (ent, wadComp) ->
                 let level = Wad.findLevel evt.Name wadComp.Wad
+                entityManager.AddComponent ent (LevelComponent (level))
                 f wadComp.Wad level entityManager
             | _ -> ()
         )

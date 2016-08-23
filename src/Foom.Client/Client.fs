@@ -220,8 +220,8 @@ let init (world: World) =
 
                 // Initialize
                 update (fun _ eventManager ->
-                    eventManager.Publish (LoadWadRequested ("doom.wad"))
-                    eventManager.Publish (LoadLevelRequested ("e1m1")) 
+                    Request.loadWad "doom.wad" eventManager
+                    Request.loadLevel "e1m1" eventManager 
                     fun _ -> ()
                 )
 
@@ -297,7 +297,7 @@ let init (world: World) =
                                
                             acc <- 
                                 if acc <> Vector3.Zero then
-                                    acc |> Vector3.Normalize |> (*) 4.5f
+                                    acc |> Vector3.Normalize |> (*) 5.f
                                 else
                                     acc
 
