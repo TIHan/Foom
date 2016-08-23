@@ -3,7 +3,7 @@
 open System.Numerics
 open System.Collections.Immutable
 
-open Foom.Wad.Geometry
+open Foom.Geometry
 open Foom.Wad.Level.Structures
 
 type LinedefTracer = 

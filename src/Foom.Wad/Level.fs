@@ -4,7 +4,7 @@ open System
 open System.Numerics
 open System.Collections.Generic
 
-open Foom.Wad.Geometry
+open Foom.Geometry
 open Foom.Wad.Level.Structures
 
 type TextureAlignment =
@@ -206,7 +206,7 @@ module Level =
 
                 let sectorTriangles = 
                     map linedefPolygons
-                    |> Seq.map (Foom.Wad.Geometry.Triangulation.EarClipping.computeTree)
+                    |> Seq.map (Foom.Wad.Triangulation.EarClipping.computeTree)
                     |> Seq.reduce Seq.append
 
                 sectorTriangles

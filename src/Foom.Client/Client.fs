@@ -10,7 +10,6 @@ open System.Collections.Generic
 open Foom.Physics
 open Foom.Renderer
 open Foom.Wad
-open Foom.Wad.Geometry
 open Foom.Wad.Level
 open Foom.Wad.Level.Structures
 

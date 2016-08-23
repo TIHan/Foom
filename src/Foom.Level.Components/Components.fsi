@@ -6,7 +6,6 @@ open System.Numerics
 
 open Foom.Ecs
 open Foom.Wad
-open Foom.Wad.Geometry
 open Foom.Wad.Level
 
 type SectorGeometry =

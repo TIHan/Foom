@@ -108,5 +108,9 @@
       <Project>{4AA248F8-5CB9-415A-A0D0-42CBC7241D2E}</Project>
       <Name>Foom.Level.Components</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Geometry\Foom.Geometry.fsproj">
+      <Project>{34AA5257-2F5B-4097-8250-1FD4956D1130}</Project>
+      <Name>Foom.Geometry</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

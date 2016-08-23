@@ -26,7 +26,3 @@ type Linedef =
         SpecialType: int
         SectorTag: int
     }
-
-[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
-module Linedef =
-    val angle : Linedef -> single

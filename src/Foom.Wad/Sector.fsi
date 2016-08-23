@@ -2,7 +2,7 @@
 
 open System.Numerics
 
-open Foom.Wad.Geometry
+open Foom.Geometry
 
 [<NoComparison; ReferenceEquality>]
 type Sector = 

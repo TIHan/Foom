@@ -1,7 +1,6 @@
 ﻿namespace Foom.Wad.Level.Structures
 
 open System
-open Foom.Wad.Numerics
 open System.Numerics
 
 [<Flags>]
@@ -26,10 +25,4 @@ type Linedef =
         Flags: LinedefFlags
         SpecialType: int
         SectorTag: int
-    }
-
-[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
-module Linedef =
-    let angle (linedef: Linedef) =
-        let v = linedef.End - linedef.Start
-        Vec2.angle v  
+    }  

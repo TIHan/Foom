@@ -2,7 +2,7 @@
 
 open System.Numerics
 
-open Foom.Wad.Geometry
+open Foom.Geometry
 open Foom.Wad.Level.Structures
 
 type TextureAlignment =
