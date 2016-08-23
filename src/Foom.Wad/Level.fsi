@@ -67,6 +67,10 @@ module Flat =
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Level =
+        
+    val getSector : index: int -> Level -> Sector
+
+    val iteriSector : (int -> Sector -> unit) -> Level -> unit
 
     val lightLevelBySectorId : sectorId: int -> Level -> byte
 

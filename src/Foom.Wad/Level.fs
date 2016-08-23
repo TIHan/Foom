@@ -168,6 +168,13 @@ module Wall =
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Level =
 
+    let getSector index level =
+        level.sectors.[index]
+
+    let iteriSector f level =
+        level.sectors
+        |> Array.iteri f
+
     let lightLevelBySectorId sectorId (level: Level) =
         let sector = level.sectors.[sectorId]
         let lightLevel = sector.LightLevel
