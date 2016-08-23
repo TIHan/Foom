@@ -175,6 +175,23 @@ module Level =
         level.sectors
         |> Array.iteri f
 
+    let calculateSectorTriangles2D (sector: Sector) level =
+        match LinedefTracer.run2 (sector.Linedefs) sector.Id with
+        | [] -> Seq.empty
+        | linedefPolygons ->
+            let rec map (linedefPolygons: LinedefPolygon list) =
+                linedefPolygons
+                |> List.map (fun x -> 
+                    {
+                        Polygon = (x.Linedefs, sector.Id) ||> Polygon.ofLinedefs
+                        Children = map x.Inner
+                    }
+                )
+
+            map linedefPolygons
+            |> Seq.map (Foom.Wad.Triangulation.EarClipping.computeTree)
+            |> Seq.reduce Seq.append
+
     let lightLevelBySectorId sectorId (level: Level) =
         let sector = level.sectors.[sectorId]
         let lightLevel = sector.LightLevel
@@ -183,7 +200,7 @@ module Level =
         else byte lightLevel
 
     let adjacentSectors sectorId level =
-        level.sectors.[sectorId].linedefs
+        level.sectors.[sectorId].Linedefs
         |> Seq.choose (fun linedef ->
             match linedef.FrontSidedef, linedef.BackSidedef with
             | Some frontSidedef, Some backSidedef when frontSidedef.SectorNumber = sectorId ->
@@ -333,7 +350,7 @@ module Level =
                                 [|
                                     Vector3 (linedef.End, single frontSideSector.CeilingHeight)
                                     Vector3 (linedef.Start, single frontSideSector.CeilingHeight)
-                                    Vector3 (linedef.Start, single sector.ceilingHeight)
+                                    Vector3 (linedef.Start, single sector.CeilingHeight)
 
                                     Vector3 (linedef.Start, single sector.CeilingHeight)
                                     Vector3 (linedef.End, single sector.CeilingHeight)

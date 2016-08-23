@@ -249,18 +249,7 @@ module Wad =
         let lumpLinedefs = loadLump (u_lumpLinedefs lumpVertices.Vertices lumpSidedefs.Sidedefs) lumpLinedefsHeader stream
         let lumpSectors = loadLump (u_lumpSectors lumpLinedefs.Linedefs) lumpSectorsHeader stream
 
-        let sectors : Sector [] =
-            lumpSectors.Sectors
-            |> Array.mapi (fun i sector ->
-                { 
-                    linedefs = sector.Linedefs; 
-                    floorTextureName = sector.FloorTextureName
-                    floorHeight = sector.FloorHeight
-                    ceilingTextureName = sector.CeilingTextureName
-                    ceilingHeight = sector.CeilingHeight
-                    lightLevel = sector.LightLevel
-                }
-            )
+        let sectors : Sector [] = lumpSectors.Sectors
 
         { sectors = sectors }
 

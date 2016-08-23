@@ -49,39 +49,11 @@ type ThingData =
     | Doom of DoomThingData
     | Hexen of HexenThingData
 
-type SectorDataType =
-    | Normal = 0
-    | BlinkLightRandom = 1
-    | BlinkLightHalfASecond = 2
-    | BlinkLightdOneSecond = 3
-    | TwentyPercentDamagePerSecondPlusBlinkLightHalfASecond = 4
-    | TenPercentDamagePerSecond = 5
-    | FivePercentDamagePerSecond = 7
-    | LightOscillates = 8
-    | PlayerEnteringSectorGetsCreditForFindingASecret = 9
-    | ThirtySecondsAfterLevelStartCeilingClosesLikeADoor = 10
-    | CancelGodModeAndTwentyPercentDamagePerSecondAndWhenPlayerDiesLevelEnds = 11
-    | BlinkLightHalfASecondSync = 12
-    | BlinkLightOneSecondSync = 13
-    | ThreeHundredSecondsAfterLevelStartCeilingOpensLikeADoor = 14
-    | TwentyPercentDamagePerSecond = 16
-    | FlickerLightRandomly = 17
-
-type SectorData = {
-    FloorHeight: int
-    CeilingHeight: int
-    FloorTextureName: string
-    CeilingTextureName: string
-    LightLevel: int
-    Type: SectorDataType;
-    Tag: int
-    Linedefs: Linedef [] }
-
 type LumpThings = { Things: ThingData [] }
 type LumpLinedefs = { Linedefs: Linedef [] }
 type LumpSidedefs = { Sidedefs: Sidedef [] }
 type LumpVertices = { Vertices: Vector2 [] }
-type LumpSectors = { Sectors: SectorData [] }
+type LumpSectors = { Sectors: Sector [] }
 
 type PaletteData = { Pixels: Pixel [] }
 
@@ -225,15 +197,16 @@ module UnpickleWad =
 
     [<Literal>]
     let sectorSize = 26
-    let u_sector (linedefs: Linedef []) (i: int) : Unpickle<SectorData> =
+    let u_sector (linedefs: Linedef []) (i: int) : Unpickle<Sector> =
         u_pipe7 u_int16 u_int16 (u_string 8) (u_string 8) u_int16 u_int16 u_int16 <|
         fun floorHeight ceilingHeight floorTexName ceilingTexName lightLevel typ tag ->
-            { FloorHeight = int floorHeight
+            { Id = i
+              FloorHeight = int floorHeight
               CeilingHeight = int ceilingHeight
               FloorTextureName = floorTexName.Trim().Trim('\000')
               CeilingTextureName = ceilingTexName.Trim().Trim('\000')
               LightLevel = int lightLevel
-              Type = enum<SectorDataType> (int typ)
+              Type = enum<SectorType> (int typ)
               Tag = int tag
               Linedefs = 
                 linedefs
@@ -243,9 +216,11 @@ module UnpickleWad =
                         | Some f, Some b -> f.SectorNumber = i || b.SectorNumber = i
                         | Some f, _ -> f.SectorNumber = i
                         | _, Some b -> b.SectorNumber = i
-                        | _ -> false) }
+                        | _ -> false) 
+                |> List.ofArray
+            }
 
-    let u_sectors (linedefs: Linedef []) count offset : Unpickle<SectorData []> =
+    let u_sectors (linedefs: Linedef []) count offset : Unpickle<Sector []> =
         u_skipBytes offset >>. u_arrayi count (u_sector linedefs)
 
     let u_lumpSectors (linedefs: Linedef []) size offset : Unpickle<LumpSectors> =

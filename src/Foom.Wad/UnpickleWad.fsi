@@ -49,39 +49,11 @@ type ThingData =
     | Doom of DoomThingData
     | Hexen of HexenThingData
 
-type SectorDataType =
-    | Normal = 0
-    | BlinkLightRandom = 1
-    | BlinkLightHalfASecond = 2
-    | BlinkLightdOneSecond = 3
-    | TwentyPercentDamagePerSecondPlusBlinkLightHalfASecond = 4
-    | TenPercentDamagePerSecond = 5
-    | FivePercentDamagePerSecond = 7
-    | LightOscillates = 8
-    | PlayerEnteringSectorGetsCreditForFindingASecret = 9
-    | ThirtySecondsAfterLevelStartCeilingClosesLikeADoor = 10
-    | CancelGodModeAndTwentyPercentDamagePerSecondAndWhenPlayerDiesLevelEnds = 11
-    | BlinkLightHalfASecondSync = 12
-    | BlinkLightOneSecondSync = 13
-    | ThreeHundredSecondsAfterLevelStartCeilingOpensLikeADoor = 14
-    | TwentyPercentDamagePerSecond = 16
-    | FlickerLightRandomly = 17
-
-type SectorData = {
-    FloorHeight: int
-    CeilingHeight: int
-    FloorTextureName: string
-    CeilingTextureName: string
-    LightLevel: int
-    Type: SectorDataType;
-    Tag: int
-    Linedefs: Linedef [] }
-
 type LumpThings = { Things: ThingData [] }
 type LumpLinedefs = { Linedefs: Linedef [] }
 type LumpSidedefs = { Sidedefs: Sidedef [] }
 type LumpVertices = { Vertices: Vector2 [] }
-type LumpSectors = { Sectors: SectorData [] }
+type LumpSectors = { Sectors: Sector [] }
 
 type PaletteData = { Pixels: Pixel [] }
 
