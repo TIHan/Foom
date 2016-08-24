@@ -1,4 +1,4 @@
-﻿namespace Foom.Level.Components
+﻿namespace Foom.Level.Components // TODO: Rename to Foom.Wad.Components
 
 open System
 open System.IO
@@ -8,64 +8,82 @@ open Foom.Ecs
 open Foom.Wad
 open Foom.Wad.Level
 
-type LoadLevelRequested (name: string) =
-
-    member this.Name = name
-
-    interface IEntitySystemEvent
-
-type LoadWadRequested (name: string) =
-
-    member this.Name = name
-
-    interface IEntitySystemEvent
-
+[<RequireQualifiedAccess>]
+type LevelState =
+    | ReadyToLoad of string
+    | Loaded of Level
+  
 [<Sealed>]
-type LevelComponent (level: Level) =
+type LevelComponent (levelName: string) =
 
-    member this.Level = level
+    member val State = LevelState.ReadyToLoad levelName with get, set
 
     interface IEntityComponent
 
-[<Sealed>]
-type WadComponent (wad: Wad) =
+[<RequireQualifiedAccess>]
+type WadState =
+    | ReadyToLoad of string
+    | Loaded of Wad
 
-    member this.Wad = wad
+[<Sealed>]
+type WadComponent (wadName: string) =
+
+    member val State = WadState.ReadyToLoad wadName with get, set
 
     interface IEntityComponent
-
-module Request =
-
-    let loadLevel name (eventManager: EventManager) =
-        eventManager.Publish (LoadLevelRequested name)
-
-    let loadWad fileName (eventManager: EventManager) =
-        eventManager.Publish (LoadWadRequested fileName)
 
 module Sys =
 
-    let handleLoadWadRequests (openWad: string -> Stream) =
-        eventQueue (fun (evt: LoadWadRequested) _ entityManager ->
-            let wad = Wad.create (openWad (evt.Name))
-            let ent = entityManager.Spawn ()
-
-            entityManager.AddComponent ent (WadComponent (wad))
-        )
-
-    let handleWadLoaded f =
+    let wadLoading (openWad: string -> Stream) f =
         eventQueue (fun (evt: Events.ComponentAdded<WadComponent>) _ entityManager ->
-            entityManager.TryGet<WadComponent> (evt.Entity)
+
+            entityManager.TryGet<WadComponent> evt.Entity
             |> Option.iter (fun wadComp ->
-                f wadComp.Wad entityManager
+
+                match wadComp.State with
+                | WadState.ReadyToLoad fileName ->
+
+                    let wad = Wad.create (openWad fileName)
+                    wadComp.State <- WadState.Loaded wad
+                    f wad entityManager
+
+                | _ -> ()
             )
         )
 
-    let handleLoadLevelRequests f =
-        eventQueue (fun (evt: LoadLevelRequested) _ entityManager ->
-            match entityManager.TryFind<WadComponent> (fun _ _ -> true) with
-            | Some (ent, wadComp) ->
-                let level = Wad.findLevel evt.Name wadComp.Wad
-                entityManager.AddComponent ent (LevelComponent (level))
-                f wadComp.Wad level entityManager
-            | _ -> ()
+    let levelLoading f =
+        eventQueue (fun (evt: Events.ComponentAdded<LevelComponent>) _ entityManager ->
+
+            entityManager.TryGet<LevelComponent> evt.Entity
+            |> Option.iter (fun levelComp ->
+
+                match levelComp.State with
+                | LevelState.ReadyToLoad levelName ->
+
+                    match entityManager.TryGet<WadComponent> evt.Entity with
+                    | Some wadComp ->
+
+                        match wadComp.State with
+                        | WadState.Loaded wad ->
+                      
+                            let level = Wad.findLevel levelName wad
+                            levelComp.State <- LevelState.Loaded level
+                            f wad level entityManager
+
+                        | WadState.ReadyToLoad wadName ->
+
+                            System.Diagnostics.Debug.WriteLine (
+                                String.Format ("Tried to load level, {0}, but WAD, {1}, is not loaded.", levelName, wadName)
+                            )
+                            entityManager.RemoveComponent<LevelComponent> evt.Entity
+
+                    | _ ->
+
+                        System.Diagnostics.Debug.WriteLine (
+                            String.Format ("Tried to load level, {0}, but no WAD found.", levelName)
+                        )
+                        entityManager.RemoveComponent<LevelComponent> evt.Entity
+
+                | _ -> ()
+            )
         )

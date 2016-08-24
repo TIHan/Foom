@@ -188,14 +188,14 @@ let init (world: World) =
     let clientSystem =
         EntitySystem.create "Client" 
             [
-                Sys.handleLoadWadRequests (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
+                Sys.wadLoading
+                    (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
+                    (fun wad _ ->
+                        wad |> exportFlatTextures
+                        wad |> exportTextures
+                    )
 
-                Sys.handleWadLoaded (fun wad _ ->
-                    wad |> exportFlatTextures
-                    wad |> exportTextures
-                )
-
-                Sys.handleLoadLevelRequests (fun wad level em ->
+                Sys.levelLoading (fun wad level em ->
                     level
                     |> Level.iteriSector (fun i sector ->
                         let lightLevel = Level.lightLevelBySectorId sector.Id level
@@ -222,8 +222,10 @@ let init (world: World) =
                 update (fun _ entityManager eventManager ->
                     match entityManager.TryFind<WadComponent> (fun _ _ -> true) with
                     | None ->
-                        Request.loadWad "doom.wad" eventManager
-                        Request.loadLevel "e1m1" eventManager 
+                        let ent = entityManager.Spawn ()
+                        entityManager.AddComponent ent (WadComponent("doom.wad"))
+                        entityManager.AddComponent ent (LevelComponent("e1m1"))
+
                     | _ -> ()
                 )
 

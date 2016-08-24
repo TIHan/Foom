@@ -7,27 +7,23 @@ open System.Numerics
 open Foom.Ecs
 open Foom.Wad
 open Foom.Wad.Level
-
+  
 [<Sealed>]
 type LevelComponent =
+
+    new : levelName: string -> LevelComponent
 
     interface IEntityComponent
 
 [<Sealed>]
 type WadComponent =
 
+    new : wadName: string -> WadComponent
+
     interface IEntityComponent
-
-module Request =
-
-    val loadLevel : name: string -> EventManager -> unit
-
-    val loadWad : fileName: string -> EventManager -> unit
 
 module Sys =
 
-    val handleLoadWadRequests : openWad: (string -> Stream) -> Sys<_>
+    val wadLoading : openWad: (string -> Stream) -> (Wad -> EntityManager -> unit) -> Sys<_>
 
-    val handleWadLoaded : (Wad -> EntityManager -> unit) -> Sys<_>
-
-    val handleLoadLevelRequests : (Wad -> Level -> EntityManager -> unit) -> Sys<_>
+    val levelLoading : (Wad -> Level -> EntityManager -> unit) -> Sys<_>
