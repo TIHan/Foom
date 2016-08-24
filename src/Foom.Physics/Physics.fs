@@ -16,6 +16,11 @@ type KinematicController =
     val ShapePtr : nativeint
     val GhostObjectPtr : nativeint
 
+[<Struct>]
+type TriangleMesh =
+
+    val Ptr : nativeint
+
 [<Ferop>]
 [<Header("""
 #include <btBulletCollisionCommon.h>
@@ -138,9 +143,20 @@ module Physics =
         """
 
     [<Import; MI(MIO.NoInlining)>]
-    let addTriangles (vertices: Vector3 []) (length: int) (world: PhysicsWorld) : unit =
+    let createTriangleMesh () : TriangleMesh =
         C """
         btTriangleMesh* trimesh = new btTriangleMesh();
+        Physics_TriangleMesh pTriMesh;
+
+        pTriMesh.Ptr = trimesh;
+
+        return pTriMesh;
+        """
+
+    [<Import; MI(MIO.NoInlining)>]
+    let addTriangles (vertices: Vector3 []) (length: int) (pTriMesh: TriangleMesh) : unit =
+        C """
+        btTriangleMesh* trimesh = (btTriangleMesh*)pTriMesh.Ptr;
 
         for (int i = 0; i < length; i = i + 3)
         {
@@ -149,6 +165,12 @@ module Physics =
             btVector3 v3 = btVector3(vertices[i + 2].X, vertices[i + 2].Y, vertices[i + 2].Z);
             trimesh->addTriangle (v1, v2, v3);
         }
+        """
+
+    [<Import; MI(MIO.NoInlining)>]
+    let spawnTriangleMesh (pTriMesh: TriangleMesh) (world: PhysicsWorld) : unit =
+        C """
+        btTriangleMesh* trimesh = (btTriangleMesh*)pTriMesh.Ptr;
 
         btTransform   trans;
         trans.setIdentity();

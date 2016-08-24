@@ -207,6 +207,8 @@ let init (world: World) =
                     )
 
                 Sys.levelLoading (fun wad level em ->
+                    let triMesh = Physics.createTriangleMesh ()
+
                     level
                     |> Level.iteriSector (fun i sector ->
                         let lightLevel = Level.lightLevelBySectorId sector.Id level
@@ -216,17 +218,19 @@ let init (world: World) =
                             spawnCeilingMesh flat lightLevel wad em
                             spawnFloorMesh flat lightLevel wad em
 
-                            Physics.addTriangles flat.Floor.Vertices flat.Floor.Vertices.Length physicsWorld
-                            Physics.addTriangles flat.Ceiling.Vertices flat.Ceiling.Vertices.Length physicsWorld
+                            Physics.addTriangles flat.Floor.Vertices flat.Floor.Vertices.Length triMesh
+                            Physics.addTriangles flat.Ceiling.Vertices flat.Ceiling.Vertices.Length triMesh
                         )
 
                         Level.createWalls i level
                         |> Seq.iter (fun wall -> 
                             spawnWallMesh wall lightLevel wad em
 
-                            Physics.addTriangles wall.Vertices wall.Vertices.Length physicsWorld
+                            Physics.addTriangles wall.Vertices wall.Vertices.Length triMesh
                         )
                     )
+
+                    Physics.spawnTriangleMesh triMesh physicsWorld
 
                     level
                     |> Level.tryFindPlayer1Start
