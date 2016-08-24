@@ -52,10 +52,16 @@ type Flat =
 type Level =
     {
         sectors: Sector []
+        mutable sectorPolygons: Polygon2DTree list []
         things: Thing []
     }
 
-    member this.Sectors = this.sectors |> Seq.ofArray
+    static member Create (sectors: Sector seq, things: Thing seq) =
+        {
+            sectors = sectors |> Array.ofSeq
+            sectorPolygons = Array.empty
+            things = things |> Array.ofSeq
+        }
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Flat =
@@ -176,22 +182,45 @@ module Level =
         level.sectors
         |> Array.iteri f
 
-    let calculateSectorTriangles2D (sector: Sector) level =
-        match LinedefTracer.run2 (sector.Linedefs) sector.Id with
-        | [] -> Seq.empty
-        | linedefPolygons ->
-            let rec map (linedefPolygons: LinedefPolygon list) =
-                linedefPolygons
-                |> List.map (fun x -> 
-                    {
-                        Polygon = (x.Linedefs, sector.Id) ||> Polygon.ofLinedefs
-                        Children = map x.Inner
-                    }
-                )
+    let loadSectorPolygons level =
+        let rec map sectorId (linedefPolygons: LinedefPolygon list) =
+            linedefPolygons
+            |> List.map (fun x -> 
+                {
+                    Polygon = (x.Linedefs, sectorId) ||> Polygon.ofLinedefs
+                    Children = map sectorId x.Inner
+                }
+            )
 
-            map linedefPolygons
-            |> Seq.map (Foom.Wad.Triangulation.EarClipping.computeTree)
-            |> Seq.reduce Seq.append
+        level.sectorPolygons <-
+            level.sectors
+            |> Array.map (fun sector -> LinedefTracer.run2 (sector.Linedefs) sector.Id |> map sector.Id)
+
+    let calculateSectorTriangles2D (sector: Sector) level =
+        if level.sectorPolygons |> Array.isEmpty then
+            loadSectorPolygons level
+        
+        level.sectorPolygons.[sector.Id]
+        |> Seq.map (Foom.Wad.Triangulation.EarClipping.computeTree)
+        |> Seq.reduce Seq.append
+
+    let sectorAt (point: Vector2) (level: Level) =
+        if level.sectorPolygons |> Array.isEmpty then
+            loadSectorPolygons level
+
+        let rec sectorAt (i: int) =
+            if i < level.sectorPolygons.Length then
+                let atSector =
+                    level.sectorPolygons.[i]
+                    |> List.exists (Polygon2DTree.contains point)
+                if atSector then
+                    Some level.sectors.[i]
+                else
+                    sectorAt (i + 1)
+            else
+                None
+            
+        sectorAt 0
 
     let getAdjacentSectors sector level =
         sector.Linedefs

@@ -45,14 +45,10 @@ type Flat =
         Floor: Floor
     }
 
-[<NoComparison; ReferenceEquality>]
+[<Sealed>]
 type Level =
-    internal {
-        sectors: Sector []
-        things: Thing []
-    }
 
-    member Sectors : Sector seq
+    static member Create : Sector seq * Thing seq -> Level
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Wall =
@@ -72,6 +68,8 @@ module Level =
     val getSector : index: int -> Level -> Sector
 
     val iteriSector : (int -> Sector -> unit) -> Level -> unit
+
+    val sectorAt : Vector2 -> Level -> Sector option
 
     val getAdjacentSectors : sector: Sector -> Level -> Sector list
 

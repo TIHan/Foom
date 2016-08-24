@@ -251,7 +251,7 @@ module Wad =
         let lumpLinedefs = loadLump (u_lumpLinedefs lumpVertices.Vertices lumpSidedefs.Sidedefs) lumpLinedefsHeader stream
         let lumpSectors = loadLump (u_lumpSectors lumpLinedefs.Linedefs) lumpSectorsHeader stream
 
-        { sectors = lumpSectors.Sectors; things = lumpThings.Things }
+        Level.Create (lumpSectors.Sectors, lumpThings.Things)
 
     let iterFlatTextureName f wad =
         if wad.FlatHeaderLookup.IsNone then

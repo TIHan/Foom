@@ -166,13 +166,8 @@ let init (world: World) =
     let sys1 = Foom.Renderer.EntitySystem.create (app)
     let updateSys1 = world.AddSystem sys1
 
-    let defaultPosition = Vector3 (1056.f, -3616.f, 28.f)
-    let cameraEnt = world.EntityManager.Spawn ()
-    world.EntityManager.AddComponent cameraEnt (CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, System.Single.MaxValue)))
-    world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (defaultPosition)))
-
     let physicsWorld = Physics.init ()
-    let capsule = Physics.addCapsuleController defaultPosition (10.f) (36.f) physicsWorld
+    let mutable capsule = Unchecked.defaultof<KinematicController> //Physics.addCapsuleController defaultPosition (10.f) (36.f) physicsWorld
 
 
 
@@ -194,7 +189,7 @@ let init (world: World) =
                     | None ->
                         let ent = entityManager.Spawn ()
                         entityManager.AddComponent ent (WadComponent("doom.wad"))
-                        entityManager.AddComponent ent (LevelComponent("e1m1"))
+                        entityManager.AddComponent ent (LevelComponent("e4m9"))
 
                     | _ -> ()
                 )
@@ -236,8 +231,17 @@ let init (world: World) =
                     |> Level.tryFindPlayer1Start
                     |> Option.iter (function
                         | Doom doomThing ->
-                            // TODO: Spawn a player.
-                            printfn "Player 1 Start: %A" doomThing
+                            match (level |> Level.sectorAt (Vector2 (single doomThing.X, single doomThing.Y))) with
+                            | Some sector ->
+
+                                let position = Vector3 (single doomThing.X, single doomThing.Y, single sector.FloorHeight + 28.f)
+
+                                let cameraEnt = world.EntityManager.Spawn ()
+                                world.EntityManager.AddComponent cameraEnt (CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, System.Single.MaxValue)))
+                                world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (position)))
+                                capsule <- Physics.addCapsuleController position (10.f) (36.f) physicsWorld
+
+                            | _ -> ()
                         | _ -> ()
                     )
                 )
