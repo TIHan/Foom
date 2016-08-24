@@ -49,6 +49,7 @@ type Flat =
 type Level =
     internal {
         sectors: Sector []
+        things: Thing []
     }
 
     member Sectors : Sector seq
@@ -73,6 +74,8 @@ module Level =
     val iteriSector : (int -> Sector -> unit) -> Level -> unit
 
     val getAdjacentSectors : sector: Sector -> Level -> Sector list
+
+    val tryFindPlayer1Start : Level -> Thing option
 
     val lightLevelBySectorId : sectorId: int -> Level -> byte
 

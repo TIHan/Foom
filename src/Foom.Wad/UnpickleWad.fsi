@@ -12,44 +12,11 @@ type LumpHeader = { Offset: int32; Size: int32; Name: string }
  
 type WadData = { Header: Header; LumpHeaders: LumpHeader [] }
 
-type ThingDataFormat =
+type ThingFormat =
     | Doom = 0
     | Hexen = 1
 
-[<Flags>]
-type DoomThingDataFlags =
-    | SkillLevelOneAndTwo = 0x001
-    | SkillLevelThree = 0x002
-    | SkillLevelFourAndFive = 0x004
-    | Deaf = 0x008
-    | NotInSinglePlayer = 0x0010
-//    | NotInDeathmatch = 0x0020 // boom
-//    | NotInCoop = 0x0040 // boom
-//    | FriendlyMonster = 0x0080 // MBF
-
-[<Flags>]
-type HexenThingDataFlags =
-    | SkillLevelOneAndTwo = 0x001
-    | SkillLevelThree = 0x002
-    | SkillLevelFourAndFive = 0x004
-    | Deaf = 0x008
-    | Dormant = 0x0010
-    | AppearOnlyToFighterClass = 0x0020
-    | AppearOnlyToClericClass = 0x0040
-    | AppearOnlyToMageClass = 0x0080
-    | AppearOnlyInSinglePlayer = 0x0100
-    | AppearOnlyInCoop = 0x0200
-    | AppearOnlyInDeathmatch = 0x0400
- 
-type DoomThingData = { X: int; Y: int; Angle: int; Flags: DoomThingDataFlags }
-
-type HexenThingData = { Id: int; X: int; Y: int; StartingHeight: int; Angle: int; Flags: HexenThingDataFlags; Arg1: byte; Arg2: byte; Arg3: byte; Arg4: byte; Arg5: byte }
-
-type ThingData =
-    | Doom of DoomThingData
-    | Hexen of HexenThingData
-
-type LumpThings = { Things: ThingData [] }
+type LumpThings = { Things: Thing [] }
 type LumpLinedefs = { Linedefs: Linedef [] }
 type LumpSidedefs = { Sidedefs: Sidedef [] }
 type LumpVertices = { Vertices: Vector2 [] }
@@ -96,7 +63,7 @@ module UnpickleWad =
 
     val u_wad : Unpickle<WadData>
 
-    val u_lumpThings : format: ThingDataFormat -> size: int -> offset: int64 -> Unpickle<LumpThings>
+    val u_lumpThings : format: ThingFormat -> size: int -> offset: int64 -> Unpickle<LumpThings>
 
     val u_lumpVertices : size: int -> offset: int64 -> Unpickle<LumpVertices>
 

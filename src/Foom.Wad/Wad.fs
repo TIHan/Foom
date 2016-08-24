@@ -239,19 +239,19 @@ module Wad =
         let lumpHeaders = wad.wadData.LumpHeaders.[lumpLevelStartIndex..]
 
         // Note: This seems to work, but may be possible to get invalid data for the level.
+        let lumpThingsHeader = lumpHeaders |> Array.find (fun x -> x.Name.ToLower () = "THINGS".ToLower ())
         let lumpLinedefsHeader = lumpHeaders |> Array.find (fun x -> x.Name.ToLower () = "LINEDEFS".ToLower ())
         let lumpSidedefsHeader = lumpHeaders |> Array.find (fun x -> x.Name.ToLower () = "SIDEDEFS".ToLower ())
         let lumpVerticesHeader = lumpHeaders |> Array.find (fun x -> x.Name.ToLower () = "VERTEXES".ToLower ())
         let lumpSectorsHeader = lumpHeaders |> Array.find (fun x -> x.Name.ToLower () = "SECTORS".ToLower ())
 
+        let lumpThings = loadLump (u_lumpThings ThingFormat.Doom) lumpThingsHeader stream
         let lumpVertices = loadLump u_lumpVertices lumpVerticesHeader stream
         let lumpSidedefs = loadLump u_lumpSidedefs lumpSidedefsHeader stream
         let lumpLinedefs = loadLump (u_lumpLinedefs lumpVertices.Vertices lumpSidedefs.Sidedefs) lumpLinedefsHeader stream
         let lumpSectors = loadLump (u_lumpSectors lumpLinedefs.Linedefs) lumpSectorsHeader stream
 
-        let sectors : Sector [] = lumpSectors.Sectors
-
-        { sectors = sectors }
+        { sectors = lumpSectors.Sectors; things = lumpThings.Things }
 
     let iterFlatTextureName f wad =
         if wad.FlatHeaderLookup.IsNone then

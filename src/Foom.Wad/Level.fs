@@ -52,6 +52,7 @@ type Flat =
 type Level =
     {
         sectors: Sector []
+        things: Thing []
     }
 
     member this.Sectors = this.sectors |> Seq.ofArray
@@ -203,6 +204,14 @@ module Level =
             | _ -> None
         )
         |> List.distinctBy (fun sector -> sector.Id)
+
+    let tryFindPlayer1Start level =
+        level.things
+        |> Array.tryFind (function
+            | Doom doomThing ->
+                doomThing.Type = ThingType.Player1Start
+            | _ -> false
+        )
 
     let lightLevelBySectorId sectorId (level: Level) =
         let sector = level.sectors.[sectorId]

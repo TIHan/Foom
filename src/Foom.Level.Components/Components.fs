@@ -3,6 +3,7 @@
 open System
 open System.IO
 open System.Numerics
+open System.Diagnostics
 
 open Foom.Ecs
 open Foom.Wad
@@ -72,14 +73,14 @@ module Sys =
 
                         | WadState.ReadyToLoad wadName ->
 
-                            System.Diagnostics.Debug.WriteLine (
+                            Debug.WriteLine (
                                 String.Format ("Tried to load level, {0}, but WAD, {1}, is not loaded.", levelName, wadName)
                             )
                             entityManager.RemoveComponent<LevelComponent> evt.Entity
 
                     | _ ->
 
-                        System.Diagnostics.Debug.WriteLine (
+                        Debug.WriteLine (
                             String.Format ("Tried to load level, {0}, but no WAD found.", levelName)
                         )
                         entityManager.RemoveComponent<LevelComponent> evt.Entity

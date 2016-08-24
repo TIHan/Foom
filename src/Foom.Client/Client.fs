@@ -166,7 +166,7 @@ let init (world: World) =
     let sys1 = Foom.Renderer.EntitySystem.create (app)
     let updateSys1 = world.AddSystem sys1
 
-    let defaultPosition = Vector3 (1056.f, -3552.f, 20.f)
+    let defaultPosition = Vector3 (1056.f, -3616.f, 28.f)
     let cameraEnt = world.EntityManager.Spawn ()
     world.EntityManager.AddComponent cameraEnt (CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, System.Single.MaxValue)))
     world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (defaultPosition)))
@@ -188,6 +188,17 @@ let init (world: World) =
     let clientSystem =
         EntitySystem.create "Client" 
             [
+                // Initialize
+                update (fun _ entityManager eventManager ->
+                    match entityManager.TryFind<WadComponent> (fun _ _ -> true) with
+                    | None ->
+                        let ent = entityManager.Spawn ()
+                        entityManager.AddComponent ent (WadComponent("doom.wad"))
+                        entityManager.AddComponent ent (LevelComponent("e1m1"))
+
+                    | _ -> ()
+                )
+
                 Sys.wadLoading
                     (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
                     (fun wad _ ->
@@ -216,17 +227,15 @@ let init (world: World) =
                             Physics.addTriangles wall.Vertices wall.Vertices.Length physicsWorld
                         )
                     )
-                )
 
-                // Initialize
-                update (fun _ entityManager eventManager ->
-                    match entityManager.TryFind<WadComponent> (fun _ _ -> true) with
-                    | None ->
-                        let ent = entityManager.Spawn ()
-                        entityManager.AddComponent ent (WadComponent("doom.wad"))
-                        entityManager.AddComponent ent (LevelComponent("e1m1"))
-
-                    | _ -> ()
+                    level
+                    |> Level.tryFindPlayer1Start
+                    |> Option.iter (function
+                        | Doom doomThing ->
+                            // TODO: Spawn a player.
+                            printfn "Player 1 Start: %A" doomThing
+                        | _ -> ()
+                    )
                 )
 
                 update (fun (time, deltaTime) entityManager eventManager ->
