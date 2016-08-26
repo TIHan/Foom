@@ -7,7 +7,7 @@ type ContainmentType =
     | Contains
     | Intersects
 
-type BoundingBox2D =
+type AABB2D =
     {
         Min: Vector2
         Max: Vector2
@@ -30,7 +30,7 @@ type BoundingBox2D =
         else
             ContainmentType.Contains
 
-    member this.Intersects b =
+    member this.Contains b =
         //test if all corner is in the same side of a face by just checking min and max
         if (b.Max.X < this.Min.X
             || b.Min.X > this.Max.X

@@ -7,7 +7,7 @@ type ContainmentType =
     | Contains
     | Intersects
 
-type BoundingBox2D =
+type AABB2D =
     {
         Min: Vector2
         Max: Vector2
@@ -15,4 +15,4 @@ type BoundingBox2D =
 
     member Contains : Vector2 -> ContainmentType
 
-    member Intersects : BoundingBox2D -> ContainmentType
+    member Contains : AABB2D -> ContainmentType

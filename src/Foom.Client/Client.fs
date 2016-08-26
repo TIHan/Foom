@@ -166,9 +166,6 @@ let init (world: World) =
     let sys1 = Foom.Renderer.EntitySystem.create (app)
     let updateSys1 = world.AddSystem sys1
 
-    let physicsWorld = Physics.init ()
-    let mutable capsule = Unchecked.defaultof<KinematicController> //Physics.addCapsuleController defaultPosition (10.f) (36.f) physicsWorld
-
 
 
 
@@ -202,8 +199,6 @@ let init (world: World) =
                     )
 
                 Sys.levelLoading (fun wad level em ->
-                    let triMesh = Physics.createTriangleMesh ()
-
                     level
                     |> Level.iteriSector (fun i sector ->
                         let lightLevel = Level.lightLevelBySectorId sector.Id level
@@ -212,20 +207,13 @@ let init (world: World) =
                         |> Seq.iter (fun flat ->
                             spawnCeilingMesh flat lightLevel wad em
                             spawnFloorMesh flat lightLevel wad em
-
-                            Physics.addTriangles flat.Floor.Vertices flat.Floor.Vertices.Length triMesh
-                            Physics.addTriangles flat.Ceiling.Vertices flat.Ceiling.Vertices.Length triMesh
                         )
 
                         Level.createWalls i level
                         |> Seq.iter (fun wall -> 
                             spawnWallMesh wall lightLevel wad em
-
-                            Physics.addTriangles wall.Vertices wall.Vertices.Length triMesh
                         )
                     )
-
-                    Physics.spawnTriangleMesh triMesh physicsWorld
 
                     level
                     |> Level.tryFindPlayer1Start
@@ -239,7 +227,6 @@ let init (world: World) =
                                 let cameraEnt = world.EntityManager.Spawn ()
                                 world.EntityManager.AddComponent cameraEnt (CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, System.Single.MaxValue)))
                                 world.EntityManager.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (position)))
-                                capsule <- Physics.addCapsuleController position (10.f) (36.f) physicsWorld
 
                             | _ -> ()
                         | _ -> ()
@@ -294,54 +281,34 @@ let init (world: World) =
                             
                             if isMovingForward then
                                 let v = Vector3.Transform (-Vector3.UnitZ, transformComp.Rotation)
-                                acc <- (Vector3 (v.X, v.Y, 0.f))
-                                //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
-                                //transformComp.Translate (v)
+                                acc <- (Vector3 (v.X, v.Y, v.Z))
 
                             if isMovingLeft then
                                 let v = Vector3.Transform (-Vector3.UnitX, transformComp.Rotation)
-                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
-                                //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
-                                //transformComp.Translate (v)
+                                acc <- acc + (Vector3 (v.X, v.Y, v.Z))
 
                             if isMovingBackward then
                                 let v = Vector3.Transform (Vector3.UnitZ, transformComp.Rotation)
-                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
-                                //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
-                                //transformComp.Translate (v)
+                                acc <- acc + (Vector3 (v.X, v.Y, v.Z))
 
                             if isMovingRight then
                                 let v = Vector3.Transform (Vector3.UnitX, transformComp.Rotation)
-                                acc <- acc + (Vector3 (v.X, v.Y, 0.f))
-                                //Physics.applyForce (Vector3 (v.X, v.Y, 0.f)) (transformComp.Position) capsule
-                                //transformComp.Translate (v)
+                                acc <- acc + (Vector3 (v.X, v.Y, v.Z))
                                
                             acc <- 
                                 if acc <> Vector3.Zero then
-                                    acc |> Vector3.Normalize |> (*) 5.f
+                                    acc |> Vector3.Normalize |> (*) 10.f
                                 else
                                     acc
 
-                            //transformComp.Translate(acc)
-                            Physics.setKinematicControllerWalkDirection acc capsule
+                            transformComp.Translate(acc)
                         )
                     )
 
-                    if not didPreStep then
-                        Physics.preStepKinematicController capsule physicsWorld
-                        didPreStep <- true
-                    Physics.stepKinematicController deltaTime capsule physicsWorld
-                    Physics.step deltaTime physicsWorld
-
-                    let position = Physics.getKinematicControllerPosition capsule
-
                     match entityManager.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true) with
                     | Some (ent, cameraComp, transformComp) ->
-                        transformComp.Position <- position + Vector3.UnitZ * 26.f
-
                         let v1 = Vector2 (transformComp.Position.X, transformComp.Position.Y)
                         let v2 = Vector2 (transformComp.TransformLerp.Translation.X, transformComp.TransformLerp.Translation.Y)
-                        ()
 
                         cameraComp.HeightOffsetLerp <- cameraComp.HeightOffset
                         cameraComp.HeightOffset <- sin(8.f * time) * (v1 - v2).Length()
