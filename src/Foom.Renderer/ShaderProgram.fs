@@ -2,6 +2,22 @@
 
 open System
 
+type Uniform<'T> =
+    {
+        mutable id: int
+        mutable Value: 'T
+        mutable IsDirty: bool
+    }
+
+
+type VertexAttribute<'T> =
+    {
+        mutable id: int
+        mutable Value: 'T []
+        mutable Count: int
+        mutable IsDirty: bool
+    }
+
 (* Concept API *)
 (*
 
@@ -15,7 +31,7 @@ type QuadShader =
     }
 
 let quad shader =
-    program
+    programInput
         [
             uniform_mat4x4      "uni_projection" shader.Projection
             in_vec3             "in_position" shader.Position
@@ -34,7 +50,7 @@ type DoomWallShader =
     }
 
 let doomWall shader =
-    program
+    programInput
         [
             quad shader.Quad
             uniform_int     "uni_stretchUpAmount" shader.StretchUpAmount
