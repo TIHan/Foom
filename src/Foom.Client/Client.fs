@@ -186,7 +186,7 @@ let init (world: World) =
                     | None ->
                         let ent = entityManager.Spawn ()
                         entityManager.AddComponent ent (WadComponent("doom.wad"))
-                        entityManager.AddComponent ent (LevelComponent("e4m9"))
+                        entityManager.AddComponent ent (LevelComponent("e1m2"))
 
                     | _ -> ()
                 )
@@ -210,7 +210,7 @@ let init (world: World) =
                         )
 
                         Level.createWalls i level
-                        |> Seq.iter (fun wall -> 
+                        |> Seq.iter (fun wall ->
                             spawnWallMesh wall lightLevel wad em
                         )
                     )

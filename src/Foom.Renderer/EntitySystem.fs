@@ -127,6 +127,8 @@ let meshQueue =
      
     )
 
+let textureCache = Dictionary<string, int> ()
+let shaderCache = Dictionary<string * string, int> ()
 let materialQueue =
     eventQueue (fun (componentAdded: Events.ComponentAdded<MaterialComponent>) (_, deltaTime: float32) entityManager ->
 
@@ -135,22 +137,36 @@ let materialQueue =
                  
                     match materialComp.TextureState with
                     | TextureState.ReadyToLoad fileName ->
-                        try
-                            use ptr = new Gdk.Pixbuf (fileName)
-                            let textureId = Renderer.createTexture ptr.Width ptr.Height (ptr.Pixels)
 
+                        match textureCache.TryGetValue (fileName) with
+                        | true, textureId ->
                             materialComp.TextureState <- TextureState.Loaded textureId
-                        with | ex ->
-                            printfn "%A" ex.Message
+
+                        | _ ->
+                            try
+                                use ptr = new Gdk.Pixbuf (fileName)
+                                let textureId = Renderer.createTexture ptr.Width ptr.Height (ptr.Pixels)
+
+                                materialComp.TextureState <- TextureState.Loaded textureId
+                            with | ex ->
+                                printfn "%A" ex.Message
+
                     | _ -> ()
 
                     match materialComp.ShaderProgramState with
                     | ShaderProgramState.ReadyToLoad (vertex, fragment) ->
-                        let mutable vertexFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (vertex))
-                        let mutable fragmentFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (fragment))
 
-                        let programId = Renderer.loadShaders vertexFile fragmentFile
-                        materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
+                        match shaderCache.TryGetValue ((vertex, fragment)) with
+                        | true, programId ->
+                            materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
+
+                        | _ ->
+                            let mutable vertexFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (vertex))
+                            let mutable fragmentFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (fragment))
+
+                            let programId = Renderer.loadShaders vertexFile fragmentFile
+                            materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
+                            shaderCache.Add ((vertex, fragment), programId)
 
                     | _ -> ()
 

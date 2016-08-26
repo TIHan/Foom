@@ -39,9 +39,6 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
-    <Reference Include="Ferop">
-      <HintPath>..\..\packages\Ferop.1.0.0-beta90001\lib\portable-net45+monoandroid10+monotouch10+xamarinios10\Ferop.dll</HintPath>
-    </Reference>
     <Reference Include="System.Numerics.Vectors">
       <HintPath>..\..\packages\System.Numerics.Vectors.4.1.1\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
     </Reference>
@@ -66,5 +63,4 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(FSharpTargetsPath)" />
-  <Import Project="..\..\packages\Ferop.1.0.0-beta90001\build\Ferop.targets" Condition="Exists('..\..\packages\Ferop.1.0.0-beta90001\build\Ferop.targets')" />
 </Project>
