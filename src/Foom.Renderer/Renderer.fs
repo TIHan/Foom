@@ -5,6 +5,7 @@ open System.IO
 open System.Drawing
 open System.Diagnostics
 open System.Numerics
+open System.Runtime.InteropServices
 
 open Ferop
 
@@ -228,6 +229,27 @@ module Renderer =
         C """
         glUseProgram (programId);
         """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let _getAttributeLocation (programId: int) (name: byte []) : int =
+        C """
+        return glGetAttribLocation (programId, name);
+        """
+
+    let getAttributeLocation programId (name: string) =
+        System.Text.Encoding.UTF8.GetBytes (name)
+        |> _getAttributeLocation programId
+
+
+    [<Import; MI (MIO.NoInlining)>]
+    let _getUniformLocation (programId: int) (name: byte []) : int =
+        C """
+        return glGetUniformLocation (programId, name);
+        """
+
+    let getUniformLocation programId (name: string) =
+        System.Text.Encoding.UTF8.GetBytes (name)
+        |> _getUniformLocation programId
 
     [<Import; MI (MIO.NoInlining)>]
     let bindPosition (programID: int) : unit =

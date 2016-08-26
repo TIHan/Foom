@@ -35,8 +35,8 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
 
         Renderer.useProgram programId
 
-        let uniformColor = Renderer.getUniformColor programId
-        let uniformProjection = Renderer.getUniformProjection programId
+        let uniformColor = Renderer.getUniformLocation programId "uni_color"
+        let uniformProjection = Renderer.getUniformLocation programId "uni_projection"
 
         Renderer.setUniformProjection uniformProjection mvp
         Renderer.setTexture programId textureId
