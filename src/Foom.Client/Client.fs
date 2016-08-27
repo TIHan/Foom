@@ -9,6 +9,7 @@ open System.Collections.Generic
 
 open Foom.Physics
 open Foom.Renderer
+open Foom.DataStructures
 open Foom.Wad
 open Foom.Wad.Level
 open Foom.Wad.Level.Structures

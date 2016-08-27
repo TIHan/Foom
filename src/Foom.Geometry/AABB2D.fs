@@ -13,6 +13,16 @@ type AABB2D =
         Max: Vector2
     }
 
+    member this.Center = (this.Min + this.Max) * 0.5f
+
+    member this.HalfSize = (this.Min - this.Max) * 0.5f
+
+    static member FromCenterAndHalfSize (center, halfSize) =
+        {
+            Min = center - halfSize
+            Max = center + halfSize
+        }
+
     member this.Contains (point: Vector2) =
         //first we get if point is out of box
         if (point.X < this.Min.X

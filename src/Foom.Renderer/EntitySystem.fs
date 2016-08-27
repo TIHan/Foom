@@ -83,6 +83,29 @@ let componentAddedQueue f =
         )
     )
 
+let wireframeQueue =
+    eventQueue (fun (componentAdded: Events.ComponentAdded<WireframeComponent>) (_, deltaTime: float32) entityManager ->
+
+            entityManager.TryGet<WireframeComponent> (componentAdded.Entity)
+            |> Option.iter (fun meshComp ->
+
+                match meshComp.State with
+                | WireframeState.ReadyToLoad (vertices) ->
+                    let vbo = Renderer.makeVbo ()
+                    Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
+
+                    meshComp.State <- 
+                        WireframeState.Loaded
+                            {
+                                PositionBufferId = vbo
+                                PositionBufferLength = vertices.Length
+                            }
+                | _ -> ()
+
+            )
+     
+    )
+
 let meshQueue =
     componentAddedQueue (fun ent (meshComp: MeshComponent) deltaTime entityManager ->
 

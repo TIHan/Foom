@@ -13,6 +13,12 @@ type AABB2D =
         Max: Vector2
     }
 
+    member Center : Vector2
+
+    member HalfSize : Vector2
+
+    static member FromCenterAndHalfSize : Vector2 * Vector2 -> AABB2D
+
     member Contains : Vector2 -> ContainmentType
 
     member Contains : AABB2D -> ContainmentType
