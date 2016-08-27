@@ -75,103 +75,78 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
         | _ -> ()
     )
 
-let wireframeQueue =
-    eventQueue (fun (componentAdded: Events.ComponentAdded<WireframeComponent>) (_, deltaTime: float32) entityManager ->
-
-            entityManager.TryGet<WireframeComponent> (componentAdded.Entity)
-            |> Option.iter (fun meshComp ->
-
-                match meshComp.State with
-                | WireframeState.ReadyToLoad (vertices) ->
-                    let vbo = Renderer.makeVbo ()
-                    Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
-
-                    meshComp.State <- 
-                        WireframeState.Loaded
-                            {
-                                PositionBufferId = vbo
-                                PositionBufferLength = vertices.Length
-                            }
-                | _ -> ()
-
-            )
-     
+let componentAddedQueue f =
+    eventQueue (fun (componentAdded: Events.ComponentAdded<'T>) (_, deltaTime: float32) entityManager ->
+        entityManager.TryGet<'T> (componentAdded.Entity)
+        |> Option.iter (fun comp ->
+            f componentAdded.Entity comp deltaTime entityManager
+        )
     )
 
 let meshQueue =
-    eventQueue (fun (componentAdded: Events.ComponentAdded<MeshComponent>) (_, deltaTime: float32) entityManager ->
+    componentAddedQueue (fun ent (meshComp: MeshComponent) deltaTime entityManager ->
 
-            entityManager.TryGet<MeshComponent> (componentAdded.Entity)
-            |> Option.iter (fun meshComp ->
+        match meshComp.State with
+        | MeshState.ReadyToLoad (vertices, uv) ->
+            let vbo = Renderer.makeVbo ()
+            Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
 
-                match meshComp.State with
-                | MeshState.ReadyToLoad (vertices, uv) ->
-                    let vbo = Renderer.makeVbo ()
-                    Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
+            let vbo2 = Renderer.makeVbo ()
+            Renderer.bufferVbo uv (sizeof<Vector2> * uv.Length) vbo2
 
-                    let vbo2 = Renderer.makeVbo ()
-                    Renderer.bufferVbo uv (sizeof<Vector2> * uv.Length) vbo2
+            meshComp.State <- 
+                MeshState.Loaded
+                    {
+                        PositionBufferId = vbo
+                        PositionBufferLength = vertices.Length
 
-                    meshComp.State <- 
-                        MeshState.Loaded
-                            {
-                                PositionBufferId = vbo
-                                PositionBufferLength = vertices.Length
+                        UvBufferId = vbo2
+                        UvBufferLength = uv.Length
+                    }
+        | _ -> ()
 
-                                UvBufferId = vbo2
-                                UvBufferLength = uv.Length
-                            }
-                | _ -> ()
-
-            )
-     
     )
 
 let textureCache = Dictionary<string, int> ()
 let shaderCache = Dictionary<string * string, int> ()
 let materialQueue =
-    eventQueue (fun (componentAdded: Events.ComponentAdded<MaterialComponent>) (_, deltaTime: float32) entityManager ->
+    componentAddedQueue (fun ent (materialComp: MaterialComponent) deltaTime entityManager ->
 
-            entityManager.TryGet<MaterialComponent> (componentAdded.Entity)
-            |> Option.iter (fun materialComp ->
-                 
-                    match materialComp.TextureState with
-                    | TextureState.ReadyToLoad fileName ->
+        match materialComp.TextureState with
+        | TextureState.ReadyToLoad fileName ->
 
-                        match textureCache.TryGetValue (fileName) with
-                        | true, textureId ->
-                            materialComp.TextureState <- TextureState.Loaded textureId
+            match textureCache.TryGetValue (fileName) with
+            | true, textureId ->
+                materialComp.TextureState <- TextureState.Loaded textureId
 
-                        | _ ->
-                            try
-                                use ptr = new Gdk.Pixbuf (fileName)
-                                let textureId = Renderer.createTexture ptr.Width ptr.Height (ptr.Pixels)
+            | _ ->
+                try
+                    use ptr = new Gdk.Pixbuf (fileName)
+                    let textureId = Renderer.createTexture ptr.Width ptr.Height (ptr.Pixels)
 
-                                materialComp.TextureState <- TextureState.Loaded textureId
-                            with | ex ->
-                                printfn "%A" ex.Message
+                    materialComp.TextureState <- TextureState.Loaded textureId
+                with | ex ->
+                    printfn "%A" ex.Message
 
-                    | _ -> ()
+        | _ -> ()
 
-                    match materialComp.ShaderProgramState with
-                    | ShaderProgramState.ReadyToLoad (vertex, fragment) ->
+        match materialComp.ShaderProgramState with
+        | ShaderProgramState.ReadyToLoad (vertex, fragment) ->
 
-                        match shaderCache.TryGetValue ((vertex, fragment)) with
-                        | true, programId ->
-                            materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
+            match shaderCache.TryGetValue ((vertex, fragment)) with
+            | true, programId ->
+                materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
 
-                        | _ ->
-                            let mutable vertexFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (vertex))
-                            let mutable fragmentFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (fragment))
+            | _ ->
+                let mutable vertexFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (vertex))
+                let mutable fragmentFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (fragment))
 
-                            let programId = Renderer.loadShaders vertexFile fragmentFile
-                            materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
-                            shaderCache.Add ((vertex, fragment), programId)
+                let programId = Renderer.loadShaders vertexFile fragmentFile
+                materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
+                shaderCache.Add ((vertex, fragment), programId)
 
-                    | _ -> ()
+        | _ -> ()
 
-            )
-     
     )
 
 let create (app: Application) : EntitySystem<float32 * float32> =
@@ -180,7 +155,6 @@ let create (app: Application) : EntitySystem<float32 * float32> =
 
     EntitySystem.create "Renderer"
         [
-            wireframeQueue
             meshQueue
             materialQueue
 
