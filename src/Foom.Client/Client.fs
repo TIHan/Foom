@@ -208,7 +208,16 @@ let init (world: World) =
                         WireframeComponent (
                             [|
                                 Vector3 (levelAABB.Min.X, levelAABB.Min.Y, 0.f)
+                                Vector3 (levelAABB.Max.X, levelAABB.Min.Y, 0.f)
+
+                                Vector3 (levelAABB.Max.X, levelAABB.Min.Y, 0.f)
                                 Vector3 (levelAABB.Max.X, levelAABB.Max.Y, 0.f)
+
+                                Vector3 (levelAABB.Max.X, levelAABB.Max.Y, 0.f)
+                                Vector3 (levelAABB.Min.X, levelAABB.Max.Y, 0.f)
+
+                                Vector3 (levelAABB.Min.X, levelAABB.Max.Y, 0.f)
+                                Vector3 (levelAABB.Min.X, levelAABB.Min.Y, 0.f)
                             |]
                         )
                     ) 
