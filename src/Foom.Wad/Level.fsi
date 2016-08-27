@@ -64,6 +64,8 @@ module Flat =
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Level =
+
+    val getAABB : Level -> AABB2D
         
     val getSector : index: int -> Level -> Sector
 

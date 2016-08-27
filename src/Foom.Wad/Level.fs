@@ -175,6 +175,70 @@ module Wall =
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Level =
 
+    let getAABB level =
+        let mutable minX = 0.f
+        let mutable minY = 0.f
+        let mutable maxX = 0.f
+        let mutable maxY = 0.f
+
+        let f linedef =
+            if linedef.Start.X < linedef.End.X then
+                minX <- linedef.Start.X
+                maxX <- linedef.End.X
+            else
+                minX <- linedef.End.X
+                maxX <- linedef.Start.X
+
+            if linedef.Start.Y < linedef.End.Y then
+                minX <- linedef.Start.Y
+                maxX <- linedef.End.Y
+            else
+                minX <- linedef.End.Y
+                maxX <- linedef.Start.Y
+
+        if level.sectors.Length > 0 then
+            if level.sectors.[0].Linedefs.Length > 0 then
+
+                let linedef = level.sectors.[0].Linedefs.[0]
+
+                if linedef.Start.X < linedef.End.X then
+                    minX <- linedef.Start.X
+                    maxX <- linedef.End.X
+                else
+                    minX <- linedef.End.X
+                    maxX <- linedef.Start.X
+
+                if linedef.Start.Y < linedef.End.Y then
+                    minX <- linedef.Start.Y
+                    maxX <- linedef.End.Y
+                else
+                    minX <- linedef.End.Y
+                    maxX <- linedef.Start.Y
+
+                level.sectors
+                |> Array.iter (fun sector ->
+                    sector.Linedefs
+                    |> List.iter (fun linedef ->
+
+                        if linedef.Start.X < minX then minX <- linedef.Start.X
+                        if linedef.End.X < minX then minX <- linedef.End.X
+                        if linedef.Start.X > maxX then maxX <- linedef.Start.X
+                        if linedef.End.X > maxX then maxX <- linedef.End.X
+                  
+                        if linedef.Start.Y < minY then minY <- linedef.Start.Y
+                        if linedef.End.Y < minY then minY <- linedef.End.Y
+                        if linedef.Start.Y > maxY then maxY <- linedef.Start.Y
+                        if linedef.End.Y > maxY then maxY <- linedef.End.Y
+
+                    )
+                )
+
+        {
+            Min = Vector2 (minX, minY)
+            Max = Vector2 (maxX, maxY)
+        }
+
+
     let getSector index level =
         level.sectors.[index]
 

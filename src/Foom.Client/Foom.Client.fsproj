@@ -112,5 +112,9 @@
       <Project>{34AA5257-2F5B-4097-8250-1FD4956D1130}</Project>
       <Name>Foom.Geometry</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.DataStructures\Foom.DataStructures.fsproj">
+      <Project>{F8ED361D-EC55-4272-8B23-1E81610A2A2E}</Project>
+      <Name>Foom.DataStructures</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

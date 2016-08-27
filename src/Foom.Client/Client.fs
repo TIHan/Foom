@@ -200,6 +200,28 @@ let init (world: World) =
                     )
 
                 Sys.levelLoading (fun wad level em ->
+                    let levelAABB = Level.getAABB level
+
+                    let ent = em.Spawn ()
+                    em.AddComponent ent (TransformComponent (Matrix4x4.Identity))
+                    em.AddComponent ent (
+                        WireframeComponent (
+                            [|
+                                Vector3 (levelAABB.Min.X, levelAABB.Min.Y, 0.f)
+                                Vector3 (levelAABB.Max.X, levelAABB.Max.Y, 0.f)
+                            |]
+                        )
+                    ) 
+                    em.AddComponent ent (
+                        MaterialComponent (
+                            "v.vertex",
+                            "f.fragment",
+                            "",
+                            { R = 255uy; G = 255uy; B = 255uy; A = 0uy }
+                        )
+                    )
+
+
                     level
                     |> Level.iteriSector (fun i sector ->
                         let lightLevel = Level.lightLevelBySectorId sector.Id level
