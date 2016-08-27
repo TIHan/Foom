@@ -245,7 +245,6 @@ module Level =
     let lightLevelBySectorId sectorId (level: Level) =
         let sector = level.sectors.[sectorId]
         let lightLevel = sector.LightLevel
-        let lightLevel = lightLevel * lightLevel / 255
         if lightLevel > 255 then 255uy
         else byte lightLevel
 
@@ -450,8 +449,10 @@ module Level =
 
                 match linedef.BackSidedef with
                 | Some backSidedef ->
-                    if frontSidedef.UpperTextureName.Contains("-") |> not then
-                        let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
+                    let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
+
+                    if frontSidedef.UpperTextureName.Contains("-") |> not && sector.CeilingHeight > backSideSector.CeilingHeight then
+
 
                         {
                             SectorId = frontSidedef.SectorNumber
@@ -477,8 +478,7 @@ module Level =
                         }
                         |> arr.Add
 
-                    if frontSidedef.LowerTextureName.Contains("-") |> not then
-                        let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
+                    if frontSidedef.LowerTextureName.Contains("-") |> not && sector.FloorHeight < backSideSector.FloorHeight then
 
                         {
                             SectorId = frontSidedef.SectorNumber

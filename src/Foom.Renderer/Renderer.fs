@@ -136,6 +136,11 @@ module Renderer =
         glBufferData (GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
         """
 
+    [<Import; MI (MIO.NoInlining)>]
+    let bindArrayBuffer (bufferId: int) : unit =
+        C """
+        glBindBuffer (GL_ARRAY_BUFFER, bufferId);
+        """
 
     [<Import; MI (MIO.NoInlining)>]
     let bindVbo (vbo: int) : unit =
@@ -250,6 +255,51 @@ module Renderer =
     let getUniformLocation programId (name: string) =
         System.Text.Encoding.UTF8.GetBytes (name)
         |> _getUniformLocation programId
+
+    //
+
+    [<Import; MI (MIO.NoInlining)>]
+    let bindVertexAttributeVector3 (id: int) : unit =
+        C """
+        glVertexAttribPointer (id, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray (id);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let bindVertexAttributeVector2 (id: int) : unit =
+        C """
+        glVertexAttribPointer (id, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray (id);
+        """
+
+    //
+
+    [<Import; MI (MIO.NoInlining)>]
+    let bindUniformMatrix4x4 (id: int) (value: Matrix4x4) : unit =
+        C """
+        glUniformMatrix4fv (id, 1, GL_FALSE, &value);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let bindUniformVector4 (id: int) (value: Vector4) : unit =
+        C """
+        glUniform4f (id, value.X, value.Y, value.Z, value.W);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let bindUniformInt (id: int) (value: int) : unit =
+        C """
+        glUniform1if (id, value);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let bindTexture2D (textureId: int) (textureNumber: int) : unit =
+        C """
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textureId);
+        """
+
+    ///
 
     [<Import; MI (MIO.NoInlining)>]
     let bindPosition (programID: int) : unit =

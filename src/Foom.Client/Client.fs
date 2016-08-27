@@ -186,7 +186,7 @@ let init (world: World) =
                     | None ->
                         let ent = entityManager.Spawn ()
                         entityManager.AddComponent ent (WadComponent("doom.wad"))
-                        entityManager.AddComponent ent (LevelComponent("e1m2"))
+                        entityManager.AddComponent ent (LevelComponent("e1m5"))
 
                     | _ -> ()
                 )
