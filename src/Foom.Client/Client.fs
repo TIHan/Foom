@@ -7,8 +7,10 @@ open System.Drawing
 open System.Numerics
 open System.Collections.Generic
 
+open Foom.Math
 open Foom.Physics
 open Foom.Renderer
+open Foom.Geometry
 open Foom.DataStructures
 open Foom.Wad
 open Foom.Wad.Level
@@ -156,6 +158,35 @@ let spawnWallMesh (wall: Wall) lightLevel wad em =
         spawnMesh wall.Vertices (Wall.createUV width height wall) texturePath lightLevel em
     )
 
+let spawnAABBWireframe (aabb: AABB2D) (em: EntityManager) =
+    let ent = em.Spawn ()
+    em.AddComponent ent (TransformComponent (Matrix4x4.Identity))
+    em.AddComponent ent (
+        WireframeComponent (
+            [|
+                Vector3 (aabb.Min.X, aabb.Min.Y, 0.f)
+                Vector3 (aabb.Max.X, aabb.Min.Y, 0.f)
+
+                Vector3 (aabb.Max.X, aabb.Min.Y, 0.f)
+                Vector3 (aabb.Max.X, aabb.Max.Y, 0.f)
+
+                Vector3 (aabb.Max.X, aabb.Max.Y, 0.f)
+                Vector3 (aabb.Min.X, aabb.Max.Y, 0.f)
+
+                Vector3 (aabb.Min.X, aabb.Max.Y, 0.f)
+                Vector3 (aabb.Min.X, aabb.Min.Y, 0.f)
+            |]
+        )
+    ) 
+    em.AddComponent ent (
+        MaterialComponent (
+            "v.vertex",
+            "f.fragment",
+            "",
+            { R = 255uy; G = 255uy; B = 255uy; A = 0uy }
+        )
+    )
+
 let init (world: World) =
 
     // Load up doom wads.
@@ -177,6 +208,10 @@ let init (world: World) =
     let mutable isMovingBackward = false
 
     let mutable didPreStep = false
+
+    let spaceSize = 128
+
+    let lookup = Dictionary<Vector2, ResizeArray<Triangle2D>> ()
 
     let clientSystem =
         EntitySystem.create "Client" 
@@ -202,33 +237,7 @@ let init (world: World) =
                 Sys.levelLoading (fun wad level em ->
                     let levelAABB = Level.getAABB level
 
-                    let ent = em.Spawn ()
-                    em.AddComponent ent (TransformComponent (Matrix4x4.Identity))
-                    em.AddComponent ent (
-                        WireframeComponent (
-                            [|
-                                Vector3 (levelAABB.Min.X, levelAABB.Min.Y, 0.f)
-                                Vector3 (levelAABB.Max.X, levelAABB.Min.Y, 0.f)
-
-                                Vector3 (levelAABB.Max.X, levelAABB.Min.Y, 0.f)
-                                Vector3 (levelAABB.Max.X, levelAABB.Max.Y, 0.f)
-
-                                Vector3 (levelAABB.Max.X, levelAABB.Max.Y, 0.f)
-                                Vector3 (levelAABB.Min.X, levelAABB.Max.Y, 0.f)
-
-                                Vector3 (levelAABB.Min.X, levelAABB.Max.Y, 0.f)
-                                Vector3 (levelAABB.Min.X, levelAABB.Min.Y, 0.f)
-                            |]
-                        )
-                    ) 
-                    em.AddComponent ent (
-                        MaterialComponent (
-                            "v.vertex",
-                            "f.fragment",
-                            "",
-                            { R = 255uy; G = 255uy; B = 255uy; A = 0uy }
-                        )
-                    )
+                    spawnAABBWireframe levelAABB em
 
 
                     level
@@ -239,6 +248,68 @@ let init (world: World) =
                         |> Seq.iter (fun flat ->
                             spawnCeilingMesh flat lightLevel wad em
                             spawnFloorMesh flat lightLevel wad em
+
+                            let mutable i = 0
+                            while i < flat.Floor.Vertices.Length do
+
+                                let v0 = flat.Floor.Vertices.[i]
+                                let v1 = flat.Floor.Vertices.[i + 1]
+                                let v2 = flat.Floor.Vertices.[i + 2]
+
+                                let tri = Triangle2D (Vector2 (v0.X, v0.Y), Vector2 (v1.X, v1.Y), Vector2 (v2.X, v2.Y))
+
+                                let mutable minX = v0.X
+                                let mutable maxX = v0.X
+                                let mutable minY = v0.Y
+                                let mutable maxY = v0.Y
+
+                                let f (v: Vector3) =
+                                    if v.X < minX then minX <- v.X
+                                    if v.X > maxX then maxX <- v.X
+                                    if v.Y < minY then minY <- v.Y
+                                    if v.Y > maxY then maxY <- v.Y
+
+                                f v1
+                                f v2
+
+                                let aabb =
+                                    {
+                                        Min = Vector2 (minX, minY)
+                                        Max = Vector2 (maxX, maxY)
+                                    }
+
+                                let roundedX = Math.roundUp (maxX |> float |> Math.Ceiling |> int) spaceSize
+                                let roundedY = Math.roundUp (maxY |> float |> Math.Ceiling |> int) spaceSize
+                                let roundedMinX = Math.roundUp (minX |> float |> Math.Floor |> int) spaceSize
+                                let roundedMinY = Math.roundUp (minY |> float |> Math.Floor |> int) spaceSize
+
+                                let countX = roundedX - roundedMinX
+                                let countY = roundedY - roundedMinY
+
+                                printfn "%A %A" countX countY
+
+                                let mutable x = 0
+                                while x < countX do
+
+                                    let mutable y = 0
+                                    while y < countY do
+                                        let roundedV = Vector2 (single (roundedMinX + x), single (roundedMinY + y))
+
+                                        match lookup.TryGetValue (roundedV) with
+                                        | true, triangles ->
+                                            triangles.Add (tri)
+                                        | _ ->
+                                            let triangles = ResizeArray ()
+                                            triangles.Add (tri)
+                                            lookup.Add (roundedV, triangles)
+
+                                        y <- y + spaceSize
+
+                                    x <- x + spaceSize
+
+                                //spawnAABBWireframe aabb em
+
+                                i <- i + 3
                         )
 
                         Level.createWalls i level

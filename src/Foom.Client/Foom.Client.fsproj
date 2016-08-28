@@ -116,5 +116,9 @@
       <Project>{F8ED361D-EC55-4272-8B23-1E81610A2A2E}</Project>
       <Name>Foom.DataStructures</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Math\Foom.Math.fsproj">
+      <Project>{B94F520E-B150-45A7-ADA1-E2945BE9A743}</Project>
+      <Name>Foom.Math</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>
