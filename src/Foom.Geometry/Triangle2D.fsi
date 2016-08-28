@@ -12,3 +12,5 @@ type Triangle2D =
     val Z : Vector2
 
     new : Vector2 * Vector2 * Vector2 -> Triangle2D
+
+    member Contains : Vector2 -> bool

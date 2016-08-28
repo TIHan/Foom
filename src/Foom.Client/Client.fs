@@ -211,7 +211,7 @@ let init (world: World) =
 
     let spaceSize = 128
 
-    let lookup = Dictionary<Vector2, ResizeArray<Triangle2D>> ()
+    let lookup = Dictionary<Vector2, ResizeArray<Triangle2D * Sector>> ()
 
     let clientSystem =
         EntitySystem.create "Client" 
@@ -289,18 +289,18 @@ let init (world: World) =
                                 printfn "%A %A" countX countY
 
                                 let mutable x = 0
-                                while x < countX do
+                                while x <= countX do
 
                                     let mutable y = 0
-                                    while y < countY do
+                                    while y <= countY do
                                         let roundedV = Vector2 (single (roundedMinX + x), single (roundedMinY + y))
 
                                         match lookup.TryGetValue (roundedV) with
                                         | true, triangles ->
-                                            triangles.Add (tri)
+                                            triangles.Add ((tri, sector))
                                         | _ ->
                                             let triangles = ResizeArray ()
-                                            triangles.Add (tri)
+                                            triangles.Add ((tri, sector))
                                             lookup.Add (roundedV, triangles)
 
                                         y <- y + spaceSize
@@ -347,6 +347,41 @@ let init (world: World) =
                     |> Option.iter (fun (ent, cameraComp) ->
                         world.EntityManager.TryGet<TransformComponent> (ent)
                         |> Option.iter (fun (transformComp) ->
+
+                            let minX = Math.roundDown (transformComp.Position.X |> float |> Math.Floor |> int) spaceSize
+                            let minY = Math.roundDown (transformComp.Position.Y |> float |> Math.Floor |> int) spaceSize
+                            let maxX = Math.roundUp (transformComp.Position.X |> float |> Math.Ceiling |> int) spaceSize
+                            let maxY = Math.roundUp (transformComp.Position.Y |> float |> Math.Ceiling |> int) spaceSize
+
+                            let countX = maxX - minX
+                            let countY = maxY - minY
+
+                            let mutable inSector = None
+
+                            let mutable operations = 0
+                            let mutable x = 0
+                            while x <= countX do
+                                let mutable y = 0
+                                while y <= countY do
+                                    match lookup.TryGetValue (Vector2 (single (minX + x), single (minY + y))) with
+                                    | true, values ->
+                                        values
+                                        |> Seq.iter (fun (tri, sector) ->
+                                            operations <- operations + 1
+                                            if tri.Contains (Vector2 (transformComp.Position.X, transformComp.Position.Y)) then
+                                                inSector <- Some sector
+                                        )
+                                    | _ -> ()
+
+                                    y <- y + spaceSize
+
+                                x <- x + spaceSize
+
+                            printfn "Operations: %A" operations
+                            if inSector.IsSome then
+                                printfn "In Sector %A" inSector.Value.Id
+                            else
+                                printfn "Not In Sector"
 
                             transformComp.TransformLerp <- transformComp.Transform
                             cameraComp.AngleLerp <- cameraComp.Angle
