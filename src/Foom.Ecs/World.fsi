@@ -1,4 +1,4 @@
-﻿namespace Foom.Ecs.World
+﻿namespace Foom.Ecs
 
 open System
 open Foom.Ecs

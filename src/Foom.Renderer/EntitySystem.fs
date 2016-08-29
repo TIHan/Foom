@@ -1,4 +1,4 @@
-﻿module Foom.Renderer.EntitySystem
+﻿module Foom.Renderer.RendererSystem
 
 open System
 open System.Numerics
@@ -139,8 +139,12 @@ let materialQueue =
 
             | _ ->
                 try
-                    use ptr = new Gdk.Pixbuf (fileName)
-                    let textureId = Renderer.createTexture ptr.Width ptr.Height (ptr.Pixels)
+                    use bmp = new Bitmap (fileName)
+                    let bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
+
+                    let textureId = Renderer.createTexture bmp.Width bmp.Height bmpData.Scan0
+
+                    bmp.UnlockBits (bmpData)
 
                     materialComp.TextureState <- TextureState.Loaded textureId
                 with | ex ->
