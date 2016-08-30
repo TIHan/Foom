@@ -21,7 +21,7 @@ module Camera =
         let mutable isMovingRight = false
         let mutable isMovingBackward = false
 
-        update (fun (time, deltaTime) entityManager eventManager ->
+        Behavior.update (fun (time, deltaTime) entityManager eventManager ->
 
             Input.pollEvents (app.Window)
             let inputState = Input.getState ()

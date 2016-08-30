@@ -76,7 +76,7 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
     )
 
 let componentAddedQueue f =
-    eventQueue (fun (componentAdded: Events.ComponentAdded<'T>) (_, deltaTime: float32) entityManager ->
+    Behavior.eventQueue (fun (componentAdded: Events.ComponentAdded<'T>) (_, deltaTime: float32) entityManager ->
         entityManager.TryGet<'T> (componentAdded.Entity)
         |> Option.iter (fun comp ->
             f componentAdded.Entity comp deltaTime entityManager
@@ -171,17 +171,17 @@ let materialQueue =
 
     )
 
-let create (app: Application) : EntitySystem<float32 * float32> =
+let create (app: Application) : ESystem<float32 * float32> =
 
     let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
 
-    EntitySystem.create "Renderer"
+    ESystem.create "Renderer"
         [
             wireframeQueue
             meshQueue
             materialQueue
 
-            update (fun ((time, deltaTime): float32 * float32) entityManager eventManager ->
+            Behavior.update (fun ((time, deltaTime): float32 * float32) entityManager eventManager ->
 
                 Renderer.clear ()
 

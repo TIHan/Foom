@@ -44,11 +44,11 @@ type ClientState =
 // 2021 - map11 sunder
 
 let create (app: Application) =
-    EntitySystem.create "Client"
+    ESystem.create "Client"
         (
             [
                 // Initialize
-                update (fun _ entityManager eventManager ->
+                Behavior.update (fun _ entityManager eventManager ->
                     match entityManager.TryFind<WadComponent> (fun _ _ -> true) with
                     | None ->
                         let ent = entityManager.Spawn ()
@@ -69,11 +69,11 @@ let create (app: Application) =
 let init (world: World) =
     let app = Renderer.init ()
     let sys1 = RendererSystem.create (app)
-    let updateSys1 = world.AddSystem sys1
+    let updateSys1 = world.AddESystem sys1
 
     { 
         Window = app.Window
-        Update = create app |> world.AddSystem
+        Update = create app |> world.AddESystem
         RenderUpdate = updateSys1
     }
 

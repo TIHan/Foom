@@ -4,34 +4,34 @@ open System
 open System.Collections.Generic
 open System.Collections.Concurrent
 
-type EntitySystemState =
+type ESystemState =
     {
         Name: string
         Queues: ResizeArray<obj>
     }
 
-type SysContext<'Update> =
+type ESystemContext<'Update> =
     {
-        EntitySystemState: EntitySystemState
+        ESystemState: ESystemState
         EntityManager: EntityManager
         EventAggregator: EventAggregator
         Actions: ResizeArray<'Update -> unit>
     }
 
-type Sys<'Update> = Sys of (SysContext<'Update> -> unit)
+type Behavior<'Update> = Behavior of (ESystemContext<'Update> -> unit)
 
-type EntitySystem<'Update> =
+type ESystem<'Update> =
     {
-        State: EntitySystemState
-        CreateSysContext: EntityManager -> EventAggregator -> SysContext<'Update>
-        SysCollection: Sys<'Update> list
+        State: ESystemState
+        CreateContext: EntityManager -> EventAggregator -> ESystemContext<'Update>
+        Behavior: Behavior<'Update> list
     }
 
-[<AutoOpen>]
-module SysOperators =
+[<RequireQualifiedAccess>]
+module Behavior =
 
     let eventQueue (f: #IEvent -> 'Update -> EntityManager -> unit) = 
-        Sys (fun context ->
+        Behavior (fun context ->
             let queue = ConcurrentQueue<'T> ()
             context.EventAggregator.GetEvent<'T>().Publish.Add queue.Enqueue
 
@@ -44,7 +44,7 @@ module SysOperators =
         )
 
     let update (f: 'Update -> EntityManager -> EventAggregator -> unit) = 
-        Sys (fun context ->
+        Behavior (fun context ->
             (fun updateData ->
                 f updateData context.EntityManager context.EventAggregator
             )
@@ -52,9 +52,9 @@ module SysOperators =
         )
 
 [<RequireQualifiedAccess>]
-module EntitySystem =
+module ESystem =
 
-    let create name actions =
+    let create name behavior =
         let state =
             {
                 Name = name
@@ -63,13 +63,13 @@ module EntitySystem =
 
         {
             State = state
-            CreateSysContext =
+            CreateContext =
                 fun entityManager eventManager ->
                     {
-                        EntitySystemState = state
+                        ESystemState = state
                         EntityManager = entityManager
                         EventAggregator = eventManager
                         Actions = ResizeArray ()
                     }
-            SysCollection = actions
+            Behavior = behavior
         }

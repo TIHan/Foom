@@ -33,10 +33,10 @@ type WadComponent (wadName: string) =
 
     interface IComponent
 
-module Sys =
+module Behavior =
 
     let wadLoading (openWad: string -> Stream) f =
-        eventQueue (fun (evt: Events.ComponentAdded<WadComponent>) _ entityManager ->
+        Behavior.eventQueue (fun (evt: Events.ComponentAdded<WadComponent>) _ entityManager ->
 
             entityManager.TryGet<WadComponent> evt.Entity
             |> Option.iter (fun wadComp ->
@@ -53,7 +53,7 @@ module Sys =
         )
 
     let levelLoading f =
-        eventQueue (fun (evt: Events.ComponentAdded<LevelComponent>) _ entityManager ->
+        Behavior.eventQueue (fun (evt: Events.ComponentAdded<LevelComponent>) _ entityManager ->
 
             entityManager.TryGet<LevelComponent> evt.Entity
             |> Option.iter (fun levelComp ->

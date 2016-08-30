@@ -8,19 +8,16 @@ open Foom.Ecs
 
 [<Sealed>]
 type World (maxEntityAmount) =
-    let eventManager = EventAggregator.Create ()
-    let entityManager = EntityManager.Create (eventManager, maxEntityAmount)
+    let eventAggregator = EventAggregator.Create ()
+    let entityManager = EntityManager.Create (eventAggregator, maxEntityAmount)
 
-    member this.AddSystem<'Update> (sys: EntitySystem<'Update>) =
-        let context = sys.CreateSysContext entityManager eventManager
-        sys.SysCollection
-        |> List.iter (fun (Sys f) ->
+    member this.AddESystem<'Update> (sys: ESystem<'Update>) =
+        let context = sys.CreateContext entityManager eventAggregator
+        sys.Behavior
+        |> List.iter (fun (Behavior f) ->
             f context
         )
         fun updateData ->
             for i = 0 to context.Actions.Count - 1 do
                 let f = context.Actions.[i]
                 f updateData
-
-    member this.EntityManager = entityManager
-        

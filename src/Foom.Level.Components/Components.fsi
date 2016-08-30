@@ -22,8 +22,8 @@ type WadComponent =
 
     interface IComponent
 
-module Sys =
+module Behavior =
 
-    val wadLoading : openWad: (string -> Stream) -> (Wad -> EntityManager -> unit) -> Sys<_>
+    val wadLoading : openWad: (string -> Stream) -> (Wad -> EntityManager -> unit) -> Behavior<_>
 
-    val levelLoading : (Wad -> Level -> EntityManager -> unit) -> Sys<_>
+    val levelLoading : (Wad -> Level -> EntityManager -> unit) -> Behavior<_>
