@@ -9,49 +9,56 @@ type ContainmentType =
 
 type AABB2D =
     {
-        Min: Vector2
-        Max: Vector2
+        min: Vector2
+        max: Vector2
     }
 
-    member this.Center = (this.Min + this.Max) * 0.5f
+    member this.Min = this.min
 
-    member this.HalfSize = (this.Min - this.Max) * 0.5f
+    member this.Max = this.max
 
-    static member FromCenterAndHalfSize (center, halfSize) =
+[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
+module AABB2D =
+
+    let inline min (b: AABB2D) = b.Min
+
+    let inline max (b: AABB2D) = b.Max
+
+    let ofMinAndMax min max =
         {
-            Min = center - halfSize
-            Max = center + halfSize
+            min = min
+            max = max
         }
 
-    member this.Contains (point: Vector2) =
+    let containsPoint (point: Vector2) (b: AABB2D) =
         //first we get if point is out of box
-        if (point.X < this.Min.X
-            || point.X > this.Max.X
-            || point.Y < this.Min.Y
-            || point.Y > this.Max.Y) then
+        if (point.X < b.Min.X
+            || point.X > b.Max.X
+            || point.Y < b.Min.Y
+            || point.Y > b.Max.Y) then
             ContainmentType.Disjoint
 
         //or if point is on box because coordonate of point is lesser or equal
-        elif (point.X = this.Min.X
-            || point.X = this.Max.X
-            || point.Y = this.Min.Y
-            || point.Y = this.Max.Y) then
+        elif (point.X = b.Min.X
+            || point.X = b.Max.X
+            || point.Y = b.Min.Y
+            || point.Y = b.Max.Y) then
             ContainmentType.Intersects
         else
             ContainmentType.Contains
 
-    member this.Contains b =
+    let containsAABB (b1: AABB2D) (b: AABB2D) =
         //test if all corner is in the same side of a face by just checking min and max
-        if (b.Max.X < this.Min.X
-            || b.Min.X > this.Max.X
-            || b.Max.Y < this.Min.Y
-            || b.Min.Y > this.Max.Y) then
+        if (b1.Max.X < b.Min.X
+            || b1.Min.X > b.Max.X
+            || b1.Max.Y < b.Min.Y
+            || b1.Min.Y > b.Max.Y) then
             ContainmentType.Disjoint
 
-        elif (b.Min.X >= this.Min.X
-            && b.Max.X <= this.Max.X
-            && b.Min.Y >= this.Min.Y
-            && b.Max.Y <= this.Max.Y) then
+        elif (b1.Min.X >= b.Min.X
+            && b1.Max.X <= b.Max.X
+            && b1.Min.Y >= b.Min.Y
+            && b1.Max.Y <= b.Max.Y) then
             ContainmentType.Contains
 
         else

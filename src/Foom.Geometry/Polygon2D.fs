@@ -10,7 +10,7 @@ type Polygon2D =
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Polygon2D =
 
-    let create vertices = { Vertices = vertices }
+    let create vertices = { Vertices = vertices |> Array.ofSeq }
 
     let sign = function
         | x when x <= 0.f -> false
@@ -33,7 +33,7 @@ module Polygon2D =
         |> sign
 
     // http://alienryderflex.com/polygon/
-    let isPointInside (point: Vector2) poly =
+    let containsPoint (point: Vector2) poly =
         let vertices = poly.Vertices
         let mutable j = vertices.Length - 1
         let mutable c = false
@@ -52,3 +52,8 @@ module Polygon2D =
 
             j <- i
         c
+
+    let copyVertices poly =
+        poly.Vertices |> Array.copy
+
+        

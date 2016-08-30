@@ -13,4 +13,7 @@ type Triangle2D =
 
     new : Vector2 * Vector2 * Vector2 -> Triangle2D
 
-    member Contains : Vector2 -> bool
+[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
+module Triangle2D =
+
+    val containsPoint : Vector2 -> Triangle2D -> bool

@@ -7,18 +7,22 @@ type ContainmentType =
     | Contains
     | Intersects
 
+[<Sealed>]
 type AABB2D =
-    {
-        Min: Vector2
-        Max: Vector2
-    }
 
-    member Center : Vector2
+    member Min : Vector2
 
-    member HalfSize : Vector2
+    member Max : Vector2
 
-    static member FromCenterAndHalfSize : Vector2 * Vector2 -> AABB2D
+[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
+module AABB2D =
 
-    member Contains : Vector2 -> ContainmentType
+    val inline min : AABB2D -> Vector2
 
-    member Contains : AABB2D -> ContainmentType
+    val inline max : AABB2D -> Vector2
+
+    val ofMinAndMax : Vector2 -> Vector2 -> AABB2D
+
+    val containsPoint : Vector2 -> AABB2D -> ContainmentType
+
+    val containsAABB : AABB2D -> AABB2D -> ContainmentType

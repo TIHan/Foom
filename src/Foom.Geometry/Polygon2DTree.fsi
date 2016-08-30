@@ -11,4 +11,4 @@ type Polygon2DTree =
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Polygon2DTree =
 
-    val contains : Vector2 -> Polygon2DTree -> bool
+    val containsPoint : Vector2 -> Polygon2DTree -> bool

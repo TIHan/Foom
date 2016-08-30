@@ -233,11 +233,8 @@ module Level =
                     )
                 )
 
-        {
-            Min = Vector2 (minX, minY)
-            Max = Vector2 (maxX, maxY)
-        }
-
+        (Vector2 (minX, minY), Vector2 (maxX, maxY))
+        ||> AABB2D.ofMinAndMax
 
     let getSector index level =
         level.sectors.[index]
@@ -276,7 +273,7 @@ module Level =
             if i < level.sectorPolygons.Length then
                 let atSector =
                     level.sectorPolygons.[i]
-                    |> List.exists (Polygon2DTree.contains point)
+                    |> List.exists (Polygon2DTree.containsPoint point)
                 if atSector then
                     Some level.sectors.[i]
                 else

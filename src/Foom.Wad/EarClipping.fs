@@ -82,7 +82,7 @@ let rayIntersection (ray: Ray) (vertices: Vector2 []) =
         |> Some
 
 let inline pointInsideTriangle p v =
-    Polygon2D.isPointInside p (Polygon2D.create v)
+    Polygon2D.containsPoint p (Polygon2D.create v)
 
 
 let computeVertices (vertices: Vector2 seq) f =
@@ -146,7 +146,7 @@ let compute polygon =
 
     let triangles = ResizeArray<Triangle2D> ()
 
-    computeVertices (polygon.Vertices) (fun x y z ->
+    computeVertices (polygon |> Polygon2D.copyVertices) (fun x y z ->
         triangles.Add (Triangle2D (x, y, z))
     )
 
@@ -161,12 +161,12 @@ let compute polygon =
 
 let decomposeTree (tree: Polygon2DTree) =
 
-    let mutable vertices = tree.Polygon.Vertices
+    let mutable vertices = tree.Polygon |> Polygon2D.copyVertices
 
     tree.Children
     |> List.sortByDescending (fun childTree -> 
         let yopac =
-            childTree.Polygon.Vertices 
+            childTree.Polygon |> Polygon2D.copyVertices 
             |> Array.maxBy (fun x -> x.X)
 
         yopac.X
@@ -178,7 +178,7 @@ let decomposeTree (tree: Polygon2DTree) =
 
         if true then
 
-            let childVertices = childTree.Polygon.Vertices
+            let childVertices = childTree.Polygon |> Polygon2D.copyVertices
 
             let childMax = childVertices |> Array.maxBy (fun x -> x.X)
 

@@ -13,16 +13,19 @@ type Triangle2D =
 
     new (x, y, z) = { X = x; Y = y; Z = z } 
 
+[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
+module Triangle2D =
+
     // http://totologic.blogspot.com/2014/01/accurate-point-in-triangle-test.html
-    member this.Contains (point: Vector2) =
+    let containsPoint (point: Vector2) (tri: Triangle2D) =
         let x = point.X
         let y = point.Y
-        let x1 = this.X.X
-        let x2 = this.Y.X
-        let x3 = this.Z.X
-        let y1 = this.X.Y
-        let y2 = this.Y.Y
-        let y3 = this.Z.Y
+        let x1 = tri.X.X
+        let x2 = tri.Y.X
+        let x3 = tri.Z.X
+        let y1 = tri.X.Y
+        let y2 = tri.Y.Y
+        let y3 = tri.Z.Y
 
         let denominator = ((y2 - y3)*(x1 - x3) + (x3 - x2)*(y1 - y3))
         let a = ((y2 - y3)*(x - x3) + (x3 - x2)*(y - y3)) / denominator;
