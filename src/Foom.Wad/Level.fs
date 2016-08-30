@@ -340,9 +340,9 @@ module Level =
                                 triangles
                                 |> Seq.map (fun tri ->
                                     [|
-                                        Vector3 (tri.Z.X, tri.Z.Y, single sector.CeilingHeight)
-                                        Vector3 (tri.Y.X, tri.Y.Y, single sector.CeilingHeight)
-                                        Vector3 (tri.X.X, tri.X.Y, single sector.CeilingHeight)
+                                        Vector3 (tri.C.X, tri.C.Y, single sector.CeilingHeight)
+                                        Vector3 (tri.B.X, tri.B.Y, single sector.CeilingHeight)
+                                        Vector3 (tri.A.X, tri.A.Y, single sector.CeilingHeight)
                                     |]
                                 )
                                 |> Seq.reduce Array.append
@@ -357,9 +357,9 @@ module Level =
                                 triangles
                                 |> Seq.map (fun tri ->
                                     [|
-                                        Vector3 (tri.X.X, tri.X.Y, single sector.FloorHeight)
-                                        Vector3 (tri.Y.X, tri.Y.Y, single sector.FloorHeight)
-                                        Vector3 (tri.Z.X, tri.Z.Y, single sector.FloorHeight)
+                                        Vector3 (tri.A.X, tri.A.Y, single sector.FloorHeight)
+                                        Vector3 (tri.B.X, tri.B.Y, single sector.FloorHeight)
+                                        Vector3 (tri.C.X, tri.C.Y, single sector.FloorHeight)
                                     |]
                                 )
                                 |> Seq.reduce Array.append

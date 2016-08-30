@@ -300,7 +300,7 @@ let computeTree (tree: Polygon2DTree) =
             | None -> [||]
             | Some triangles ->
                 triangles
-                |> Array.map (fun x -> [|x.X;x.Y;x.Z|])
+                |> Array.map (fun x -> [|x.A;x.B;x.C|])
                 |> Array.reduce Array.append
 
         let triangles = ResizeArray<Triangle2D> ()
