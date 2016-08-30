@@ -14,7 +14,7 @@ type SysContext<'Update> =
     {
         EntitySystemState: EntitySystemState
         EntityManager: EntityManager
-        EventManager: EventManager
+        EventAggregator: EventAggregator
         Actions: ResizeArray<'Update -> unit>
     }
 
@@ -23,30 +23,30 @@ type Sys<'Update> = Sys of (SysContext<'Update> -> unit)
 type EntitySystem<'Update> =
     {
         State: EntitySystemState
-        CreateSysContext: EntityManager -> EventManager -> SysContext<'Update>
+        CreateSysContext: EntityManager -> EventAggregator -> SysContext<'Update>
         SysCollection: Sys<'Update> list
     }
 
 [<AutoOpen>]
 module SysOperators =
 
-    let eventQueue (f: #IEntitySystemEvent -> 'Update -> EntityManager -> unit) = 
+    let eventQueue (f: #IEvent -> 'Update -> EntityManager -> unit) = 
         Sys (fun context ->
             let queue = ConcurrentQueue<'T> ()
-            context.EventManager.GetEvent<'T>().Publish.Add queue.Enqueue
+            context.EventAggregator.GetEvent<'T>().Publish.Add queue.Enqueue
 
             (fun updateData ->
-                let mutable item = Unchecked.defaultof<#IEntitySystemEvent>
+                let mutable item = Unchecked.defaultof<#IEvent>
                 while queue.TryDequeue (&item) do
                     f item updateData context.EntityManager
             )
             |> context.Actions.Add
         )
 
-    let update (f: 'Update -> EntityManager -> EventManager -> unit) = 
+    let update (f: 'Update -> EntityManager -> EventAggregator -> unit) = 
         Sys (fun context ->
             (fun updateData ->
-                f updateData context.EntityManager context.EventManager
+                f updateData context.EntityManager context.EventAggregator
             )
             |> context.Actions.Add
         )
@@ -68,7 +68,7 @@ module EntitySystem =
                     {
                         EntitySystemState = state
                         EntityManager = entityManager
-                        EventManager = eventManager
+                        EventAggregator = eventManager
                         Actions = ResizeArray ()
                     }
             SysCollection = actions

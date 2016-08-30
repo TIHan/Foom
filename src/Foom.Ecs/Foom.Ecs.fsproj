@@ -38,8 +38,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="EventManager.fsi" />
-    <Compile Include="EventManager.fs" />
+    <Compile Include="EventAggregator.fsi" />
+    <Compile Include="EventAggregator.fs" />
     <Compile Include="EntityManager.fsi" />
     <Compile Include="EntityManager.fs" />
     <Compile Include="System.fsi" />

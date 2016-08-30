@@ -13,14 +13,14 @@ type LevelComponent =
 
     new : levelName: string -> LevelComponent
 
-    interface IEntityComponent
+    interface IComponent
 
 [<Sealed>]
 type WadComponent =
 
     new : wadName: string -> WadComponent
 
-    interface IEntityComponent
+    interface IComponent
 
 module Sys =
 

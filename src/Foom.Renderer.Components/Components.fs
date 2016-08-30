@@ -27,7 +27,7 @@ type WireframeComponent (vertices: Vector3 []) =
 
     member val State = WireframeState.ReadyToLoad (vertices) with get, set
 
-    interface IEntityComponent
+    interface IComponent
 
 type Mesh =
     {
@@ -86,7 +86,7 @@ type MeshComponent (vertices: Vector3 [], uv) =
 
     member __.Max = max
 
-    interface IEntityComponent
+    interface IComponent
 
 
 [<RequireQualifiedAccess>]
@@ -107,5 +107,5 @@ type MaterialComponent (vertexShaderFileName: string, fragmentShaderFileName: st
 
     member val Color = color
 
-    interface IEntityComponent
+    interface IComponent
 

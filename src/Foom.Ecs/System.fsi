@@ -12,7 +12,7 @@ type internal SysContext<'Update> =
     {
         EntitySystemState: EntitySystemState
         EntityManager: EntityManager
-        EventManager: EventManager
+        EventAggregator: EventAggregator
         Actions: ResizeArray<'Update -> unit>
     }
 
@@ -21,16 +21,16 @@ type Sys<'Update> = internal Sys of (SysContext<'Update> -> unit)
 type EntitySystem<'Update> =
     internal {
         State: EntitySystemState
-        CreateSysContext: EntityManager -> EventManager -> SysContext<'Update>
+        CreateSysContext: EntityManager -> EventAggregator -> SysContext<'Update>
         SysCollection: Sys<'Update> list
     }
 
 [<AutoOpen>]
 module SysOperators =
 
-    val eventQueue : (#IEntitySystemEvent -> 'Update -> EntityManager -> unit) -> Sys<'Update>
+    val eventQueue : (#IEvent -> 'Update -> EntityManager -> unit) -> Sys<'Update>
 
-    val update : ('Update -> EntityManager -> EventManager -> unit) -> Sys<'Update>
+    val update : ('Update -> EntityManager -> EventAggregator -> unit) -> Sys<'Update>
 
 [<RequireQualifiedAccess>]
 module EntitySystem =

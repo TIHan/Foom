@@ -9,4 +9,4 @@ open Foom.Ecs
  
 type CharacterControllerComponent () =
 
-    interface IEntityComponent
+    interface IComponent

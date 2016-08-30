@@ -81,23 +81,23 @@ type Entity =
 
     override this.ToString () = String.Format ("(Entity #{0}.{1})", this.Index, this.Version)
 
-type IEntityComponent = interface end
+type IComponent = interface end
 
 module Events =
 
-    type ComponentAdded<'T when 'T :> IEntityComponent and 'T : not struct> = 
+    type ComponentAdded<'T when 'T :> IComponent and 'T : not struct> = 
         { entity: Entity }
 
         member this.Entity = this.entity
 
-        interface IEntitySystemEvent
+        interface IEvent
 
-    type ComponentRemoved<'T when 'T :> IEntityComponent and 'T : not struct> = 
+    type ComponentRemoved<'T when 'T :> IComponent and 'T : not struct> = 
         { entity: Entity }
 
         member this.Entity = this.entity
 
-        interface IEntitySystemEvent
+        interface IEvent
 
     type AnyComponentAdded =
         { entity: Entity; componentType: Type }
@@ -106,7 +106,7 @@ module Events =
 
         member this.ComponentType = this.componentType
 
-        interface IEntitySystemEvent
+        interface IEvent
 
     type AnyComponentRemoved =
         { entity: Entity; componentType: Type }
@@ -115,21 +115,21 @@ module Events =
 
         member this.ComponentType = this.componentType
 
-        interface IEntitySystemEvent
+        interface IEvent
 
     type EntitySpawned =
         { entity: Entity }
 
         member this.Entity = this.entity
 
-        interface IEntitySystemEvent
+        interface IEvent
 
     type EntityDestroyed =
         { entity: Entity }
 
         member this.Entity = this.entity
 
-        interface IEntitySystemEvent
+        interface IEvent
 
 open Events
 
@@ -138,7 +138,7 @@ type IEntityLookupData =
     abstract Entities : Entity UnsafeResizeArray with get
 
 [<ReferenceEquality>]
-type EntityLookupData<'T when 'T :> IEntityComponent and 'T : not struct> =
+type EntityLookupData<'T when 'T :> IComponent and 'T : not struct> =
     {
         ComponentAddedEvent: Event<ComponentAdded<'T>>
         ComponentRemovedEvent: Event<ComponentRemoved<'T>>
@@ -158,7 +158,7 @@ type EntityLookupData<'T when 'T :> IEntityComponent and 'T : not struct> =
 [<ReferenceEquality>]
 type EntityManager =
     {
-        EventManager: EventManager
+        EventAggregator: EventAggregator
 
         MaxEntityAmount: int
         Lookup: ConcurrentDictionary<Type, IEntityLookupData>
@@ -181,7 +181,7 @@ type EntityManager =
         PendingQueue: Queue<unit -> unit>
     }
 
-    static member Create (eventManager: EventManager, maxEntityAmount) =
+    static member Create (eventManager: EventAggregator, maxEntityAmount) =
         if maxEntityAmount <= 0 then
             failwith "Max entity amount must be greater than 0."
 
@@ -203,7 +203,7 @@ type EntityManager =
         let anyComponentRemovedEvent = eventManager.GetEvent<AnyComponentRemoved> ()
 
         {
-            EventManager = eventManager
+            EventAggregator = eventManager
             MaxEntityAmount = maxEntityAmount
             Lookup = lookup
             ActiveVersions = activeVersions
@@ -229,7 +229,7 @@ type EntityManager =
                 let action = this.PendingQueue.Dequeue ()
                 action ()
 
-    member this.GetEntityLookupData<'T when 'T :> IEntityComponent and 'T : not struct> () : EntityLookupData<'T> =
+    member this.GetEntityLookupData<'T when 'T :> IComponent and 'T : not struct> () : EntityLookupData<'T> =
         let t = typeof<'T>
         let mutable data = Unchecked.defaultof<IEntityLookupData>
         match this.Lookup.TryGetValue(t, &data) with
@@ -238,8 +238,8 @@ type EntityManager =
             let factory t =
                 let data =
                     {
-                        ComponentAddedEvent = this.EventManager.GetEvent<ComponentAdded<'T>> ()
-                        ComponentRemovedEvent = this.EventManager.GetEvent<ComponentRemoved<'T>> ()
+                        ComponentAddedEvent = this.EventAggregator.GetEvent<ComponentAdded<'T>> ()
+                        ComponentRemovedEvent = this.EventAggregator.GetEvent<ComponentRemoved<'T>> ()
 
                         RemoveComponent = fun entity -> this.RemoveComponent<'T> entity
 
@@ -253,7 +253,7 @@ type EntityManager =
 
             this.Lookup.GetOrAdd(t, factory) :?> EntityLookupData<'T>
 
-    member inline this.Iterate<'T when 'T :> IEntityComponent and 'T : not struct> (f) : unit =
+    member inline this.Iterate<'T when 'T :> IComponent and 'T : not struct> (f) : unit =
         let mutable data = Unchecked.defaultof<IEntityLookupData>
         if this.Lookup.TryGetValue (typeof<'T>, &data) then
             let data = data :?> EntityLookupData<'T>
@@ -266,7 +266,7 @@ type EntityManager =
 
             for i = 0 to data.Entities.Count - 1 do iter i
 
-    member inline this.Iterate<'T1, 'T2 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct> (f) : unit =
+    member inline this.Iterate<'T1, 'T2 when 'T1 :> IComponent and 'T2 :> IComponent and 'T1 : not struct and 'T2 : not struct> (f) : unit =
         let mutable data1 = Unchecked.defaultof<IEntityLookupData>
         let mutable data2 = Unchecked.defaultof<IEntityLookupData>
         if this.Lookup.TryGetValue (typeof<'T1>, &data1) && this.Lookup.TryGetValue (typeof<'T2>, &data2) then
@@ -286,7 +286,7 @@ type EntityManager =
     
             for i = 0 to data.Entities.Count - 1 do iter i
 
-    member inline this.Iterate<'T1, 'T2, 'T3 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T3 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct and 'T3 : not struct> (f) : unit =
+    member inline this.Iterate<'T1, 'T2, 'T3 when 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T1 : not struct and 'T2 : not struct and 'T3 : not struct> (f) : unit =
         let mutable data1 = Unchecked.defaultof<IEntityLookupData>
         let mutable data2 = Unchecked.defaultof<IEntityLookupData>
         let mutable data3 = Unchecked.defaultof<IEntityLookupData>
@@ -310,7 +310,7 @@ type EntityManager =
     
             for i = 0 to data.Entities.Count - 1 do iter i
 
-    member inline this.Iterate<'T1, 'T2, 'T3, 'T4 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T3 :> IEntityComponent and 'T4 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct and 'T3 : not struct and 'T4 : not struct> (f) : unit =
+    member inline this.Iterate<'T1, 'T2, 'T3, 'T4 when 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T4 :> IComponent and 'T1 : not struct and 'T2 : not struct and 'T3 : not struct and 'T4 : not struct> (f) : unit =
         let mutable data1 = Unchecked.defaultof<IEntityLookupData>
         let mutable data2 = Unchecked.defaultof<IEntityLookupData>
         let mutable data3 = Unchecked.defaultof<IEntityLookupData>
@@ -339,7 +339,7 @@ type EntityManager =
 
     // Components
 
-    member this.AddComponent<'T when 'T :> IEntityComponent and 'T : not struct> (entity: Entity) (comp: 'T) =
+    member this.AddComponent<'T when 'T :> IComponent and 'T : not struct> (entity: Entity) (comp: 'T) =
         if this.CurrentIterations > 0 then
             let data = this.GetEntityLookupData<'T> ()
             this.PendingQueue.Enqueue (fun () -> this.AddComponent entity comp)
@@ -363,7 +363,7 @@ type EntityManager =
             else
                 Debug.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot add component, {1}", entity, typeof<'T>.Name))
 
-    member this.RemoveComponent<'T when 'T :> IEntityComponent and 'T : not struct> (entity: Entity) =
+    member this.RemoveComponent<'T when 'T :> IComponent and 'T : not struct> (entity: Entity) =
         if this.CurrentIterations > 0 then
             let data = this.GetEntityLookupData<'T> ()
             this.PendingQueue.Enqueue (fun () -> data.RemoveComponent (entity))
@@ -434,7 +434,7 @@ type EntityManager =
 
     //************************************************************************************************************************
 
-    member this.TryGet<'T when 'T :> IEntityComponent and 'T : not struct> (entity: Entity) : 'T option =
+    member this.TryGet<'T when 'T :> IComponent and 'T : not struct> (entity: Entity) : 'T option =
         let mutable data = Unchecked.defaultof<IEntityLookupData>
         if this.Lookup.TryGetValue (typeof<'T>, &data) then
             let data = data :?> EntityLookupData<'T>
@@ -452,7 +452,7 @@ type EntityManager =
     member this.IsValid entity =
         this.IsValidEntity entity
 
-    member this.HasComponent<'T when 'T :> IEntityComponent and 'T : not struct> (entity: Entity) =
+    member this.HasComponent<'T when 'T :> IComponent and 'T : not struct> (entity: Entity) =
         let mutable data = Unchecked.defaultof<IEntityLookupData>
         if this.Lookup.TryGetValue (typeof<'T>, &data) then
             let data = data :?> EntityLookupData<'T>
@@ -462,7 +462,7 @@ type EntityManager =
 
     //************************************************************************************************************************
 
-    member this.ForEach<'T when 'T :> IEntityComponent and 'T : not struct> (f: Entity -> 'T -> unit) : unit =
+    member this.ForEach<'T when 'T :> IComponent and 'T : not struct> (f: Entity -> 'T -> unit) : unit =
         this.CurrentIterations <- this.CurrentIterations + 1
 
         this.Iterate<'T> (f)
@@ -470,7 +470,7 @@ type EntityManager =
         this.CurrentIterations <- this.CurrentIterations - 1
         this.ResolvePendingQueues ()
 
-    member this.ForEach<'T1, 'T2 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct> f : unit =
+    member this.ForEach<'T1, 'T2 when 'T1 :> IComponent and 'T2 :> IComponent and 'T1 : not struct and 'T2 : not struct> f : unit =
         this.CurrentIterations <- this.CurrentIterations + 1
 
         this.Iterate<'T1, 'T2> (f)
@@ -478,7 +478,7 @@ type EntityManager =
         this.CurrentIterations <- this.CurrentIterations - 1
         this.ResolvePendingQueues ()
 
-    member this.ForEach<'T1, 'T2, 'T3 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T3 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct and 'T3 : not struct> f : unit =
+    member this.ForEach<'T1, 'T2, 'T3 when 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T1 : not struct and 'T2 : not struct and 'T3 : not struct> f : unit =
         this.CurrentIterations <- this.CurrentIterations + 1
 
         this.Iterate<'T1, 'T2, 'T3> (f)
@@ -486,7 +486,7 @@ type EntityManager =
         this.CurrentIterations <- this.CurrentIterations - 1
         this.ResolvePendingQueues ()
 
-    member this.ForEach<'T1, 'T2, 'T3, 'T4 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T3 :> IEntityComponent and 'T4 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct and 'T3 : not struct and 'T4 : not struct> f : unit =
+    member this.ForEach<'T1, 'T2, 'T3, 'T4 when 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T4 :> IComponent and 'T1 : not struct and 'T2 : not struct and 'T3 : not struct and 'T4 : not struct> f : unit =
         this.CurrentIterations <- this.CurrentIterations + 1
 
         this.Iterate<'T1, 'T2, 'T3, 'T4> (f)
@@ -494,7 +494,7 @@ type EntityManager =
         this.CurrentIterations <- this.CurrentIterations - 1
         this.ResolvePendingQueues ()
 
-    member this.TryFind<'T when 'T :> IEntityComponent and 'T : not struct> (predicate: (Entity -> 'T -> bool)) : (Entity * 'T) option =
+    member this.TryFind<'T when 'T :> IComponent and 'T : not struct> (predicate: (Entity -> 'T -> bool)) : (Entity * 'T) option =
         let mutable item = None
 
         this.ForEach<'T> (fun entity comp ->
@@ -504,7 +504,7 @@ type EntityManager =
 
         item
 
-    member this.TryFind<'T1, 'T2 when 'T1 :> IEntityComponent and 'T2 :> IEntityComponent and 'T1 : not struct and 'T2 : not struct> (predicate: (Entity -> 'T1 -> 'T2 -> bool)) : (Entity * 'T1 * 'T2) option =
+    member this.TryFind<'T1, 'T2 when 'T1 :> IComponent and 'T2 :> IComponent and 'T1 : not struct and 'T2 : not struct> (predicate: (Entity -> 'T1 -> 'T2 -> bool)) : (Entity * 'T1 * 'T2) option =
         let mutable item = None
 
         this.ForEach<'T1, 'T2> (fun entity comp1 comp2 ->

@@ -3,10 +3,10 @@
 open System
 open System.Collections.Concurrent
 
-type IEntitySystemEvent = interface end
+type IEvent = interface end
 
 [<ReferenceEquality>]
-type EventManager  =
+type EventAggregator  =
     {
         Lookup: ConcurrentDictionary<Type, obj>
     }
@@ -16,10 +16,10 @@ type EventManager  =
             Lookup = ConcurrentDictionary<Type, obj> ()
         }
 
-    member this.Publish (event: 'T when 'T :> IEntitySystemEvent and 'T : not struct) =
+    member this.Publish (event: 'T when 'T :> IEvent and 'T : not struct) =
         let mutable value = Unchecked.defaultof<obj>
         if this.Lookup.TryGetValue (typeof<'T>, &value) then
             (value :?> Event<'T>).Trigger event
 
-    member this.GetEvent<'T when 'T :> IEntitySystemEvent> () =
+    member this.GetEvent<'T when 'T :> IEvent> () =
        this.Lookup.GetOrAdd (typeof<'T>, valueFactory = (fun _ -> Event<'T> () :> obj)) :?> Event<'T>

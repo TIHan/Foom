@@ -8,7 +8,7 @@ open Foom.Ecs
 
 [<Sealed>]
 type World (maxEntityAmount) =
-    let eventManager = EventManager.Create ()
+    let eventManager = EventAggregator.Create ()
     let entityManager = EntityManager.Create (eventManager, maxEntityAmount)
 
     member this.AddSystem<'Update> (sys: EntitySystem<'Update>) =

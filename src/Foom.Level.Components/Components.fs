@@ -19,7 +19,7 @@ type LevelComponent (levelName: string) =
 
     member val State = LevelState.ReadyToLoad levelName with get, set
 
-    interface IEntityComponent
+    interface IComponent
 
 [<RequireQualifiedAccess>]
 type WadState =
@@ -31,7 +31,7 @@ type WadComponent (wadName: string) =
 
     member val State = WadState.ReadyToLoad wadName with get, set
 
-    interface IEntityComponent
+    interface IComponent
 
 module Sys =
 

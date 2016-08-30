@@ -55,7 +55,7 @@ type TransformComponent (value: Matrix4x4) =
             m.Translation <- transform.Translation
             transform <- m
 
-    interface IEntityComponent
+    interface IComponent
 
 [<Sealed>]
 type CameraComponent (projection) =
@@ -86,5 +86,5 @@ type CameraComponent (projection) =
         with get () = angle.Z
         and set value = angle.Z <- value
 
-    interface IEntityComponent
+    interface IComponent
     
