@@ -383,7 +383,8 @@ module Level =
         |> Seq.iter (fun linedef ->
             let isLowerUnpegged = linedef.Flags.HasFlag(LinedefFlags.LowerTextureUnpegged)
             let isUpperUnpegged = linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged)
-            let isTwoSided = linedef.Flags.HasFlag(LinedefFlags.TwoSided)
+
+            let isTwoSided = linedef.FrontSidedef.IsSome && linedef.BackSidedef.IsSome
 
             let special =
                 if linedef.SpecialType = 1 && linedef.BackSidedef.IsSome then
