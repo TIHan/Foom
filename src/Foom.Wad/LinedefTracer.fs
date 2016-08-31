@@ -198,7 +198,8 @@ module LinedefTracer =
 
                 else
                     match nonVisitedLinedefs originalTracer with
-                    | [] -> polygons
+                    | [] -> [] // Used to return "polygons". Return nothing because something broke.
+                               // We might need to handle it a better way.
                     | linedefs ->
                         let tracer = create originalTracer.sectorId linedefs
                         f polygons tracer tracer

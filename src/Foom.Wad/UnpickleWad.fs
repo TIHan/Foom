@@ -128,6 +128,12 @@ module UnpickleWad =
     let u_lumpVertices size offset : Unpickle<LumpVertices> =
         u_lookAhead (u_vertices (size / vertexSize) offset) |>> fun vertices -> { Vertices = vertices }
 
+    let tryParseTextureName name =
+        if String.IsNullOrWhiteSpace (name) || name = "-" then
+            None
+        else
+            Some name
+
     [<Literal>]
     let sidedefSize = 30
     let u_sidedef : Unpickle<Sidedef> =
@@ -135,9 +141,9 @@ module UnpickleWad =
         fun offsetX offsetY upperTexName lowerTexName middleTexName sectorNumber ->
             { OffsetX = int offsetX
               OffsetY = int offsetY
-              UpperTextureName = upperTexName.Trim().Trim('\000')
-              LowerTextureName = lowerTexName.Trim().Trim('\000')
-              MiddleTextureName = middleTexName.Trim().Trim('\000')
+              UpperTextureName = upperTexName.Trim().Trim('\000') |> tryParseTextureName
+              LowerTextureName = lowerTexName.Trim().Trim('\000') |> tryParseTextureName
+              MiddleTextureName = middleTexName.Trim().Trim('\000') |> tryParseTextureName
               SectorNumber = int sectorNumber }
 
     let u_sidedefs count offset : Unpickle<Sidedef []> =

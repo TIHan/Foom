@@ -394,7 +394,7 @@ module Level =
             let addMiddleWithVertices (floorHeight: int) (ceilingHeight: int) (sidedef: Sidedef) vertices =
                 {
                     SectorId = sidedef.SectorNumber
-                    TextureName = Some sidedef.MiddleTextureName
+                    TextureName = sidedef.MiddleTextureName
                     TextureOffsetX = sidedef.OffsetX
                     TextureOffsetY = sidedef.OffsetY
                     Vertices = vertices
@@ -437,11 +437,11 @@ module Level =
                 | Some frontSidedef ->
                     let frontSideSector = Seq.item frontSidedef.SectorNumber level.sectors
 
-                    if backSidedef.UpperTextureName.Contains("-") |> not && frontSideSector.CeilingHeight < sector.CeilingHeight then
+                    if backSidedef.UpperTextureName.IsSome && frontSideSector.CeilingHeight < sector.CeilingHeight then
 
                         {
                             SectorId = backSidedef.SectorNumber
-                            TextureName = Some backSidedef.UpperTextureName
+                            TextureName = backSidedef.UpperTextureName
                             TextureOffsetX = backSidedef.OffsetX
                             TextureOffsetY = backSidedef.OffsetY
                             Vertices =
@@ -463,12 +463,12 @@ module Level =
                         }
                         |> arr.Add
                        
-                    if backSidedef.LowerTextureName.Contains("-") |> not && frontSideSector.FloorHeight > sector.FloorHeight then
+                    if backSidedef.LowerTextureName.IsSome && frontSideSector.FloorHeight > sector.FloorHeight then
                         let frontSideSector = Seq.item frontSidedef.SectorNumber level.sectors
 
                         {
                             SectorId = backSidedef.SectorNumber
-                            TextureName = Some backSidedef.LowerTextureName
+                            TextureName = backSidedef.LowerTextureName
                             TextureOffsetX = backSidedef.OffsetX
                             TextureOffsetY = backSidedef.OffsetY
                             Vertices = 
@@ -494,7 +494,7 @@ module Level =
             
                 | _ -> ()
 
-                if backSidedef.MiddleTextureName.Contains("-") |> not then
+                if backSidedef.MiddleTextureName.IsSome then
 
                     match linedef.FrontSidedef with
                     | Some frontSidedef ->
@@ -512,12 +512,12 @@ module Level =
                 | Some backSidedef ->
                     let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
 
-                    if frontSidedef.UpperTextureName.Contains("-") |> not && sector.CeilingHeight > backSideSector.CeilingHeight then
+                    if frontSidedef.UpperTextureName.IsSome && sector.CeilingHeight > backSideSector.CeilingHeight then
 
 
                         {
                             SectorId = frontSidedef.SectorNumber
-                            TextureName = Some frontSidedef.UpperTextureName
+                            TextureName = frontSidedef.UpperTextureName
                             TextureOffsetX = frontSidedef.OffsetX
                             TextureOffsetY = frontSidedef.OffsetY
                             Vertices =
@@ -539,11 +539,11 @@ module Level =
                         }
                         |> arr.Add
 
-                    if frontSidedef.LowerTextureName.Contains("-") |> not && sector.FloorHeight < backSideSector.FloorHeight then
+                    if frontSidedef.LowerTextureName.IsSome && sector.FloorHeight < backSideSector.FloorHeight then
 
                         {
                             SectorId = frontSidedef.SectorNumber
-                            TextureName = Some frontSidedef.LowerTextureName
+                            TextureName = frontSidedef.LowerTextureName
                             TextureOffsetX = frontSidedef.OffsetX
                             TextureOffsetY = frontSidedef.OffsetY
                             Vertices = 
@@ -569,7 +569,7 @@ module Level =
 
                 | _ -> ()
 
-                if frontSidedef.MiddleTextureName.Contains("-") |> not then
+                if frontSidedef.MiddleTextureName.IsSome then
 
                     let floorHeight =
                         match linedef.BackSidedef with
