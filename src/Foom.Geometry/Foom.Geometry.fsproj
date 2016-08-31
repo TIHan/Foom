@@ -43,6 +43,8 @@
   <ItemGroup>
     <Compile Include="Triangle2D.fsi" />
     <Compile Include="Triangle2D.fs" />
+    <Compile Include="LineSegment2D.fsi" />
+    <Compile Include="LineSegment2D.fs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Polygon2D.fsi" />

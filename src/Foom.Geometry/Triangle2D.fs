@@ -2,6 +2,8 @@
 
 open System.Numerics
 
+open Foom.Math
+
 [<Struct>]
 type Triangle2D =
 
@@ -25,16 +27,17 @@ module Triangle2D =
     let containsPoint (p: Vector2) (tri: Triangle2D) =
         // ************************
         // Barycentric
+        //     "bary" comes from Greek, meaning weight.
         // ************************
         let v0 = tri.B - tri.A
         let v1 = tri.C - tri.A
         let v2 = p - tri.A
 
-        let d00 = Vector2.Dot (v0, v0)
-        let d01 = Vector2.Dot (v0, v1)
-        let d11 = Vector2.Dot (v1, v1)
-        let d20 = Vector2.Dot (v2, v0)
-        let d21 = Vector2.Dot (v2, v1)
+        let d00 = Vec2.dot v0 v0
+        let d01 = Vec2.dot v0 v1
+        let d11 = Vec2.dot v1 v1
+        let d20 = Vec2.dot v2 v0
+        let d21 = Vec2.dot v2 v1
 
         let denom = d00 * d11 - d01 * d01
 
