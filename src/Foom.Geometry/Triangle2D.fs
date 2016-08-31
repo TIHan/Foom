@@ -47,3 +47,21 @@ module Triangle2D =
         // ************************
 
         0.f <= u && u <= 1.f && 0.f <= v && v <= 1.f && 0.f <= w && w <= 1.f
+
+    let aabb (tri: Triangle2D) =
+        let mutable minX = tri.A.X
+        let mutable maxX = tri.A.X
+        let mutable minY = tri.A.Y
+        let mutable maxY = tri.A.Y
+
+        if tri.B.X < minX then minX <- tri.B.X
+        if tri.B.X > maxX then maxX <- tri.B.X
+        if tri.B.Y < minY then minY <- tri.B.Y
+        if tri.B.Y > maxY then maxY <- tri.B.Y
+
+        if tri.C.X < minX then minX <- tri.C.X
+        if tri.C.X > maxX then maxX <- tri.C.X
+        if tri.C.Y < minY then minY <- tri.C.Y
+        if tri.C.Y > maxY then maxY <- tri.C.Y
+
+        AABB2D.ofMinAndMax (Vector2 (minX, minY)) (Vector2 (maxX, maxY))

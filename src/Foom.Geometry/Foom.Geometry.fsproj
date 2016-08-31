@@ -41,6 +41,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AABB2D.fsi" />
+    <Compile Include="AABB2D.fs" />
     <Compile Include="Triangle2D.fsi" />
     <Compile Include="Triangle2D.fs" />
     <Compile Include="LineSegment2D.fsi" />
@@ -51,8 +53,6 @@
     <Compile Include="Polygon2D.fs" />
     <Compile Include="Polygon2DTree.fsi" />
     <Compile Include="Polygon2DTree.fs" />
-    <Compile Include="AABB2D.fsi" />
-    <Compile Include="AABB2D.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

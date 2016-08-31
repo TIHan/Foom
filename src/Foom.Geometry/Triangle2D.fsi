@@ -19,3 +19,5 @@ module Triangle2D =
     val inline area : Triangle2D -> float32
 
     val containsPoint : Vector2 -> Triangle2D -> bool
+
+    val aabb : Triangle2D -> AABB2D
