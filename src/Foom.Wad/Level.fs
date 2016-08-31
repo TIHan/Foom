@@ -497,12 +497,29 @@ module Level =
 
                 if backSidedef.MiddleTextureName.IsSome then
 
-                    match linedef.FrontSidedef with
-                    | Some frontSidedef ->
-                        let frontSideSector = Seq.item frontSidedef.SectorNumber level.sectors
+                    let floorHeight, ceilingHeight =
+                        match linedef.FrontSidedef with
+                        | Some frontSidedef ->
+                            let frontSideSector = Seq.item frontSidedef.SectorNumber level.sectors
 
-                        addMiddleBack sector.FloorHeight frontSideSector.CeilingHeight backSidedef
-                    | _ -> ()
+                            (
+                                (
+                                    if frontSideSector.FloorHeight > sector.FloorHeight then
+                                        frontSideSector.FloorHeight
+                                    else
+                                        sector.FloorHeight
+                                ),
+                                (
+                                    if frontSideSector.CeilingHeight < sector.CeilingHeight then
+                                        frontSideSector.CeilingHeight
+                                    else
+                                        sector.CeilingHeight
+                                )
+                            )
+
+                        | _ -> sector.FloorHeight, sector.CeilingHeight
+
+                    addMiddleBack floorHeight ceilingHeight backSidedef
 
             | _ -> ()
 
@@ -572,14 +589,29 @@ module Level =
 
                 if frontSidedef.MiddleTextureName.IsSome then
 
-                    let floorHeight =
+                    let floorHeight, ceilingHeight =
                         match linedef.BackSidedef with
-                        | Some backSidedef -> 
+                        | Some backSidedef ->
                             let backSideSector = Seq.item backSidedef.SectorNumber level.sectors
-                            backSideSector.FloorHeight
-                        | _ -> sector.FloorHeight
+
+                            (
+                                (
+                                    if backSideSector.FloorHeight > sector.FloorHeight then
+                                        backSideSector.FloorHeight
+                                    else
+                                        sector.FloorHeight
+                                ),
+                                (
+                                    if backSideSector.CeilingHeight < sector.CeilingHeight then
+                                        backSideSector.CeilingHeight
+                                    else
+                                        sector.CeilingHeight
+                                )
+                            )
+
+                        | _ -> sector.FloorHeight, sector.CeilingHeight
                        
-                    addMiddleFront floorHeight sector.CeilingHeight frontSidedef
+                    addMiddleFront floorHeight ceilingHeight frontSidedef
 
             | _ -> ()
         )
