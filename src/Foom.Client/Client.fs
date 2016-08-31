@@ -17,6 +17,7 @@ open Foom.Wad
 open Foom.Wad.Level
 open Foom.Wad.Level.Structures
 open Foom.Level.Components
+open Foom.Common.Components
 
 type ClientState = 
     {
@@ -63,6 +64,25 @@ let create (app: Application) =
             @
             [
                 Camera.update (app)
+
+                Behavior.update (fun _ em _ ->
+
+                    em.TryFind<Foom.Client.Level.SpatialComponent> (fun _ _ -> true)
+                    |> Option.iter (fun (_, spatialComp) ->
+
+                        em.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true)
+                        |> Option.iter (fun (_, _, transformComp) ->
+                            let pos = transformComp.Position
+                            let pos = Vector2 (pos.X, pos.Y)
+
+                            spatialComp.SpatialHash
+                            |> SpatialHash2D.queryWithPoint pos (fun sectorId ->
+                                printfn "In Sector: %A" sectorId
+                            )
+                        )
+                    )
+
+                )
             ]
         )
 

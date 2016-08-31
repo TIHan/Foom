@@ -20,6 +20,13 @@ open Foom.Common.Components
 open Foom.Renderer.Components
 open Foom.Level.Components
 
+type SpatialComponent =
+    {
+        SpatialHash: SpatialHash2D<int>
+    }
+
+    interface IComponent
+
 let exportFlatTextures (wad: Wad) =
     wad
     |> Wad.iterFlatTextureName (fun name ->
@@ -176,6 +183,10 @@ let updates () =
 
             spawnAABBWireframe levelAABB em
 
+            let spatialComp = 
+                {
+                    SpatialHash = SpatialHash2D.create 128
+                }
 
             level
             |> Level.iteriSector (fun i sector ->
@@ -185,6 +196,24 @@ let updates () =
                 |> Seq.iter (fun flat ->
                     spawnCeilingMesh flat lightLevel wad em
                     spawnFloorMesh flat lightLevel wad em
+
+                    let mutable j = 0
+                    while j < flat.Floor.Vertices.Length do
+                        let v0 = flat.Floor.Vertices.[j]
+                        let v1 = flat.Floor.Vertices.[j + 1]
+                        let v2 = flat.Floor.Vertices.[j + 2]
+
+                        SpatialHash2D.addStaticTriangle 
+                            (Triangle2D (
+                                    Vector2 (v0.X, v0.Y),
+                                    Vector2 (v1.X, v1.Y),
+                                    Vector2 (v2.X, v2.Y)
+                                )
+                            )
+                            i
+                            spatialComp.SpatialHash
+
+                        j <- j + 3
                 )
 
                 Level.createWalls i level
@@ -192,6 +221,9 @@ let updates () =
                     spawnWallMesh wall lightLevel wad em
                 )
             )
+
+            let ent = em.Spawn ()
+            em.AddComponent ent (spatialComp)
 
             level
             |> Level.tryFindPlayer1Start
