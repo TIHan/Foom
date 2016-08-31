@@ -131,22 +131,25 @@ let spawnWallMesh (wall: Wall) lightLevel wad em =
     )
 
 let spawnAABBWireframe (aabb: AABB2D) (em: EntityManager) =
+    let min = aabb.Min ()
+    let max = aabb.Max ()
+
     let ent = em.Spawn ()
     em.AddComponent ent (TransformComponent (Matrix4x4.Identity))
     em.AddComponent ent (
         WireframeComponent (
             [|
-                Vector3 (aabb.Min.X, aabb.Min.Y, 0.f)
-                Vector3 (aabb.Max.X, aabb.Min.Y, 0.f)
+                Vector3 (min.X, min.Y, 0.f)
+                Vector3 (max.X, min.Y, 0.f)
 
-                Vector3 (aabb.Max.X, aabb.Min.Y, 0.f)
-                Vector3 (aabb.Max.X, aabb.Max.Y, 0.f)
+                Vector3 (max.X, min.Y, 0.f)
+                Vector3 (max.X, max.Y, 0.f)
 
-                Vector3 (aabb.Max.X, aabb.Max.Y, 0.f)
-                Vector3 (aabb.Min.X, aabb.Max.Y, 0.f)
+                Vector3 (max.X, max.Y, 0.f)
+                Vector3 (min.X, max.Y, 0.f)
 
-                Vector3 (aabb.Min.X, aabb.Max.Y, 0.f)
-                Vector3 (aabb.Min.X, aabb.Min.Y, 0.f)
+                Vector3 (min.X, max.Y, 0.f)
+                Vector3 (min.X, min.Y, 0.f)
             |]
         )
     ) 

@@ -2,64 +2,44 @@
 
 open System.Numerics
 
-type ContainmentType =
-    | Disjoint
-    | Contains
-    | Intersects
-
 type AABB2D =
     {
-        min: Vector2
-        max: Vector2
+        center: Vector2
+        extents: Vector2
     }
 
-    member this.Min = this.min
+    member this.Center = this.center
 
-    member this.Max = this.max
+    member this.Extents = this.extents
+
+    member this.Min () = this.Center - this.Extents
+
+    member this.Max () = this.Center + this.Extents
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module AABB2D =
 
-    let inline min (b: AABB2D) = b.Min
+    let inline center (b: AABB2D) = b.Center
 
-    let inline max (b: AABB2D) = b.Max
+    let inline extents (b: AABB2D) = b.Extents
 
-    let ofMinAndMax min max =
+    let inline min (b: AABB2D) = b.Min ()
+
+    let inline max (b: AABB2D) = b.Max ()
+
+    let ofMinAndMax (min: Vector2) (max: Vector2) =
         {
-            min = min
-            max = max
+            center = (min + max) * 0.5f
+            extents = (min - max) * 0.5f
         }
 
-    let containsPoint (point: Vector2) (b: AABB2D) =
-        //first we get if point is out of box
-        if (point.X < b.Min.X
-            || point.X > b.Max.X
-            || point.Y < b.Min.Y
-            || point.Y > b.Max.Y) then
-            ContainmentType.Disjoint
+    let ofCenterAndExtents center extents =
+        {
+            center = center
+            extents = extents
+        }
 
-        //or if point is on box because coordonate of point is lesser or equal
-        elif (point.X = b.Min.X
-            || point.X = b.Max.X
-            || point.Y = b.Min.Y
-            || point.Y = b.Max.Y) then
-            ContainmentType.Intersects
-        else
-            ContainmentType.Contains
-
-    let containsAABB (b1: AABB2D) (b: AABB2D) =
-        //test if all corner is in the same side of a face by just checking min and max
-        if (b1.Max.X < b.Min.X
-            || b1.Min.X > b.Max.X
-            || b1.Max.Y < b.Min.Y
-            || b1.Min.Y > b.Max.Y) then
-            ContainmentType.Disjoint
-
-        elif (b1.Min.X >= b.Min.X
-            && b1.Max.X <= b.Max.X
-            && b1.Min.Y >= b.Min.Y
-            && b1.Max.Y <= b.Max.Y) then
-            ContainmentType.Contains
-
-        else
-            ContainmentType.Intersects
+    let intersects (a: AABB2D) (b: AABB2D) =
+        if      abs (a.Center.X - b.Center.X) > (a.Extents.X + b.Extents.X) then false
+        elif    abs (a.Center.Y - b.Center.Y) > (a.Extents.Y + b.Extents.Y) then false
+        else    true
