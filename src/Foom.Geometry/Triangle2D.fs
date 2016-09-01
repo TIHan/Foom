@@ -65,3 +65,13 @@ module Triangle2D =
         if tri.C.Y > maxY then maxY <- tri.C.Y
 
         AABB2D.ofMinAndMax (Vector2 (minX, minY)) (Vector2 (maxX, maxY))
+
+    // This isn't efficient yet.
+    let intersectsAABB (aabb: AABB2D) (tri: Triangle2D) =
+        let l0 = LineSegment2D (tri.A, tri.B)
+        let l1 = LineSegment2D (tri.B, tri.C)
+        let l2 = LineSegment2D (tri.C, tri.A)
+
+        LineSegment2D.intersectsAABB aabb l0 ||
+        LineSegment2D.intersectsAABB aabb l1 ||
+        LineSegment2D.intersectsAABB aabb l2

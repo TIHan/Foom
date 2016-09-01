@@ -21,3 +21,5 @@ module Triangle2D =
     val containsPoint : Vector2 -> Triangle2D -> bool
 
     val aabb : Triangle2D -> AABB2D
+
+    val intersectsAABB : AABB2D -> Triangle2D -> bool

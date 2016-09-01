@@ -62,12 +62,18 @@ module SpatialHash =
         let maxX = Math.Floor (float max.X / size) |> int
         let maxY = Math.Floor (float max.Y / size) |> int
         let minX = Math.Floor (float min.X / size) |> int
-        let minY = Math.Floor (float min.Y / size)|> int
+        let minY = Math.Floor (float min.Y / size) |> int
 
         for x = minX to maxX do
             for y = minY to maxY do
-                let hash = Hash (x, y)
-                addTriangleHash hash tri data spatialHash
+
+                let min = Vector2 (single (x * spatialHash.CellSize), single (y * spatialHash.CellSize))
+                let max = Vector2 (single ((x + 1) * spatialHash.CellSize), single ((y + 1) * spatialHash.CellSize))
+                let aabb = AABB2D.ofMinAndMax min max
+
+                if Triangle2D.intersectsAABB aabb tri then
+                    let hash = Hash (x, y)
+                    addTriangleHash hash tri data spatialHash
 
     let findWithPoint (p: Vector2) spatialHash =
         let size = float spatialHash.CellSize
@@ -81,7 +87,7 @@ module SpatialHash =
 
         match spatialHash.Buckets.TryGetValue hash with
         | true, bucket ->
-            System.Diagnostics.Debug.WriteLine (String.Format("Triangles Checked: {0}", bucket.Triangles.Count))
+            //System.Diagnostics.Debug.WriteLine (String.Format("Triangles Checked: {0}", bucket.Triangles.Count))
             for i = 0 to bucket.TriangleData.Count - 1 do
                 if Triangle2D.containsPoint p bucket.Triangles.[i] then
                     result <- bucket.TriangleData.[i]

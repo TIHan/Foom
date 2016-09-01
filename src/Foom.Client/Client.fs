@@ -53,7 +53,7 @@ let create (app: Application) =
                     | None ->
                         let ent = entityManager.Spawn ()
                         entityManager.AddComponent ent (WadComponent("doom.wad"))
-                        entityManager.AddComponent ent (LevelComponent("e1m5"))
+                        entityManager.AddComponent ent (LevelComponent("e1m1"))
 
                     | _ -> ()
                 )
