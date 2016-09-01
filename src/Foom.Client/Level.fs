@@ -16,7 +16,6 @@ open Foom.Wad
 open Foom.Wad.Level
 open Foom.Wad.Level.Structures
 open Foom.Common.Components
-open Foom.Renderer.Components
 open Foom.Level.Components
 
 let exportFlatTextures (wad: Wad) =
@@ -95,7 +94,7 @@ let spawnMesh vertices uv texturePath lightLevel (em: EntityManager) =
             "triangle.vertex",
             "triangle.fragment",
             texturePath,
-            { R = lightLevel; G = lightLevel; B = lightLevel; A = 0uy }
+            Color.FromArgb (0, int lightLevel, int lightLevel, int lightLevel)
         )
     )
 
@@ -157,7 +156,7 @@ let spawnAABBWireframe (aabb: AABB2D) (em: EntityManager) =
             "v.vertex",
             "f.fragment",
             "",
-            { R = 255uy; G = 255uy; B = 255uy; A = 0uy }
+            Color.FromArgb (0, 255, 255, 255)
         )
     )
 

@@ -9,7 +9,6 @@ open Foom.Math
 open Foom.Geometry
 open Foom.Client
 open Foom.Common.Components
-open Foom.Renderer.Components
 open Foom.Renderer
 
 [<RequireQualifiedAccess>]

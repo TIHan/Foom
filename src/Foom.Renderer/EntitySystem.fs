@@ -9,7 +9,6 @@ open System.Collections.Generic
 open Foom.Ecs
 open Foom.Math
 open Foom.Common.Components
-open Foom.Renderer.Components
 
 ////////
 

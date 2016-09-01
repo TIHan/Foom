@@ -1,16 +1,10 @@
-﻿namespace Foom.Renderer.Components
+﻿namespace Foom.Renderer
 
+open System
+open System.Drawing
 open System.Numerics
 
 open Foom.Ecs
-
-type Color =
-    {
-        R: byte
-        G: byte
-        B: byte
-        A: byte
-    }
 
 type Wireframe =
     {
@@ -108,4 +102,3 @@ type MaterialComponent (vertexShaderFileName: string, fragmentShaderFileName: st
     member val Color = color
 
     interface IComponent
-
