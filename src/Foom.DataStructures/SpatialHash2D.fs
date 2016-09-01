@@ -15,10 +15,19 @@ type SpatialHashBucket<'T> =
         TriangleData: ResizeArray<'T>
     }
 
+[<Struct>]
+type Hash =
+
+    val X : int
+
+    val Y : int
+
+    new (x, y) = { X = x; Y = y }
+
 type SpatialHash2D<'T> =
     {
         CellSize: int
-        Buckets: Dictionary<int, SpatialHashBucket<'T>>
+        Buckets: Dictionary<Hash, SpatialHashBucket<'T>>
     }
 
 module SpatialHash2D =
@@ -48,16 +57,19 @@ module SpatialHash2D =
     let addStaticTriangle (tri: Triangle2D) data spatialHash =
         let size = float spatialHash.CellSize
 
-        let a0 = Math.Floor (float tri.A.X / size) |> int
-        let a1 = Math.Floor (float tri.A.Y / size) |> int
-        let b0 = Math.Floor (float tri.B.X / size) |> int
-        let b1 = Math.Floor (float tri.B.Y / size) |> int
-        let c0 = Math.Floor (float tri.C.X / size) |> int
-        let c1 = Math.Floor (float tri.C.Y / size) |> int
+        let aabb = Triangle2D.aabb tri
+        let min = aabb.Min ()
+        let max = aabb.Max ()
 
-        addTriangleHash (a0 + a1) tri data spatialHash
-        addTriangleHash (b0 + b1) tri data spatialHash
-        addTriangleHash (c0 + c1) tri data spatialHash
+        let maxX = Math.Floor (float max.X / size) |> int
+        let maxY = Math.Floor (float max.Y / size) |> int
+        let minX = Math.Floor (float min.X / size) |> int
+        let minY = Math.Floor (float min.Y / size)|> int
+
+        for x = minX to maxX do
+            for y = minY to maxY do
+                let hash = Hash (x, y)
+                addTriangleHash hash tri data spatialHash
 
     let queryWithPoint (p: Vector2) f spatialHash =
         let size = float spatialHash.CellSize
@@ -65,10 +77,12 @@ module SpatialHash2D =
         let p0 = Math.Floor (float p.X / size) |> int
         let p1 = Math.Floor (float p.Y / size) |> int
 
-        match spatialHash.Buckets.TryGetValue (p0 + p1) with
+        let hash = Hash (p0, p1)
+
+        match spatialHash.Buckets.TryGetValue hash with
         | true, bucket ->
+           // System.Diagnostics.Debug.WriteLine (String.Format("Triangles Checked: {0}", bucket.Triangles.Count))
             for i = 0 to bucket.TriangleData.Count - 1 do
-                let tri = bucket.Triangles.[i]
-                if Triangle2D.containsPoint p tri then
+                if Triangle2D.containsPoint p bucket.Triangles.[i] then
                     f bucket.TriangleData.[i]
         | _ -> ()

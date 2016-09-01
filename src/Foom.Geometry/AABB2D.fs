@@ -30,7 +30,7 @@ module AABB2D =
     let ofMinAndMax (min: Vector2) (max: Vector2) =
         {
             center = (min + max) * 0.5f
-            extents = (min - max) * 0.5f
+            extents = (min - max) * 0.5f |> abs
         }
 
     let ofCenterAndExtents center extents =

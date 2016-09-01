@@ -54,7 +54,7 @@ let create (app: Application) =
                     | None ->
                         let ent = entityManager.Spawn ()
                         entityManager.AddComponent ent (WadComponent("doom.wad"))
-                        entityManager.AddComponent ent (LevelComponent("e1m3"))
+                        entityManager.AddComponent ent (LevelComponent("e1m5"))
 
                     | _ -> ()
                 )
@@ -75,6 +75,8 @@ let create (app: Application) =
                             let pos = transformComp.Position
                             let pos = Vector2 (pos.X, pos.Y)
 
+                            //let mutable f = (fun sectorId -> ())
+                            //for i = 0 to 1000 do
                             spatialComp.SpatialHash
                             |> SpatialHash2D.queryWithPoint pos (fun sectorId ->
                                 printfn "In Sector: %A" sectorId
