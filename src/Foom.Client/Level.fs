@@ -12,20 +12,12 @@ open Foom.Math
 open Foom.Physics
 open Foom.Renderer
 open Foom.Geometry
-open Foom.DataStructures
 open Foom.Wad
 open Foom.Wad.Level
 open Foom.Wad.Level.Structures
 open Foom.Common.Components
 open Foom.Renderer.Components
 open Foom.Level.Components
-
-type SpatialComponent =
-    {
-        SpatialHash: SpatialHash2D<int>
-    }
-
-    interface IComponent
 
 let exportFlatTextures (wad: Wad) =
     wad
@@ -183,10 +175,7 @@ let updates () =
 
             spawnAABBWireframe levelAABB em
 
-            let spatialComp = 
-                {
-                    SpatialHash = SpatialHash2D.create 128
-                }
+            let physicsEngineComp = PhysicsEngineComponent.Create 128 
 
             level
             |> Level.iteriSector (fun i sector ->
@@ -203,7 +192,8 @@ let updates () =
                         let v1 = flat.Floor.Vertices.[j + 1]
                         let v2 = flat.Floor.Vertices.[j + 2]
 
-                        SpatialHash2D.addStaticTriangle 
+                        physicsEngineComp.PhysicsEngine
+                        |> PhysicsEngine.addTriangle
                             (Triangle2D (
                                     Vector2 (v0.X, v0.Y),
                                     Vector2 (v1.X, v1.Y),
@@ -211,7 +201,6 @@ let updates () =
                                 )
                             )
                             i
-                            spatialComp.SpatialHash
 
                         j <- j + 3
                 )
@@ -223,7 +212,7 @@ let updates () =
             )
 
             let ent = em.Spawn ()
-            em.AddComponent ent (spatialComp)
+            em.AddComponent ent (physicsEngineComp)
 
             level
             |> Level.tryFindPlayer1Start

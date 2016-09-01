@@ -11,7 +11,6 @@ open Foom.Ecs
 open Foom.Math
 open Foom.Physics
 open Foom.Geometry
-open Foom.DataStructures
 open Foom.Renderer
 open Foom.Wad
 open Foom.Wad.Level
@@ -67,20 +66,17 @@ let create (app: Application) =
 
                 Behavior.update (fun _ em _ ->
 
-                    em.TryFind<Foom.Client.Level.SpatialComponent> (fun _ _ -> true)
-                    |> Option.iter (fun (_, spatialComp) ->
+                    em.TryFind<PhysicsEngineComponent> (fun _ _ -> true)
+                    |> Option.iter (fun (_, physicsEngineComp) ->
 
                         em.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true)
                         |> Option.iter (fun (_, _, transformComp) ->
                             let pos = transformComp.Position
                             let pos = Vector2 (pos.X, pos.Y)
 
-                            //let mutable f = (fun sectorId -> ())
-                            //for i = 0 to 1000 do
-                            spatialComp.SpatialHash
-                            |> SpatialHash2D.queryWithPoint pos (fun sectorId ->
-                                printfn "In Sector: %A" sectorId
-                            )
+                            physicsEngineComp.PhysicsEngine
+                            |> PhysicsEngine.findWithPoint pos
+                            |> printfn "In Sector: %A"
                         )
                     )
 

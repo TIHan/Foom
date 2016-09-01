@@ -95,10 +95,6 @@
       <Project>{9B75DD43-5F71-4A53-B8EA-EDC02CB994BE}</Project>
       <Name>Foom.Renderer.Components</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Foom.Physics\Foom.Physics.fsproj">
-      <Project>{19FE1AF7-C093-4D09-B594-514870A14939}</Project>
-      <Name>Foom.Physics</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Foom.Client.Desktop.Input\Foom.Client.Desktop.Input.fsproj">
       <Project>{9B962272-2018-4C8C-9E62-528CDC8DB87E}</Project>
       <Name>Foom.Client.Desktop.Input</Name>
@@ -111,13 +107,13 @@
       <Project>{34AA5257-2F5B-4097-8250-1FD4956D1130}</Project>
       <Name>Foom.Geometry</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Foom.DataStructures\Foom.DataStructures.fsproj">
-      <Project>{F8ED361D-EC55-4272-8B23-1E81610A2A2E}</Project>
-      <Name>Foom.DataStructures</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Foom.Math\Foom.Math.fsproj">
       <Project>{B94F520E-B150-45A7-ADA1-E2945BE9A743}</Project>
       <Name>Foom.Math</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Physics\Foom.Physics.fsproj">
+      <Project>{6DE9A674-F72C-4BDA-9120-E8EB97E7D5ED}</Project>
+      <Name>Foom.Physics</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>

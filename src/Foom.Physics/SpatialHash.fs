@@ -1,4 +1,4 @@
-﻿namespace Foom.DataStructures
+﻿namespace Foom.Physics
 
 open System
 open System.Numerics
@@ -7,12 +7,10 @@ open System.Collections.Generic
 open Foom.Math
 open Foom.Geometry
 
-// TODO: Implement SpatialHash2D
-
-type SpatialHashBucket<'T> =
+type SpatialHashBucket =
     {
         Triangles: ResizeArray<Triangle2D>
-        TriangleData: ResizeArray<'T>
+        TriangleData: ResizeArray<obj>
     }
 
 [<Struct>]
@@ -24,13 +22,14 @@ type Hash =
 
     new (x, y) = { X = x; Y = y }
 
-type SpatialHash2D<'T> =
+type SpatialHash =
     {
         CellSize: int
-        Buckets: Dictionary<Hash, SpatialHashBucket<'T>>
+        Buckets: Dictionary<Hash, SpatialHashBucket>
     }
 
-module SpatialHash2D =
+[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
+module SpatialHash =
 
     let create cellSize =
         {
@@ -53,8 +52,7 @@ module SpatialHash2D =
             bucket.TriangleData.Add (data)
             spatialHash.Buckets.Add (hash, bucket)
 
-    // FIXME: This is wrong. Let's try a AABB.
-    let addStaticTriangle (tri: Triangle2D) data spatialHash =
+    let addTriangle (tri: Triangle2D) data spatialHash =
         let size = float spatialHash.CellSize
 
         let aabb = Triangle2D.aabb tri
@@ -71,7 +69,7 @@ module SpatialHash2D =
                 let hash = Hash (x, y)
                 addTriangleHash hash tri data spatialHash
 
-    let queryWithPoint (p: Vector2) f spatialHash =
+    let findWithPoint (p: Vector2) spatialHash =
         let size = float spatialHash.CellSize
 
         let p0 = Math.Floor (float p.X / size) |> int
@@ -79,10 +77,15 @@ module SpatialHash2D =
 
         let hash = Hash (p0, p1)
 
+        let mutable result = Unchecked.defaultof<obj>
+
         match spatialHash.Buckets.TryGetValue hash with
         | true, bucket ->
            // System.Diagnostics.Debug.WriteLine (String.Format("Triangles Checked: {0}", bucket.Triangles.Count))
             for i = 0 to bucket.TriangleData.Count - 1 do
                 if Triangle2D.containsPoint p bucket.Triangles.[i] then
-                    f bucket.TriangleData.[i]
+                    result <- bucket.TriangleData.[i]
         | _ -> ()
+
+        result
+

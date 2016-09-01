@@ -2,57 +2,53 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{19FE1AF7-C093-4D09-B594-514870A14939}</ProjectGuid>
+    <ProjectGuid>{6DE9A674-F72C-4BDA-9120-E8EB97E7D5ED}</ProjectGuid>
+    <TargetProfile>netcore</TargetProfile>
+    <TargetFSharpCoreVersion>3.3.1.0</TargetFSharpCoreVersion>
     <OutputType>Library</OutputType>
     <RootNamespace>Foom.Physics</RootNamespace>
     <AssemblyName>Foom.Physics</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\build</OutputPath>
+    <OutputPath>bin\Debug</OutputPath>
     <DefineConstants>DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <ConsolePause>false</ConsolePause>
-    <PlatformTarget>x64</PlatformTarget>
+    <PlatformTarget></PlatformTarget>
+    <NoStdLib>false</NoStdLib>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <Optimize>true</Optimize>
-    <OutputPath>..\..\build</OutputPath>
+    <OutputPath>bin\Release</OutputPath>
     <DefineConstants></DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <ConsolePause>false</ConsolePause>
     <GenerateTailCalls>true</GenerateTailCalls>
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup>
-    <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(VisualStudioVersion)' == '10.0' OR '$(VisualStudioVersion)' == '11.0'">
-    <FSharpTargetsPath>$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets</FSharpTargetsPath>
+    <PlatformTarget></PlatformTarget>
+    <NoStdLib>false</NoStdLib>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Numerics" />
+    <Reference Include="FSharp.Core">
+      <HintPath>$(MSBuildExtensionsPath32)\..\Reference Assemblies\Microsoft\FSharp\.NETCore\$(TargetFSharpCoreVersion)\FSharp.Core.dll</HintPath>
+    </Reference>
     <Reference Include="System.Numerics.Vectors">
       <HintPath>..\..\packages\System.Numerics.Vectors.4.1.1\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
     </Reference>
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
-    <Compile Include="EntitySystem.fs" />
+    <Compile Include="SpatialHash.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="PhysicsEngine.fs" />
+    <Compile Include="PhysicsEngineComponent.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Foom.Math\Foom.Math.fsproj">
-      <Project>{B94F520E-B150-45A7-ADA1-E2945BE9A743}</Project>
-      <Name>Foom.Math</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Foom.Geometry\Foom.Geometry.fsproj">
       <Project>{34AA5257-2F5B-4097-8250-1FD4956D1130}</Project>
       <Name>Foom.Geometry</Name>
@@ -61,6 +57,10 @@
       <Project>{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}</Project>
       <Name>Foom.Ecs</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Math\Foom.Math.fsproj">
+      <Project>{B94F520E-B150-45A7-ADA1-E2945BE9A743}</Project>
+      <Name>Foom.Math</Name>
+    </ProjectReference>
   </ItemGroup>
-  <Import Project="$(FSharpTargetsPath)" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
 </Project>
