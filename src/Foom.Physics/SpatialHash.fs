@@ -81,7 +81,7 @@ module SpatialHash =
 
         match spatialHash.Buckets.TryGetValue hash with
         | true, bucket ->
-           // System.Diagnostics.Debug.WriteLine (String.Format("Triangles Checked: {0}", bucket.Triangles.Count))
+            System.Diagnostics.Debug.WriteLine (String.Format("Triangles Checked: {0}", bucket.Triangles.Count))
             for i = 0 to bucket.TriangleData.Count - 1 do
                 if Triangle2D.containsPoint p bucket.Triangles.[i] then
                     result <- bucket.TriangleData.[i]
