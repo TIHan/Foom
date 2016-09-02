@@ -13,27 +13,26 @@ open Foom.Common.Components
 ////////
 
 let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (entityManager: EntityManager) =
-    let renderQueue = Queue<Mesh * int * int * Matrix4x4 * MaterialComponent * MeshComponent> ()
-    let transparentQueue = ResizeArray<Mesh * int * int * Matrix4x4 * MaterialComponent * MeshComponent> ()
+    let renderQueue = Queue<int * int * Matrix4x4 * MaterialComponent * MeshComponent> ()
 
     entityManager.ForEach<MeshComponent, MaterialComponent, TransformComponent> (fun ent meshComp materialComp transformComp ->
         let model = transformComp.Transform
 
         let mvp = (projection * view) |> Matrix4x4.Transpose
 
-        match meshComp.State, materialComp.TextureState, materialComp.ShaderProgramState with
-        | MeshState.Loaded mesh, TextureState.Loaded textureId, ShaderProgramState.Loaded programId ->
-                renderQueue.Enqueue ((mesh, textureId, programId, mvp, materialComp, meshComp))
+        match materialComp.TextureState, materialComp.ShaderProgramState with
+        | TextureState.Loaded textureId, ShaderProgramState.Loaded programId ->
+                renderQueue.Enqueue ((textureId, programId, mvp, materialComp, meshComp))
         | _ -> ()
     )
 
     Renderer.enableDepth ()
 
     while (renderQueue.Count > 0) do
-        let mesh, textureId, programId, mvp, materialComp, _ = renderQueue.Dequeue ()
+        let textureId, programId, mvp, materialComp, meshComp = renderQueue.Dequeue ()
 
-        mesh.PositionBuffer.TryBufferData () |> ignore
-        mesh.UvBuffer.TryBufferData () |> ignore
+        meshComp.Position.TryBufferData () |> ignore
+        meshComp.Uv.TryBufferData () |> ignore
 
         Renderer.useProgram programId
 
@@ -43,16 +42,16 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
         Renderer.setUniformProjection uniformProjection mvp
         Renderer.setTexture programId textureId
 
-        mesh.PositionBuffer.Bind ()
+        meshComp.Position.Bind ()
         Renderer.bindPosition programId
 
-        mesh.UvBuffer.Bind ()
+        meshComp.Uv.Bind ()
         Renderer.bindUv programId
 
         Renderer.bindTexture textureId
 
         Renderer.setUniformColor uniformColor (Color.FromArgb (255, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
-        Renderer.drawTriangles 0 mesh.PositionBuffer.Length
+        Renderer.drawTriangles 0 meshComp.Position.Length
 
     Renderer.disableDepth ()
 
@@ -101,21 +100,6 @@ let wireframeQueue =
                     }
         | _ -> ()
      
-    )
-
-let meshQueue =
-    componentAddedQueue (fun ent (meshComp: MeshComponent) deltaTime entityManager ->
-
-        match meshComp.State with
-        | MeshState.ReadyToLoad (vertices, uv) ->
-            meshComp.State <- 
-                MeshState.Loaded
-                    {
-                        PositionBuffer = Vector3ArrayBuffer (vertices)
-                        UvBuffer = Vector2ArrayBuffer (uv)
-                    }
-        | _ -> ()
-
     )
 
 let textureCache = Dictionary<string, int> ()
@@ -171,7 +155,6 @@ let create (app: Application) : ESystem<float32 * float32> =
     ESystem.create "Renderer"
         [
             wireframeQueue
-            meshQueue
             materialQueue
 
             Behavior.update (fun ((time, deltaTime): float32 * float32) entityManager eventManager ->

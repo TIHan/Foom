@@ -23,20 +23,11 @@ type WireframeComponent (vertices: Vector3 []) =
 
     interface IComponent
 
-type Mesh =
+type MeshComponent =
     {
-        PositionBuffer: Vector3ArrayBuffer
-        UvBuffer: Vector2ArrayBuffer
+        Position: Vector3ArrayBuffer
+        Uv: Vector2ArrayBuffer
     }
-
-[<RequireQualifiedAccess>]
-type MeshState =
-    | ReadyToLoad of vertices: Vector3 [] * uv: Vector2 []
-    | Loaded of Mesh
-
-type MeshComponent (vertices: Vector3 [], uv) =
-
-    member val State = MeshState.ReadyToLoad (vertices, uv) with get, set
 
     interface IComponent
 
