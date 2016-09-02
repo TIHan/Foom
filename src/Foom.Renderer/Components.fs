@@ -22,18 +22,13 @@ type MeshComponent =
     interface IComponent
 
 [<RequireQualifiedAccess>]
-type TextureState =
-    | ReadyToLoad of fileName: string
-    | Loaded of textureId: int
-
-[<RequireQualifiedAccess>]
 type ShaderProgramState =
     | ReadyToLoad of vsFileName: string * fsFileName: string
     | Loaded of programId: int
 
-type MaterialComponent (vertexShaderFileName: string, fragmentShaderFileName: string, textureFileName: string, color: Color) =
+type MaterialComponent (vertexShaderFileName: string, fragmentShaderFileName: string, texture: Texture2DBuffer option, color: Color) =
 
-    member val TextureState = TextureState.ReadyToLoad textureFileName with get, set
+    member val Texture = texture with get
 
     member val ShaderProgramState = ShaderProgramState.ReadyToLoad (vertexShaderFileName, fragmentShaderFileName) with get, set
 

@@ -13,23 +13,23 @@ open Foom.Common.Components
 ////////
 
 let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (entityManager: EntityManager) =
-    let renderQueue = Queue<int * int * Matrix4x4 * MaterialComponent * MeshComponent> ()
+    let renderQueue = Queue<int * Matrix4x4 * MaterialComponent * MeshComponent> ()
 
     entityManager.ForEach<MeshComponent, MaterialComponent, TransformComponent> (fun ent meshComp materialComp transformComp ->
         let model = transformComp.Transform
 
         let mvp = (projection * view) |> Matrix4x4.Transpose
 
-        match materialComp.TextureState, materialComp.ShaderProgramState with
-        | TextureState.Loaded textureId, ShaderProgramState.Loaded programId ->
-                renderQueue.Enqueue ((textureId, programId, mvp, materialComp, meshComp))
+        match materialComp.ShaderProgramState with
+        | ShaderProgramState.Loaded programId ->
+                renderQueue.Enqueue ((programId, mvp, materialComp, meshComp))
         | _ -> ()
     )
 
     Renderer.enableDepth ()
 
     while (renderQueue.Count > 0) do
-        let textureId, programId, mvp, materialComp, meshComp = renderQueue.Dequeue ()
+        let programId, mvp, materialComp, meshComp = renderQueue.Dequeue ()
 
         meshComp.Position.TryBufferData () |> ignore
         meshComp.Uv.TryBufferData () |> ignore
@@ -40,7 +40,6 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
         let uniformProjection = Renderer.getUniformLocation programId "uni_projection"
 
         Renderer.setUniformProjection uniformProjection mvp
-        Renderer.setTexture programId textureId
 
         meshComp.Position.Bind ()
         Renderer.bindPosition programId
@@ -48,7 +47,12 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
         meshComp.Uv.Bind ()
         Renderer.bindUv programId
 
-        Renderer.bindTexture textureId
+        match materialComp.Texture with
+        | Some texture ->
+            texture.TryBufferData () |> ignore
+            Renderer.setTexture programId texture.Id
+            texture.Bind ()
+        | _ -> ()
 
         Renderer.setUniformColor uniformColor (Color.FromArgb (255, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
         Renderer.drawTriangles 0 meshComp.Position.Length
@@ -86,32 +90,9 @@ let componentAddedQueue f =
         )
     )
 
-let textureCache = Dictionary<string, int> ()
 let shaderCache = Dictionary<string * string, int> ()
 let materialQueue =
     componentAddedQueue (fun ent (materialComp: MaterialComponent) deltaTime entityManager ->
-
-        match materialComp.TextureState with
-        | TextureState.ReadyToLoad fileName ->
-
-            match textureCache.TryGetValue (fileName) with
-            | true, textureId ->
-                materialComp.TextureState <- TextureState.Loaded textureId
-
-            | _ ->
-                try
-                    use bmp = new Bitmap (fileName)
-                    let bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
-
-                    let textureId = Renderer.createTexture bmp.Width bmp.Height bmpData.Scan0
-
-                    bmp.UnlockBits (bmpData)
-
-                    materialComp.TextureState <- TextureState.Loaded textureId
-                with | ex ->
-                    printfn "%A" ex.Message
-
-        | _ -> ()
 
         match materialComp.ShaderProgramState with
         | ShaderProgramState.ReadyToLoad (vertex, fragment) ->

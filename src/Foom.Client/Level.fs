@@ -68,22 +68,6 @@ let exportTextures (wad: Wad) =
         )
     )
 
-let tryFindFlatTexture name wad =
-    match name with
-    | Some name ->
-        match Wad.tryFindFlatTexture name wad with
-        | Some tex -> Some tex
-        | _ -> None
-    | _ -> None
-
-let tryFindTexture name wad =
-    match name with
-    | Some name ->
-        match Wad.tryFindTexture name wad with
-        | Some tex -> Some tex
-        | _ -> None
-    | _ -> None
-
 let spawnMesh vertices uv texturePath lightLevel (em: EntityManager) =
     let ent = em.Spawn ()
 
@@ -102,34 +86,69 @@ let spawnMesh vertices uv texturePath lightLevel (em: EntityManager) =
         )
     )
 
-let spawnCeilingMesh (flat: Flat) lightLevel wad em =
-    tryFindFlatTexture flat.Ceiling.TextureName wad
-    |> Option.iter (fun tex ->
-        let width = Array2D.length1 tex.Data
-        let height = Array2D.length2 tex.Data
-        let texturePath = tex.Name + "_flat.bmp"
+let textureCache = Dictionary<string, Texture2DBuffer> ()
 
-        spawnMesh flat.Ceiling.Vertices (Flat.createCeilingUV width height flat) texturePath lightLevel em
+let spawnCeilingMesh (flat: Flat) lightLevel wad em =
+    flat.Ceiling.TextureName
+    |> Option.iter (fun textureName ->
+        let texture : Texture2DBuffer option =
+            match textureCache.TryGetValue (textureName + "_flat") with
+            | true, tex -> Some tex
+            | _ ->
+                try
+                    let bmp = new Bitmap (textureName + "_flat.bmp")
+                    let t = Texture2DBuffer (bmp)
+                    textureCache.[textureName + "_flat"] <- t
+                    Some t
+                with | _ -> None
+
+
+        match texture with
+        | Some t ->
+            spawnMesh flat.Ceiling.Vertices (Flat.createCeilingUV t.Width t.Height flat) texture lightLevel em
+        | _ -> ()
     )
 
 let spawnFloorMesh (flat: Flat) lightLevel wad em =
-    tryFindFlatTexture flat.Floor.TextureName wad
-    |> Option.iter (fun tex ->
-        let width = Array2D.length1 tex.Data
-        let height = Array2D.length2 tex.Data
-        let texturePath = tex.Name + "_flat.bmp"
+    flat.Floor.TextureName
+    |> Option.iter (fun textureName ->
+        let texture =
+            match textureCache.TryGetValue (textureName + "_flat") with
+            | true, tex -> Some tex
+            | _ ->
+                try
+                    let bmp = new Bitmap (textureName + "_flat.bmp")
+                    let t = Texture2DBuffer (bmp)
+                    textureCache.[textureName + "_flat"] <- t
+                    Some t
+                with | _ -> None
 
-        spawnMesh flat.Floor.Vertices (Flat.createFloorUV width height flat) texturePath lightLevel em
+
+        match texture with
+        | Some t ->
+            spawnMesh flat.Floor.Vertices (Flat.createFloorUV t.Width t.Height flat) texture lightLevel em
+        | _ -> ()
     )
 
 let spawnWallMesh (wall: Wall) lightLevel wad em =
-    tryFindTexture wall.TextureName wad
-    |> Option.iter (fun tex ->
-        let width = Array2D.length1 tex.Data
-        let height = Array2D.length2 tex.Data
-        let texturePath = tex.Name + ".bmp"
+    wall.TextureName
+    |> Option.iter (fun textureName ->
+        let texture =
+            match textureCache.TryGetValue (textureName) with
+            | true, tex -> Some tex
+            | _ ->
+                try
+                    let bmp = new Bitmap (textureName + ".bmp")
+                    let t = Texture2DBuffer (bmp)
+                    textureCache.[textureName] <- t
+                    Some t
+                with | _ -> None
 
-        spawnMesh wall.Vertices (Wall.createUV width height wall) texturePath lightLevel em
+
+        match texture with
+        | Some t ->
+            spawnMesh wall.Vertices (Wall.createUV t.Width t.Height wall) texture lightLevel em
+        | _ -> ()
     )
 
 let spawnAABBWireframe (aabb: AABB2D) (em: EntityManager) =
@@ -160,7 +179,7 @@ let spawnAABBWireframe (aabb: AABB2D) (em: EntityManager) =
         MaterialComponent (
             "v.vertex",
             "f.fragment",
-            "",
+            None,
             Color.FromArgb (0, 255, 255, 255)
         )
     )
@@ -169,7 +188,7 @@ let updates () =
     [
         Behavior.wadLoading
             (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
-            (fun wad _ ->
+            (fun wad _ -> ()
                 wad |> exportFlatTextures
                 wad |> exportTextures
             )

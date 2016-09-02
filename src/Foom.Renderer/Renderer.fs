@@ -423,7 +423,8 @@ type Vector2ArrayBuffer (data) =
     member this.Length = length
 
     member this.Bind () =
-        Renderer.bindVbo id
+        if id <> 0 then
+            Renderer.bindVbo id
 
     member this.TryBufferData () =
         match queuedData with
@@ -449,7 +450,8 @@ type Vector3ArrayBuffer (data) =
     member this.Length = length
 
     member this.Bind () =
-        Renderer.bindVbo id
+        if id <> 0 then
+            Renderer.bindVbo id
 
     member this.TryBufferData () =
         match queuedData with
@@ -459,6 +461,36 @@ type Vector3ArrayBuffer (data) =
             
             Renderer.bufferVboVector3 data (sizeof<Vector3> * data.Length) id
             length <- data.Length
+            queuedData <- None
+            true
+        | _ -> false
+
+type Texture2DBuffer (bmp: Bitmap) =
+
+    let mutable id = 0
+    let mutable width = bmp.Width
+    let mutable height = bmp.Height
+    let mutable queuedData = Some bmp
+
+    member this.Id = id
+
+    member this.Width = width
+
+    member this.Height = height
+
+    member this.Bind () =
+        if id <> 0 then
+            Renderer.bindTexture id // this does activetexture0, change this eventually
+
+    member this.TryBufferData () =
+        match queuedData with
+        | Some bmp ->
+            let bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
+
+            id <- Renderer.createTexture bmp.Width bmp.Height bmpData.Scan0
+
+            bmp.UnlockBits (bmpData)
+            bmp.Dispose ()
             queuedData <- None
             true
         | _ -> false
