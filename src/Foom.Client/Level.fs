@@ -138,23 +138,24 @@ let spawnAABBWireframe (aabb: AABB2D) (em: EntityManager) =
 
     let ent = em.Spawn ()
     em.AddComponent ent (TransformComponent (Matrix4x4.Identity))
-    em.AddComponent ent (
-        WireframeComponent (
-            [|
-                Vector3 (min.X, min.Y, 0.f)
-                Vector3 (max.X, min.Y, 0.f)
+    em.AddComponent ent
+        {
+            WireframeComponent.Position =
+                [|
+                    Vector3 (min.X, min.Y, 0.f)
+                    Vector3 (max.X, min.Y, 0.f)
 
-                Vector3 (max.X, min.Y, 0.f)
-                Vector3 (max.X, max.Y, 0.f)
+                    Vector3 (max.X, min.Y, 0.f)
+                    Vector3 (max.X, max.Y, 0.f)
 
-                Vector3 (max.X, max.Y, 0.f)
-                Vector3 (min.X, max.Y, 0.f)
+                    Vector3 (max.X, max.Y, 0.f)
+                    Vector3 (min.X, max.Y, 0.f)
 
-                Vector3 (min.X, max.Y, 0.f)
-                Vector3 (min.X, min.Y, 0.f)
-            |]
-        )
-    ) 
+                    Vector3 (min.X, max.Y, 0.f)
+                    Vector3 (min.X, min.Y, 0.f)
+                |]
+                |> Vector3ArrayBuffer
+        }
     em.AddComponent ent (
         MaterialComponent (
             "v.vertex",

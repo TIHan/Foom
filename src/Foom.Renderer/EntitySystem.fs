@@ -57,10 +57,12 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
 
     entityManager.ForEach<MaterialComponent, WireframeComponent> (fun ent materialComp wireframeComp ->
 
+        wireframeComp.Position.TryBufferData () |> ignore
+
         let mvp = (projection * view) |> Matrix4x4.Transpose
 
-        match wireframeComp.State, materialComp.ShaderProgramState with
-        | WireframeState.Loaded mesh, ShaderProgramState.Loaded programId ->
+        match materialComp.ShaderProgramState with
+        | ShaderProgramState.Loaded programId ->
             Renderer.useProgram programId
 
             let uniformColor = Renderer.getUniformColor programId
@@ -68,11 +70,11 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
 
             Renderer.setUniformProjection uniformProjection mvp
 
-            Renderer.bindVbo mesh.PositionBufferId
+            wireframeComp.Position.Bind()
             Renderer.bindPosition programId
 
             Renderer.setUniformColor uniformColor (Color.FromArgb (255, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
-            Renderer.drawArrays 0 mesh.PositionBufferLength
+            Renderer.drawArrays 0 wireframeComp.Position.Length
         | _ -> ()
     )
 
@@ -82,24 +84,6 @@ let componentAddedQueue f =
         |> Option.iter (fun comp ->
             f componentAdded.Entity comp deltaTime entityManager
         )
-    )
-
-let wireframeQueue =
-    componentAddedQueue (fun ent (meshComp: WireframeComponent) deltaTime entityManager ->
-
-        match meshComp.State with
-        | WireframeState.ReadyToLoad (vertices) ->
-            let vbo = Renderer.makeVbo ()
-            Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
-
-            meshComp.State <- 
-                WireframeState.Loaded
-                    {
-                        PositionBufferId = vbo
-                        PositionBufferLength = vertices.Length
-                    }
-        | _ -> ()
-     
     )
 
 let textureCache = Dictionary<string, int> ()
@@ -154,7 +138,6 @@ let create (app: Application) : ESystem<float32 * float32> =
 
     ESystem.create "Renderer"
         [
-            wireframeQueue
             materialQueue
 
             Behavior.update (fun ((time, deltaTime): float32 * float32) entityManager eventManager ->

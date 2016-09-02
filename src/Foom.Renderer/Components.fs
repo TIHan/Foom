@@ -6,20 +6,10 @@ open System.Numerics
 
 open Foom.Ecs
 
-type Wireframe =
+type WireframeComponent =
     {
-        PositionBufferId: int
-        PositionBufferLength: int
+        Position: Vector3ArrayBuffer
     }
-
-[<RequireQualifiedAccess>]
-type WireframeState =
-    | ReadyToLoad of vertices: Vector3 []
-    | Loaded of Wireframe
-
-type WireframeComponent (vertices: Vector3 []) =
-
-    member val State = WireframeState.ReadyToLoad (vertices) with get, set
 
     interface IComponent
 
