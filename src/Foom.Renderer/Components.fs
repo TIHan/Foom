@@ -25,11 +25,8 @@ type WireframeComponent (vertices: Vector3 []) =
 
 type Mesh =
     {
-        PositionBufferId: int
-        PositionBufferLength: int
-
-        UvBufferId: int
-        UvBufferLength: int
+        PositionBuffer: Vector3ArrayBuffer
+        UvBuffer: Vector2ArrayBuffer
     }
 
 [<RequireQualifiedAccess>]

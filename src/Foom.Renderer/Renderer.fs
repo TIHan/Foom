@@ -410,3 +410,55 @@ module Renderer =
         C """
         glDisable (GL_BLEND);
         """
+
+type Vector2ArrayBuffer (data) =
+
+    let mutable id = 0
+    let mutable length = 0
+    let mutable queuedData = Some data
+
+    member this.Set (data: Vector2 []) =
+        queuedData <- Some data
+
+    member this.Length = length
+
+    member this.Bind () =
+        Renderer.bindVbo id
+
+    member this.TryBufferData () =
+        match queuedData with
+        | Some data ->
+            if id = 0 then
+                id <- Renderer.makeVbo ()
+            
+            Renderer.bufferVbo data (sizeof<Vector2> * data.Length) id
+            length <- data.Length
+            queuedData <- None
+            true
+        | _ -> false
+
+type Vector3ArrayBuffer (data) =
+
+    let mutable id = 0
+    let mutable length = 0
+    let mutable queuedData = Some data
+
+    member this.Set (data: Vector3 []) =
+        queuedData <- Some data
+
+    member this.Length = length
+
+    member this.Bind () =
+        Renderer.bindVbo id
+
+    member this.TryBufferData () =
+        match queuedData with
+        | Some data ->
+            if id = 0 then
+                id <- Renderer.makeVbo ()
+            
+            Renderer.bufferVboVector3 data (sizeof<Vector3> * data.Length) id
+            length <- data.Length
+            queuedData <- None
+            true
+        | _ -> false

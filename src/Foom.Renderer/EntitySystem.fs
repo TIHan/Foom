@@ -32,6 +32,9 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
     while (renderQueue.Count > 0) do
         let mesh, textureId, programId, mvp, materialComp, _ = renderQueue.Dequeue ()
 
+        mesh.PositionBuffer.TryBufferData () |> ignore
+        mesh.UvBuffer.TryBufferData () |> ignore
+
         Renderer.useProgram programId
 
         let uniformColor = Renderer.getUniformLocation programId "uni_color"
@@ -40,16 +43,16 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
         Renderer.setUniformProjection uniformProjection mvp
         Renderer.setTexture programId textureId
 
-        Renderer.bindVbo mesh.PositionBufferId
+        mesh.PositionBuffer.Bind ()
         Renderer.bindPosition programId
 
-        Renderer.bindVbo mesh.UvBufferId
+        mesh.UvBuffer.Bind ()
         Renderer.bindUv programId
 
         Renderer.bindTexture textureId
 
         Renderer.setUniformColor uniformColor (Color.FromArgb (255, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
-        Renderer.drawTriangles 0 mesh.PositionBufferLength
+        Renderer.drawTriangles 0 mesh.PositionBuffer.Length
 
     Renderer.disableDepth ()
 
@@ -105,20 +108,11 @@ let meshQueue =
 
         match meshComp.State with
         | MeshState.ReadyToLoad (vertices, uv) ->
-            let vbo = Renderer.makeVbo ()
-            Renderer.bufferVboVector3 vertices (sizeof<Vector3> * vertices.Length) vbo
-
-            let vbo2 = Renderer.makeVbo ()
-            Renderer.bufferVbo uv (sizeof<Vector2> * uv.Length) vbo2
-
             meshComp.State <- 
                 MeshState.Loaded
                     {
-                        PositionBufferId = vbo
-                        PositionBufferLength = vertices.Length
-
-                        UvBufferId = vbo2
-                        UvBufferLength = uv.Length
+                        PositionBuffer = Vector3ArrayBuffer (vertices)
+                        UvBuffer = Vector2ArrayBuffer (uv)
                     }
         | _ -> ()
 
