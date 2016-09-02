@@ -12,6 +12,10 @@ module PhysicsEngine =
         eng.SpatialHash
         |> SpatialHash.findWithPoint p
 
+    let iterTriangleWithPoint p f eng =
+        eng.SpatialHash
+        |> SpatialHash.iterTriangleWithPoint p f
+
     let addTriangle tri data eng =
         eng.SpatialHash
         |> SpatialHash.addTriangle tri data

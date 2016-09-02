@@ -95,3 +95,19 @@ module SpatialHash =
 
         result
 
+    let iterTriangleWithPoint (p: Vector2) f spatialHash =
+        let size = float spatialHash.CellSize
+
+        let p0 = Math.Floor (float p.X / size) |> int
+        let p1 = Math.Floor (float p.Y / size) |> int
+
+        let hash = Hash (p0, p1)
+
+        let mutable result = Unchecked.defaultof<obj>
+
+        match spatialHash.Buckets.TryGetValue hash with
+        | true, bucket ->
+            for i = 0 to bucket.TriangleData.Count - 1 do
+                //if Triangle2D.containsPoint p bucket.Triangles.[i] then
+                f bucket.Triangles.[i]
+        | _ -> ()

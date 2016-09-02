@@ -18,6 +18,7 @@ type World (maxEntityAmount) =
             f context
         )
         fun updateData ->
+
             for i = 0 to context.Actions.Count - 1 do
                 let f = context.Actions.[i]
                 f updateData

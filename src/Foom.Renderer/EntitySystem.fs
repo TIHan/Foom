@@ -66,7 +66,7 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
         let mvp = (projection * view) |> Matrix4x4.Transpose
 
         match materialComp.ShaderProgramState with
-        | ShaderProgramState.Loaded programId ->
+        | ShaderProgramState.Loaded programId when wireframeComp.Position.Length > 0 ->
             Renderer.useProgram programId
 
             let uniformColor = Renderer.getUniformColor programId

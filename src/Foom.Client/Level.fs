@@ -188,7 +188,7 @@ let updates () =
     [
         Behavior.wadLoading
             (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
-            (fun wad _ -> ()
+            (fun wad _ ->
                 wad |> exportFlatTextures
                 wad |> exportTextures
             )
@@ -236,6 +236,24 @@ let updates () =
 
             let ent = em.Spawn ()
             em.AddComponent ent (physicsEngineComp)
+
+            // *** TEMPORARY ***
+            em.AddComponent ent (TransformComponent (Matrix4x4.Identity))
+            em.AddComponent ent
+                {
+                    WireframeComponent.Position =
+                        [||]
+                        |> Vector3ArrayBuffer
+                }
+            em.AddComponent ent (
+                MaterialComponent (
+                    "v.vertex",
+                    "f.fragment",
+                    None,
+                    Color.FromArgb (0, 255, 255, 255)
+                )
+            )
+            // *****************
 
             level
             |> Level.tryFindPlayer1Start

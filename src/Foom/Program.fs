@@ -8,9 +8,6 @@ open Foom.Client
 open Foom.Ecs
 open Foom.Common.Components
 
-[<Literal>]
-let DoomUnit = 64.f
-
 let world = World (65536)
 
 let start (invoke: Task ref) =

@@ -53,7 +53,7 @@ let create (app: Application) =
                     | None ->
                         let ent = entityManager.Spawn ()
                         entityManager.AddComponent ent (WadComponent("doom.wad"))
-                        entityManager.AddComponent ent (LevelComponent("e1m7"))
+                        entityManager.AddComponent ent (LevelComponent("e1m1"))
 
                     | _ -> ()
                 )
@@ -66,8 +66,8 @@ let create (app: Application) =
 
                 Behavior.update (fun _ em _ ->
 
-                    em.TryFind<PhysicsEngineComponent> (fun _ _ -> true)
-                    |> Option.iter (fun (_, physicsEngineComp) ->
+                    em.TryFind<PhysicsEngineComponent, WireframeComponent> (fun _ _ _ -> true)
+                    |> Option.iter (fun (_, physicsEngineComp, wireframeComp) ->
 
                         em.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true)
                         |> Option.iter (fun (_, _, transformComp) ->
@@ -77,6 +77,30 @@ let create (app: Application) =
                             physicsEngineComp.PhysicsEngine
                             |> PhysicsEngine.findWithPoint pos
                             |> printfn "In Sector: %A"
+
+                            // *** TEMPORARY ***
+                            wireframeComp.Position.Set [||]
+
+                            let tris = ResizeArray ()
+                            physicsEngineComp.PhysicsEngine
+                            |> PhysicsEngine.iterTriangleWithPoint pos (fun tri ->
+                                tris.Add tri
+                            )
+                            let tris =
+                                tris
+                                |> Seq.map (fun tri -> 
+                                    [|
+                                    Vector3 (tri.A, 0.f);Vector3 (tri.B, 0.f)
+                                    Vector3 (tri.B, 0.f);Vector3 (tri.C, 0.f)
+                                    Vector3 (tri.C, 0.f);Vector3 (tri.A, 0.f)
+                                    |]
+                                )
+
+                            if tris |> Seq.isEmpty |> not then
+                                tris
+                                |> Seq.reduce Array.append
+                                |> wireframeComp.Position.Set
+                            // ******************
                         )
                     )
 
