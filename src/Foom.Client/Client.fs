@@ -106,6 +106,7 @@ let create (app: Application) =
                             if renderLines |> Seq.isEmpty |> not then
                                 renderLines
                                 |> Seq.reduce Array.append
+                                |> Array.append (lines |> Array.ofSeq)
                                 |> wireframeComp.Position.Set
                             // ******************
                         )
