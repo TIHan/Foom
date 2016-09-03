@@ -278,7 +278,7 @@ let updates () =
                         let position = Vector3 (single doomThing.X, single doomThing.Y, single sector.FloorHeight + 28.f)
 
                         let cameraEnt = em.Spawn ()
-                        em.AddComponent cameraEnt (CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, System.Single.MaxValue)))
+                        em.AddComponent cameraEnt (CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f)))
                         em.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (position)))
 
                     | _ -> ()
