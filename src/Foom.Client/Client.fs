@@ -52,8 +52,8 @@ let create (app: Application) =
                     match entityManager.TryFind<WadComponent> (fun _ _ -> true) with
                     | None ->
                         let ent = entityManager.Spawn ()
-                        entityManager.AddComponent ent (WadComponent("doom.wad"))
-                        entityManager.AddComponent ent (LevelComponent("e1m1"))
+                        entityManager.AddComponent ent (WadComponent("doom2.wad"))
+                        entityManager.AddComponent ent (LevelComponent("map10"))
 
                     | _ -> ()
                 )
@@ -83,7 +83,7 @@ let create (app: Application) =
 
                             let tris = ResizeArray ()
                             physicsEngineComp.PhysicsEngine
-                            |> PhysicsEngine.iterTriangleWithPoint pos (fun tri ->
+                            |> PhysicsEngine.iterTestedTrianglesWithPoint pos (fun tri ->
                                 tris.Add tri
                             )
                             let tris =

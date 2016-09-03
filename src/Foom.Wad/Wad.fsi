@@ -20,6 +20,8 @@ module Wad =
 
     val create : Stream -> Wad
 
+    val extend : Stream -> Wad -> Wad
+
     val findLevel : levelName: string -> wad: Wad -> Level
 
     val tryFindTexture : textureName: string -> wad: Wad -> Texture option

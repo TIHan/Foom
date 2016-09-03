@@ -72,6 +72,14 @@ module Triangle2D =
         let l1 = LineSegment2D (tri.B, tri.C)
         let l2 = LineSegment2D (tri.C, tri.A)
 
+        let min = aabb.Min ()
+        let max = aabb.Max ()
+
         LineSegment2D.intersectsAABB aabb l0 ||
         LineSegment2D.intersectsAABB aabb l1 ||
-        LineSegment2D.intersectsAABB aabb l2
+        LineSegment2D.intersectsAABB aabb l2 ||
+        AABB2D.containsPoint tri.A aabb ||
+        AABB2D.containsPoint tri.B aabb ||
+        AABB2D.containsPoint tri.C aabb ||
+        containsPoint (min) tri ||
+        containsPoint (max) tri

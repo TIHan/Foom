@@ -225,6 +225,17 @@ module Wad =
         wad |> loadPalettes
         wad
 
+    let extend stream (wad: Wad) =
+        let wadData = runUnpickle u_wad stream
+
+        let extendedWad =
+            {
+                wad with 
+                    wadData = wadData
+                    stream = stream
+            }
+        extendedWad
+
     let findLevel (levelName: string) wad =
         let stream = wad.stream
         let name = levelName.ToLower ()

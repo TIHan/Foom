@@ -43,3 +43,9 @@ module AABB2D =
         if      abs (a.Center.X - b.Center.X) > (a.Extents.X + b.Extents.X) then false
         elif    abs (a.Center.Y - b.Center.Y) > (a.Extents.Y + b.Extents.Y) then false
         else    true
+
+    let containsPoint (p: Vector2) (b: AABB2D) =
+        let d = b.Center - p
+
+        abs d.X <= b.Extents.X &&
+        abs d.Y <= b.Extents.Y
