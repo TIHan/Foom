@@ -289,7 +289,7 @@ module Renderer =
     [<Import; MI (MIO.NoInlining)>]
     let bindUniformInt (id: int) (value: int) : unit =
         C """
-        glUniform1if (id, value);
+        glUniform1i (id, value);
         """
 
     [<Import; MI (MIO.NoInlining)>]
