@@ -204,6 +204,19 @@ let updates () =
             |> Level.iteriSector (fun i sector ->
                 let lightLevel = Level.lightLevelBySectorId sector.Id level
 
+                sector.Linedefs
+                |> List.iter (fun linedef ->
+                    physicsEngineComp.PhysicsEngine
+                    |> PhysicsEngine.addLineDefinition
+                        {
+                            FrontFaceAreaId = 0
+                            BackFaceAreaId = 0
+
+                            LineSegment = LineSegment2D (linedef.Start, linedef.End)
+                            IsWall = false
+                        }
+                )
+
                 Level.createFlats i level
                 |> Seq.iter (fun flat ->
                     spawnCeilingMesh flat lightLevel wad em

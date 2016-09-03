@@ -39,3 +39,16 @@ module LineSegment2D =
         if abs (m.X * d.Y - m.Y * d.X) > e.X * ady + e.Y * adx then false
         else
             true
+
+    let aabb (seg: LineSegment2D) =
+        let mutable minX = seg.A.X
+        let mutable maxX = seg.A.X
+        let mutable minY = seg.A.Y
+        let mutable maxY = seg.A.Y
+
+        if seg.B.X < minX then minX <- seg.B.X
+        if seg.B.X > maxX then maxX <- seg.B.X
+        if seg.B.Y < minY then minY <- seg.B.Y
+        if seg.B.Y > maxY then maxY <- seg.B.Y
+
+        AABB2D.ofMinAndMax (Vector2 (minX, minY)) (Vector2 (maxX, maxY))

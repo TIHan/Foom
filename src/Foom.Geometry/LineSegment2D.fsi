@@ -17,3 +17,5 @@ type LineSegment2D =
 module LineSegment2D =
 
     val intersectsAABB : AABB2D -> LineSegment2D -> bool
+
+    val aabb : LineSegment2D -> AABB2D

@@ -82,11 +82,18 @@ let create (app: Application) =
                             wireframeComp.Position.Set [||]
 
                             let tris = ResizeArray ()
+                            let lines = ResizeArray ()
                             physicsEngineComp.PhysicsEngine
-                            |> PhysicsEngine.iterTestedTrianglesWithPoint pos (fun tri ->
-                                tris.Add tri
-                            )
-                            let tris =
+                            |> PhysicsEngine.iterWithPoint pos 
+                                (fun tri ->
+                                    tris.Add tri
+                                )
+                                (fun lined ->
+                                    lines.Add (Vector3 (lined.LineSegment.A, 0.f))
+                                    lines.Add (Vector3 (lined.LineSegment.B, 0.f))
+                                )
+
+                            let renderLines =
                                 tris
                                 |> Seq.map (fun tri -> 
                                     [|
@@ -96,8 +103,8 @@ let create (app: Application) =
                                     |]
                                 )
 
-                            if tris |> Seq.isEmpty |> not then
-                                tris
+                            if renderLines |> Seq.isEmpty |> not then
+                                renderLines
                                 |> Seq.reduce Array.append
                                 |> wireframeComp.Position.Set
                             // ******************
