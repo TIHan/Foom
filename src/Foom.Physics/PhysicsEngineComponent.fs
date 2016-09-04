@@ -1,6 +1,25 @@
 ﻿namespace Foom.Physics
 
+open System.Numerics
+open System.Collections.Generic
+
+open Foom.Math
 open Foom.Ecs
+open Foom.Geometry
+
+type CharacterControllerComponent (position: Vector3, radius: float32, height: float32) =
+
+    let circle =
+        {
+            Circle = Circle2D (Vector2.One, radius)
+            Height = height
+            Position = position
+            Hashes = HashSet ()
+        }
+
+    member internal this.Circle = circle // get rid of internal when we have a .fsi
+
+    interface IComponent
 
 type PhysicsEngineComponent =
     {
@@ -9,10 +28,7 @@ type PhysicsEngineComponent =
 
     static member Create (cellSize) =
         {
-            PhysicsEngine =
-                {
-                    SpatialHash = SpatialHash.create cellSize
-                }
+            PhysicsEngine = PhysicsEngine.create cellSize
         }
 
     interface IComponent

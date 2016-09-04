@@ -19,3 +19,5 @@ module Circle2D =
     val inline center : Circle2D -> Vector2
 
     val inline radius : Circle2D -> float32
+
+    val aabb : Circle2D -> AABB2D

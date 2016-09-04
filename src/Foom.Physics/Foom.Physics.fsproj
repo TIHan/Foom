@@ -5,7 +5,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{6DE9A674-F72C-4BDA-9120-E8EB97E7D5ED}</ProjectGuid>
     <TargetProfile>netcore</TargetProfile>
-    <TargetFSharpCoreVersion>3.7.4.0</TargetFSharpCoreVersion>
+    <TargetFSharpCoreVersion>3.3.1.0</TargetFSharpCoreVersion>
     <OutputType>Library</OutputType>
     <RootNamespace>Foom.Physics</RootNamespace>
     <AssemblyName>Foom.Physics</AssemblyName>
@@ -38,7 +38,6 @@
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
   <ItemGroup>
-    <Compile Include="SpatialHash.fs" />
     <Compile Include="PhysicsEngine.fs" />
     <Compile Include="PhysicsEngineComponent.fs" />
     <None Include="packages.config" />
