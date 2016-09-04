@@ -7,7 +7,7 @@ open Foom.Math
 [<Struct>]
 type Circle2D =
 
-    val Center : Vector2
+    val mutable Center : Vector2
 
     val Radius : float32
 

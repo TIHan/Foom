@@ -19,9 +19,9 @@ type Hash =
 [<ReferenceEquality>]
 type DynamicCircle =
     {
-        Circle: Circle2D
-        Height: float32
-        mutable Position: Vector3
+        mutable Circle: Circle2D
+        mutable Z: float32
+        mutable Height: float32
         Hashes: HashSet<Hash>
     }
 
@@ -151,12 +151,13 @@ module PhysicsEngine =
         )
         dCircle.Hashes.Clear ()
 
-        dCircle.Position <- position
+        let radius = dCircle.Circle.Radius
+        dCircle.Circle.Center <- Vector2 (position.X, position.Y)
 
-        let minX = Math.Floor (float (position.X - dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
-        let maxX = Math.Floor (float (position.X + dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
-        let minY = Math.Floor (float (position.Y - dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
-        let maxY = Math.Floor (float (position.Y + dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
+        let minX = Math.Floor (float (position.X - radius) / eng.CellSizeDouble) |> int
+        let maxX = Math.Floor (float (position.X + radius) / eng.CellSizeDouble) |> int
+        let minY = Math.Floor (float (position.Y - radius) / eng.CellSizeDouble) |> int
+        let maxY = Math.Floor (float (position.Y + radius) / eng.CellSizeDouble) |> int
 
         for x = minX to maxX do
             for y = minY to maxY do
@@ -172,21 +173,24 @@ module PhysicsEngine =
     // The grand daddy. This needs thorough research.
     // Goal: The circle will not pass through lines marked as walls.
     let moveDynamicCircle (position: Vector3) dCircle eng =
-        let seg = LineSegment2D (Vector2 (dCircle.Position.X, dCircle.Position.Y), Vector2 (position.X, position.Y))
+        let currentPosition = dCircle.Circle.Center
+        let radius = dCircle.Circle.Radius
 
-        let minX = Math.Floor (float (dCircle.Position.X - dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
-        let maxX = Math.Floor (float (dCircle.Position.X + dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
-        let minY = Math.Floor (float (dCircle.Position.Y - dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
-        let maxY = Math.Floor (float (dCircle.Position.Y + dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
+        let seg = LineSegment2D (Vector2 (currentPosition.X, currentPosition.Y), Vector2 (position.X, position.Y))
+
+        let minX = Math.Floor (float (currentPosition.X - radius) / eng.CellSizeDouble) |> int
+        let maxX = Math.Floor (float (currentPosition.X + radius) / eng.CellSizeDouble) |> int
+        let minY = Math.Floor (float (currentPosition.Y - radius) / eng.CellSizeDouble) |> int
+        let maxY = Math.Floor (float (currentPosition.Y + radius) / eng.CellSizeDouble) |> int
 
         let mutable position = position
         for x = minX to maxX do
             for y = minY to maxY do
 
-            let newMinX = Math.Floor (float (position.X - dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
-            let newMaxX = Math.Floor (float (position.X + dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
-            let newMinY = Math.Floor (float (position.Y - dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
-            let newMaxY = Math.Floor (float (position.Y + dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
+            let newMinX = Math.Floor (float (position.X - radius) / eng.CellSizeDouble) |> int
+            let newMaxX = Math.Floor (float (position.X + radius) / eng.CellSizeDouble) |> int
+            let newMinY = Math.Floor (float (position.Y - radius) / eng.CellSizeDouble) |> int
+            let newMaxY = Math.Floor (float (position.Y + radius) / eng.CellSizeDouble) |> int
 
             let hash = Hash (x, y)
 

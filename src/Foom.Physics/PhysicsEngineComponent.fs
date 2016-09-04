@@ -11,9 +11,9 @@ type CharacterControllerComponent (position: Vector3, radius: float32, height: f
 
     let circle =
         {
-            Circle = Circle2D (Vector2.One, radius)
+            Circle = Circle2D (Vector2 (position.X, position.Y), radius)
+            Z = position.Z
             Height = height
-            Position = position
             Hashes = HashSet ()
         }
 
