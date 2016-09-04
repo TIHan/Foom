@@ -213,7 +213,7 @@ let updates () =
                             BackFaceAreaId = 0
 
                             LineSegment = LineSegment2D (linedef.Start, linedef.End)
-                            IsWall = false
+                            IsWall = linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone
                         }
                 )
 

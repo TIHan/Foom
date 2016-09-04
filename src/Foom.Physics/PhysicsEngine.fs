@@ -151,6 +151,7 @@ module PhysicsEngine =
         )
         dCircle.Hashes.Clear ()
 
+        dCircle.Position <- position
 
         let minX = Math.Floor (float (position.X - dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
         let maxX = Math.Floor (float (position.X + dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
@@ -160,16 +161,40 @@ module PhysicsEngine =
         for x = minX to maxX do
             for y = minY to maxY do
 
-                let min = Vector2 (single (x * eng.CellSize), single (y * eng.CellSize))
-                let max = Vector2 (single ((x + 1) * eng.CellSize), single ((y + 1) * eng.CellSize))
-                let aabb = AABB2D.ofMinAndMax min max
-
                 let hash = Hash (x, y)
+
                 match eng.Buckets.TryGetValue (hash) with
                 | true, bucket ->
                     bucket.DynamicCircles.Add dCircle |> ignore
                     dCircle.Hashes.Add (hash) |> ignore
                 | _ -> ()
+
+    // The grand daddy. This needs thorough research.
+    // Goal: The circle will not pass through lines marked as walls.
+    let moveDynamicCircle (position: Vector3) dCircle eng =
+        let seg = LineSegment2D (Vector2 (dCircle.Position.X, dCircle.Position.Y), Vector2 (position.X, position.Y))
+
+        let minX = Math.Floor (float (dCircle.Position.X - dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
+        let maxX = Math.Floor (float (dCircle.Position.X + dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
+        let minY = Math.Floor (float (dCircle.Position.Y - dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
+        let maxY = Math.Floor (float (dCircle.Position.Y + dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
+
+        let mutable position = position
+        for x = minX to maxX do
+            for y = minY to maxY do
+
+            let newMinX = Math.Floor (float (position.X - dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
+            let newMaxX = Math.Floor (float (position.X + dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
+            let newMinY = Math.Floor (float (position.Y - dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
+            let newMaxY = Math.Floor (float (position.Y + dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
+
+            let hash = Hash (x, y)
+
+            match eng.Buckets.TryGetValue (hash) with
+            | true, bucket ->
+                ()
+            | _ -> ()
+
 
     let findWithPoint (p: Vector2) eng =
         let p0 = Math.Floor (float p.X / eng.CellSizeDouble) |> int
