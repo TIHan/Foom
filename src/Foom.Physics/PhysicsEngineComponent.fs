@@ -17,7 +17,7 @@ type CharacterControllerComponent (position: Vector3, radius: float32, height: f
             Hashes = HashSet ()
         }
 
-    member internal this.Circle = circle // get rid of internal when we have a .fsi
+    member this.Circle = circle
 
     interface IComponent
 

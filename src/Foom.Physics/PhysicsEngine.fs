@@ -68,7 +68,7 @@ module PhysicsEngine =
             bucket.Triangles.Add (tri)
             bucket.TriangleData.Add (data)
         | _ ->
-            let min = Vector2 (single (hash.X * eng.CellSize), single (hash.X * eng.CellSize))
+            let min = Vector2 (single (hash.X * eng.CellSize), single (hash.Y * eng.CellSize))
             let max = Vector2 (single ((hash.X + 1) * eng.CellSize), single ((hash.Y + 1) * eng.CellSize))
             let aabb = AABB2D.ofMinAndMax min max
             let bucket =
@@ -88,7 +88,7 @@ module PhysicsEngine =
         | true, bucket ->
             bucket.StaticLines.Add (lined)
         | _ ->
-            let min = Vector2 (single (hash.X * eng.CellSize), single (hash.X * eng.CellSize))
+            let min = Vector2 (single (hash.X * eng.CellSize), single (hash.Y * eng.CellSize))
             let max = Vector2 (single ((hash.X + 1) * eng.CellSize), single ((hash.Y + 1) * eng.CellSize))
             let aabb = AABB2D.ofMinAndMax min max
             let bucket =
@@ -100,25 +100,6 @@ module PhysicsEngine =
                     DynamicCircles = HashSet ()
                 }
             bucket.StaticLines.Add (lined)
-            eng.Buckets.Add (hash, bucket)
-
-    let addDynamicCircleHash hash movingCircle eng =
-        match eng.Buckets.TryGetValue (hash) with
-        | true, bucket ->
-            bucket.DynamicCircles.Add (movingCircle) |> ignore
-        | _ ->
-            let min = Vector2 (single (hash.X * eng.CellSize), single (hash.X * eng.CellSize))
-            let max = Vector2 (single ((hash.X + 1) * eng.CellSize), single ((hash.Y + 1) * eng.CellSize))
-            let aabb = AABB2D.ofMinAndMax min max
-            let bucket =
-                {
-                    AABB = aabb
-                    Triangles = ResizeArray ()
-                    TriangleData = ResizeArray ()
-                    StaticLines = ResizeArray ()
-                    DynamicCircles = HashSet ()
-                }
-            bucket.DynamicCircles.Add (movingCircle) |> ignore
             eng.Buckets.Add (hash, bucket)
 
     let addTriangle (tri: Triangle2D) data eng =
@@ -168,6 +149,7 @@ module PhysicsEngine =
         |> Seq.iter (fun hash ->
             eng.Buckets.[hash].DynamicCircles.Remove dCircle |> ignore
         )
+        dCircle.Hashes.Clear ()
 
 
         let minX = Math.Floor (float (position.X - dCircle.Circle.Radius) / eng.CellSizeDouble) |> int
@@ -183,8 +165,11 @@ module PhysicsEngine =
                 let aabb = AABB2D.ofMinAndMax min max
 
                 let hash = Hash (x, y)
-                addDynamicCircleHash hash dCircle eng
-                dCircle.Hashes.Add (hash) |> ignore
+                match eng.Buckets.TryGetValue (hash) with
+                | true, bucket ->
+                    bucket.DynamicCircles.Add dCircle |> ignore
+                    dCircle.Hashes.Add (hash) |> ignore
+                | _ -> ()
 
     let findWithPoint (p: Vector2) eng =
         let p0 = Math.Floor (float p.X / eng.CellSizeDouble) |> int

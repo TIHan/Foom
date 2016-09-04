@@ -69,8 +69,8 @@ let create (app: Application) =
                     em.TryFind<PhysicsEngineComponent, WireframeComponent> (fun _ _ _ -> true)
                     |> Option.iter (fun (_, physicsEngineComp, wireframeComp) ->
 
-                        em.TryFind<CameraComponent, TransformComponent> (fun _ _ _ -> true)
-                        |> Option.iter (fun (_, _, transformComp) ->
+                        em.TryFind<CharacterControllerComponent, TransformComponent> (fun _ _ _ -> true)
+                        |> Option.iter (fun (_, charContrComp, transformComp) ->
                             let pos = transformComp.Position
                             let pos = Vector2 (pos.X, pos.Y)
 
@@ -78,36 +78,65 @@ let create (app: Application) =
                             |> PhysicsEngine.findWithPoint pos
                             |> printfn "In Sector: %A"
 
+                            physicsEngineComp.PhysicsEngine
+                            |> PhysicsEngine.warpDynamicCircle transformComp.Position charContrComp.Circle
+
                             // *** TEMPORARY ***
                             wireframeComp.Position.Set [||]
 
-                            let tris = ResizeArray ()
-                            let lines = ResizeArray ()
+                            let boxes = ResizeArray ()
                             physicsEngineComp.PhysicsEngine
-                            |> PhysicsEngine.iterWithPoint pos 
-                                (fun tri ->
-                                    tris.Add tri
-                                )
-                                (fun lined ->
-                                    lines.Add (Vector3 (lined.LineSegment.A, 0.f))
-                                    lines.Add (Vector3 (lined.LineSegment.B, 0.f))
-                                )
+                            |> PhysicsEngine.debugFindSpacesByDynamicCircle charContrComp.Circle
+                            |> Seq.iter (fun b ->
+                                let min = b.Min ()
+                                let max = b.Max ()
+                                [|
+                                    Vector3 (min.X, min.Y, 0.f)
+                                    Vector3 (max.X, min.Y, 0.f)
+                
+                                    Vector3 (max.X, min.Y, 0.f)
+                                    Vector3 (max.X, max.Y, 0.f)
+                
+                                    Vector3 (max.X, max.Y, 0.f)
+                                    Vector3 (min.X, max.Y, 0.f)
+                
+                                    Vector3 (min.X, max.Y, 0.f)
+                                    Vector3 (min.X, min.Y, 0.f)
+                                |]
+                                |> boxes.AddRange
+                            )
 
-                            let renderLines =
-                                tris
-                                |> Seq.map (fun tri -> 
-                                    [|
-                                    Vector3 (tri.A, 0.f);Vector3 (tri.B, 0.f)
-                                    Vector3 (tri.B, 0.f);Vector3 (tri.C, 0.f)
-                                    Vector3 (tri.C, 0.f);Vector3 (tri.A, 0.f)
-                                    |]
-                                )
+                            boxes
+                            |> Array.ofSeq
+                            |> wireframeComp.Position.Set
 
-                            if renderLines |> Seq.isEmpty |> not then
-                                renderLines
-                                |> Seq.reduce Array.append
-                                |> Array.append (lines |> Array.ofSeq)
-                                |> wireframeComp.Position.Set
+                            //let tris = ResizeArray ()
+                            //let lines = ResizeArray ()
+                            //physicsEngineComp.PhysicsEngine
+                            //|> PhysicsEngine.iterWithPoint pos 
+                            //    (fun tri ->
+                            //        tris.Add tri
+                            //    )
+                            //    (fun lined ->
+                            //        lines.Add (Vector3 (lined.LineSegment.A, 0.f))
+                            //        lines.Add (Vector3 (lined.LineSegment.B, 0.f))
+                            //    )
+
+                            //let renderLines =
+                            //    tris
+                            //    |> Seq.map (fun tri -> 
+                            //        [|
+                            //        Vector3 (tri.A, 0.f);Vector3 (tri.B, 0.f)
+                            //        Vector3 (tri.B, 0.f);Vector3 (tri.C, 0.f)
+                            //        Vector3 (tri.C, 0.f);Vector3 (tri.A, 0.f)
+                            //        |]
+                            //    )
+
+                            //if renderLines |> Seq.isEmpty |> not then
+                            //    renderLines
+                            //    |> Seq.reduce Array.append
+                            //    |> Array.append (lines |> Array.ofSeq)
+                            //    |> wireframeComp.Position.Set
                             // ******************
                         )
                     )
