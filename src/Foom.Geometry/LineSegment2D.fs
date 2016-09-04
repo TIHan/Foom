@@ -52,3 +52,17 @@ module LineSegment2D =
         if seg.B.Y > maxY then maxY <- seg.B.Y
 
         AABB2D.ofMinAndMax (Vector2 (minX, minY)) (Vector2 (maxX, maxY))
+
+    let findClosestPointByPoint (p: Vector2) (seg: LineSegment2D) =
+        let ab = seg.B - seg.A
+
+        let t = Vec2.dot (p - seg.A) ab
+        if (t <= 0.f) then
+            (0.f, seg.A)
+        else
+            let denom = Vec2.dot ab ab
+            if (t >= denom) then
+                (1.f, seg.B)
+            else
+                let t = t / denom
+                (t, seg.A + (t * ab))

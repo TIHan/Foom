@@ -170,35 +170,48 @@ module PhysicsEngine =
                     dCircle.Hashes.Add (hash) |> ignore
                 | _ -> ()
 
-    // The grand daddy. This needs thorough research.
-    // Goal: The circle will not pass through lines marked as walls.
-    let moveDynamicCircle (position: Vector3) dCircle eng =
-        let currentPosition = dCircle.Circle.Center
-        let radius = dCircle.Circle.Radius
+    let iterStaticLineByAABB (aabb: AABB2D) f eng =
+        let min = aabb.Min ()
+        let max = aabb.Max ()
 
-        let seg = LineSegment2D (Vector2 (currentPosition.X, currentPosition.Y), Vector2 (position.X, position.Y))
+        let maxX = Math.Floor (float max.X / eng.CellSizeDouble) |> int
+        let maxY = Math.Floor (float max.Y / eng.CellSizeDouble) |> int
+        let minX = Math.Floor (float min.X / eng.CellSizeDouble) |> int
+        let minY = Math.Floor (float min.Y / eng.CellSizeDouble) |> int
 
-        let minX = Math.Floor (float (currentPosition.X - radius) / eng.CellSizeDouble) |> int
-        let maxX = Math.Floor (float (currentPosition.X + radius) / eng.CellSizeDouble) |> int
-        let minY = Math.Floor (float (currentPosition.Y - radius) / eng.CellSizeDouble) |> int
-        let maxY = Math.Floor (float (currentPosition.Y + radius) / eng.CellSizeDouble) |> int
-
-        let mutable position = position
         for x = minX to maxX do
             for y = minY to maxY do
 
-            let newMinX = Math.Floor (float (position.X - radius) / eng.CellSizeDouble) |> int
-            let newMaxX = Math.Floor (float (position.X + radius) / eng.CellSizeDouble) |> int
-            let newMinY = Math.Floor (float (position.Y - radius) / eng.CellSizeDouble) |> int
-            let newMaxY = Math.Floor (float (position.Y + radius) / eng.CellSizeDouble) |> int
+                let hash = Hash (x, y)
 
-            let hash = Hash (x, y)
+                match eng.Buckets.TryGetValue (hash) with
+                | true, bucket ->
+                    bucket.StaticLines
+                    |> Seq.iter f
+                | _ -> ()
 
-            match eng.Buckets.TryGetValue (hash) with
-            | true, bucket ->
-                ()
-            | _ -> ()
+    // The grand daddy. This needs thorough research.
+    // Goal: The circle will not pass through lines marked as walls.
+    let moveDynamicCircle (position: Vector3) dCircle eng =
+        let mutable newCircle = dCircle.Circle
+        newCircle.Center <- Vector2 (position.X, position.Y)
 
+        let circleAABB = dCircle.Circle |> Circle2D.aabb
+        let newCircleAABB = newCircle |> Circle2D.aabb
+
+        let aabb = AABB2D.merge circleAABB newCircleAABB
+        let pos = Vector2 (position.X, position.Y)
+
+        eng
+        |> iterStaticLineByAABB aabb
+            (fun sLine ->
+                let t, d = sLine.LineSegment |> LineSegment2D.findClosestPointByPoint pos
+
+                if (pos - d).Length () <= dCircle.Circle.Radius then
+                    System.Diagnostics.Debug.WriteLine ("COLLISION")
+            )
+
+        dCircle.Circle <- newCircle
 
     let findWithPoint (p: Vector2) eng =
         let p0 = Math.Floor (float p.X / eng.CellSizeDouble) |> int

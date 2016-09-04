@@ -31,3 +31,5 @@ module AABB2D =
     val intersects : AABB2D -> AABB2D -> bool
 
     val containsPoint : Vector2 -> AABB2D -> bool
+
+    val merge : AABB2D -> AABB2D -> AABB2D

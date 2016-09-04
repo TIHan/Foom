@@ -49,3 +49,12 @@ module AABB2D =
 
         abs d.X <= b.Extents.X &&
         abs d.Y <= b.Extents.Y
+
+    let merge (a: AABB2D) (b: AABB2D) =
+        let c = Vector2.Lerp (a.Center, b.Center, 0.5f)
+        let e = a.Extents + b.Extents + (abs (a.Center - b.Center))
+        {
+            center = c
+            extents = e
+        }
+

@@ -19,3 +19,5 @@ module LineSegment2D =
     val intersectsAABB : AABB2D -> LineSegment2D -> bool
 
     val aabb : LineSegment2D -> AABB2D
+
+    val findClosestPointByPoint : Vector2 -> LineSegment2D -> float32 * Vector2
