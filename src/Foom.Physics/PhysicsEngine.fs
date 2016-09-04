@@ -193,25 +193,32 @@ module PhysicsEngine =
     // The grand daddy. This needs thorough research.
     // Goal: The circle will not pass through lines marked as walls.
     let moveDynamicCircle (position: Vector3) dCircle eng =
-        let mutable newCircle = dCircle.Circle
-        newCircle.Center <- Vector2 (position.X, position.Y)
+
 
         let circleAABB = dCircle.Circle |> Circle2D.aabb
+
+        let mutable newCircle = dCircle.Circle
+        newCircle.Center <- Vector2 (position.X, position.Y)
         let newCircleAABB = newCircle |> Circle2D.aabb
-
         let aabb = AABB2D.merge circleAABB newCircleAABB
-        let pos = Vector2 (position.X, position.Y)
 
+        let mutable position = position
         eng
         |> iterStaticLineByAABB aabb
             (fun sLine ->
-                let t, d = sLine.LineSegment |> LineSegment2D.findClosestPointByPoint pos
+                let pos = Vector2 (position.X, position.Y)
+                if sLine.IsWall then 
+                    let t, d = sLine.LineSegment |> LineSegment2D.findClosestPointByPoint pos
+                    let diff = Vector3 (pos - d, 0.f)
+                    let len = diff.Length ()
+                    let dir = diff |> Vector3.Normalize
+                    let radius = dCircle.Circle.Radius
+                    if len <= radius then
+                        position <- position + (dir * (radius - len))
 
-                if (pos - d).Length () <= dCircle.Circle.Radius then
-                    System.Diagnostics.Debug.WriteLine ("COLLISION")
             )
 
-        dCircle.Circle <- newCircle
+        dCircle.Circle.Center <- Vector2 (position.X, position.Y)
 
     let findWithPoint (p: Vector2) eng =
         let p0 = Math.Floor (float p.X / eng.CellSizeDouble) |> int
