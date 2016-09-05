@@ -21,3 +21,5 @@ module LineSegment2D =
     val aabb : LineSegment2D -> AABB2D
 
     val findClosestPointByPoint : Vector2 -> LineSegment2D -> float32 * Vector2
+
+    val normal : LineSegment2D -> Vector2

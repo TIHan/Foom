@@ -66,3 +66,17 @@ module LineSegment2D =
             else
                 let t = t / denom
                 (t, seg.A + (t * ab))
+
+    let normal (seg: LineSegment2D) =
+        let dx = seg.B.X - seg.A.X
+        let dy = seg.B.Y - seg.A.Y
+
+        let dir1 =
+            Vector2 (-dy, dx)
+            |> Vector2.Normalize
+
+        let dir2 =
+            Vector2 (dy, -dx)
+            |> Vector2.Normalize
+
+        dir2
