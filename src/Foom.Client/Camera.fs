@@ -98,6 +98,6 @@ module Camera =
                 let v2 = Vector2 (transformComp.TransformLerp.Translation.X, transformComp.TransformLerp.Translation.Y)
 
                 cameraComp.HeightOffsetLerp <- cameraComp.HeightOffset
-                cameraComp.HeightOffset <- sin(8.f * time) * (v1 - v2).Length()
+                //cameraComp.HeightOffset <- sin(8.f * time) * (v1 - v2).Length()
             | _ -> ()
         )

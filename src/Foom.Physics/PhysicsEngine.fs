@@ -202,23 +202,38 @@ module PhysicsEngine =
         let newCircleAABB = newCircle |> Circle2D.aabb
         let aabb = AABB2D.merge circleAABB newCircleAABB
 
-        let mutable position = position
+        let mutable positionXY = Vector2 (position.X, position.Y)
+        let opositionxy = positionXY
+        let radius = dCircle.Circle.Radius
+        let arr = ResizeArray ()
         eng
         |> iterStaticLineByAABB aabb
             (fun sLine ->
-                let pos = Vector2 (position.X, position.Y)
                 if sLine.IsWall then 
-                    let t, d = sLine.LineSegment |> LineSegment2D.findClosestPointByPoint pos
-                    let diff = Vector3 (pos - d, 0.f)
-                    let len = diff.Length ()
-                    let dir = diff |> Vector3.Normalize
-                    let radius = dCircle.Circle.Radius
-                    if len <= radius then
-                        position <- position + (dir * (radius - len))
+                    let moveV = dCircle.Circle.Center - positionXY
+                    let normal = LineSegment2D.normal sLine.LineSegment
+                    let dp = Vector2.Dot (normal, moveV)
+                    arr.Add ((sLine, dp))
+
 
             )
 
-        dCircle.Circle.Center <- Vector2 (position.X, position.Y)
+        arr
+        |> Seq.sortByDescending (fun (_, len) -> len)
+        |> Seq.iter (fun (sLine, dp) ->
+            let t, d = sLine.LineSegment |> LineSegment2D.findClosestPointByPoint positionXY
+            let diff = positionXY - d
+            let len = diff.Length ()
+            let dir = diff |> Vector2.Normalize
+
+            let normal = LineSegment2D.normal sLine.LineSegment
+            let dp = Vector2.Dot (normal, diff)
+            if len <= radius && dp >= 0.5f then
+                positionXY <- positionXY + (normal * (radius - dp))
+                System.Diagnostics.Debug.WriteLine(dp)
+        )
+
+        dCircle.Circle.Center <- positionXY
 
     let findWithPoint (p: Vector2) eng =
         let p0 = Math.Floor (float p.X / eng.CellSizeDouble) |> int
