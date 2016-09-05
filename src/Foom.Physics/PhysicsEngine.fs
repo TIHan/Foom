@@ -230,7 +230,6 @@ module PhysicsEngine =
             let dp = Vector2.Dot (normal, diff)
             if len <= radius && dp >= 0.5f then
                 positionXY <- positionXY + (normal * (radius - dp))
-                System.Diagnostics.Debug.WriteLine(dp)
         )
 
         dCircle.Circle.Center <- positionXY
