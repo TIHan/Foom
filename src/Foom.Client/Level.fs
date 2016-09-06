@@ -198,7 +198,7 @@ let updates () =
 
             spawnAABBWireframe levelAABB em
 
-            let physicsEngineComp = PhysicsEngineComponent.Create 128
+            let physicsEngineComp = PhysicsEngineComponent.Create 4
 
             level
             |> Level.iteriSector (fun i sector ->

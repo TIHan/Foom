@@ -203,36 +203,43 @@ module PhysicsEngine =
         let aabb = AABB2D.merge circleAABB newCircleAABB
 
         let mutable positionXY = Vector2 (position.X, position.Y)
-        let opositionxy = positionXY
+        let mutable offsetXY = Vector2.Zero
         let radius = dCircle.Circle.Radius
         let arr = ResizeArray ()
+
+        let moveDir = positionXY - dCircle.Circle.Center |> Vector2.Normalize
+
+        let hashLines = HashSet ()
         eng
         |> iterStaticLineByAABB aabb
             (fun sLine ->
-                if sLine.IsWall then 
-                    let moveV = dCircle.Circle.Center - positionXY
-                    let normal = LineSegment2D.normal sLine.LineSegment
-                    let dp = Vector2.Dot (normal, moveV)
-                    arr.Add ((sLine, dp))
+                if hashLines.Add (sLine.LineSegment) then
+                    if sLine.IsWall && LineSegment2D.isPointOnLeftSide positionXY sLine.LineSegment |> not then 
+                        arr.Add (sLine)
 
 
             )
 
         arr
-        |> Seq.sortByDescending (fun (_, len) -> len)
-        |> Seq.iter (fun (sLine, dp) ->
-            let t, d = sLine.LineSegment |> LineSegment2D.findClosestPointByPoint positionXY
-            let diff = positionXY - d
-            let len = diff.Length ()
-            let dir = diff |> Vector2.Normalize
+        //|> Seq.sortBy (fun sLine ->
+        //    let normal = LineSegment2D.normal sLine.LineSegment
 
-            let normal = LineSegment2D.normal sLine.LineSegment
-            let dp = Vector2.Dot (normal, diff)
-            if len <= radius && dp >= 0.5f then
-                positionXY <- positionXY + (normal * (radius - dp))
+        //    Vector2.Dot (moveDir, normal)
+        //)
+        |> Seq.iter (fun (sLine) ->
+
+                let t, d = sLine.LineSegment |> LineSegment2D.findClosestPointByPoint positionXY
+                let diff = positionXY - d
+                let len = diff.Length ()
+
+                let normal = LineSegment2D.normal sLine.LineSegment
+                let dp = Vector2.Dot (normal, diff)
+                if len < radius then
+                    let newOffset = (normal * (radius - dp))
+                    offsetXY <- offsetXY + newOffset
         )
 
-        dCircle.Circle.Center <- positionXY
+        warpDynamicCircle (Vector3 (positionXY + offsetXY, 0.f)) dCircle eng
 
     let findWithPoint (p: Vector2) eng =
         let p0 = Math.Floor (float p.X / eng.CellSizeDouble) |> int

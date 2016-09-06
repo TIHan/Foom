@@ -80,3 +80,8 @@ module LineSegment2D =
             |> Vector2.Normalize
 
         dir2
+
+    let inline isPointOnLeftSide (p: Vector2) (seg: LineSegment2D) =
+        let v1 = seg.A
+        let v2 = seg.B
+        (v2.X - v1.X) * (p.Y - v1.Y) - (v2.Y - v1.Y) * (p.X - v1.X) > 0.f

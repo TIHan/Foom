@@ -23,3 +23,5 @@ module LineSegment2D =
     val findClosestPointByPoint : Vector2 -> LineSegment2D -> float32 * Vector2
 
     val normal : LineSegment2D -> Vector2
+
+    val inline isPointOnLeftSide : Vector2 -> LineSegment2D -> bool
