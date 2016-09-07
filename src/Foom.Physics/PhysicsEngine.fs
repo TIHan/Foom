@@ -192,6 +192,7 @@ module PhysicsEngine =
 
     // The grand daddy. This needs thorough research.
     // Goal: The circle will not pass through lines marked as walls.
+    // References: http://seb.ly/2010/01/predicting-circle-line-collisions/
     let moveDynamicCircle (position: Vector3) dCircle eng =
 
 
@@ -220,24 +221,68 @@ module PhysicsEngine =
 
             )
 
+        let mutable maxX = 0.f
+        let mutable minX = 0.f
+        let mutable maxY = 0.f
+        let mutable minY = 0.f
         arr
         //|> Seq.sortBy (fun sLine ->
         //    let normal = LineSegment2D.normal sLine.LineSegment
 
         //    Vector2.Dot (moveDir, normal)
         //)
+//We can use this formula :
+
+//current distance = d1 + (d2-d1) * t 
+//so when d = the radius r :
+
+//r = d1 + (d2-d1) * t 
+//and with some algebra even I can just about manage we can extract t :
+
+//r-d1 = (d2-d1)*t
+//(r - d1) / (d2-d1) = t 
+//So if t is between 0 and 1 we know we collided between frames!
+
+//Whew. This blog post is getting epic. But we’re not quite there yet, we still need to work out where the circle is at the point of collision: we take the vector between C1 and C2, multiply it by t and add it to C1.
         |> Seq.iter (fun (sLine) ->
 
                 let t, d = sLine.LineSegment |> LineSegment2D.findClosestPointByPoint positionXY
                 let diff = positionXY - d
                 let len = diff.Length ()
+                let dir = diff |> Vector2.Normalize
 
                 let normal = LineSegment2D.normal sLine.LineSegment
                 let dp = Vector2.Dot (normal, diff)
-                if len < radius then
-                    let newOffset = (normal * (radius - dp))
-                    offsetXY <- offsetXY + newOffset
+                if len <= radius && dp > 0.f then
+
+                    let offset = (normal * (radius - len))
+
+                    if offset.X > 0.f && maxX < offset.X then
+                        maxX <- offset.X
+
+                    if offset.X < 0.f && minX > offset.X then
+                        minX <- offset.X
+
+                    if offset.Y > 0.f && maxY < offset.Y then
+                        maxY <- offset.Y
+
+                    if offset.Y < 0.f && minY > offset.Y then
+                        minY <- offset.Y
         )
+
+        let mutable offsetXY = Vector2 (maxX + minX, maxY + minY)
+
+       // System.Diagnostics.Debug.WriteLine (String.Format ("{0} {1} {2} {3}", maxX, minX, maxY, minY))
+
+        //|> Array.ofSeq
+        //|> Array.toSeq
+        //|> Seq.iter (fun offset ->
+        //    if offsetXY.X < offset.X then
+        //        offsetXY.X <- offset.X
+
+        //    if offsetXY.Y < offset.Y then
+        //       offsetXY.Y <- offset.Y
+        //)
 
         warpDynamicCircle (Vector3 (positionXY + offsetXY, 0.f)) dCircle eng
 
