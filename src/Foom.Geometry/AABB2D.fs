@@ -50,11 +50,22 @@ module AABB2D =
         abs d.X <= b.Extents.X &&
         abs d.Y <= b.Extents.Y
 
+    // TODO: Optimize this.
     let merge (a: AABB2D) (b: AABB2D) =
-        let c = Vector2.Lerp (a.Center, b.Center, 0.5f)
-        let e = a.Extents + b.Extents + (abs (a.Center - b.Center))
-        {
-            center = c
-            extents = e
-        }
+        let minA = a.Min ()
+        let maxA = a.Max ()
+        let minB = b.Min ()
+        let maxB = b.Max ()
+
+        let mutable minX = minA.X
+        let mutable maxX = maxA.X
+        let mutable minY = minA.Y
+        let mutable maxY = maxA.Y
+
+        if (minB.X < minX) then minX <- minB.X
+        if (minB.Y < minY) then minY <- minB.Y
+        if (maxB.X > maxX) then maxX <- maxB.X
+        if (maxB.Y > maxY) then maxY <- maxB.Y
+
+        ofMinAndMax (Vector2 (minX, minY)) (Vector2 (maxX, maxY))
 

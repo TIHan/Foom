@@ -9,15 +9,11 @@ open Foom.Geometry
 
 type CharacterControllerComponent (position: Vector3, radius: float32, height: float32) =
 
-    let circle =
-        {
-            Circle = Circle2D (Vector2 (position.X, position.Y), radius)
-            Z = position.Z
-            Height = height
-            Hashes = HashSet ()
-        }
+    let aabb = AABB2D.ofCenterAndExtents Vector2.Zero (Vector2 (radius, radius))
+    let rigidBody =
+        RigidBody.Create (CollisionShape.AABB aabb, position, height)
 
-    member this.Circle = circle
+    member this.RigidBody = rigidBody
 
     interface IComponent
 

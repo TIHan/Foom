@@ -60,8 +60,8 @@ let create (app: Application) =
                     match entityManager.TryFind<WadComponent> (fun _ _ -> true) with
                     | None ->
                         let ent = entityManager.Spawn ()
-                        entityManager.AddComponent ent (WadComponent("doom2.wad"))
-                        entityManager.AddComponent ent (LevelComponent("map10"))
+                        entityManager.AddComponent ent (WadComponent("doom.wad"))
+                        entityManager.AddComponent ent (LevelComponent("e4m9"))
 
                     | _ -> ()
                 )
@@ -79,7 +79,7 @@ let create (app: Application) =
                         let! (_, physicsEngineComp) = em.TryFind<PhysicsEngineComponent> (fun _ _ -> true)
 
                         physicsEngineComp.PhysicsEngine
-                        |> PhysicsEngine.warpDynamicCircle transformComp.Position charContrComp.Circle
+                        |> PhysicsEngine.warpRigidBody transformComp.Position charContrComp.RigidBody
 
                     }
                     |> ignore
@@ -99,17 +99,19 @@ let create (app: Application) =
                             |> PhysicsEngine.findWithPoint pos
                             |> printfn "In Sector: %A"
 
-                            physicsEngineComp.PhysicsEngine
-                            |> PhysicsEngine.moveDynamicCircle transformComp.Position charContrComp.Circle
+                            let rbody = charContrComp.RigidBody
 
-                            transformComp.Position <- Vector3 (charContrComp.Circle.Circle.Center, transformComp.Position.Z)
+                            physicsEngineComp.PhysicsEngine
+                            |> PhysicsEngine.warpRigidBody transformComp.Position rbody
+
+                            transformComp.Position <- Vector3 (rbody.WorldPosition, transformComp.Position.Z)
 
                             // *** TEMPORARY ***
                             wireframeComp.Position.Set [||]
 
                             let boxes = ResizeArray ()
                             physicsEngineComp.PhysicsEngine
-                            |> PhysicsEngine.debugFindSpacesByDynamicCircle charContrComp.Circle
+                            |> PhysicsEngine.debugFindSpacesByRigidBody charContrComp.RigidBody
                             |> Seq.iter (fun b ->
                                 let min = b.Min ()
                                 let max = b.Max ()

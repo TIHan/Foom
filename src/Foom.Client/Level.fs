@@ -207,14 +207,9 @@ let updates () =
                 sector.Linedefs
                 |> List.iter (fun linedef ->
                     physicsEngineComp.PhysicsEngine
-                    |> PhysicsEngine.addStaticLine
-                        {
-                            FrontFaceAreaId = 0
-                            BackFaceAreaId = 0
-
-                            LineSegment = LineSegment2D (linedef.Start, linedef.End)
-                            IsWall = linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone //|| not (linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged))
-                        }
+                    |> PhysicsEngine.addLineSegment
+                        (LineSegment2D (linedef.Start, linedef.End))
+                        (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone || not (linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged)))
                 )
 
                 Level.createFlats i level
@@ -280,7 +275,7 @@ let updates () =
                         let cameraEnt = em.Spawn ()
                         em.AddComponent cameraEnt (CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f)))
                         em.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (position)))
-                        em.AddComponent cameraEnt (CharacterControllerComponent (position, 16.5f, 56.f))
+                        em.AddComponent cameraEnt (CharacterControllerComponent (position, 20.f, 56.f))
 
                     | _ -> ()
                 | _ -> ()
