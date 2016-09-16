@@ -65,7 +65,25 @@ module PhysicsEngine =
     let warpRigidBody (position: Vector3) (rbody: RigidBody) eng =
         rbody.Hashes
         |> Seq.iter (fun hash ->
-            eng.Buckets.[hash].RigidBodies.Remove rbody.Id |> ignore
+            match eng.Buckets.TryGetValue hash with
+            | true, bucket ->
+
+                match rbody.Shape with
+                | StaticWall _ ->
+                    let index =
+                        // Not efficient, but works and shouldn't do anyway.
+                        bucket.StaticWalls.RigidBody.IndexOf (rbody)
+
+                    if (index <> -1) then
+                        bucket.StaticWalls.LineSegment.RemoveAt (index)
+                        bucket.StaticWalls.Id.RemoveAt (index)
+                        bucket.StaticWalls.IsTrigger.RemoveAt (index)
+                        bucket.StaticWalls.RigidBody.RemoveAt (index)
+                | _ ->
+                    // Anything non-static
+                    bucket.RigidBodies.Remove rbody.Id |> ignore
+
+            | _ -> ()
         )
 
         rbody.Hashes.Clear ()
