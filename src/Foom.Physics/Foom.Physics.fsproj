@@ -35,6 +35,9 @@
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
   <ItemGroup>
     <Compile Include="CollisionShape.fs" />
+    <Compile Include="RigidBody.fsi" />
+    <Compile Include="RigidBody.fs" />
+    <Compile Include="PhysicsEngine.fsi" />
     <Compile Include="PhysicsEngine.fs" />
     <Compile Include="PhysicsEngineComponent.fs" />
     <None Include="packages.config" />

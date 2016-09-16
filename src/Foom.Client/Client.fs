@@ -72,6 +72,7 @@ let create (app: Application) =
             [
                 Camera.update (app)
 
+                // This should be part of a physics system.
                 Behavior.eventQueue (fun (evt: Events.ComponentAdded<CharacterControllerComponent>) _ em ->
                     opt {
                         let! charContrComp = em.TryGet<CharacterControllerComponent> evt.Entity
@@ -79,7 +80,7 @@ let create (app: Application) =
                         let! (_, physicsEngineComp) = em.TryFind<PhysicsEngineComponent> (fun _ _ -> true)
 
                         physicsEngineComp.PhysicsEngine
-                        |> PhysicsEngine.warpRigidBody transformComp.Position charContrComp.RigidBody
+                        |> PhysicsEngine.addRigidBody charContrComp.RigidBody
 
                     }
                     |> ignore

@@ -11,7 +11,7 @@ type CharacterControllerComponent (position: Vector3, radius: float32, height: f
 
     let aabb = AABB2D.ofCenterAndExtents Vector2.Zero (Vector2 (radius, radius))
     let rigidBody =
-        RigidBody.Create (CollisionShape.AABB aabb, position, height)
+        RigidBody (CollisionShape.AABB aabb, position, height)
 
     member this.RigidBody = rigidBody
 

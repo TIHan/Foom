@@ -7,41 +7,6 @@ open System.Collections.Generic
 open Foom.Math
 open Foom.Geometry
 
-[<Struct>]
-type Hash =
-
-    val X : int
-
-    val Y : int
-
-    new (x, y) = { X = x; Y = y }
-
-[<ReferenceEquality>]
-type RigidBody =
-    {
-        Shape: CollisionShape
-        AABB: AABB2D
-        mutable WorldPosition: Vector2
-        mutable Z: float32
-        mutable Height: float32
-        Hashes: HashSet<Hash>
-    }
-
-    static member Create (shape, position: Vector3, height) =
-        let aabb =
-            match shape with
-            | Circle circle -> circle |> Circle2D.aabb
-            | AABB aabb -> aabb
-
-        {
-            Shape = shape
-            AABB = aabb
-            WorldPosition = Vector2 (position.X, position.Y)
-            Z = position.Z
-            Height = height
-            Hashes = HashSet ()
-        }
-
 type SpatialHashBucket =
     {
         AABB: AABB2D
@@ -52,7 +17,7 @@ type SpatialHashBucket =
         LineSegments: ResizeArray<LineSegment2D>
         LineSegmentsIsWall: ResizeArray<bool>
 
-        RigidBodies: HashSet<RigidBody>
+        RigidBodies: Dictionary<int, RigidBody>
     }
 
     static member Create (aabb) =
@@ -62,11 +27,12 @@ type SpatialHashBucket =
             TriangleData = ResizeArray ()
             LineSegments = ResizeArray ()
             LineSegmentsIsWall = ResizeArray ()
-            RigidBodies = HashSet ()
+            RigidBodies = Dictionary ()
         }
 
 type PhysicsEngine =
     {
+        mutable NextId: int
         CellSize: int
         CellSizeDouble: double
         Buckets: Dictionary<Hash, SpatialHashBucket>
@@ -77,10 +43,53 @@ module PhysicsEngine =
 
     let create cellSize =
         {
+            NextId = 1
             CellSize = cellSize
             CellSizeDouble = float cellSize
             Buckets = Dictionary ()
         }
+
+    let warpRigidBody (position: Vector3) (rbody: RigidBody) eng =
+        rbody.Hashes
+        |> Seq.iter (fun hash ->
+            eng.Buckets.[hash].RigidBodies.Remove rbody.Id |> ignore
+        )
+
+        rbody.Hashes.Clear ()
+
+        let pos2D = Vector2 (position.X, position.Y)
+
+        let aabb = rbody.AABB
+
+        let min = aabb.Min () + pos2D
+        let max = aabb.Max () + pos2D
+
+        let maxX = Math.Floor (float max.X / eng.CellSizeDouble) |> int
+        let maxY = Math.Floor (float max.Y / eng.CellSizeDouble) |> int
+        let minX = Math.Floor (float min.X / eng.CellSizeDouble) |> int
+        let minY = Math.Floor (float min.Y / eng.CellSizeDouble) |> int
+
+        for x = minX to maxX do
+            for y = minY to maxY do
+
+                let hash = Hash (x, y)
+
+                match eng.Buckets.TryGetValue hash with
+                | true, bucket ->
+                    bucket.RigidBodies.Add (rbody.Id, rbody) |> ignore
+                    rbody.Hashes.Add hash |> ignore
+                | _ -> ()
+        
+        rbody.WorldPosition <- pos2D
+        rbody.Z <- position.Z
+
+    let addRigidBody (rBody: RigidBody) eng =
+        rBody.Id <- eng.NextId
+        eng.NextId <- eng.NextId + 1
+
+        // This call will eventually be a queue.
+        let v = Vector3 (rBody.WorldPosition, rBody.Z)
+        warpRigidBody v rBody eng
 
     let addTriangleHash hash tri data eng =
         match eng.Buckets.TryGetValue (hash) with
@@ -110,7 +119,7 @@ module PhysicsEngine =
             bucket.LineSegmentsIsWall.Add isWall
             eng.Buckets.Add (hash, bucket)
 
-    let addTriangle (tri: Triangle2D) data eng =
+    let addTriangle (tri: Triangle2D) (data: obj) eng =
         let aabb = Triangle2D.aabb tri
         let min = aabb.Min ()
         let max = aabb.Max ()
@@ -208,40 +217,7 @@ module PhysicsEngine =
 
         | _ -> ()
 
-    let debugFindSpacesByRigidBody rbody eng =
+    let debugFindSpacesByRigidBody (rbody: RigidBody) eng =
         rbody.Hashes
         |> Seq.map (fun hash -> eng.Buckets.[hash].AABB)
 
-    let warpRigidBody (position: Vector3) rbody eng =
-        rbody.Hashes
-        |> Seq.iter (fun hash ->
-            eng.Buckets.[hash].RigidBodies.Remove rbody |> ignore
-        )
-
-        rbody.Hashes.Clear ()
-
-        let pos2D = Vector2 (position.X, position.Y)
-
-        let aabb = rbody.AABB
-
-        let min = aabb.Min () + pos2D
-        let max = aabb.Max () + pos2D
-
-        let maxX = Math.Floor (float max.X / eng.CellSizeDouble) |> int
-        let maxY = Math.Floor (float max.Y / eng.CellSizeDouble) |> int
-        let minX = Math.Floor (float min.X / eng.CellSizeDouble) |> int
-        let minY = Math.Floor (float min.Y / eng.CellSizeDouble) |> int
-
-        for x = minX to maxX do
-            for y = minY to maxY do
-
-                let hash = Hash (x, y)
-
-                match eng.Buckets.TryGetValue hash with
-                | true, bucket ->
-                    bucket.RigidBodies.Add rbody |> ignore
-                    rbody.Hashes.Add hash |> ignore
-                | _ -> ()
-        
-        rbody.WorldPosition <- pos2D
-        rbody.Z <- position.Z
