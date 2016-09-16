@@ -34,6 +34,4 @@ type RigidBody =
 
     member internal Z : float32 with set
 
-    member Height : float32
-
-    new : CollisionShape * Vector3 * height: float32 -> RigidBody
+    new : CollisionShape * Vector3 -> RigidBody

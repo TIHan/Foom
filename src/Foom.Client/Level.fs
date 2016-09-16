@@ -206,10 +206,17 @@ let updates () =
 
                 sector.Linedefs
                 |> List.iter (fun linedef ->
+                    let staticWall =
+                        {
+                            LineSegment = (LineSegment2D (linedef.Start, linedef.End))
+                            IsTrigger = (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone || not (linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged))) |> not
+
+                        }
+
+                    let rBody = RigidBody (StaticWall staticWall, Vector3.Zero)
+
                     physicsEngineComp.PhysicsEngine
-                    |> PhysicsEngine.addLineSegment
-                        (LineSegment2D (linedef.Start, linedef.End))
-                        (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone || not (linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged)))
+                    |> PhysicsEngine.addRigidBody rBody
                 )
 
                 Level.createFlats i level

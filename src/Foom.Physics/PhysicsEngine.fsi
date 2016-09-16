@@ -21,10 +21,6 @@ module PhysicsEngine =
 
     val addTriangle : Triangle2D -> obj -> PhysicsEngine -> unit
 
-    val addLineSegment : LineSegment2D -> isWall: bool -> PhysicsEngine -> unit
-
-    val iterLineSegmentByAABB : AABB2D -> (LineSegment2D -> unit) -> PhysicsEngine -> unit
-
     val findWithPoint : Vector2 -> PhysicsEngine -> obj
 
     val iterWithPoint : Vector2 -> (Triangle2D -> unit) -> (LineSegment2D -> unit) -> PhysicsEngine -> unit

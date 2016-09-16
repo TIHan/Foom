@@ -7,15 +7,29 @@ open System.Collections.Generic
 open Foom.Math
 open Foom.Geometry
 
+type StaticWallSOA =
+    {
+        LineSegment: ResizeArray<LineSegment2D>
+        Id: ResizeArray<int>
+        IsTrigger: ResizeArray<bool>
+        RigidBody: ResizeArray<RigidBody>
+    }
+
+    static member Create () =
+        {
+            LineSegment = ResizeArray ()
+            Id = ResizeArray ()
+            IsTrigger = ResizeArray ()
+            RigidBody = ResizeArray ()
+        }
+
 type SpatialHashBucket =
     {
         AABB: AABB2D
+        StaticWalls: StaticWallSOA
 
         Triangles: ResizeArray<Triangle2D>
         TriangleData: ResizeArray<obj>
-
-        LineSegments: ResizeArray<LineSegment2D>
-        LineSegmentsIsWall: ResizeArray<bool>
 
         RigidBodies: Dictionary<int, RigidBody>
     }
@@ -23,10 +37,9 @@ type SpatialHashBucket =
     static member Create (aabb) =
         {
             AABB = aabb
+            StaticWalls = StaticWallSOA.Create () 
             Triangles = ResizeArray ()
             TriangleData = ResizeArray ()
-            LineSegments = ResizeArray ()
-            LineSegmentsIsWall = ResizeArray ()
             RigidBodies = Dictionary ()
         }
 
@@ -74,11 +87,28 @@ module PhysicsEngine =
 
                 let hash = Hash (x, y)
 
-                match eng.Buckets.TryGetValue hash with
-                | true, bucket ->
-                    bucket.RigidBodies.Add (rbody.Id, rbody) |> ignore
+                match rbody.Shape with
+                | StaticWall staticWall ->
+                    let bucket =
+                        match eng.Buckets.TryGetValue hash with
+                        | false, _ ->
+                            let bucket = SpatialHashBucket.Create aabb
+                            eng.Buckets.Add (hash, bucket)
+                            bucket
+                        | _, bucket -> bucket
+
+                    bucket.StaticWalls.LineSegment.Add (staticWall.LineSegment)
+                    bucket.StaticWalls.Id.Add (rbody.Id)
+                    bucket.StaticWalls.IsTrigger.Add (staticWall.IsTrigger)
+                    bucket.StaticWalls.RigidBody.Add (rbody)
                     rbody.Hashes.Add hash |> ignore
-                | _ -> ()
+
+                | _ ->
+                    match eng.Buckets.TryGetValue hash with
+                    | true, bucket ->
+                        bucket.RigidBodies.Add (rbody.Id, rbody) |> ignore
+                        rbody.Hashes.Add hash |> ignore
+                    | _ -> ()
         
         rbody.WorldPosition <- pos2D
         rbody.Z <- position.Z
@@ -105,20 +135,6 @@ module PhysicsEngine =
             bucket.TriangleData.Add (data)
             eng.Buckets.Add (hash, bucket)
 
-    let addLineSegmentHash hash seg isWall eng =
-        match eng.Buckets.TryGetValue (hash) with
-        | true, bucket ->
-            bucket.LineSegments.Add seg
-            bucket.LineSegmentsIsWall.Add isWall
-        | _ ->
-            let min = Vector2 (single (hash.X * eng.CellSize), single (hash.Y * eng.CellSize))
-            let max = Vector2 (single ((hash.X + 1) * eng.CellSize), single ((hash.Y + 1) * eng.CellSize))
-            let aabb = AABB2D.ofMinAndMax min max
-            let bucket = SpatialHashBucket.Create aabb
-            bucket.LineSegments.Add seg
-            bucket.LineSegmentsIsWall.Add isWall
-            eng.Buckets.Add (hash, bucket)
-
     let addTriangle (tri: Triangle2D) (data: obj) eng =
         let aabb = Triangle2D.aabb tri
         let min = aabb.Min ()
@@ -139,47 +155,6 @@ module PhysicsEngine =
                 if Triangle2D.intersectsAABB aabb tri then
                     let hash = Hash (x, y)
                     addTriangleHash hash tri data eng
-
-    let addLineSegment seg isWall eng =
-        let aabb = LineSegment2D.aabb seg
-        let min = aabb.Min ()
-        let max = aabb.Max ()
-
-        let maxX = Math.Floor (float max.X / eng.CellSizeDouble) |> int
-        let maxY = Math.Floor (float max.Y / eng.CellSizeDouble) |> int
-        let minX = Math.Floor (float min.X / eng.CellSizeDouble) |> int
-        let minY = Math.Floor (float min.Y / eng.CellSizeDouble) |> int
-
-        for x = minX to maxX do
-            for y = minY to maxY do
-
-                let min = Vector2 (single (x * eng.CellSize), single (y * eng.CellSize))
-                let max = Vector2 (single ((x + 1) * eng.CellSize), single ((y + 1) * eng.CellSize))
-                let aabb = AABB2D.ofMinAndMax min max
-
-                if LineSegment2D.intersectsAABB aabb seg then
-                    let hash = Hash (x, y)
-                    addLineSegmentHash hash seg isWall eng
-
-    let iterLineSegmentByAABB (aabb: AABB2D) f eng =
-        let min = aabb.Min ()
-        let max = aabb.Max ()
-
-        let maxX = Math.Floor (float max.X / eng.CellSizeDouble) |> int
-        let maxY = Math.Floor (float max.Y / eng.CellSizeDouble) |> int
-        let minX = Math.Floor (float min.X / eng.CellSizeDouble) |> int
-        let minY = Math.Floor (float min.Y / eng.CellSizeDouble) |> int
-
-        for x = minX to maxX do
-            for y = minY to maxY do
-
-                let hash = Hash (x, y)
-
-                match eng.Buckets.TryGetValue (hash) with
-                | true, bucket ->
-                    bucket.LineSegments
-                    |> Seq.iter f
-                | _ -> ()
 
     let findWithPoint (p: Vector2) eng =
         let p0 = Math.Floor (float p.X / eng.CellSizeDouble) |> int
@@ -212,12 +187,11 @@ module PhysicsEngine =
             for i = 0 to bucket.Triangles.Count - 1 do
                 f bucket.Triangles.[i]
 
-            for i = 0 to bucket.LineSegments.Count - 1 do
-                g bucket.LineSegments.[i]
+            for i = 0 to bucket.StaticWalls.LineSegment.Count - 1 do
+                g bucket.StaticWalls.LineSegment.[i]
 
         | _ -> ()
 
     let debugFindSpacesByRigidBody (rbody: RigidBody) eng =
         rbody.Hashes
         |> Seq.map (fun hash -> eng.Buckets.[hash].AABB)
-

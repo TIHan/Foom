@@ -10,8 +10,9 @@ open Foom.Geometry
 type CharacterControllerComponent (position: Vector3, radius: float32, height: float32) =
 
     let aabb = AABB2D.ofCenterAndExtents Vector2.Zero (Vector2 (radius, radius))
+    let dynamicAABB = { AABB = aabb; Height = height }
     let rigidBody =
-        RigidBody (CollisionShape.AABB aabb, position, height)
+        RigidBody (CollisionShape.DynamicAABB dynamicAABB, position)
 
     member this.RigidBody = rigidBody
 

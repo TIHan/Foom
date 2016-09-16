@@ -7,6 +7,18 @@ open System.Collections.Generic
 open Foom.Math
 open Foom.Geometry
 
+type DynamicAABB =
+    {
+        AABB: AABB2D
+        Height: float32
+    }
+
+type StaticWall =
+    {
+        LineSegment: LineSegment2D
+        IsTrigger: bool
+    }
+
 type CollisionShape =
-    | Circle of Circle2D
-    | AABB of AABB2D
+    | DynamicAABB of DynamicAABB
+    | StaticWall of StaticWall
