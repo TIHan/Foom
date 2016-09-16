@@ -13,26 +13,31 @@ let world = World (65536)
 let start (invoke: Task ref) =
     let client = ClientSystem.init (world)
 
+    let stopwatch = System.Diagnostics.Stopwatch ()
+
     GameLoop.start 30.
         (fun time interval ->
+            stopwatch.Reset ()
+            stopwatch.Start ()
+
             GC.Collect (0)
 
             (!invoke).RunSynchronously ()
             invoke := (new Task (fun () -> ()))
-
-            let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 
             client.Update (
                 TimeSpan.FromTicks(time).TotalSeconds |> single, 
                 TimeSpan.FromTicks(interval).TotalSeconds |> single
             )
 
-            stopwatch.Stop ()
-
-            printfn "%A" stopwatch.Elapsed.TotalMilliseconds
         )
         (fun currentTime t ->
             ClientSystem.draw (TimeSpan.FromTicks(currentTime).TotalSeconds |> single) t client client
+
+            if stopwatch.IsRunning then
+                stopwatch.Stop ()
+
+                printfn "FPS: %A" (int (1000. / stopwatch.Elapsed.TotalMilliseconds))
         )
 
 [<EntryPoint>]

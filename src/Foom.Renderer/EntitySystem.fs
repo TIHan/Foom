@@ -13,7 +13,8 @@ open Foom.Common.Components
 ////////
 
 let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (entityManager: EntityManager) =
-    let renderQueue = Queue<int * Matrix4x4 * MaterialComponent * MeshComponent> ()
+
+    Renderer.enableDepth ()
 
     entityManager.ForEach<MeshComponent, MaterialComponent, TransformComponent> (fun ent meshComp materialComp transformComp ->
         let model = transformComp.Transform
@@ -22,40 +23,33 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
 
         match materialComp.ShaderProgramState with
         | ShaderProgramState.Loaded programId ->
-                renderQueue.Enqueue ((programId, mvp, materialComp, meshComp))
+            meshComp.Position.TryBufferData () |> ignore
+            meshComp.Uv.TryBufferData () |> ignore
+
+            Renderer.useProgram programId
+
+            let uniformColor = Renderer.getUniformLocation programId "uni_color"
+            let uniformProjection = Renderer.getUniformLocation programId "uni_projection"
+
+            Renderer.setUniformProjection uniformProjection mvp
+
+            meshComp.Position.Bind ()
+            Renderer.bindPosition programId
+
+            meshComp.Uv.Bind ()
+            Renderer.bindUv programId
+
+            match materialComp.Texture with
+            | Some texture ->
+                texture.TryBufferData () |> ignore
+                Renderer.setTexture programId texture.Id
+                texture.Bind ()
+            | _ -> ()
+
+            Renderer.setUniformColor uniformColor (Color.FromArgb (255, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
+            Renderer.drawTriangles 0 meshComp.Position.Length
         | _ -> ()
     )
-
-    Renderer.enableDepth ()
-
-    while (renderQueue.Count > 0) do
-        let programId, mvp, materialComp, meshComp = renderQueue.Dequeue ()
-
-        meshComp.Position.TryBufferData () |> ignore
-        meshComp.Uv.TryBufferData () |> ignore
-
-        Renderer.useProgram programId
-
-        let uniformColor = Renderer.getUniformLocation programId "uni_color"
-        let uniformProjection = Renderer.getUniformLocation programId "uni_projection"
-
-        Renderer.setUniformProjection uniformProjection mvp
-
-        meshComp.Position.Bind ()
-        Renderer.bindPosition programId
-
-        meshComp.Uv.Bind ()
-        Renderer.bindUv programId
-
-        match materialComp.Texture with
-        | Some texture ->
-            texture.TryBufferData () |> ignore
-            Renderer.setTexture programId texture.Id
-            texture.Bind ()
-        | _ -> ()
-
-        Renderer.setUniformColor uniformColor (Color.FromArgb (255, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
-        Renderer.drawTriangles 0 meshComp.Position.Length
 
     Renderer.disableDepth ()
 

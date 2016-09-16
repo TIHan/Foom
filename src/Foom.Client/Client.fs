@@ -96,9 +96,9 @@ let create (app: Application) =
                             let pos = transformComp.Position
                             let pos = Vector2 (pos.X, pos.Y)
 
-                            physicsEngineComp.PhysicsEngine
-                            |> PhysicsEngine.findWithPoint pos
-                            |> printfn "In Sector: %A"
+                            //physicsEngineComp.PhysicsEngine
+                            //|> PhysicsEngine.findWithPoint pos
+                            //|> printfn "In Sector: %A"
 
                             let rbody = charContrComp.RigidBody
 
