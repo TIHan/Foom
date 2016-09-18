@@ -213,3 +213,107 @@ module PhysicsEngine =
     let debugFindSpacesByRigidBody (rbody: RigidBody) eng =
         rbody.Hashes
         |> Seq.map (fun hash -> eng.Buckets.[hash].AABB)
+
+    let iterSolidWallByAABB f pos2d (aabb: AABB2D) eng =
+        let min = aabb.Min () + pos2d
+        let max = aabb.Max () + pos2d
+
+        let maxX = Math.Floor (float max.X / eng.CellSizeDouble) |> int
+        let maxY = Math.Floor (float max.Y / eng.CellSizeDouble) |> int
+        let minX = Math.Floor (float min.X / eng.CellSizeDouble) |> int
+        let minY = Math.Floor (float min.Y / eng.CellSizeDouble) |> int
+
+        for x = minX to maxX do
+            for y = minY to maxY do
+
+                let hash = Hash (x, y)
+
+                match eng.Buckets.TryGetValue hash with
+                | true, bucket ->
+
+                    bucket.StaticWalls.LineSegment
+                    |> Seq.iteri (fun i seg ->
+                        if not bucket.StaticWalls.IsTrigger.[i] then
+                            f seg
+                    )
+
+                | _ -> ()
+
+
+    let moveRigidBody (position: Vector3) (rBody: RigidBody) eng =
+        match rBody.Shape with
+        | DynamicAABB dAABB ->
+
+            let pos2d = Vector2 (position.X, position.Y)
+            let mutable vel = pos2d - rBody.WorldPosition
+
+            let aabb = (dAABB.AABB, AABB2D.ofCenterAndExtents vel dAABB.AABB.Extents) ||> AABB2D.merge
+
+            let mutable minX = 0.f
+            let mutable maxX = 0.f
+            let mutable minY = 0.f
+            let mutable maxY = 0.f
+
+            let applyVelocity (v: Vector2) =
+                if v.X < minX && v.X < 0.f then
+                    minX <- v.X
+                
+                if v.X > maxX && v.X > 0.f then
+                    maxX <- v.X
+
+                if v.Y < minY && v.Y < 0.f then
+                    minY <- v.Y
+                
+                if v.Y > maxY && v.Y > 0.f then
+                    maxY <- v.Y
+
+
+            //let c = dAABB.AABB.Center + pos2d
+
+            let min = dAABB.AABB.Min ()
+            let max = dAABB.AABB.Max ()
+
+            (pos2d, aabb, eng)
+            |||> iterSolidWallByAABB (fun seg ->
+
+                let aabb =
+                    AABB2D.ofCenterAndExtents pos2d dAABB.AABB.Extents
+                   
+
+                if LineSegment2D.intersectsAABB aabb seg then
+                    let c1 = pos2d + Vector2 (min.X, min.Y)
+                    let c2 = pos2d + Vector2 (max.X, min.Y)
+                    let c3 = pos2d + Vector2 (max.X, max.Y)
+                    let c4 = pos2d + Vector2 (min.X, max.Y)
+
+                    applyVelocity (rBody.WorldPosition - pos2d)
+                    //let segCheck c =
+                    //    if LineSegment2D.isPointOnLeftSide c seg then
+
+                    //        let clos1 = (seg.A - pos2d).Length ()
+                    //        let clos2 = (seg.B - pos2d).Length ()
+                    //        let v =
+                    //            if clos1 < clos2 then
+                    //                seg.A
+                    //            else
+                    //                seg.B
+                    //        //let _, v = LineSegment2D.findClosestPointByPoint c seg
+                    //        let n = Vector2.Normalize v
+                    //        let dp = Vector2.Dot (n, vel)
+
+                    //        let dir = (rBody.WorldPosition - pos2d) |> Vector2.Normalize
+                    //        applyVelocity (dir * dp)
+
+                    //segCheck c1
+                    //segCheck c2
+                    //segCheck c3
+                    //segCheck c4
+
+
+            )
+
+            let mutable offsetVelocity = Vector2 (maxX + minX, maxY + minY)
+
+            warpRigidBody (Vector3 ((rBody.WorldPosition + vel + offsetVelocity), position.Z)) rBody eng
+
+        | _ -> ()

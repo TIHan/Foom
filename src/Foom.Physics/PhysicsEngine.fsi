@@ -17,6 +17,8 @@ module PhysicsEngine =
 
     val warpRigidBody : Vector3 -> RigidBody -> PhysicsEngine -> unit
 
+    val moveRigidBody : Vector3 -> RigidBody -> PhysicsEngine -> unit
+
     val addRigidBody : RigidBody -> PhysicsEngine -> unit
 
     val addTriangle : Triangle2D -> obj -> PhysicsEngine -> unit

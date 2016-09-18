@@ -103,7 +103,7 @@ let create (app: Application) =
                             let rbody = charContrComp.RigidBody
 
                             physicsEngineComp.PhysicsEngine
-                            |> PhysicsEngine.warpRigidBody transformComp.Position rbody
+                            |> PhysicsEngine.moveRigidBody transformComp.Position rbody
 
                             transformComp.Position <- Vector3 (rbody.WorldPosition, transformComp.Position.Z)
 
