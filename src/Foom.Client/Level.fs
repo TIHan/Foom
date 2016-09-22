@@ -206,10 +206,12 @@ let updates () =
 
                 sector.Linedefs
                 |> List.iter (fun linedef ->
+                    let wut = not (linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged))
                     let staticWall =
                         {
                             LineSegment = (LineSegment2D (linedef.Start, linedef.End))
-                            IsTrigger = (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone || not (linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged))) |> not
+
+                            IsTrigger = (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone || wut) |> not
 
                         }
 

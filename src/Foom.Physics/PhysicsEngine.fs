@@ -244,10 +244,14 @@ module PhysicsEngine =
         match rBody.Shape with
         | DynamicAABB dAABB ->
 
-            let pos2d = Vector2 (position.X, position.Y)
-            let mutable vel = pos2d - rBody.WorldPosition
+            let mutable pos2d = Vector2 (position.X, position.Y)
+            let origPos2d = Vector2 (position.X, position.Y)
+            let targetVel = pos2d - rBody.WorldPosition
 
-            let aabb = (dAABB.AABB, AABB2D.ofCenterAndExtents vel dAABB.AABB.Extents) ||> AABB2D.merge
+            let aabb = (dAABB.AABB, AABB2D.ofCenterAndExtents targetVel dAABB.AABB.Extents) ||> AABB2D.merge
+
+            let min = dAABB.AABB.Min ()
+            let max = dAABB.AABB.Max ()
 
             let mutable minX = 0.f
             let mutable maxX = 0.f
@@ -267,53 +271,74 @@ module PhysicsEngine =
                 if v.Y > maxY && v.Y > 0.f then
                     maxY <- v.Y
 
-
-            //let c = dAABB.AABB.Center + pos2d
-
-            let min = dAABB.AABB.Min ()
-            let max = dAABB.AABB.Max ()
+            let broadPhase = ResizeArray ()
 
             (pos2d, aabb, eng)
             |||> iterSolidWallByAABB (fun seg ->
+                broadPhase.Add (seg)
+            )
 
-                let aabb =
-                    AABB2D.ofCenterAndExtents pos2d dAABB.AABB.Extents
-                   
 
+            // Narrow Phase
+            broadPhase
+            |> Seq.sortBy (fun seg ->
+
+                //let _, v = LineSegment2D.findClosestPointByPoint rBody.WorldPosition seg
+                //(v - rBody.WorldPosition).Length ()
+
+                let c1 = rBody.WorldPosition + Vector2 (min.X, min.Y)
+                let c2 = rBody.WorldPosition + Vector2 (max.X, min.Y)
+                let c3 = rBody.WorldPosition + Vector2 (max.X, max.Y)
+                let c4 = rBody.WorldPosition + Vector2 (min.X, max.Y)
+
+                let normal = LineSegment2D.normal seg
+
+                let check c =
+                    let _, v = LineSegment2D.findClosestPointByPoint c seg
+                    (v - c).Length ()
+
+                [
+                check c1
+                check c2
+                check c3
+                check c4
+                ] |> List.reduce (+)
+            )
+            |> Seq.iter (fun seg ->
+                let aabb = AABB2D.ofCenterAndExtents pos2d dAABB.AABB.Extents
                 if LineSegment2D.intersectsAABB aabb seg then
+
                     let c1 = pos2d + Vector2 (min.X, min.Y)
                     let c2 = pos2d + Vector2 (max.X, min.Y)
                     let c3 = pos2d + Vector2 (max.X, max.Y)
                     let c4 = pos2d + Vector2 (min.X, max.Y)
 
-                    applyVelocity (rBody.WorldPosition - pos2d)
-                    //let segCheck c =
-                    //    if LineSegment2D.isPointOnLeftSide c seg then
+                    let normal = LineSegment2D.normal seg
 
-                    //        let clos1 = (seg.A - pos2d).Length ()
-                    //        let clos2 = (seg.B - pos2d).Length ()
-                    //        let v =
-                    //            if clos1 < clos2 then
-                    //                seg.A
-                    //            else
-                    //                seg.B
-                    //        //let _, v = LineSegment2D.findClosestPointByPoint c seg
-                    //        let n = Vector2.Normalize v
-                    //        let dp = Vector2.Dot (n, vel)
+                    let check c =
+                        if LineSegment2D.isPointOnLeftSide c seg then
+                            let _, v = LineSegment2D.findClosestPointByPoint c seg
+                            applyVelocity (normal * (Vector2.Dot (normal, v - c) + 0.01f))
 
-                    //        let dir = (rBody.WorldPosition - pos2d) |> Vector2.Normalize
-                    //        applyVelocity (dir * dp)
 
-                    //segCheck c1
-                    //segCheck c2
-                    //segCheck c3
-                    //segCheck c4
+                    check c1
+                    check c2
+                    check c3
+                    check c4
+
+
+                    let offsetVelocity = Vector2 (minX + maxX, minY + maxY)
+                    pos2d <- pos2d + offsetVelocity
+                    minX <- 0.f
+                    maxX <- 0.f
+                    minY <- 0.f
+                    maxY <- 0.f
 
 
             )
 
-            let mutable offsetVelocity = Vector2 (maxX + minX, maxY + minY)
-
-            warpRigidBody (Vector3 ((rBody.WorldPosition + vel + offsetVelocity), position.Z)) rBody eng
+            warpRigidBody (Vector3 (pos2d, position.Z)) rBody eng
+            //let offsetVelocity = Vector2 (minX + maxX, minY + maxY)
+            //warpRigidBody (Vector3 (rBody.WorldPosition + targetVel + offsetVelocity, position.Z)) rBody eng
 
         | _ -> ()

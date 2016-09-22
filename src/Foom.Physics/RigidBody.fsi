@@ -20,7 +20,7 @@ type RigidBody =
 
     member internal Id : int with get, set
 
-    member internal AABB : AABB2D
+    member AABB : AABB2D
 
     member internal Shape : CollisionShape
 

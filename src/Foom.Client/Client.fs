@@ -100,7 +100,7 @@ let create (app: Application) =
                             |> PhysicsEngine.findWithPoint pos
                             |> printfn "In Sector: %A"
 
-                            let rbody = charContrComp.RigidBody
+                            let rbody : RigidBody = charContrComp.RigidBody
 
                             physicsEngineComp.PhysicsEngine
                             |> PhysicsEngine.moveRigidBody transformComp.Position rbody
@@ -110,63 +110,64 @@ let create (app: Application) =
                             // *** TEMPORARY ***
                             wireframeComp.Position.Set [||]
 
-                            //let boxes = ResizeArray ()
-                            //physicsEngineComp.PhysicsEngine
-                            //|> PhysicsEngine.debugFindSpacesByRigidBody charContrComp.RigidBody
-                            //|> Seq.iter (fun b ->
-                            //    let min = b.Min ()
-                            //    let max = b.Max ()
-                            //    [|
-                            //        Vector3 (min.X, min.Y, 0.f)
-                            //        Vector3 (max.X, min.Y, 0.f)
-                
-                            //        Vector3 (max.X, min.Y, 0.f)
-                            //        Vector3 (max.X, max.Y, 0.f)
-                
-                            //        Vector3 (max.X, max.Y, 0.f)
-                            //        Vector3 (min.X, max.Y, 0.f)
-                
-                            //        Vector3 (min.X, max.Y, 0.f)
-                            //        Vector3 (min.X, min.Y, 0.f)
-                            //    |]
-                            //    |> boxes.AddRange
-                            //)
-
-                            //boxes
-                            //|> Array.ofSeq
-                            //|> wireframeComp.Position.Set
-
-                            let tris = ResizeArray ()
-                            let lines = ResizeArray ()
+                            let boxes = ResizeArray ()
                             physicsEngineComp.PhysicsEngine
-                            |> PhysicsEngine.iterWithPoint pos 
-                                (fun tri ->
-                                    tris.Add tri
-                                )
-                                (fun seg ->
-                                    let t, d = seg |> LineSegment2D.findClosestPointByPoint pos
-                                    lines.Add (Vector3 (seg.A, 0.f))
-                                    lines.Add (Vector3 (seg.B, 0.f))
-                                    lines.Add (Vector3 (d, 0.f))
-                                    lines.Add (Vector3 (pos, 0.f))
-                                )
+                            |> PhysicsEngine.debugFindSpacesByRigidBody charContrComp.RigidBody
+                            |> Seq.iter (fun b ->
+                                let b = rbody.AABB
+                                let min = b.Min () + rbody.WorldPosition
+                                let max = b.Max () + rbody.WorldPosition
+                                [|
+                                    Vector3 (min.X, min.Y, 0.f)
+                                    Vector3 (max.X, min.Y, 0.f)
+                
+                                    Vector3 (max.X, min.Y, 0.f)
+                                    Vector3 (max.X, max.Y, 0.f)
+                
+                                    Vector3 (max.X, max.Y, 0.f)
+                                    Vector3 (min.X, max.Y, 0.f)
+                
+                                    Vector3 (min.X, max.Y, 0.f)
+                                    Vector3 (min.X, min.Y, 0.f)
+                                |]
+                                |> boxes.AddRange
+                            )
 
-                            let renderLines =
-                                tris
-                                |> Seq.map (fun tri -> 
-                                    [|
-                                    Vector3 (tri.A, 0.f);Vector3 (tri.B, 0.f)
-                                    Vector3 (tri.B, 0.f);Vector3 (tri.C, 0.f)
-                                    Vector3 (tri.C, 0.f);Vector3 (tri.A, 0.f)
-                                    |]
-                                )
+                            boxes
+                            |> Array.ofSeq
+                            |> wireframeComp.Position.Set
 
-                            if renderLines |> Seq.isEmpty |> not then
-                                //renderLines
-                                //|> Seq.reduce Array.append
-                                //|> Array.append (lines |> Array.ofSeq)
-                                (lines |> Array.ofSeq)
-                                |> wireframeComp.Position.Set
+                            //let tris = ResizeArray ()
+                            //let lines = ResizeArray ()
+                            //physicsEngineComp.PhysicsEngine
+                            //|> PhysicsEngine.iterWithPoint pos 
+                            //    (fun tri ->
+                            //        tris.Add tri
+                            //    )
+                            //    (fun seg ->
+                            //        let t, d = seg |> LineSegment2D.findClosestPointByPoint pos
+                            //        lines.Add (Vector3 (seg.A, 0.f))
+                            //        lines.Add (Vector3 (seg.B, 0.f))
+                            //        lines.Add (Vector3 (d, 0.f))
+                            //        lines.Add (Vector3 (pos, 0.f))
+                            //    )
+
+                            //let renderLines =
+                            //    tris
+                            //    |> Seq.map (fun tri -> 
+                            //        [|
+                            //        Vector3 (tri.A, 0.f);Vector3 (tri.B, 0.f)
+                            //        Vector3 (tri.B, 0.f);Vector3 (tri.C, 0.f)
+                            //        Vector3 (tri.C, 0.f);Vector3 (tri.A, 0.f)
+                            //        |]
+                            //    )
+
+                            //if renderLines |> Seq.isEmpty |> not then
+                            //    //renderLines
+                            //    //|> Seq.reduce Array.append
+                            //    //|> Array.append (lines |> Array.ofSeq)
+                            //    (lines |> Array.ofSeq)
+                            //    |> wireframeComp.Position.Set
                             // ******************
                         )
                     )
