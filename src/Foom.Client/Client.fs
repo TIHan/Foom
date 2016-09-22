@@ -88,89 +88,87 @@ let create (app: Application) =
 
                 Behavior.update (fun _ em _ ->
 
-                    em.TryFind<PhysicsEngineComponent, WireframeComponent> (fun _ _ _ -> true)
-                    |> Option.iter (fun (_, physicsEngineComp, wireframeComp) ->
+                    opt {
+                        let! (_, physicsEngineComp, wireframeComp) = em.TryFind<PhysicsEngineComponent, WireframeComponent> (fun _ _ _ -> true)
+                        let! (_, charContrComp, transformComp) = em.TryFind<CharacterControllerComponent, TransformComponent> (fun _ _ _ -> true)
 
-                        em.TryFind<CharacterControllerComponent, TransformComponent> (fun _ _ _ -> true)
-                        |> Option.iter (fun (_, charContrComp, transformComp) ->
-                            let pos = transformComp.Position
-                            let pos = Vector2 (pos.X, pos.Y)
+                        let pos = transformComp.Position
+                        let pos = Vector2 (pos.X, pos.Y)
 
+                        let sector =
                             physicsEngineComp.PhysicsEngine
-                            |> PhysicsEngine.findWithPoint pos
-                            |> printfn "In Sector: %A"
+                            |> PhysicsEngine.findWithPoint pos :?> Sector
 
-                            let rbody : RigidBody = charContrComp.RigidBody
+                        let rbody : RigidBody = charContrComp.RigidBody
 
-                            physicsEngineComp.PhysicsEngine
-                            |> PhysicsEngine.moveRigidBody transformComp.Position rbody
+                        physicsEngineComp.PhysicsEngine
+                        |> PhysicsEngine.moveRigidBody transformComp.Position rbody
 
-                            transformComp.Position <- Vector3 (rbody.WorldPosition, transformComp.Position.Z)
+                        transformComp.Position <- Vector3 (rbody.WorldPosition, single sector.FloorHeight + 54.f)
 
-                            // *** TEMPORARY ***
-                            wireframeComp.Position.Set [||]
+                        // *** TEMPORARY ***
+                        wireframeComp.Position.Set [||]
 
-                            let boxes = ResizeArray ()
-                            physicsEngineComp.PhysicsEngine
-                            |> PhysicsEngine.debugFindSpacesByRigidBody charContrComp.RigidBody
-                            |> Seq.iter (fun b ->
-                                let b = rbody.AABB
-                                let min = b.Min () + rbody.WorldPosition
-                                let max = b.Max () + rbody.WorldPosition
-                                [|
-                                    Vector3 (min.X, min.Y, 0.f)
-                                    Vector3 (max.X, min.Y, 0.f)
-                
-                                    Vector3 (max.X, min.Y, 0.f)
-                                    Vector3 (max.X, max.Y, 0.f)
-                
-                                    Vector3 (max.X, max.Y, 0.f)
-                                    Vector3 (min.X, max.Y, 0.f)
-                
-                                    Vector3 (min.X, max.Y, 0.f)
-                                    Vector3 (min.X, min.Y, 0.f)
-                                |]
-                                |> boxes.AddRange
-                            )
-
-                            boxes
-                            |> Array.ofSeq
-                            |> wireframeComp.Position.Set
-
-                            //let tris = ResizeArray ()
-                            //let lines = ResizeArray ()
-                            //physicsEngineComp.PhysicsEngine
-                            //|> PhysicsEngine.iterWithPoint pos 
-                            //    (fun tri ->
-                            //        tris.Add tri
-                            //    )
-                            //    (fun seg ->
-                            //        let t, d = seg |> LineSegment2D.findClosestPointByPoint pos
-                            //        lines.Add (Vector3 (seg.A, 0.f))
-                            //        lines.Add (Vector3 (seg.B, 0.f))
-                            //        lines.Add (Vector3 (d, 0.f))
-                            //        lines.Add (Vector3 (pos, 0.f))
-                            //    )
-
-                            //let renderLines =
-                            //    tris
-                            //    |> Seq.map (fun tri -> 
-                            //        [|
-                            //        Vector3 (tri.A, 0.f);Vector3 (tri.B, 0.f)
-                            //        Vector3 (tri.B, 0.f);Vector3 (tri.C, 0.f)
-                            //        Vector3 (tri.C, 0.f);Vector3 (tri.A, 0.f)
-                            //        |]
-                            //    )
-
-                            //if renderLines |> Seq.isEmpty |> not then
-                            //    //renderLines
-                            //    //|> Seq.reduce Array.append
-                            //    //|> Array.append (lines |> Array.ofSeq)
-                            //    (lines |> Array.ofSeq)
-                            //    |> wireframeComp.Position.Set
-                            // ******************
+                        let boxes = ResizeArray ()
+                        physicsEngineComp.PhysicsEngine
+                        |> PhysicsEngine.debugFindSpacesByRigidBody charContrComp.RigidBody
+                        |> Seq.iter (fun b ->
+                            let b = rbody.AABB
+                            let min = b.Min () + rbody.WorldPosition
+                            let max = b.Max () + rbody.WorldPosition
+                            [|
+                                Vector3 (min.X, min.Y, 0.f)
+                                Vector3 (max.X, min.Y, 0.f)
+            
+                                Vector3 (max.X, min.Y, 0.f)
+                                Vector3 (max.X, max.Y, 0.f)
+            
+                                Vector3 (max.X, max.Y, 0.f)
+                                Vector3 (min.X, max.Y, 0.f)
+            
+                                Vector3 (min.X, max.Y, 0.f)
+                                Vector3 (min.X, min.Y, 0.f)
+                            |]
+                            |> boxes.AddRange
                         )
-                    )
+
+                        boxes
+                        |> Array.ofSeq
+                        |> wireframeComp.Position.Set
+
+                        //let tris = ResizeArray ()
+                        //let lines = ResizeArray ()
+                        //physicsEngineComp.PhysicsEngine
+                        //|> PhysicsEngine.iterWithPoint pos 
+                        //    (fun tri ->
+                        //        tris.Add tri
+                        //    )
+                        //    (fun seg ->
+                        //        let t, d = seg |> LineSegment2D.findClosestPointByPoint pos
+                        //        lines.Add (Vector3 (seg.A, 0.f))
+                        //        lines.Add (Vector3 (seg.B, 0.f))
+                        //        lines.Add (Vector3 (d, 0.f))
+                        //        lines.Add (Vector3 (pos, 0.f))
+                        //    )
+
+                        //let renderLines =
+                        //    tris
+                        //    |> Seq.map (fun tri -> 
+                        //        [|
+                        //        Vector3 (tri.A, 0.f);Vector3 (tri.B, 0.f)
+                        //        Vector3 (tri.B, 0.f);Vector3 (tri.C, 0.f)
+                        //        Vector3 (tri.C, 0.f);Vector3 (tri.A, 0.f)
+                        //        |]
+                        //    )
+
+                        //if renderLines |> Seq.isEmpty |> not then
+                        //    //renderLines
+                        //    //|> Seq.reduce Array.append
+                        //    //|> Array.append (lines |> Array.ofSeq)
+                        //    (lines |> Array.ofSeq)
+                        //    |> wireframeComp.Position.Set
+                        // ******************
+                    } |> ignore
 
                 )
             ]

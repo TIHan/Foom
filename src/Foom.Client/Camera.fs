@@ -84,7 +84,7 @@ module Camera =
                         
                     acc <- 
                         if acc <> Vector3.Zero then
-                            acc |> Vector3.Normalize |> (*) 15.f
+                            acc |> Vector3.Normalize |> (*) 5.f
                         else
                             acc
 
@@ -98,6 +98,6 @@ module Camera =
                 let v2 = Vector2 (transformComp.TransformLerp.Translation.X, transformComp.TransformLerp.Translation.Y)
 
                 cameraComp.HeightOffsetLerp <- cameraComp.HeightOffset
-                //cameraComp.HeightOffset <- sin(8.f * time) * (v1 - v2).Length()
+                cameraComp.HeightOffset <- sin(8.f * time) * (v1 - v2).Length()
             | _ -> ()
         )

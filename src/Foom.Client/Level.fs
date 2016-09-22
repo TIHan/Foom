@@ -211,7 +211,7 @@ let updates () =
                         {
                             LineSegment = (LineSegment2D (linedef.Start, linedef.End))
 
-                            IsTrigger = (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone || wut) |> not
+                            IsTrigger = (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone) |> not
 
                         }
 
@@ -240,7 +240,7 @@ let updates () =
                                     Vector2 (v2.X, v2.Y)
                                 )
                             )
-                            i
+                            sector // data to store for physics
 
                         j <- j + 3
                 )
