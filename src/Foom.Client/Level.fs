@@ -89,7 +89,7 @@ let spawnMesh vertices uv texturePath lightLevel (em: EntityManager) =
 let textureCache = Dictionary<string, Texture2DBuffer> ()
 
 let spawnCeilingMesh (flat: Flat) lightLevel wad em =
-    flat.Ceiling.TextureName
+    flat.Ceiling.DefaultTextureName
     |> Option.iter (fun textureName ->
         let texture : Texture2DBuffer option =
             match textureCache.TryGetValue (textureName + "_flat") with
@@ -110,7 +110,7 @@ let spawnCeilingMesh (flat: Flat) lightLevel wad em =
     )
 
 let spawnFloorMesh (flat: Flat) lightLevel wad em =
-    flat.Floor.TextureName
+    flat.Floor.DefaultTextureName
     |> Option.iter (fun textureName ->
         let texture =
             match textureCache.TryGetValue (textureName + "_flat") with
@@ -131,7 +131,7 @@ let spawnFloorMesh (flat: Flat) lightLevel wad em =
     )
 
 let spawnWallMesh (wall: Wall) lightLevel wad em =
-    wall.TextureName
+    wall.DefaultTextureName
     |> Option.iter (fun textureName ->
         let texture =
             match textureCache.TryGetValue (textureName) with

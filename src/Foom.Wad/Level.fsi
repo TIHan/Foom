@@ -16,7 +16,9 @@ type WallSpecial =
 type Wall =
     {
         SectorId: int
-        TextureName: string option
+
+        DefaultTextureName: string option
+
         TextureOffsetX: int
         TextureOffsetY: int
         Vertices: Vector3 []
@@ -27,15 +29,17 @@ type Wall =
 type Ceiling =
     {
         Vertices: Vector3 []
-        Height: int
-        TextureName: string option
+
+        DefaultHeight: int
+        DefaultTextureName: string option
     }
 
 type Floor =
     {
         Vertices: Vector3 []
-        Height: int
-        TextureName: string option
+
+        DefaultHeight: int
+        DefaultTextureName: string option
     }
 
 type Flat =
@@ -52,6 +56,8 @@ type Level =
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Wall =
+
+    val updateUV : uv: Vector2 [] -> width: int -> height: int -> Wall -> unit
 
     val createUV : width: int -> height: int -> Wall -> Vector2 []
 

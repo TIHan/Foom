@@ -19,7 +19,9 @@ type WallSpecial =
 type Wall =
     {
         SectorId: int
-        TextureName: string option
+
+        DefaultTextureName: string option
+
         TextureOffsetX: int
         TextureOffsetY: int
         Vertices: Vector3 []
@@ -30,15 +32,17 @@ type Wall =
 type Ceiling =
     {
         Vertices: Vector3 []
-        Height: int
-        TextureName: string option
+
+        DefaultHeight: int
+        DefaultTextureName: string option
     }
 
 type Floor =
     {
         Vertices: Vector3 []
-        Height: int
-        TextureName: string option
+
+        DefaultHeight: int
+        DefaultTextureName: string option
     }
 
 // TODO: Remove Flat. Ceiling and Floor will be independent.
@@ -111,9 +115,8 @@ module Flat =
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Wall =
 
-    let createUV width height (wall: Wall) =
+    let updateUV (uv: Vector2 []) width height (wall: Wall) =
         let vertices = wall.Vertices
-        let uv = Array.zeroCreate vertices.Length
 
         let mutable i = 0
         while (i < vertices.Length) do
@@ -170,6 +173,11 @@ module Wall =
             uv.[i + 2] <- Vector2(y, z1)
 
             i <- i + 3
+
+    let createUV width height (wall: Wall) =
+        let vertices = wall.Vertices
+        let uv = Array.zeroCreate vertices.Length
+        updateUV uv width height wall
         uv
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
@@ -347,8 +355,8 @@ module Level =
                                 )
                                 |> Seq.reduce Array.append
 
-                            Height = sector.CeilingHeight
-                            TextureName = Some sector.CeilingTextureName
+                            DefaultHeight = sector.CeilingHeight
+                            DefaultTextureName = Some sector.CeilingTextureName
                         }
 
                     let floor =
@@ -364,8 +372,8 @@ module Level =
                                 )
                                 |> Seq.reduce Array.append
                                
-                            Height = sector.FloorHeight
-                            TextureName = Some sector.FloorTextureName
+                            DefaultHeight = sector.FloorHeight
+                            DefaultTextureName = Some sector.FloorTextureName
                         }
 
                     {
@@ -395,7 +403,7 @@ module Level =
             let addMiddleWithVertices (floorHeight: int) (ceilingHeight: int) (sidedef: Sidedef) vertices =
                 {
                     SectorId = sidedef.SectorNumber
-                    TextureName = sidedef.MiddleTextureName
+                    DefaultTextureName = sidedef.MiddleTextureName
                     TextureOffsetX = sidedef.OffsetX
                     TextureOffsetY = sidedef.OffsetY
                     Vertices = vertices
@@ -442,7 +450,7 @@ module Level =
 
                         {
                             SectorId = backSidedef.SectorNumber
-                            TextureName = backSidedef.UpperTextureName
+                            DefaultTextureName = backSidedef.UpperTextureName
                             TextureOffsetX = backSidedef.OffsetX
                             TextureOffsetY = backSidedef.OffsetY
                             Vertices =
@@ -469,7 +477,7 @@ module Level =
 
                         {
                             SectorId = backSidedef.SectorNumber
-                            TextureName = backSidedef.LowerTextureName
+                            DefaultTextureName = backSidedef.LowerTextureName
                             TextureOffsetX = backSidedef.OffsetX
                             TextureOffsetY = backSidedef.OffsetY
                             Vertices = 
@@ -535,7 +543,7 @@ module Level =
 
                         {
                             SectorId = frontSidedef.SectorNumber
-                            TextureName = frontSidedef.UpperTextureName
+                            DefaultTextureName = frontSidedef.UpperTextureName
                             TextureOffsetX = frontSidedef.OffsetX
                             TextureOffsetY = frontSidedef.OffsetY
                             Vertices =
@@ -561,7 +569,7 @@ module Level =
 
                         {
                             SectorId = frontSidedef.SectorNumber
-                            TextureName = frontSidedef.LowerTextureName
+                            DefaultTextureName = frontSidedef.LowerTextureName
                             TextureOffsetX = frontSidedef.OffsetX
                             TextureOffsetY = frontSidedef.OffsetY
                             Vertices = 
