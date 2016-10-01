@@ -140,3 +140,5 @@ type EntityManager =
 
     /// Defers to destroy the specified Entity.
     member Destroy : Entity -> unit
+
+    member MaxNumberOfEntities : int

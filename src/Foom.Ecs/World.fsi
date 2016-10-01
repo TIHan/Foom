@@ -3,6 +3,15 @@
 open System
 open Foom.Ecs
 
+[<Sealed>]
+type Subworld =
+
+    member AddESystem<'Update> : ESystem<'Update> -> ('Update -> unit)
+
+    member DestroyEntities : unit -> unit
+
+    member SpawnEntity : unit -> Entity
+
 /// The world of the Entity Component System.
 [<Sealed>]
 type World =
@@ -12,3 +21,9 @@ type World =
    
     /// Adds an Entity System to the world and returns a handle.
     member AddESystem<'Update> : ESystem<'Update> -> ('Update -> unit)
+
+    member CreateSubworld : unit -> Subworld
+
+    member SpawnEntity : unit -> Entity
+
+    member Publish<'Event when 'Event :> IEvent and 'Event : not struct> : 'Event -> unit

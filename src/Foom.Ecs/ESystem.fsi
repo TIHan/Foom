@@ -28,7 +28,9 @@ type ESystem<'Update> =
 [<RequireQualifiedAccess>]
 module Behavior =
 
-    val eventQueue : (#IEvent -> 'Update -> EntityManager -> unit) -> Behavior<'Update>
+    val handleEvent : (#IEvent -> 'Update -> EntityManager -> unit) -> Behavior<'Update>
+
+    val handleLatestEvent : (#IEvent -> 'Update -> EntityManager -> unit) -> Behavior<'Update>
 
     val update : ('Update -> EntityManager -> EventAggregator -> unit) -> Behavior<'Update>
 

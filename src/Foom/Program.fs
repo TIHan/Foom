@@ -11,7 +11,7 @@ open Foom.Common.Components
 let world = World (65536)
 
 let start (invoke: Task ref) =
-    let client = ClientSystem.init (world)
+    let client = Client.init (world)
 
     let stopwatch = System.Diagnostics.Stopwatch ()
 
@@ -32,7 +32,7 @@ let start (invoke: Task ref) =
 
         )
         (fun currentTime t ->
-            ClientSystem.draw (TimeSpan.FromTicks(currentTime).TotalSeconds |> single) t client client
+            Client.draw (TimeSpan.FromTicks(currentTime).TotalSeconds |> single) t client client
 
             if stopwatch.IsRunning then
                 stopwatch.Stop ()

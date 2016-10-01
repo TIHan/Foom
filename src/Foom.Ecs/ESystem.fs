@@ -30,15 +30,28 @@ type ESystem<'Update> =
 [<RequireQualifiedAccess>]
 module Behavior =
 
-    let eventQueue (f: #IEvent -> 'Update -> EntityManager -> unit) = 
+    let handleEvent (f: #IEvent -> 'Update -> EntityManager -> unit) = 
         Behavior (fun context ->
-            let queue = ConcurrentQueue<'T> ()
-            context.EventAggregator.GetEvent<'T>().Publish.Add queue.Enqueue
+            let queue = ConcurrentQueue<#IEvent> ()
+            context.EventAggregator.GetEvent<#IEvent>().Publish.Add queue.Enqueue
 
             (fun updateData ->
                 let mutable item = Unchecked.defaultof<#IEvent>
                 while queue.TryDequeue (&item) do
                     f item updateData context.EntityManager
+            )
+            |> context.Actions.Add
+        )
+
+    let handleLatestEvent (f: #IEvent -> 'Update -> EntityManager -> unit) = 
+        Behavior (fun context ->
+            let mutable latestEvent = Unchecked.defaultof<#IEvent>
+            context.EventAggregator.GetEvent<#IEvent>().Publish.Add (fun x -> latestEvent <- x)
+
+            (fun updateData ->
+                if not <| obj.ReferenceEquals (latestEvent, null) then
+                    f latestEvent updateData context.EntityManager
+                    latestEvent <- Unchecked.defaultof<#IEvent>
             )
             |> context.Actions.Add
         )

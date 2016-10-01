@@ -77,7 +77,7 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
     )
 
 let componentAddedQueue f =
-    Behavior.eventQueue (fun (componentAdded: Events.ComponentAdded<'T>) (_, deltaTime: float32) entityManager ->
+    Behavior.handleEvent (fun (componentAdded: Events.ComponentAdded<'T>) (_, deltaTime: float32) entityManager ->
         entityManager.TryGet<'T> (componentAdded.Entity)
         |> Option.iter (fun comp ->
             f componentAdded.Entity comp deltaTime entityManager

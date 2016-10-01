@@ -513,3 +513,5 @@ type EntityManager =
         )
 
         item
+
+    member this.MaxNumberOfEntities = this.MaxEntityAmount - 1
