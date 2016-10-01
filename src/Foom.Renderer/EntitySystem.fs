@@ -18,6 +18,7 @@ type RenderBucket =
         Transforms: TransformComponent ResizeArray
         Positions: Vector3ArrayBuffer ResizeArray
         Uvs: Vector2ArrayBuffer ResizeArray
+        Colors: Color ResizeArray
     }
 
 type RenderState =
@@ -25,7 +26,7 @@ type RenderState =
         Lookup: Dictionary<int, Dictionary<int, Texture2DBuffer option * RenderBucket>>
     }
 
-    member this.Add (programId, textureId, texture, transformComp, position, uv) =
+    member this.Add (programId, textureId, texture, transformComp, position, uv, color) =
         let textureLookup =
             match this.Lookup.TryGetValue (programId) with
             | true, lookup -> lookup
@@ -44,6 +45,7 @@ type RenderState =
                         Transforms = ResizeArray ()
                         Positions = ResizeArray ()
                         Uvs = ResizeArray ()
+                        Colors = ResizeArray ()
                     }
 
                 textureLookup.Add (textureId, (texture, bucket))
@@ -53,9 +55,22 @@ type RenderState =
         bucket.Transforms.Add transformComp
         bucket.Positions.Add position
         bucket.Uvs.Add uv
-               
+        bucket.Colors.Add color
     
+    member this.ForEach f =
+        this.Lookup
+        |> Seq.iter (fun pair ->
+            let programId = pair.Key
+            let textureLookup = pair.Value
 
+            textureLookup
+            |> Seq.iter (fun pair ->
+                let textureId = pair.Key
+                let (texture, bucket) = pair.Value
+
+                f programId texture bucket
+            )
+        )
         
 
 // Fixme: global
@@ -68,42 +83,50 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
 
     Renderer.enableDepth ()
 
-    entityManager.ForEach<MeshComponent, MaterialComponent, TransformComponent> (fun ent meshComp materialComp transformComp ->
-        let model = transformComp.Transform
+    let mvp = (projection * view) |> Matrix4x4.Transpose
 
-        let mvp = (projection * view) |> Matrix4x4.Transpose
+    state.ForEach (fun programId texture bucket ->
 
-        match materialComp.ShaderProgramState with
-        | ShaderProgramState.Loaded programId ->
-            meshComp.Position.TryBufferData () |> ignore
-            meshComp.Uv.TryBufferData () |> ignore
+        Renderer.useProgram programId
 
-            Renderer.useProgram programId
+        let count = bucket.Positions.Count
+
+        for i = 0 to count - 1 do
+
+            let transformComp = bucket.Transforms.[i]
+            let position = bucket.Positions.[i]
+            let uv = bucket.Uvs.[i]
+            let color = bucket.Colors.[i]
+
+            let model = transformComp.Transform
+
+            position.TryBufferData () |> ignore
+            uv.TryBufferData () |> ignore
 
             let uniformColor = Renderer.getUniformLocation programId "uni_color"
             let uniformProjection = Renderer.getUniformLocation programId "uni_projection"
 
             Renderer.setUniformProjection uniformProjection mvp
 
-            meshComp.Position.Bind ()
+            position.Bind ()
             Renderer.bindPosition programId
 
-            meshComp.Uv.Bind ()
+            uv.Bind ()
             Renderer.bindUv programId
 
-            match materialComp.Texture with
+            match texture with
             | Some texture ->
                 Renderer.setTexture programId texture.Id
                 texture.Bind ()
             | _ -> ()
 
-            Renderer.setUniformColor uniformColor (Color.FromArgb (255, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
-            Renderer.drawTriangles 0 meshComp.Position.Length
-        | _ -> ()
+            Renderer.setUniformColor uniformColor (Color.FromArgb (255, int color.R, int color.G, int color.B) |> RenderColor.OfColor)
+            Renderer.drawTriangles 0 position.Length
     )
 
     Renderer.disableDepth ()
 
+    // TODO: To fix wireframe, let's add to our renderstate when to render after the depth buffer.
     entityManager.ForEach<MaterialComponent, WireframeComponent> (fun ent materialComp wireframeComp ->
 
         wireframeComp.Position.TryBufferData () |> ignore
@@ -139,36 +162,44 @@ let shaderCache = Dictionary<string * string, int> ()
 let materialQueue =
     componentAddedQueue (fun ent (materialComp: MaterialComponent) deltaTime em ->
 
-        match em.TryGet<MeshComponent> ent with
-        | Some meshComp ->
+        match em.TryGet<TransformComponent> ent with
+        | Some transformComp ->
 
-            let programId =
-                match materialComp.ShaderProgramState with
-                | ShaderProgramState.ReadyToLoad (vertex, fragment) ->
+            match em.TryGet<MeshComponent> ent with
+            | Some meshComp ->
 
-                    match shaderCache.TryGetValue ((vertex, fragment)) with
-                    | true, programId ->
-                        materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
-                        programId
+                let programId =
+                    match materialComp.ShaderProgramState with
+                    | ShaderProgramState.ReadyToLoad (vertex, fragment) ->
 
+                        match shaderCache.TryGetValue ((vertex, fragment)) with
+                        | true, programId ->
+                            materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
+                            programId
+
+                        | _ ->
+                            let mutable vertexFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (vertex))
+                            let mutable fragmentFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (fragment))
+
+                            let programId = Renderer.loadShaders vertexFile fragmentFile
+                            materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
+                            shaderCache.Add ((vertex, fragment), programId)
+                            programId
+
+                    | ShaderProgramState.Loaded programId -> programId
+
+             
+                let textureId, texture =
+                    match materialComp.Texture with
+                    | Some texture ->
+                        texture.TryBufferData () |> ignore
+                        texture.Id, Some texture
                     | _ ->
-                        let mutable vertexFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (vertex))
-                        let mutable fragmentFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (fragment))
+                        0, None
+                       
+                state.Add (programId, textureId, texture, transformComp, meshComp.Position, meshComp.Uv, materialComp.Color)
 
-                        let programId = Renderer.loadShaders vertexFile fragmentFile
-                        materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
-                        shaderCache.Add ((vertex, fragment), programId)
-                        programId
-
-                | ShaderProgramState.Loaded programId -> programId
-
-         
-            match materialComp.Texture with
-            | Some texture ->
-                texture.TryBufferData () |> ignore
-            | _ -> ()        
-
-
+            | _ -> ()
         | _ -> ()
 
     )
