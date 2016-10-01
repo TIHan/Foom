@@ -295,7 +295,7 @@ module PhysicsEngine =
                     maxY <- v.Y
 
             // Solver
-            for i = 0 to 10 do
+            for i = 0 to 0 do
                 let targetVel = pos2d - rBody.WorldPosition
                 narrowPhase
                 |> Seq.sortBy (fun seg ->
@@ -337,7 +337,7 @@ module PhysicsEngine =
                         let check c =
                             if LineSegment2D.isPointOnLeftSide c seg then
                                 let _, v = LineSegment2D.findClosestPointByPoint c seg
-                                applyVelocity (normal * (Vector2.Dot (normal, v - c ) + 0.01f))
+                                applyVelocity (normal * (Vector2.Dot (normal, v - c) + 0.01f))
 
 
                         check c1
@@ -346,19 +346,19 @@ module PhysicsEngine =
                         check c4
 
 
-                    //let offsetVelocity = Vector2 (minX + maxX, minY + maxY)
-                    //pos2d <- pos2d + offsetVelocity
-                    //minX <- 0.f
-                    //maxX <- 0.f
-                    //minY <- 0.f
-                    //maxY <- 0.f
+                        let offsetVelocity = Vector2 (minX + maxX, minY + maxY)
+                        pos2d <- pos2d + offsetVelocity
+                        minX <- 0.f
+                        maxX <- 0.f
+                        minY <- 0.f
+                        maxY <- 0.f
                 )
-                let offsetVelocity = Vector2 (minX + maxX, minY + maxY)
-                pos2d <- rBody.WorldPosition + targetVel + offsetVelocity
-                minX <- 0.f
-                maxX <- 0.f
-                minY <- 0.f
-                maxY <- 0.f
+                //let offsetVelocity = Vector2 (minX + maxX, minY + maxY)
+                //pos2d <- rBody.WorldPosition + targetVel + offsetVelocity
+                //minX <- 0.f
+                //maxX <- 0.f
+                //minY <- 0.f
+                //maxY <- 0.f
 
             warpRigidBody (Vector3 (pos2d, position.Z)) rBody eng
             //let offsetVelocity = Vector2 (minX + maxX, minY + maxY)

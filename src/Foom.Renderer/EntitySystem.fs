@@ -12,6 +12,58 @@ open Foom.Common.Components
 
 ////////
 
+// TODO: We could make this instanced.
+type RenderBucket =
+    {
+        Transforms: TransformComponent ResizeArray
+        Positions: Vector3ArrayBuffer ResizeArray
+        Uvs: Vector2ArrayBuffer ResizeArray
+    }
+
+type RenderState =
+    {
+        Lookup: Dictionary<int, Dictionary<int, Texture2DBuffer option * RenderBucket>>
+    }
+
+    member this.Add (programId, textureId, texture, transformComp, position, uv) =
+        let textureLookup =
+            match this.Lookup.TryGetValue (programId) with
+            | true, lookup -> lookup
+            | _, _ ->
+                let lookup = Dictionary ()
+                this.Lookup.Add (programId, lookup)
+                lookup
+             
+        let (_, bucket) =
+            match textureLookup.TryGetValue (textureId) with
+            | true, result -> result
+            | _, _ ->
+
+                let bucket =
+                    {
+                        Transforms = ResizeArray ()
+                        Positions = ResizeArray ()
+                        Uvs = ResizeArray ()
+                    }
+
+                textureLookup.Add (textureId, (texture, bucket))
+
+                (texture, bucket)
+
+        bucket.Transforms.Add transformComp
+        bucket.Positions.Add position
+        bucket.Uvs.Add uv
+               
+    
+
+        
+
+// Fixme: global
+let state = 
+    {
+        Lookup = Dictionary ()
+    }
+
 let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (entityManager: EntityManager) =
 
     Renderer.enableDepth ()
@@ -41,7 +93,6 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
 
             match materialComp.Texture with
             | Some texture ->
-                texture.TryBufferData () |> ignore
                 Renderer.setTexture programId texture.Id
                 texture.Bind ()
             | _ -> ()
@@ -86,22 +137,37 @@ let componentAddedQueue f =
 
 let shaderCache = Dictionary<string * string, int> ()
 let materialQueue =
-    componentAddedQueue (fun ent (materialComp: MaterialComponent) deltaTime entityManager ->
+    componentAddedQueue (fun ent (materialComp: MaterialComponent) deltaTime em ->
 
-        match materialComp.ShaderProgramState with
-        | ShaderProgramState.ReadyToLoad (vertex, fragment) ->
+        match em.TryGet<MeshComponent> ent with
+        | Some meshComp ->
 
-            match shaderCache.TryGetValue ((vertex, fragment)) with
-            | true, programId ->
-                materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
+            let programId =
+                match materialComp.ShaderProgramState with
+                | ShaderProgramState.ReadyToLoad (vertex, fragment) ->
 
-            | _ ->
-                let mutable vertexFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (vertex))
-                let mutable fragmentFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (fragment))
+                    match shaderCache.TryGetValue ((vertex, fragment)) with
+                    | true, programId ->
+                        materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
+                        programId
 
-                let programId = Renderer.loadShaders vertexFile fragmentFile
-                materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
-                shaderCache.Add ((vertex, fragment), programId)
+                    | _ ->
+                        let mutable vertexFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (vertex))
+                        let mutable fragmentFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (fragment))
+
+                        let programId = Renderer.loadShaders vertexFile fragmentFile
+                        materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
+                        shaderCache.Add ((vertex, fragment), programId)
+                        programId
+
+                | ShaderProgramState.Loaded programId -> programId
+
+         
+            match materialComp.Texture with
+            | Some texture ->
+                texture.TryBufferData () |> ignore
+            | _ -> ()        
+
 
         | _ -> ()
 
