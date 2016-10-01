@@ -16,7 +16,7 @@ open Foom.Wad
 open Foom.Wad.Level
 open Foom.Wad.Level.Structures
 open Foom.Common.Components
-open Foom.Level.Components
+open Foom.Wad.Components
 
 let exportFlatTextures (wad: Wad) =
     wad

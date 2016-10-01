@@ -27,7 +27,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PCL", "PCL", "{F9C6B635-472
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libs", "Libs", "{CDAC4EAC-FDCE-4D71-B473-4EEDF7A20D0C}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Level.Components", "src\Foom.Level.Components\Foom.Level.Components.fsproj", "{4AA248F8-5CB9-415A-A0D0-42CBC7241D2E}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Wad.Components", "src\Foom.Wad.Components\Foom.Wad.Components.fsproj", "{4AA248F8-5CB9-415A-A0D0-42CBC7241D2E}"
 EndProject
 Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Math", "src\Foom.Math\Foom.Math.fsproj", "{B94F520E-B150-45A7-ADA1-E2945BE9A743}"
 EndProject

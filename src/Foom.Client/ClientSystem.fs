@@ -14,7 +14,7 @@ open Foom.Renderer
 open Foom.Wad
 open Foom.Wad.Level
 open Foom.Wad.Level.Structures
-open Foom.Level.Components
+open Foom.Wad.Components
 open Foom.Common.Components
 
 // These are sectors to look for and test to ensure things are working as they should.

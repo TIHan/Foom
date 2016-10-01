@@ -1,4 +1,4 @@
-﻿namespace Foom.Level.Components // TODO: Rename to Foom.Wad.Components
+﻿namespace Foom.Wad.Components
 
 open System
 open System.IO
