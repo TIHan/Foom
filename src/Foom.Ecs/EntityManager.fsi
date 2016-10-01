@@ -106,7 +106,7 @@ type EntityManager =
     member IsValid : Entity -> bool
 
     /// Checks to see if the Entity is valid and has a component of type 'T.
-    member HasComponent<'T when 'T :> IComponent and 'T : not struct> : Entity -> bool
+    member Has<'T when 'T :> IComponent and 'T : not struct> : Entity -> bool
 
     //************************************************************************************************************************
 
@@ -130,9 +130,9 @@ type EntityManager =
 
     // Components
 
-    member AddComponent<'T when 'T :> IComponent and 'T : not struct> : Entity -> 'T -> unit
+    member Add<'T when 'T :> IComponent and 'T : not struct> : Entity * 'T -> unit
 
-    member RemoveComponent<'T when 'T :> IComponent and 'T : not struct> : Entity -> unit
+    member Remove<'T when 'T :> IComponent and 'T : not struct> : Entity -> unit
 
     // Entites
 

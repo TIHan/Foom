@@ -76,14 +76,14 @@ module Behavior =
                             Debug.WriteLine (
                                 String.Format ("Tried to load level, {0}, but WAD, {1}, is not loaded.", levelName, wadName)
                             )
-                            entityManager.RemoveComponent<LevelComponent> evt.Entity
+                            entityManager.Remove<LevelComponent> evt.Entity
 
                     | _ ->
 
                         Debug.WriteLine (
                             String.Format ("Tried to load level, {0}, but no WAD found.", levelName)
                         )
-                        entityManager.RemoveComponent<LevelComponent> evt.Entity
+                        entityManager.Remove<LevelComponent> evt.Entity
 
                 | _ -> ()
             )

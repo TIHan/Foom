@@ -241,7 +241,7 @@ type EntityManager =
                         ComponentAddedEvent = this.EventAggregator.GetEvent<ComponentAdded<'T>> ()
                         ComponentRemovedEvent = this.EventAggregator.GetEvent<ComponentRemoved<'T>> ()
 
-                        RemoveComponent = fun entity -> this.RemoveComponent<'T> entity
+                        RemoveComponent = fun entity -> this.Remove<'T> entity
 
                         Active = Array.zeroCreate<bool> this.MaxEntityAmount
                         IndexLookup = Array.init this.MaxEntityAmount (fun _ -> -1) // -1 means that no component exists for that entity
@@ -339,10 +339,10 @@ type EntityManager =
 
     // Components
 
-    member this.AddComponent<'T when 'T :> IComponent and 'T : not struct> (entity: Entity) (comp: 'T) =
+    member this.Add<'T when 'T :> IComponent and 'T : not struct> (entity: Entity, comp: 'T) =
         if this.CurrentIterations > 0 then
             let data = this.GetEntityLookupData<'T> ()
-            this.PendingQueue.Enqueue (fun () -> this.AddComponent entity comp)
+            this.PendingQueue.Enqueue (fun () -> this.Add (entity, comp))
         else
             if this.IsValidEntity entity then
                 let data = this.GetEntityLookupData<'T> ()
@@ -363,7 +363,7 @@ type EntityManager =
             else
                 Debug.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot add component, {1}", entity, typeof<'T>.Name))
 
-    member this.RemoveComponent<'T when 'T :> IComponent and 'T : not struct> (entity: Entity) =
+    member this.Remove<'T when 'T :> IComponent and 'T : not struct> (entity: Entity) =
         if this.CurrentIterations > 0 then
             let data = this.GetEntityLookupData<'T> ()
             this.PendingQueue.Enqueue (fun () -> data.RemoveComponent (entity))
@@ -452,7 +452,7 @@ type EntityManager =
     member this.IsValid entity =
         this.IsValidEntity entity
 
-    member this.HasComponent<'T when 'T :> IComponent and 'T : not struct> (entity: Entity) =
+    member this.Has<'T when 'T :> IComponent and 'T : not struct> (entity: Entity) =
         let mutable data = Unchecked.defaultof<IEntityLookupData>
         if this.Lookup.TryGetValue (typeof<'T>, &data) then
             let data = data :?> EntityLookupData<'T>

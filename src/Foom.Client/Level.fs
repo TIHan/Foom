@@ -71,13 +71,14 @@ let exportTextures (wad: Wad) =
 let spawnMesh vertices uv texturePath lightLevel (em: EntityManager) =
     let ent = em.Spawn ()
 
-    em.AddComponent ent (TransformComponent (Matrix4x4.Identity))
-    em.AddComponent ent
+    em.Add (ent, TransformComponent (Matrix4x4.Identity))
+    em.Add (ent,
         {
             Position = Vector3ArrayBuffer (vertices)
             Uv = Vector2ArrayBuffer (uv)
         }
-    em.AddComponent ent (
+    )
+    em.Add (ent,
         MaterialComponent (
             "triangle.vertex",
             "triangle.fragment",
@@ -156,8 +157,8 @@ let spawnAABBWireframe (aabb: AABB2D) (em: EntityManager) =
     let max = aabb.Max ()
 
     let ent = em.Spawn ()
-    em.AddComponent ent (TransformComponent (Matrix4x4.Identity))
-    em.AddComponent ent
+    em.Add (ent, TransformComponent (Matrix4x4.Identity))
+    em.Add (ent,
         {
             WireframeComponent.Position =
                 [|
@@ -175,7 +176,8 @@ let spawnAABBWireframe (aabb: AABB2D) (em: EntityManager) =
                 |]
                 |> Vector3ArrayBuffer
         }
-    em.AddComponent ent (
+    )
+    em.Add (ent,
         MaterialComponent (
             "v.vertex",
             "f.fragment",
@@ -251,17 +253,18 @@ let updates (clientWorld: ClientWorld) =
                 )
             )
 
-            em.AddComponent clientWorld.Entity (physicsEngineComp)
+            em.Add (clientWorld.Entity, physicsEngineComp)
 
             // *** TEMPORARY ***
-            em.AddComponent clientWorld.Entity (TransformComponent (Matrix4x4.Identity))
-            em.AddComponent clientWorld.Entity
+            em.Add (clientWorld.Entity, TransformComponent (Matrix4x4.Identity))
+            em.Add (clientWorld.Entity,
                 {
                     WireframeComponent.Position =
                         [||]
                         |> Vector3ArrayBuffer
                 }
-            em.AddComponent clientWorld.Entity (
+            )
+            em.Add (clientWorld.Entity,
                 MaterialComponent (
                     "v.vertex",
                     "f.fragment",
@@ -281,9 +284,9 @@ let updates (clientWorld: ClientWorld) =
                         let position = Vector3 (single doomThing.X, single doomThing.Y, single sector.FloorHeight + 28.f)
 
                         let cameraEnt = em.Spawn ()
-                        em.AddComponent cameraEnt (CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f)))
-                        em.AddComponent cameraEnt (TransformComponent (Matrix4x4.CreateTranslation (position)))
-                        em.AddComponent cameraEnt (CharacterControllerComponent (position, 16.1f, 56.f))
+                        em.Add (cameraEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f)))
+                        em.Add (cameraEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
+                        em.Add (cameraEnt, CharacterControllerComponent (position, 16.1f, 56.f))
 
                     | _ -> ()
                 | _ -> ()

@@ -56,18 +56,18 @@ let loadWadAndLevelBehavior (clientWorld: ClientWorld) =
         match em.TryGet<WadComponent> clientWorld.Entity with
         | None ->
 
-            em.AddComponent clientWorld.Entity (WadComponent(evt.Wad))
-            em.AddComponent clientWorld.Entity (LevelComponent(evt.Level))
+            em.Add (clientWorld.Entity, WadComponent(evt.Wad))
+            em.Add (clientWorld.Entity, LevelComponent(evt.Level))
 
         | Some _ ->
 
             clientWorld.DestroyEntities ()
 
-            em.RemoveComponent<WadComponent> clientWorld.Entity
-            em.RemoveComponent<LevelComponent> clientWorld.Entity
+            em.Remove<WadComponent> clientWorld.Entity
+            em.Remove<LevelComponent> clientWorld.Entity
 
-            em.AddComponent clientWorld.Entity (WadComponent(evt.Wad))
-            em.AddComponent clientWorld.Entity (LevelComponent(evt.Level))
+            em.Add (clientWorld.Entity, WadComponent(evt.Wad))
+            em.Add (clientWorld.Entity, LevelComponent(evt.Level))
     )
 
 let addRigidBodyBehavior (clientWorld: ClientWorld) =
