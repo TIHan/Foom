@@ -114,5 +114,9 @@
       <Project>{4AA248F8-5CB9-415A-A0D0-42CBC7241D2E}</Project>
       <Name>Foom.Wad.Components</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Level.Components\Foom.Level.Components.fsproj">
+      <Project>{7EBB87FB-C951-4FCE-9B0D-FD825A66AF32}</Project>
+      <Name>Foom.Level.Components</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

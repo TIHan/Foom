@@ -12,6 +12,7 @@ open Foom.Math
 open Foom.Physics
 open Foom.Renderer
 open Foom.Geometry
+open Foom.Level
 open Foom.Wad
 open Foom.Wad.Level
 open Foom.Wad.Level.Structures
@@ -90,7 +91,7 @@ let spawnMesh vertices uv texturePath lightLevel (em: EntityManager) =
 let textureCache = Dictionary<string, Texture2DBuffer> ()
 
 let spawnCeilingMesh (flat: Flat) lightLevel wad em =
-    flat.Ceiling.DefaultTextureName
+    flat.Ceiling.TextureName
     |> Option.iter (fun textureName ->
         let texture : Texture2DBuffer option =
             match textureCache.TryGetValue (textureName + "_flat") with
@@ -106,12 +107,12 @@ let spawnCeilingMesh (flat: Flat) lightLevel wad em =
 
         match texture with
         | Some t ->
-            spawnMesh flat.Ceiling.Vertices (Flat.createCeilingUV t.Width t.Height flat) texture lightLevel em
+            spawnMesh flat.Ceiling.Vertices (FlatPart.createUV t.Width t.Height flat.Ceiling) texture lightLevel em
         | _ -> ()
     )
 
 let spawnFloorMesh (flat: Flat) lightLevel wad em =
-    flat.Floor.DefaultTextureName
+    flat.Floor.TextureName
     |> Option.iter (fun textureName ->
         let texture =
             match textureCache.TryGetValue (textureName + "_flat") with
@@ -127,12 +128,12 @@ let spawnFloorMesh (flat: Flat) lightLevel wad em =
 
         match texture with
         | Some t ->
-            spawnMesh flat.Floor.Vertices (Flat.createFloorUV t.Width t.Height flat) texture lightLevel em
+            spawnMesh flat.Floor.Vertices (FlatPart.createUV t.Width t.Height flat.Floor) texture lightLevel em
         | _ -> ()
     )
 
-let spawnWallMesh (wall: Wall) lightLevel wad em =
-    wall.DefaultTextureName
+let spawnWallPartMesh (wallPart: WallPart) lightLevel wad em =
+    wallPart.TextureName
     |> Option.iter (fun textureName ->
         let texture =
             match textureCache.TryGetValue (textureName) with
@@ -148,9 +149,14 @@ let spawnWallMesh (wall: Wall) lightLevel wad em =
 
         match texture with
         | Some t ->
-            spawnMesh wall.Vertices (Wall.createUV t.Width t.Height wall) texture lightLevel em
+            spawnMesh wallPart.Vertices (WallPart.createUV t.Width t.Height wallPart) texture lightLevel em
         | _ -> ()
     )
+
+let spawnWallMesh (wall: Wall) lightLevel wad em =
+    wall.Upper |> Option.iter (fun upper -> spawnWallPartMesh upper lightLevel wad em)
+    wall.Middle |> Option.iter (fun middle -> spawnWallPartMesh middle lightLevel wad em)
+    wall.Lower |> Option.iter (fun lower -> spawnWallPartMesh lower lightLevel wad em)
 
 let spawnAABBWireframe (aabb: AABB2D) (em: EntityManager) =
     let min = aabb.Min ()
@@ -223,7 +229,7 @@ let updates (clientWorld: ClientWorld) =
                     |> PhysicsEngine.addRigidBody rBody
                 )
 
-                Level.createFlats i level
+                Flat.createFlats i level
                 |> Seq.iter (fun flat ->
                     spawnCeilingMesh flat lightLevel wad em
                     spawnFloorMesh flat lightLevel wad em
@@ -247,7 +253,7 @@ let updates (clientWorld: ClientWorld) =
                         j <- j + 3
                 )
 
-                Level.createWalls i level
+                Wall.createWalls i level
                 |> Seq.iter (fun wall ->
                     spawnWallMesh wall lightLevel wad em
                 )
