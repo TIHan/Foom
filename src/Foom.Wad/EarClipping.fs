@@ -173,6 +173,7 @@ let decomposeTree (tree: Polygon2DTree) =
     )
     |> List.iteri (fun i childTree ->
 
+        // TODO: Add support for nested children!!!!
         //if childTree.Children.Length > 0 then
         //    failwith "butt"
 
