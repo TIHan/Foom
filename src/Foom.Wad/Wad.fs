@@ -161,13 +161,23 @@ module Wad =
                         pixels
                 } |> Some
 
+    [<RequireQualifiedAccess>]
+    type PatchTexture =
+        | DoomPicture of DoomPicture
+        | Flat of Texture
+
     let tryFindPatch patchName wad =
-        match tryFindLump patchName wad with
-        | Some header ->
-            (
-                runUnpickle (uDoomPicture header wad.defaultPaletteData.Value) wad.stream 
-            ) |> Some
-        | _ -> None
+        match tryFindFlatTexture patchName wad with
+        | Some texture -> Some (PatchTexture.Flat texture)
+        | _ ->
+            match tryFindLump patchName wad with
+            | Some header ->
+                (
+                    runUnpickle (uDoomPicture header wad.defaultPaletteData.Value) wad.stream 
+                )
+                |> PatchTexture.DoomPicture
+                |> Some
+            | _ -> None
 
     let tryFindTexture (name: string) wad =
         let name = name.ToUpper ()
@@ -191,9 +201,14 @@ module Wad =
             info.Patches
             |> Array.iter (fun patch ->
                 match tryFindPatch patchNames.[patch.PatchNumber] wad with
-                | Some pic ->
+                | Some ptex ->
 
-                    pic.Data
+                    let data =
+                        match ptex with
+                        | PatchTexture.DoomPicture pic -> pic.Data
+                        | PatchTexture.Flat tex -> tex.Data
+
+                    data
                     |> Array2D.iteri (fun i j pixel ->
                         let i = i + patch.OriginX
                         let j = j + patch.OriginY
@@ -231,6 +246,7 @@ module Wad =
         let extendedWad =
             {
                 wad with 
+                    TextureInfoLookup = None
                     wadData = wadData
                     stream = stream
             }
