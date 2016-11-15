@@ -163,21 +163,26 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
 
         let mvp = (projection * view) |> Matrix4x4.Transpose
 
-        match materialComp.ShaderProgramState with
-        | ShaderProgramState.Loaded programId when wireframeComp.Position.Length > 0 ->
-            Renderer.useProgram programId
+        let material = materialComp.Material
 
-            let uniformColor = Renderer.getUniformColor programId
-            let uniformProjection = Renderer.getUniformProjection programId
+        material.ShaderProgramId
+        |> Option.iter (fun programId ->
+            if wireframeComp.Position.Length > 0 then
+                Renderer.useProgram programId
 
-            Renderer.setUniformProjection uniformProjection mvp
+                let uniformColor = Renderer.getUniformColor programId
+                let uniformProjection = Renderer.getUniformProjection programId
 
-            wireframeComp.Position.Bind()
-            Renderer.bindPosition programId
+                Renderer.setUniformProjection uniformProjection mvp
 
-            Renderer.setUniformColor uniformColor (Color.FromArgb (255, int materialComp.Color.R, int materialComp.Color.G, int materialComp.Color.B) |> RenderColor.OfColor)
-            Renderer.drawArrays 0 wireframeComp.Position.Length
-        | _ -> ()
+                wireframeComp.Position.Bind()
+                Renderer.bindPosition programId
+
+                let material = materialComp.Material
+
+                Renderer.setUniformColor uniformColor (Color.FromArgb (255, int material.Color.R, int material.Color.G, int material.Color.B) |> RenderColor.OfColor)
+                Renderer.drawArrays 0 wireframeComp.Position.Length
+        )
     )
 
 let componentAddedQueue f =
@@ -198,13 +203,18 @@ let materialQueue =
             match em.TryGet<MeshComponent> ent with
             | Some meshComp ->
 
+                let material = materialComp.Material
+
                 let programId =
-                    match materialComp.ShaderProgramState with
-                    | ShaderProgramState.ReadyToLoad (vertex, fragment) ->
+
+                    match material.ShaderProgramId with
+                    | None ->
+                        let vertex = material.VertexShaderFileName
+                        let fragment = material.FragmentShaderFileName
 
                         match shaderCache.TryGetValue ((vertex, fragment)) with
                         | true, programId ->
-                            materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
+                            material.ShaderProgramId <- Some programId
                             programId
 
                         | _ ->
@@ -212,15 +222,15 @@ let materialQueue =
                             let mutable fragmentFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (fragment))
 
                             let programId = Renderer.loadShaders vertexFile fragmentFile
-                            materialComp.ShaderProgramState <- ShaderProgramState.Loaded programId
+                            material.ShaderProgramId <- Some programId
                             shaderCache.Add ((vertex, fragment), programId)
                             programId
 
-                    | ShaderProgramState.Loaded programId -> programId
+                    | Some programId -> programId
 
              
                 let textureId, texture =
-                    match materialComp.Texture with
+                    match material.Texture with
                     | Some texture ->
                         texture.TryBufferData () |> ignore
                         texture.Id, Some texture
@@ -229,7 +239,7 @@ let materialQueue =
 
                 let mesh = meshComp.Mesh
                 let getTransform = fun () -> transformComp.Transform
-                state.Add (ent, programId, textureId, texture, getTransform, mesh.Position, mesh.Uv, materialComp.Color)
+                state.Add (ent, programId, textureId, texture, getTransform, mesh.Position, mesh.Uv, material.Color)
 
             | _ -> ()
         | _ -> ()

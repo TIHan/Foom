@@ -12,6 +12,15 @@ type Mesh =
         Uv: Vector2ArrayBuffer
     }
 
+type Material =
+    {
+        VertexShaderFileName: string
+        FragmentShaderFileName: string
+        Texture: Texture2DBuffer option
+        Color: Color
+        mutable ShaderProgramId: int option
+    }
+
 type WireframeComponent =
     {
         Position: Vector3ArrayBuffer
@@ -25,17 +34,15 @@ type MeshComponent (position, uv) =
 
     interface IComponent
 
-[<RequireQualifiedAccess>]
-type ShaderProgramState =
-    | ReadyToLoad of vsFileName: string * fsFileName: string
-    | Loaded of programId: int
-
 type MaterialComponent (vertexShaderFileName: string, fragmentShaderFileName: string, texture: Texture2DBuffer option, color: Color) =
 
-    member val Texture = texture with get
-
-    member val ShaderProgramState = ShaderProgramState.ReadyToLoad (vertexShaderFileName, fragmentShaderFileName) with get, set
-
-    member val Color = color
+    member val Material =
+        {
+            VertexShaderFileName = vertexShaderFileName
+            FragmentShaderFileName = fragmentShaderFileName
+            Texture = texture
+            Color = color
+            ShaderProgramId = None
+        }
 
     interface IComponent
