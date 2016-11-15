@@ -6,6 +6,12 @@ open System.Numerics
 
 open Foom.Ecs
 
+type Mesh =
+    {
+        Position: Vector3ArrayBuffer
+        Uv: Vector2ArrayBuffer
+    }
+
 type WireframeComponent =
     {
         Position: Vector3ArrayBuffer
@@ -13,11 +19,9 @@ type WireframeComponent =
 
     interface IComponent
 
-type MeshComponent =
-    {
-        Position: Vector3ArrayBuffer
-        Uv: Vector2ArrayBuffer
-    }
+type MeshComponent (position, uv) =
+
+    member val Mesh = { Position = Vector3ArrayBuffer (position); Uv = Vector2ArrayBuffer (uv) }
 
     interface IComponent
 

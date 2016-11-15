@@ -73,12 +73,7 @@ let spawnMesh vertices uv texturePath lightLevel (em: EntityManager) =
     let ent = em.Spawn ()
 
     em.Add (ent, TransformComponent (Matrix4x4.Identity))
-    em.Add (ent,
-        {
-            Position = Vector3ArrayBuffer (vertices)
-            Uv = Vector2ArrayBuffer (uv)
-        }
-    )
+    em.Add (ent, MeshComponent (vertices, uv))
     em.Add (ent,
         MaterialComponent (
             "triangle.vertex",

@@ -196,8 +196,10 @@ let materialQueue =
                         texture.Id, Some texture
                     | _ ->
                         0, None
+
+                let mesh = meshComp.Mesh
                        
-                state.Add (programId, textureId, texture, transformComp, meshComp.Position, meshComp.Uv, materialComp.Color)
+                state.Add (programId, textureId, texture, transformComp, mesh.Position, mesh.Uv, materialComp.Color)
 
             | _ -> ()
         | _ -> ()
