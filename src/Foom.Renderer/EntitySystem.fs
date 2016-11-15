@@ -15,18 +15,20 @@ open Foom.Common.Components
 // TODO: We could make this instanced.
 type RenderBucket =
     {
-        Transforms: TransformComponent ResizeArray
+        GetTransforms: (unit -> Matrix4x4) ResizeArray
         Positions: Vector3ArrayBuffer ResizeArray
         Uvs: Vector2ArrayBuffer ResizeArray
         Colors: Color ResizeArray
+        RefIndices: Ref<int> ResizeArray
     }
 
 type RenderState =
     {
+        Deletion: Dictionary<Entity, unit -> unit>
         Lookup: Dictionary<int, Dictionary<int, Texture2DBuffer option * RenderBucket>>
     }
 
-    member this.Add (programId, textureId, texture, transformComp, position, uv, color) =
+    member this.Add (ent, programId, textureId, texture, transformComp, position, uv, color) =
         let textureLookup =
             match this.Lookup.TryGetValue (programId) with
             | true, lookup -> lookup
@@ -42,20 +44,47 @@ type RenderState =
 
                 let bucket =
                     {
-                        Transforms = ResizeArray ()
+                        GetTransforms = ResizeArray ()
                         Positions = ResizeArray ()
                         Uvs = ResizeArray ()
                         Colors = ResizeArray ()
+                        RefIndices = ResizeArray ()
                     }
 
                 textureLookup.Add (textureId, (texture, bucket))
 
                 (texture, bucket)
 
-        bucket.Transforms.Add transformComp
+        let indexRef = ref bucket.GetTransforms.Count
+
+        bucket.GetTransforms.Add transformComp
         bucket.Positions.Add position
         bucket.Uvs.Add uv
         bucket.Colors.Add color
+        bucket.RefIndices.Add indexRef
+
+        let deletion =
+            fun () ->
+                let lastIndexRef = bucket.RefIndices.[bucket.RefIndices.Count - 1]
+
+                let originalIndex = !indexRef
+                let lastIndex = !lastIndexRef
+
+                lastIndexRef := originalIndex
+
+                bucket.GetTransforms.[originalIndex] <- bucket.GetTransforms.[lastIndex]
+                bucket.Positions.[originalIndex] <- bucket.Positions.[lastIndex]
+                bucket.Uvs.[originalIndex] <- bucket.Uvs.[lastIndex]
+                bucket.Colors.[originalIndex] <- bucket.Colors.[lastIndex]
+                bucket.RefIndices.[originalIndex] <- bucket.RefIndices.[lastIndex]
+
+                bucket.GetTransforms.RemoveAt (lastIndex) |> ignore
+                bucket.Positions.RemoveAt (lastIndex) |> ignore
+                bucket.Uvs.RemoveAt (lastIndex) |> ignore
+                bucket.Colors.RemoveAt (lastIndex) |> ignore
+                bucket.RefIndices.RemoveAt (lastIndex) |> ignore
+
+        this.Deletion.Add (ent, deletion);
     
     member this.ForEach f =
         this.Lookup
@@ -76,6 +105,7 @@ type RenderState =
 // Fixme: global
 let state = 
     {
+        Deletion = Dictionary ()
         Lookup = Dictionary ()
     }
 
@@ -93,12 +123,12 @@ let render (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) (e
 
         for i = 0 to count - 1 do
 
-            let transformComp = bucket.Transforms.[i]
+            let getTransform = bucket.GetTransforms.[i]
             let position = bucket.Positions.[i]
             let uv = bucket.Uvs.[i]
             let color = bucket.Colors.[i]
 
-            let model = transformComp.Transform
+            let model = getTransform ()
 
             position.TryBufferData () |> ignore
             uv.TryBufferData () |> ignore
@@ -198,8 +228,8 @@ let materialQueue =
                         0, None
 
                 let mesh = meshComp.Mesh
-                       
-                state.Add (programId, textureId, texture, transformComp, mesh.Position, mesh.Uv, materialComp.Color)
+                let getTransform = fun () -> transformComp.Transform
+                state.Add (ent, programId, textureId, texture, getTransform, mesh.Position, mesh.Uv, materialComp.Color)
 
             | _ -> ()
         | _ -> ()
