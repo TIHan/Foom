@@ -6,21 +6,6 @@ open System.Numerics
 
 open Foom.Ecs
 
-type Mesh =
-    {
-        Position: Vector3ArrayBuffer
-        Uv: Vector2ArrayBuffer
-    }
-
-type Material =
-    {
-        VertexShaderFileName: string
-        FragmentShaderFileName: string
-        Texture: Texture2DBuffer option
-        Color: Color
-        mutable ShaderProgramId: int option
-    }
-
 type WireframeComponent =
     {
         Position: Vector3ArrayBuffer

@@ -56,7 +56,7 @@
   <Import Project="..\..\packages\Ferop.1.0.0-beta90001\build\Ferop.targets" Condition="Exists('..\..\packages\Ferop.1.0.0-beta90001\build\Ferop.targets')" />
   <ItemGroup>
     <Compile Include="Renderer.fs" />
-    <Compile Include="ShaderProgram.fs" />
+    <Compile Include="FRenderer.fs" />
     <None Include="f.fragment">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
