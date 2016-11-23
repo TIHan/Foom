@@ -70,7 +70,6 @@
     <None Include="triangle.fragment">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Include="Components.fs" />
     <Compile Include="EntitySystem.fs" />
   </ItemGroup>
   <ItemGroup>
