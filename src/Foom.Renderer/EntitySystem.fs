@@ -22,20 +22,6 @@ type MaterialComponent (material) =
 
     interface IComponent
 
-type LoadMeshRequested =
-    {
-        Position: Vector3 []
-        Uv: Vector2 []
-    }
-
-    interface IEvent
-
-type LoadMaterialRequested =
-    {
-
-    }
-
-
 let renderer = FRenderer.Create ()
 
 let componentAddedQueue f =
