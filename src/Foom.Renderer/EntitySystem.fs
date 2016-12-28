@@ -87,8 +87,17 @@ let handleSomething () =
 
                         shader
 
-                let bmp = new Bitmap(info.MaterialInfo.TextureInfo.TexturePath)
-                let texture = renderer.CreateTexture (bmp)
+                let texture =
+                    match textureCache.TryGetValue (info.MaterialInfo.TextureInfo.TexturePath) with
+                    | true, texture -> texture
+                    | _ ->
+
+                        let bmp = new Bitmap(info.MaterialInfo.TextureInfo.TexturePath)
+                        let texture = renderer.CreateTexture (bmp)
+
+                        textureCache.Add(info.MaterialInfo.TextureInfo.TexturePath, texture)
+
+                        texture
                 
                 let material = renderer.CreateMaterial (shader, texture, info.MaterialInfo.Color)
 

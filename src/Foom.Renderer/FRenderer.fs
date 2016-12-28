@@ -179,6 +179,8 @@ type FRenderer =
 
         let mvp = (projection * view) |> Matrix4x4.Transpose
 
+        let mutable drawCalls = 0
+
         this.ProcessPrograms (fun programId textureId bucket ->
 
             let count = bucket.IdRefs.Count
@@ -215,6 +217,10 @@ type FRenderer =
 
                 Renderer.setUniformColor uniformColor (Color.FromArgb (255, int color.R, int color.G, int color.B) |> RenderColor.OfColor)
                 Renderer.drawTriangles 0 position.Length
+
+                drawCalls <- drawCalls + 1
         )
 
         Renderer.disableDepth ()
+
+        printfn "Draw Calls: %A" drawCalls
