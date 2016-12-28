@@ -3,13 +3,12 @@
 open System.Numerics
 
 open Foom.Geometry
-open Foom.Wad.Level.Structures
 
 type TextureAlignment =
     | UpperUnpegged of offsetY: int
     | LowerUnpegged
 
-type WallPart =
+type WallPartSide =
     {
         TextureOffsetX: int
         TextureOffsetY: int
@@ -18,9 +17,19 @@ type WallPart =
         TextureAlignment: TextureAlignment
     }
 
+type WallPart =
+    {
+        FrontSide: WallPartSide option
+        BackSide: WallPartSide option
+    }
+
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module WallPart =
 
-    val updateUV : uv: Vector2 [] -> width: int -> height: int -> WallPart -> unit
+    val updateFrontUV : uv: Vector2 [] -> width: int -> height: int -> WallPart -> unit
 
-    val createUV : width: int -> height: int -> WallPart -> Vector2 []
+    val createFrontUV : width: int -> height: int -> WallPart -> Vector2 []
+
+    val updateBackUV : uv: Vector2 [] -> width: int -> height: int -> WallPart -> unit
+
+    val createBackUV : width: int -> height: int -> WallPart -> Vector2 []

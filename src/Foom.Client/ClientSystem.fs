@@ -90,12 +90,13 @@ let physicsUpdateBehavior (clientWorld: ClientWorld) =
 
         opt {
             let! physicsEngineComp = em.TryGet<PhysicsEngineComponent> clientWorld.Entity
-            let! wireframeComp = em.TryGet<WireframeComponent> clientWorld.Entity
+            //let! wireframeComp = em.TryGet<WireframeComponent> clientWorld.Entity
             let! (_, charContrComp, transformComp) = em.TryFind<CharacterControllerComponent, TransformComponent> (fun _ _ _ -> true)
 
             let pos = transformComp.Position
             let pos = Vector2 (pos.X, pos.Y)
 
+            // TODO: This can be null, fix it.
             let sector =
                 physicsEngineComp.PhysicsEngine
                 |> PhysicsEngine.findWithPoint pos :?> Sector
@@ -108,34 +109,34 @@ let physicsUpdateBehavior (clientWorld: ClientWorld) =
             transformComp.Position <- Vector3 (rbody.WorldPosition, single sector.FloorHeight + 50.f)
 
             // *** TEMPORARY ***
-            wireframeComp.Position.Set [||]
+            //wireframeComp.Position.Set [||]
 
-            let boxes = ResizeArray ()
-            physicsEngineComp.PhysicsEngine
-            |> PhysicsEngine.debugFindSpacesByRigidBody charContrComp.RigidBody
-            |> Seq.iter (fun b ->
-                let b = rbody.AABB
-                let min = b.Min () + rbody.WorldPosition
-                let max = b.Max () + rbody.WorldPosition
-                [|
-                    Vector3 (min.X, min.Y, 0.f)
-                    Vector3 (max.X, min.Y, 0.f)
+            //let boxes = ResizeArray ()
+            //physicsEngineComp.PhysicsEngine
+            //|> PhysicsEngine.debugFindSpacesByRigidBody charContrComp.RigidBody
+            //|> Seq.iter (fun b ->
+            //    let b = rbody.AABB
+            //    let min = b.Min () + rbody.WorldPosition
+            //    let max = b.Max () + rbody.WorldPosition
+            //    [|
+            //        Vector3 (min.X, min.Y, 0.f)
+            //        Vector3 (max.X, min.Y, 0.f)
 
-                    Vector3 (max.X, min.Y, 0.f)
-                    Vector3 (max.X, max.Y, 0.f)
+            //        Vector3 (max.X, min.Y, 0.f)
+            //        Vector3 (max.X, max.Y, 0.f)
 
-                    Vector3 (max.X, max.Y, 0.f)
-                    Vector3 (min.X, max.Y, 0.f)
+            //        Vector3 (max.X, max.Y, 0.f)
+            //        Vector3 (min.X, max.Y, 0.f)
 
-                    Vector3 (min.X, max.Y, 0.f)
-                    Vector3 (min.X, min.Y, 0.f)
-                |]
-                |> boxes.AddRange
-            )
+            //        Vector3 (min.X, max.Y, 0.f)
+            //        Vector3 (min.X, min.Y, 0.f)
+            //    |]
+            //    |> boxes.AddRange
+            //)
 
-            boxes
-            |> Array.ofSeq
-            |> wireframeComp.Position.Set
+            //boxes
+            //|> Array.ofSeq
+            //|> wireframeComp.Position.Set
 
             //let tris = ResizeArray ()
             //let lines = ResizeArray ()

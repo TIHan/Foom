@@ -17,9 +17,9 @@ type Wall =
         SectorId: int
         Special: WallSpecial
 
-        Upper: WallPart option
-        Middle: WallPart option
-        Lower: WallPart option
+        Upper: WallPart
+        Middle: WallPart
+        Lower: WallPart
     }
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]

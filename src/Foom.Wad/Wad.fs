@@ -26,6 +26,7 @@ type Texture =
 
 type Wad = 
     {
+        mutable Wads : Wad list
         mutable TextureInfoLookup: Dictionary<string, TextureInfo> option
         mutable FlatHeaderLookup: Dictionary<string, LumpHeader> option
         stream: Stream
@@ -167,70 +168,95 @@ module Wad =
         | Flat of Texture
 
     let tryFindPatch patchName wad =
-        match tryFindFlatTexture patchName wad with
-        | Some texture -> Some (PatchTexture.Flat texture)
-        | _ ->
-            match tryFindLump patchName wad with
-            | Some header ->
-                (
-                    runUnpickle (uDoomPicture header wad.defaultPaletteData.Value) wad.stream 
-                )
-                |> PatchTexture.DoomPicture
-                |> Some
-            | _ -> None
+
+        let f wad =
+            match tryFindFlatTexture patchName wad with
+            | Some texture -> Some (PatchTexture.Flat texture)
+            | _ ->
+                match tryFindLump patchName wad with
+                | Some header ->
+                    (
+                        runUnpickle (uDoomPicture header wad.defaultPaletteData.Value) wad.stream 
+                    )
+                    |> PatchTexture.DoomPicture
+                    |> Some
+                | _ -> None
+
+        match f wad with
+        | Some result -> Some result
+        | None ->
+            if wad.Wads.IsEmpty then
+                None
+            else
+                wad.Wads
+                |> List.map f
+                |> List.last
 
     let tryFindTexture (name: string) wad =
         let name = name.ToUpper ()
-        if wad.TextureInfoLookup.IsNone then
-            loadTextureInfos wad
 
-        match wad.TextureInfoLookup.Value.TryGetValue (name) with
-        | false, _ -> None
-        | true, info ->
+        let f wad =
+            if wad.TextureInfoLookup.IsNone then
+                loadTextureInfos wad
 
-            let tex = Array2D.init info.Width info.Height (fun _ _ -> Pixel.Cyan)
+            match wad.TextureInfoLookup.Value.TryGetValue (name) with
+            | false, _ -> None
+            | true, info ->
 
-            let pnamesLump =
-                wad.wadData.LumpHeaders
-                |> Array.find (fun x -> x.Name.ToUpper() = "PNAMES")
+                let tex = Array2D.init info.Width info.Height (fun _ _ -> Pixel.Cyan)
 
-            let patchNames = runUnpickle (uPatchNames pnamesLump) wad.stream
+                let pnamesLump =
+                    wad.wadData.LumpHeaders
+                    |> Array.find (fun x -> x.Name.ToUpper() = "PNAMES")
 
-            let mutable previousOffsetX = 0
-            let mutable previousOffsetY = 0
-            info.Patches
-            |> Array.iter (fun patch ->
-                match tryFindPatch patchNames.[patch.PatchNumber] wad with
-                | Some ptex ->
+                let patchNames = runUnpickle (uPatchNames pnamesLump) wad.stream
 
-                    let data =
-                        match ptex with
-                        | PatchTexture.DoomPicture pic -> pic.Data
-                        | PatchTexture.Flat tex -> tex.Data
+                let mutable previousOffsetX = 0
+                let mutable previousOffsetY = 0
+                info.Patches
+                |> Array.iter (fun patch ->
+                    match tryFindPatch patchNames.[patch.PatchNumber] wad with
+                    | Some ptex ->
 
-                    data
-                    |> Array2D.iteri (fun i j pixel ->
-                        let i = i + patch.OriginX
-                        let j = j + patch.OriginY
+                        let data =
+                            match ptex with
+                            | PatchTexture.DoomPicture pic -> pic.Data
+                            | PatchTexture.Flat tex -> tex.Data
 
-                        if i < info.Width && j < info.Height && i >= 0 && j >= 0 && pixel <> Pixel.Cyan then
-                            tex.[i, j] <- pixel
-                               
-                    )
+                        data
+                        |> Array2D.iteri (fun i j pixel ->
+                            let i = i + patch.OriginX
+                            let j = j + patch.OriginY
 
-                | _ -> ()
-            )
+                            if i < info.Width && j < info.Height && i >= 0 && j >= 0 && pixel <> Pixel.Cyan then
+                                tex.[i, j] <- pixel
+                                   
+                        )
 
-            {
-                Data = tex
-                Name = info.Name
-            } |> Some
+                    | _ -> ()
+                )
+
+                {
+                    Data = tex
+                    Name = info.Name
+                } |> Some
+
+        match f wad with
+        | Some result -> Some result
+        | None ->
+            if wad.Wads.IsEmpty then
+                None
+            else
+                wad.Wads
+                |> List.map f
+                |> List.last
 
     let create stream =
         let wadData = runUnpickle u_wad stream
 
         let wad =
             { 
+                Wads = []
                 TextureInfoLookup = None
                 FlatHeaderLookup = None
                 stream = stream
@@ -249,6 +275,7 @@ module Wad =
                     TextureInfoLookup = None
                     wadData = wadData
                     stream = stream
+                    Wads = wad :: wad.Wads
             }
         extendedWad
 

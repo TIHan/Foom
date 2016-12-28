@@ -73,119 +73,118 @@ let spawnMesh vertices uv texturePath lightLevel (em: EntityManager) =
     let ent = em.Spawn ()
 
     em.Add (ent, TransformComponent (Matrix4x4.Identity))
-    em.Add (ent, MeshComponent (vertices, uv))
-    em.Add (ent,
-        MaterialComponent (
-            "triangle.vertex",
-            "triangle.fragment",
-            texturePath,
-            Color.FromArgb (0, int lightLevel, int lightLevel, int lightLevel)
-        )
-    )
 
-let textureCache = Dictionary<string, Texture2DBuffer> ()
+    let meshInfo : RendererSystem.MeshInfo =
+        {
+            Position = vertices
+            Uv = uv
+        }
+
+    let materialInfo : RendererSystem.MaterialInfo =
+        {
+            ShaderInfo =
+                {
+                    VertexShader = "triangle.vertex"
+                    FragmentShader = "triangle.fragment"
+                }
+            
+            TextureInfo =
+                {
+                    TexturePath = texturePath
+                }
+
+            Color = Color.FromArgb (0, int lightLevel, int lightLevel, int lightLevel)
+        }
+
+    let renderInfo : RendererSystem.RenderInfo =
+        {
+            MeshInfo = meshInfo
+            MaterialInfo = materialInfo
+        }
+
+    em.Add (ent, RendererSystem.RenderInfoComponent (renderInfo))
 
 let spawnCeilingMesh (flat: Flat) lightLevel wad em =
     flat.Ceiling.TextureName
     |> Option.iter (fun textureName ->
-        let texture : Texture2DBuffer option =
-            match textureCache.TryGetValue (textureName + "_flat") with
-            | true, tex -> Some tex
-            | _ ->
-                try
-                    let bmp = new Bitmap (textureName + "_flat.bmp")
-                    let t = Texture2DBuffer (bmp)
-                    textureCache.[textureName + "_flat"] <- t
-                    Some t
-                with | _ -> None
-
-
-        match texture with
-        | Some t ->
-            spawnMesh flat.Ceiling.Vertices (FlatPart.createUV t.Width t.Height flat.Ceiling) texture lightLevel em
-        | _ -> ()
+        let texturePath = textureName + "_flat.bmp"
+        let t = new Bitmap(texturePath)
+        spawnMesh flat.Ceiling.Vertices (FlatPart.createUV t.Width t.Height flat.Ceiling) texturePath lightLevel em
     )
 
 let spawnFloorMesh (flat: Flat) lightLevel wad em =
     flat.Floor.TextureName
     |> Option.iter (fun textureName ->
-        let texture =
-            match textureCache.TryGetValue (textureName + "_flat") with
-            | true, tex -> Some tex
-            | _ ->
-                try
-                    let bmp = new Bitmap (textureName + "_flat.bmp")
-                    let t = Texture2DBuffer (bmp)
-                    textureCache.[textureName + "_flat"] <- t
-                    Some t
-                with | _ -> None
+        let texturePath = textureName + "_flat.bmp"
+        let t = new Bitmap(texturePath)
+        spawnMesh flat.Floor.Vertices (FlatPart.createUV t.Width t.Height flat.Floor) texturePath lightLevel em
+    )
 
+let spawnFrontWallPartSideMesh (wallPart: WallPart) (side: WallPartSide) lightLevel wad em =
+    side.TextureName
+    |> Option.iter (fun textureName ->
+        let texturePath = textureName + ".bmp"
+        let t = new Bitmap(texturePath)
+        spawnMesh side.Vertices (WallPart.createFrontUV t.Width t.Height wallPart) texturePath lightLevel em
+    )
 
-        match texture with
-        | Some t ->
-            spawnMesh flat.Floor.Vertices (FlatPart.createUV t.Width t.Height flat.Floor) texture lightLevel em
-        | _ -> ()
+let spawnBackWallPartSideMesh (wallPart: WallPart) (side: WallPartSide) lightLevel wad em =
+    side.TextureName
+    |> Option.iter (fun textureName ->
+        let texturePath = textureName + ".bmp"
+        let t = new Bitmap(texturePath)
+        spawnMesh side.Vertices (WallPart.createBackUV t.Width t.Height wallPart) texturePath lightLevel em
     )
 
 let spawnWallPartMesh (wallPart: WallPart) lightLevel wad em =
-    wallPart.TextureName
-    |> Option.iter (fun textureName ->
-        let texture =
-            match textureCache.TryGetValue (textureName) with
-            | true, tex -> Some tex
-            | _ ->
-                try
-                    let bmp = new Bitmap (textureName + ".bmp")
-                    let t = Texture2DBuffer (bmp)
-                    textureCache.[textureName] <- t
-                    Some t
-                with | _ -> None
+    wallPart.FrontSide
+    |> Option.iter (fun side ->
+        spawnFrontWallPartSideMesh wallPart side lightLevel wad em
+    )
 
-
-        match texture with
-        | Some t ->
-            spawnMesh wallPart.Vertices (WallPart.createUV t.Width t.Height wallPart) texture lightLevel em
-        | _ -> ()
+    wallPart.BackSide
+    |> Option.iter (fun side ->
+        spawnBackWallPartSideMesh wallPart side lightLevel wad em
     )
 
 let spawnWallMesh (wall: Wall) lightLevel wad em =
-    wall.Upper |> Option.iter (fun upper -> spawnWallPartMesh upper lightLevel wad em)
-    wall.Middle |> Option.iter (fun middle -> spawnWallPartMesh middle lightLevel wad em)
-    wall.Lower |> Option.iter (fun lower -> spawnWallPartMesh lower lightLevel wad em)
+    spawnWallPartMesh wall.Upper lightLevel wad em
+    spawnWallPartMesh wall.Middle lightLevel wad em
+    spawnWallPartMesh wall.Lower lightLevel wad em
 
-let spawnAABBWireframe (aabb: AABB2D) (em: EntityManager) =
-    let min = aabb.Min ()
-    let max = aabb.Max ()
+// let spawnAABBWireframe (aabb: AABB2D) (em: EntityManager) =
+//     let min = aabb.Min ()
+//     let max = aabb.Max ()
 
-    let ent = em.Spawn ()
-    em.Add (ent, TransformComponent (Matrix4x4.Identity))
-    em.Add (ent,
-        {
-            WireframeComponent.Position =
-                [|
-                    Vector3 (min.X, min.Y, 0.f)
-                    Vector3 (max.X, min.Y, 0.f)
+//     let ent = em.Spawn ()
+//     em.Add (ent, TransformComponent (Matrix4x4.Identity))
+//     em.Add (ent,
+//         {
+//             WireframeComponent.Position =
+//                 [|
+//                     Vector3 (min.X, min.Y, 0.f)
+//                     Vector3 (max.X, min.Y, 0.f)
 
-                    Vector3 (max.X, min.Y, 0.f)
-                    Vector3 (max.X, max.Y, 0.f)
+//                     Vector3 (max.X, min.Y, 0.f)
+//                     Vector3 (max.X, max.Y, 0.f)
 
-                    Vector3 (max.X, max.Y, 0.f)
-                    Vector3 (min.X, max.Y, 0.f)
+//                     Vector3 (max.X, max.Y, 0.f)
+//                     Vector3 (min.X, max.Y, 0.f)
 
-                    Vector3 (min.X, max.Y, 0.f)
-                    Vector3 (min.X, min.Y, 0.f)
-                |]
-                |> Vector3ArrayBuffer
-        }
-    )
-    em.Add (ent,
-        MaterialComponent (
-            "v.vertex",
-            "f.fragment",
-            None,
-            Color.FromArgb (0, 255, 255, 255)
-        )
-    )
+//                     Vector3 (min.X, max.Y, 0.f)
+//                     Vector3 (min.X, min.Y, 0.f)
+//                 |]
+//                 |> Vector3ArrayBuffer
+//         }
+//     )
+//     em.Add (ent,
+//         MaterialComponent (
+//             "v.vertex",
+//             "f.fragment",
+//             None,
+//             Color.FromArgb (0, 255, 255, 255)
+//         )
+//     )
 
 let updates (clientWorld: ClientWorld) =
     [
@@ -199,7 +198,7 @@ let updates (clientWorld: ClientWorld) =
         Behavior.levelLoading (fun wad level em ->
             let levelAABB = Level.getAABB level
 
-            spawnAABBWireframe levelAABB em
+            //spawnAABBWireframe levelAABB em
 
             let physicsEngineComp = PhysicsEngineComponent.Create 128
 
@@ -257,22 +256,22 @@ let updates (clientWorld: ClientWorld) =
             em.Add (clientWorld.Entity, physicsEngineComp)
 
             // *** TEMPORARY ***
-            em.Add (clientWorld.Entity, TransformComponent (Matrix4x4.Identity))
-            em.Add (clientWorld.Entity,
-                {
-                    WireframeComponent.Position =
-                        [||]
-                        |> Vector3ArrayBuffer
-                }
-            )
-            em.Add (clientWorld.Entity,
-                MaterialComponent (
-                    "v.vertex",
-                    "f.fragment",
-                    None,
-                    Color.FromArgb (0, 255, 255, 255)
-                )
-            )
+            // em.Add (clientWorld.Entity, TransformComponent (Matrix4x4.Identity))
+            // em.Add (clientWorld.Entity,
+            //     {
+            //         WireframeComponent.Position =
+            //             [||]
+            //             |> Vector3ArrayBuffer
+            //     }
+            // )
+            // em.Add (clientWorld.Entity,
+            //     MaterialComponent (
+            //         "v.vertex",
+            //         "f.fragment",
+            //         None,
+            //         Color.FromArgb (0, 255, 255, 255)
+            //     )
+            // )
             // *****************
 
             level

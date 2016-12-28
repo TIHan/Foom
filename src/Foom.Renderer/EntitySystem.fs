@@ -10,79 +10,94 @@ open Foom.Ecs
 open Foom.Math
 open Foom.Common.Components
 
-type MeshComponent (mesh) =
+type RenderComponent (mesh, material, meshRender) =
 
-    member val Mesh = mesh
+    member val Mesh : Mesh = mesh
+
+    member val Material : Material = material
+
+    member val MeshRender : MeshRender = meshRender
+
+    interface IComponent
+
+type MeshInfo =
+    {
+        Position: Vector3 []
+        Uv: Vector2 []
+    }
+
+type TextureInfo =
+    {
+        TexturePath: string
+    }
+
+type ShaderInfo =
+    {
+        VertexShader: string
+        FragmentShader: string
+    }
+
+type MaterialInfo =
+    {
+        TextureInfo: TextureInfo
+        ShaderInfo: ShaderInfo
+        Color: Color
+    }
+
+type RenderInfo =
+    {
+        MeshInfo: MeshInfo
+        MaterialInfo: MaterialInfo
+    }
+
+type RenderInfoComponent (renderInfo) =
+
+    member val RenderInfo = renderInfo
 
     interface IComponent
 
-type MaterialComponent (material) =
-
-    member val Material = material
-
-    interface IComponent
 
 let renderer = FRenderer.Create ()
+let shaderCache = Dictionary<string * string, Shader> ()
+let textureCache = Dictionary<string, Texture> ()
 
-let componentAddedQueue f =
-    Behavior.handleEvent (fun (componentAdded: Events.ComponentAdded<'T>) (_, deltaTime: float32) entityManager ->
-        entityManager.TryGet<'T> (componentAdded.Entity)
+let handleSomething () =
+    Behavior.handleEvent (fun (evt: Events.ComponentAdded<RenderInfoComponent>) ((time, deltaTime): float32 * float32) em ->
+        em.TryGet<RenderInfoComponent> (evt.Entity)
         |> Option.iter (fun comp ->
-            f componentAdded.Entity comp entityManager
+            em.TryGet<TransformComponent> (evt.Entity)
+            |> Option.iter (fun transformComp ->
+                let info = comp.RenderInfo
+
+                let mesh = renderer.CreateMesh (info.MeshInfo.Position, info.MeshInfo.Uv)
+
+                let shader =
+                    match shaderCache.TryGetValue ((info.MaterialInfo.ShaderInfo.VertexShader, info.MaterialInfo.ShaderInfo.FragmentShader)) with
+                    | true, shader -> shader
+                    | _ -> 
+                        let vertexFile = info.MaterialInfo.ShaderInfo.VertexShader
+                        let fragmentFile = info.MaterialInfo.ShaderInfo.FragmentShader
+
+                        let vertexBytes = File.ReadAllBytes (vertexFile)
+                        let fragmentBytes = File.ReadAllBytes (fragmentFile)
+
+                        let shader = renderer.CreateShader (vertexBytes, fragmentBytes)
+
+                        shaderCache.Add ((vertexFile, fragmentFile), shader)
+
+                        shader
+
+                let bmp = new Bitmap(info.MaterialInfo.TextureInfo.TexturePath)
+                let texture = renderer.CreateTexture (bmp)
+                
+                let material = renderer.CreateMaterial (shader, texture, info.MaterialInfo.Color)
+
+                renderer.TryAdd (material, mesh, fun () -> transformComp.Transform)
+                |> Option.iter (fun render ->
+                    em.Add (evt.Entity, RenderComponent (mesh, material, render))
+                )
+            )
         )
-    )
-
-let shaderCache = Dictionary<string * string, int> ()
-let materialQueue =
-    componentAddedQueue (fun ent (materialComp: MaterialComponent) em ->
-
-        match em.TryGet<TransformComponent> ent with
-        | Some transformComp ->
-
-            match em.TryGet<MeshComponent> ent with
-            | Some meshComp ->
-
-                let material = materialComp.Material
-
-                let programId =
-
-                    match material.ShaderProgramId with
-                    | None ->
-                        let vertex = material.VertexShaderFileName
-                        let fragment = material.FragmentShaderFileName
-
-                        match shaderCache.TryGetValue ((vertex, fragment)) with
-                        | true, programId ->
-                            material.ShaderProgramId <- Some programId
-                            programId
-
-                        | _ ->
-                            let mutable vertexFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (vertex))
-                            let mutable fragmentFile = ([|0uy|]) |> Array.append (File.ReadAllBytes (fragment))
-
-                            let programId = Renderer.loadShaders vertexFile fragmentFile
-                            material.ShaderProgramId <- Some programId
-                            shaderCache.Add ((vertex, fragment), programId)
-                            programId
-
-                    | Some programId -> programId
-
-             
-                let textureId, texture =
-                    match material.Texture with
-                    | Some texture ->
-                        texture.TryBufferData () |> ignore
-                        texture.Id, Some texture
-                    | _ ->
-                        0, None
-
-                let mesh = meshComp.Mesh
-                let getTransform = fun () -> transformComp.Transform
-                state.Add (ent, programId, textureId, texture, getTransform, mesh.Position, mesh.Uv, material.Color)
-
-            | _ -> ()
-        | _ -> ()
-
     )
 
 let create (app: Application) : ESystem<float32 * float32> =
@@ -91,7 +106,7 @@ let create (app: Application) : ESystem<float32 * float32> =
 
     ESystem.create "Renderer"
         [
-            materialQueue
+            handleSomething ()
 
             Behavior.update (fun ((time, deltaTime): float32 * float32) entityManager eventManager ->
 
@@ -121,7 +136,7 @@ let create (app: Application) : ESystem<float32 * float32> =
 
                         let invertedTransform = invertedTransform |> Matrix4x4.Transpose
 
-                        renderer.Draw projection invertedTransform transformComp.Transform
+                        renderer.Draw projection invertedTransform
                     )
                 )
 

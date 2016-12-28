@@ -17,9 +17,9 @@ type Wall =
         SectorId: int
         Special: WallSpecial
 
-        Upper: WallPart option
-        Middle: WallPart option
-        Lower: WallPart option
+        Upper: WallPart
+        Middle: WallPart
+        Lower: WallPart
     }
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
@@ -42,26 +42,29 @@ module Wall =
                 else
                     Nothing
 
-            let mutable upper = None
-            let mutable middle = None
-            let mutable lower = None
+            let mutable upperFront = None
+            let mutable middleFront = None
+            let mutable lowerFront = None
 
-            let addMiddleWithVertices (floorHeight: int) (ceilingHeight: int) (sidedef: Sidedef) vertices =
-                middle <-
-                    {
-                        TextureName = sidedef.MiddleTextureName
-                        TextureOffsetX = sidedef.OffsetX
-                        TextureOffsetY = sidedef.OffsetY
-                        Vertices = vertices
-                        TextureAlignment =
-                            if isLowerUnpegged then
-                                LowerUnpegged
-                            else
-                                UpperUnpegged 0
-                    } |> Some
+            let mutable upperBack = None
+            let mutable middleBack = None
+            let mutable lowerBack = None
+
+            let createMiddleWithVertices (floorHeight: int) (ceilingHeight: int) (sidedef: Sidedef) vertices =
+                {
+                    TextureName = sidedef.MiddleTextureName
+                    TextureOffsetX = sidedef.OffsetX
+                    TextureOffsetY = sidedef.OffsetY
+                    Vertices = vertices
+                    TextureAlignment =
+                        if isLowerUnpegged then
+                            LowerUnpegged
+                        else
+                            UpperUnpegged 0
+                } |> Some
 
             let addMiddleFront floorHeight ceilingHeight sidedef =
-                addMiddleWithVertices floorHeight ceilingHeight sidedef
+                middleFront <- createMiddleWithVertices floorHeight ceilingHeight sidedef
                     [|
                         Vector3 (linedef.Start, single floorHeight)
                         Vector3 (linedef.End, single floorHeight)
@@ -73,7 +76,7 @@ module Wall =
                     |]
 
             let addMiddleBack floorHeight ceilingHeight sidedef =
-                addMiddleWithVertices floorHeight ceilingHeight sidedef <|
+                middleBack <- createMiddleWithVertices floorHeight ceilingHeight sidedef <|
                     [|
                         Vector3 (linedef.End, single floorHeight)
                         Vector3 (linedef.Start, single floorHeight)
@@ -93,7 +96,7 @@ module Wall =
 
                     if backSidedef.UpperTextureName.IsSome && frontSideSector.CeilingHeight < sector.CeilingHeight then
 
-                        upper <-
+                        upperBack <-
                             {
                                 TextureName = backSidedef.UpperTextureName
                                 TextureOffsetX = backSidedef.OffsetX
@@ -118,7 +121,7 @@ module Wall =
                     if backSidedef.LowerTextureName.IsSome && frontSideSector.FloorHeight > sector.FloorHeight then
                         let frontSideSector = level |> Level.getSector frontSidedef.SectorNumber
 
-                        lower <-
+                        lowerBack <-
                             {
                                 TextureName = backSidedef.LowerTextureName
                                 TextureOffsetX = backSidedef.OffsetX
@@ -182,7 +185,7 @@ module Wall =
 
                     if frontSidedef.UpperTextureName.IsSome && sector.CeilingHeight > backSideSector.CeilingHeight then
 
-                        upper <-
+                        upperFront <-
                             {
                                 TextureName = frontSidedef.UpperTextureName
                                 TextureOffsetX = frontSidedef.OffsetX
@@ -206,7 +209,7 @@ module Wall =
 
                     if frontSidedef.LowerTextureName.IsSome && sector.FloorHeight < backSideSector.FloorHeight then
 
-                        lower <-
+                        lowerFront <-
                             {
                                 TextureName = frontSidedef.LowerTextureName
                                 TextureOffsetX = frontSidedef.OffsetX
@@ -265,9 +268,21 @@ module Wall =
                 {
                     SectorId = sectorId
                     Special = special
-                    Upper = upper
-                    Middle = middle
-                    Lower = lower
+                    Upper =
+                        {
+                            FrontSide = upperFront
+                            BackSide = upperBack
+                        }
+                    Middle =
+                        {
+                            FrontSide = middleFront
+                            BackSide = middleBack
+                        }
+                    Lower =
+                        {
+                            FrontSide = lowerFront
+                            BackSide = lowerBack
+                        }
                 }
         )
 

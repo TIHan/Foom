@@ -109,34 +109,47 @@ type FRenderer =
 
     member this.TryAdd (material: Material, mesh: Mesh, getTransform: unit -> Matrix4x4) =
 
+        let addTexture (bucketLookup: Dictionary<TextureId, FRendererBucket>) textureId = 
+            let bucket =
+                match bucketLookup.TryGetValue (textureId) with
+                | true, bucket -> bucket
+                | _ ->
+                    let bucket =
+                        {
+                            GetTransforms = ResizeArray ()
+                            Meshes = ResizeArray ()
+                            Materials = ResizeArray ()
+                            IdRefs = ResizeArray ()
+                        }
+                    bucketLookup.Add (textureId, bucket)
+                    bucket
+            bucket
+
         let add shaderProgramId =
-            match this.Lookup.TryGetValue (shaderProgramId) with
-            | true, bucketLookup ->
+            let bucketLookup =
+                match this.Lookup.TryGetValue (shaderProgramId) with
+                | true, bucketLookup -> bucketLookup
+                | _, _ ->
+                    let bucketLookup = Dictionary ()
+                    this.Lookup.Add (shaderProgramId, bucketLookup)
+                    bucketLookup
 
-                let textureId = material.Texture.Buffer.Id
+            material.Texture.Buffer.TryBufferData () |> ignore
 
-                let bucket =
-                    match bucketLookup.TryGetValue (textureId) with
-                    | true, bucket -> bucket
-                    | _ ->
-                        let bucket =
-                            {
-                                GetTransforms = ResizeArray ()
-                                Meshes = ResizeArray ()
-                                Materials = ResizeArray ()
-                                IdRefs = ResizeArray ()
-                            }
-                        bucketLookup.Add (textureId, bucket)
-                        bucket
+            let textureId = material.Texture.Buffer.Id
 
-                let idRef = bucket.Add (material, mesh, getTransform)
+            let bucket = addTexture bucketLookup textureId
 
+            let idRef = bucket.Add (material, mesh, getTransform)
+
+            let render =
                 {
                     ShaderProgramId = shaderProgramId
                     TextureId = textureId
                     IdRef = idRef
-                } |> Some
-            | _ -> None
+                }
+
+            Some render
 
         add material.Shader.ProgramId
 
@@ -160,7 +173,7 @@ type FRenderer =
     member this.Clear () =
         Renderer.clear ()
 
-    member this.Draw (projection: Matrix4x4) (view: Matrix4x4) (cameraModel: Matrix4x4) =
+    member this.Draw (projection: Matrix4x4) (view: Matrix4x4) =
 
         Renderer.enableDepth ()
 
