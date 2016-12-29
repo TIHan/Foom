@@ -41,7 +41,7 @@ type MaterialInfo =
     {
         TextureInfo: TextureInfo
         ShaderInfo: ShaderInfo
-        Color: Color
+        Color: Color []
     }
 
 type RenderInfo =

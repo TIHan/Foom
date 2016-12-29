@@ -137,6 +137,21 @@ module Renderer =
         """
 
     [<Import; MI (MIO.NoInlining)>]
+    let bufferVboVector4 (data: Vector4 []) (size: int) (vbo: int) : unit =
+        C """
+        glBindBuffer (GL_ARRAY_BUFFER, vbo);
+        glBufferData (GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let getMaxTextureSize () : int =
+        C """
+        int intmax = 0;
+        glGetIntegerv (GL_MAX_TEXTURE_SIZE, &intmax);
+        return intmax;
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
     let bindArrayBuffer (bufferId: int) : unit =
         C """
         glBindBuffer (GL_ARRAY_BUFFER, bufferId);
@@ -322,6 +337,16 @@ module Renderer =
         """
 
     [<Import; MI (MIO.NoInlining)>]
+    let bindColor (programID: int) : unit =
+        C """
+        GLint posAttrib = glGetAttribLocation (programID, "in_color");
+
+        glVertexAttribPointer (posAttrib, 4, GL_FLOAT, GL_FALSE, 0, 0);
+
+        glEnableVertexAttribArray (posAttrib);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
     let getUniformProjection (program: int) : int =
         C """
         return glGetUniformLocation (program, "uni_projection");
@@ -438,6 +463,8 @@ type Vector2ArrayBuffer (data) =
             true
         | _ -> false
 
+    member this.Id = id
+
 type Vector3ArrayBuffer (data) =
 
     let mutable id = 0
@@ -464,6 +491,37 @@ type Vector3ArrayBuffer (data) =
             queuedData <- None
             true
         | _ -> false
+
+    member this.Id = id
+
+type Vector4ArrayBuffer (data) =
+
+    let mutable id = 0
+    let mutable length = 0
+    let mutable queuedData = Some data
+
+    member this.Set (data: Vector4 []) =
+        queuedData <- Some data
+
+    member this.Length = length
+
+    member this.Bind () =
+        if id <> 0 then
+            Renderer.bindVbo id
+
+    member this.TryBufferData () =
+        match queuedData with
+        | Some data ->
+            if id = 0 then
+                id <- Renderer.makeVbo ()
+            
+            Renderer.bufferVboVector4 data (sizeof<Vector4> * data.Length) id
+            length <- data.Length
+            queuedData <- None
+            true
+        | _ -> false
+
+    member this.Id = id
 
 type Texture2DBuffer (bmp: Bitmap) =
 

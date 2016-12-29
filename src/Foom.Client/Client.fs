@@ -13,8 +13,8 @@ let init (world: World) =
     let clientWorld = ClientWorld.Create (clientSubworld, world.SpawnEntity ())
     let clientSystemUpdate = ClientSystem.create app clientWorld |> clientSubworld.AddESystem
 
-   // world.Publish (ClientSystem.LoadWadAndLevelRequested ("doom.wad", "e1m3"))
-    world.Publish (ClientSystem.LoadWadAndLevelRequested ("doom2.wad", "map05"))
+   // world.Publish (ClientSystem.LoadWadAndLevelRequested ("doom.wad", "e1m1"))
+    world.Publish (ClientSystem.LoadWadAndLevelRequested ("doom2.wad", "map12"))
 
     {
         Window = app.Window

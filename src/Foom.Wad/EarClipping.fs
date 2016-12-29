@@ -150,18 +150,18 @@ let compute polygon =
         triangles.Add (Triangle2D (x, y, z))
     )
 
-    if triangles.Count = 0 then
-        None
-    else
-        let result = 
-            triangles
-            |> Seq.toArray
+    triangles
+    |> Seq.toArray
 
-        Some result
+let computeMultiple polygons =
+    polygons
+    |> List.map compute
 
-let decomposeTree (tree: Polygon2DTree) =
+let rec decomposeTree (tree: Polygon2DTree) =
 
     let mutable vertices = tree.Polygon |> Polygon2D.copyVertices
+
+    let polygons = ResizeArray<Polygon2D list> ()
 
     tree.Children
     |> List.sortByDescending (fun childTree -> 
@@ -173,9 +173,9 @@ let decomposeTree (tree: Polygon2DTree) =
     )
     |> List.iteri (fun i childTree ->
 
-        // TODO: Add support for nested children!!!!
-        //if childTree.Children.Length > 0 then
-        //    failwith "butt"
+        childTree.Children 
+        |> List.map decomposeTree
+        |> polygons.AddRange
 
         if true then
 
@@ -282,25 +282,26 @@ let decomposeTree (tree: Polygon2DTree) =
             | _ -> ()
     )  
 
-    Polygon2D.create vertices
+    [ Polygon2D.create vertices ]
+    |> polygons.Add
+
+    polygons |> Seq.reduce List.append
 
 let computeTree (tree: Polygon2DTree) =
 
     if tree.Children.IsEmpty then
-        match compute tree.Polygon with
-        | None -> Seq.empty
-        | Some triangles ->
-            [ triangles ] |> List.toSeq
+        [ compute tree.Polygon ] |> List.toSeq
     else
 
 
         let triangles = ResizeArray<Triangle2D> ()
 
         let vertices = 
-            match compute (decomposeTree tree) with
-            | None -> [||]
-            | Some triangles ->
-                triangles
+            match computeMultiple (decomposeTree tree) with
+            | [] -> [||]
+            | polygons ->
+                polygons
+                |> List.reduce Array.append
                 |> Array.map (fun x -> [|x.A;x.B;x.C|])
                 |> Array.reduce Array.append
 

@@ -188,6 +188,6 @@ let create (app: Application) (clientWorld: ClientWorld) =
                 Camera.update (app)
 
                 addRigidBodyBehavior clientWorld
-                physicsUpdateBehavior clientWorld
+               // physicsUpdateBehavior clientWorld
             ]
         )

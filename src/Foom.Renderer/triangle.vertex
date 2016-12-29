@@ -2,12 +2,16 @@
 
 in vec3 position;
 in vec2 in_uv;
+in vec4 in_color;
+
 uniform mat4x4 uni_projection;
 
 out vec2 uv;
+out vec4 color;
 
 void main ()
 {
     gl_Position = uni_projection * vec4(position, 1.0);
     uv = in_uv;
+	color = in_color;
 }

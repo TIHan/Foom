@@ -29,7 +29,7 @@ module FlatPart =
         let vertices = flatPart.vertices
         let width = single width
         let height = single height * -1.f
-        let uv = Array.zeroCreate (vertices.Length * sizeof<Vector3>)
+        let uv = Array.zeroCreate (vertices.Length)
 
         let mutable i = 0
         while i < vertices.Length do

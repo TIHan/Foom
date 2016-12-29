@@ -69,40 +69,94 @@ let exportTextures (wad: Wad) =
         )
     )
 
-let spawnMesh vertices uv texturePath lightLevel (em: EntityManager) =
-    let ent = em.Spawn ()
+let globalBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray * Color ResizeArray> ()
 
-    em.Add (ent, TransformComponent (Matrix4x4.Identity))
+let runGlobalBatch (em: EntityManager) =
+    globalBatch
+    |> Seq.iter (fun pair ->
+        let texturePath = pair.Key
+        let vertices, uv, color = pair.Value
 
-    let meshInfo : RendererSystem.MeshInfo =
-        {
-            Position = vertices
-            Uv = uv
-        }
+        let ent = em.Spawn ()
 
-    let materialInfo : RendererSystem.MaterialInfo =
-        {
-            ShaderInfo =
-                {
-                    VertexShader = "triangle.vertex"
-                    FragmentShader = "triangle.fragment"
-                }
+        em.Add (ent, TransformComponent (Matrix4x4.Identity))
+
+        let meshInfo : RendererSystem.MeshInfo =
+            {
+                Position = vertices |> Seq.toArray
+                Uv = uv |> Seq.toArray
+            }
+
+        let materialInfo : RendererSystem.MaterialInfo =
+            {
+                ShaderInfo =
+                    {
+                        VertexShader = "triangle.vertex"
+                        FragmentShader = "triangle.fragment"
+                    }
             
-            TextureInfo =
-                {
-                    TexturePath = texturePath
-                }
+                TextureInfo =
+                    {
+                        TexturePath = texturePath
+                    }
 
-            Color = Color.FromArgb (0, int lightLevel, int lightLevel, int lightLevel)
-        }
+                Color = color |> Seq.toArray
+            }
 
-    let renderInfo : RendererSystem.RenderInfo =
-        {
-            MeshInfo = meshInfo
-            MaterialInfo = materialInfo
-        }
+        let renderInfo : RendererSystem.RenderInfo =
+            {
+                MeshInfo = meshInfo
+                MaterialInfo = materialInfo
+            }
 
-    em.Add (ent, RendererSystem.RenderInfoComponent (renderInfo))
+        em.Add (ent, RendererSystem.RenderInfoComponent (renderInfo))
+    )
+
+open System.Linq
+
+let spawnMesh (vertices: IEnumerable<Vector3>) uv texturePath lightLevel (em: EntityManager) =
+    let color = Array.init (vertices.Count ()) (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
+
+    match globalBatch.TryGetValue(texturePath) with
+    | true, (gVertices, gUv, gColor) ->
+        gVertices.AddRange(vertices)
+        gUv.AddRange(uv)
+        gColor.AddRange(color)
+    | _ ->
+        globalBatch.Add (texturePath, (ResizeArray vertices, ResizeArray uv, ResizeArray color))
+//    let ent = em.Spawn ()
+
+//    em.Add (ent, TransformComponent (Matrix4x4.Identity))
+
+//    let meshInfo : RendererSystem.MeshInfo =
+//        {
+//            Position = vertices
+//            Uv = uv
+//        }
+//
+//    let materialInfo : RendererSystem.MaterialInfo =
+//        {
+//            ShaderInfo =
+//                {
+//                    VertexShader = "triangle.vertex"
+//                    FragmentShader = "triangle.fragment"
+//                }
+//            
+//            TextureInfo =
+//                {
+//                    TexturePath = texturePath
+//                }
+//
+//            Color = Color.FromArgb (0, int lightLevel, int lightLevel, int lightLevel)
+//        }
+//
+//    let renderInfo : RendererSystem.RenderInfo =
+//        {
+//            MeshInfo = meshInfo
+//            MaterialInfo = materialInfo
+//        }
+//
+//    em.Add (ent, RendererSystem.RenderInfoComponent (renderInfo))
 
 let spawnCeilingMesh (flat: Flat) lightLevel wad em =
     flat.Ceiling.TextureName
@@ -225,6 +279,7 @@ let updates (clientWorld: ClientWorld) =
 
                 Flat.createFlats i level
                 |> Seq.iter (fun flat ->
+
                     spawnCeilingMesh flat lightLevel wad em
                     spawnFloorMesh flat lightLevel wad em
 
@@ -253,6 +308,7 @@ let updates (clientWorld: ClientWorld) =
                 )
             )
 
+            runGlobalBatch em
             em.Add (clientWorld.Entity, physicsEngineComp)
 
             // *** TEMPORARY ***
