@@ -2,6 +2,7 @@
 
 open System
 open System.Numerics
+open System.Collections.Generic
 open Foom.Pickler.Core
 open Foom.Pickler.Unpickle
 open Foom.Wad.Level.Structures
@@ -17,7 +18,7 @@ type ThingFormat =
     | Hexen = 1
 
 type LumpThings = { Things: Thing [] }
-type LumpLinedefs = { Linedefs: Linedef [] }
+type LumpLinedefs = { Linedefs: Dictionary<int, Linedef ResizeArray> }
 type LumpSidedefs = { Sidedefs: Sidedef [] }
 type LumpVertices = { Vertices: Vector2 [] }
 type LumpSectors = { Sectors: Sector [] }
@@ -169,15 +170,39 @@ module UnpickleWad =
                 SectorTag = int sectorTag
             }
 
-    let u_linedefs (vertices: Vector2 []) (sidedefs: Sidedef []) count offset : Unpickle<Linedef []> =
-        u_skipBytes offset >>. u_array count (u_linedef vertices sidedefs)
+    let u_linedefs (vertices: Vector2 []) (sidedefs: Sidedef []) count offset =
+        u_skipBytes offset >>. u_dictionary count (fun dict linedef ->
+            match linedef.FrontSidedef with
+            | Some sidedef ->
+                let arr =
+                    match dict.TryGetValue sidedef.SectorNumber with
+                    | true, arr -> arr
+                    | _ ->
+                        let arr = ResizeArray ()
+                        dict.Add (sidedef.SectorNumber, arr)
+                        arr
+                arr.Add linedef
+            | _ -> ()
+
+            match linedef.BackSidedef with
+            | Some sidedef ->
+                let arr =
+                    match dict.TryGetValue sidedef.SectorNumber with
+                    | true, arr -> arr
+                    | _ ->
+                        let arr = ResizeArray ()
+                        dict.Add (sidedef.SectorNumber, arr)
+                        arr
+                arr.Add linedef
+            | _ -> ()
+        ) (u_linedef vertices sidedefs)
         
     let u_lumpLinedefs (vertices: Vector2 []) (sidedefs: Sidedef []) size offset : Unpickle<LumpLinedefs> =
         u_lookAhead (u_linedefs vertices sidedefs (size / linedefSize) offset) |>> fun linedefs -> { Linedefs = linedefs }
 
     [<Literal>]
     let sectorSize = 26
-    let u_sector (linedefs: Linedef []) (i: int) : Unpickle<Sector> =
+    let u_sector (linedefs: Dictionary<int, Linedef ResizeArray>) (i: int) : Unpickle<Sector> =
         u_pipe7 u_int16 u_int16 (u_string 8) (u_string 8) u_int16 u_int16 u_int16 <|
         fun floorHeight ceilingHeight floorTexName ceilingTexName lightLevel typ tag ->
             { Id = i
@@ -189,21 +214,14 @@ module UnpickleWad =
               Type = enum<SectorType> (int typ)
               Tag = int tag
               Linedefs = 
-                linedefs
-                |> Array.filter (function
-                    | { FrontSidedef = f; BackSidedef = b } -> 
-                        match f, b with
-                        | Some f, Some b -> f.SectorNumber = i || b.SectorNumber = i
-                        | Some f, _ -> f.SectorNumber = i
-                        | _, Some b -> b.SectorNumber = i
-                        | _ -> false) 
-                |> List.ofArray
+                linedefs.[i]
+                |> List.ofSeq
             }
 
-    let u_sectors (linedefs: Linedef []) count offset : Unpickle<Sector []> =
+    let u_sectors linedefs count offset : Unpickle<Sector []> =
         u_skipBytes offset >>. u_arrayi count (u_sector linedefs)
 
-    let u_lumpSectors (linedefs: Linedef []) size offset : Unpickle<LumpSectors> =
+    let u_lumpSectors linedefs size offset : Unpickle<LumpSectors> =
         u_lookAhead (u_sectors linedefs (size / sectorSize) offset) |>> fun sectors -> { Sectors = sectors }
 
     [<Literal>]

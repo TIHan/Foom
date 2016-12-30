@@ -2,6 +2,7 @@
 
 open System
 open System.Numerics
+open System.Collections.Generic
 open Foom.Pickler.Core
 open Foom.Pickler.Unpickle
 open Foom.Wad.Level.Structures
@@ -17,7 +18,7 @@ type ThingFormat =
     | Hexen = 1
 
 type LumpThings = { Things: Thing [] }
-type LumpLinedefs = { Linedefs: Linedef [] }
+type LumpLinedefs = { Linedefs: Dictionary<int, Linedef ResizeArray> }
 type LumpSidedefs = { Sidedefs: Sidedef [] }
 type LumpVertices = { Vertices: Vector2 [] }
 type LumpSectors = { Sectors: Sector [] }
@@ -71,7 +72,7 @@ module UnpickleWad =
 
     val u_lumpLinedefs : vertices: Vector2 [] -> sidedefs: Sidedef [] -> size: int -> offset: int64 -> Unpickle<LumpLinedefs>
 
-    val u_lumpSectors : linedefs: Linedef [] -> size: int -> offset: int64 -> Unpickle<LumpSectors>
+    val u_lumpSectors : linedefs: Dictionary<int, Linedef ResizeArray> -> size: int -> offset: int64 -> Unpickle<LumpSectors>
 
     val u_lumpPalettes : size: int -> offset: int64 -> Unpickle<PaletteData []>
 

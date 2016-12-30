@@ -245,8 +245,9 @@ let updates (clientWorld: ClientWorld) =
         Behavior.wadLoading
             (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
             (fun wad _ ->
-                wad |> exportFlatTextures
-                wad |> exportTextures
+                ()
+               // wad |> exportFlatTextures
+                //wad |> exportTextures
             )
 
         Behavior.levelLoading (fun wad level em ->
@@ -259,6 +260,7 @@ let updates (clientWorld: ClientWorld) =
             level
             |> Level.iteriSector (fun i sector ->
                 let lightLevel = Level.lightLevelBySectorId sector.Id level
+                ()
 
                 sector.Linedefs
                 |> List.iter (fun linedef ->
@@ -279,7 +281,7 @@ let updates (clientWorld: ClientWorld) =
 
                 Flat.createFlats i level
                 |> Seq.iter (fun flat ->
-
+                    ()
                     spawnCeilingMesh flat lightLevel wad em
                     spawnFloorMesh flat lightLevel wad em
 
@@ -304,6 +306,7 @@ let updates (clientWorld: ClientWorld) =
 
                 Wall.createWalls i level
                 |> Seq.iter (fun wall ->
+                    ()
                     spawnWallMesh wall lightLevel wad em
                 )
             )

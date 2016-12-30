@@ -164,12 +164,11 @@ let rec decomposeTree (tree: Polygon2DTree) =
     let polygons = ResizeArray<Polygon2D list> ()
 
     tree.Children
-    |> List.sortByDescending (fun childTree -> 
-        let yopac =
-            childTree.Polygon |> Polygon2D.copyVertices 
-            |> Array.maxBy (fun x -> x.X)
-
-        yopac.X
+    |> List.sortByDescending (fun childTree ->
+        let v =
+            childTree.Polygon
+            |> Polygon2D.maxBy(fun x -> x.X)
+        v.X
     )
     |> List.iteri (fun i childTree ->
 
@@ -179,29 +178,32 @@ let rec decomposeTree (tree: Polygon2DTree) =
 
         if true then
 
-            let childVertices = childTree.Polygon |> Polygon2D.copyVertices
-
-            let childMax = childVertices |> Array.maxBy (fun x -> x.X)
+            let childMax =
+                childTree.Polygon
+                |> Polygon2D.maxBy (fun x -> x.X)
 
             let ray = { Origin = childMax; Direction = Vector2.UnitX }
 
             match rayIntersection ray vertices with
             | Some (edge1Index, edge2Index, pt) ->
-                let l1 = Vector2.Dot(-ray.Direction, ray.Origin - vertices.[edge1Index])//(childMax - vertices.[edge1Index]).Length ()
-                let l2 = Vector2.Dot(-ray.Direction, ray.Origin - vertices.[edge2Index])//(childMax - vertices.[edge2Index]).Length ()
 
                 let mutable edge2Index =
-                    if l1 > l2 then
+                    if vertices.[edge1Index].X > vertices.[edge2Index].X then
                         edge1Index
                     else
                         edge2Index
 
                 let mutable replaceIndex = None
-                let childMaxIndex = childVertices |> Array.findIndex (fun x -> x = childMax)
+                let childMaxIndex = childTree.Polygon |> Polygon2D.findIndex (fun x -> x = childMax)
 
                 let v1 = pt
-                let v2 = childVertices.[childMaxIndex]
+                let v2 = childTree.Polygon |> Polygon2D.item childMaxIndex
                 let v3 = vertices.[edge2Index]
+
+//                System.Diagnostics.Debug.WriteLine("Tri")
+//                System.Diagnostics.Debug.WriteLine(v1)
+//                System.Diagnostics.Debug.WriteLine(v2)
+//                System.Diagnostics.Debug.WriteLine(v3)
 
                 let reflexes = Array.zeroCreate vertices.Length
                 for i = 0 to vertices.Length - 1 do
@@ -218,7 +220,6 @@ let rec decomposeTree (tree: Polygon2DTree) =
                             i + 1
 
                     reflexes.[i] <- isReflexVertex vertices.[prev] vertices.[next] vertices.[i]
-                         
 
                 match
                     vertices |> Array.mapi (fun i x -> (i, x)) |> Array.filter (fun (_, x) ->
@@ -234,14 +235,26 @@ let rec decomposeTree (tree: Polygon2DTree) =
                             |> Array.filter (fun (i, x) ->
                                 reflexes.[i]
                             )
-                            |> Array.maxBy (fun (_, x) -> Vector2.Dot (x - v2 |> Vector2.Normalize, v1 - v2 |> Vector2.Normalize))
+//                            |> Array.map (fun (i, x) ->
+//                                System.Diagnostics.Debug.WriteLine (x)
+//                                (i, x)
+//                            )
+                            |> Array.minBy (fun (_, x) -> (ray.Origin - x).Length())
+                           // |> Array.sortBy(fun (i, x) -> (ray.Origin - x).Length())
+//                            |> Array.maxBy (fun (_, x) ->
+//                                let v = Vector2.Dot (Vector2.UnitX, (x - v2) |> Vector2.Normalize)
+//                                System.Diagnostics.Debug.WriteLine(v)
+//                                v
+//                            )
                         index
                         |> Some
+                  //  System.Diagnostics.Debug.WriteLine(replaceIndex)
+                    //System.Diagnostics.Debug.WriteLine(vertices.[replaceIndex.Value])
                     //with | _ -> ()
 
                 let linkedList = vertices |> System.Collections.Generic.List
 
-                if not (Polygon2D.isArrangedClockwise (Polygon2D.create childVertices)) then
+                if not (Polygon2D.isArrangedClockwise childTree.Polygon) then
                     failwith "butt"
 
                 let mutable ii = childMaxIndex
@@ -257,17 +270,18 @@ let rec decomposeTree (tree: Polygon2DTree) =
                 | Some index ->
                     linkedList2.Add(vertices.[index])
 
-                while (count < childVertices.Length) do
-                    linkedList2.Add(childVertices.[ii])
+                let childCount = childTree.Polygon |> Polygon2D.vertexCount
+                while (count < childCount) do
+                    linkedList2.Add(childTree.Polygon |> Polygon2D.item ii)
                     ii <-
-                        if ii + 1 >= childVertices.Length then
+                        if ii + 1 >= childCount then
                             0
                         else
                             ii + 1
                     count <- count + 1
 
 
-                linkedList2.Add(childVertices.[childMaxIndex])
+                linkedList2.Add(childMax)
                 //linkedList2.Add(pt)
                 //linkedList.InsertRange(edge2Index, linkedList2)
                 match replaceIndex with

@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.Text
 open System.Runtime.InteropServices
+open System.Collections.Generic
 open Microsoft.FSharp.NativeInterop
 
 #nowarn "9"
@@ -158,6 +159,16 @@ let inline u_array n (p: Unpickle<'a>) =
         match n with
         | 0 -> [||]
         | _ -> Array.init n (fun _ -> p stream)
+
+let inline u_dictionary n f (p: Unpickle<'a>) =
+    fun stream ->
+        match n with
+        | 0 -> Dictionary ()
+        | _ -> 
+            let dict = Dictionary ()
+            for i = 0 to n - 1 do
+                f dict (p stream)
+            dict
 
 let inline u_skipBytes n : Unpickle<_> =
     fun stream -> LiteReadStream.skip n stream

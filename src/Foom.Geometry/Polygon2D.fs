@@ -56,4 +56,23 @@ module Polygon2D =
     let copyVertices poly =
         poly.Vertices |> Array.copy
 
+    let iteri f poly =
+        poly.Vertices
+        |> Array.iteri f
+
+    let maxBy f poly =
+        poly.Vertices
+        |> Array.maxBy f
+
+    let item index poly =
+        poly.Vertices.[index]
+
+    let findIndex f poly =
+        poly.Vertices
+        |> Array.findIndex f
+
+    let vertexCount poly =
+        poly.Vertices.Length
+
+
         
