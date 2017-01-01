@@ -130,33 +130,7 @@ module LinedefTracer =
 
                 visit linedef tracer, true
 
-    //let run linedefs =
-    //    let rec f (paths: Linedef list list) (originalTracer: LinedefTracer) (tracer: LinedefTracer) =
-    //        match tryVisitNextLinedef tracer with
-    //        | tracer, true -> f paths originalTracer tracer
-    //        | tracer, _ -> 
-    //            let isFinished = isFinished tracer
-    //            let tracer = if isFinished then tracer else originalTracer
-    //            let paths = if isFinished then (tracer.path :: paths) else paths
-
-    //            match nonVisitedLinedefs tracer with
-    //            | [] -> paths
-    //            | linedefs ->
-    //                let tracer = create linedefs
-    //                f paths tracer tracer
-
-    //    let tracer =
-    //        linedefs
-    //        |> Seq.filter (fun x -> 
-    //            not (x.FrontSidedef.IsSome && x.BackSidedef.IsSome) &&
-    //            not (x.FrontSidedef.IsNone && x.BackSidedef.IsNone)) 
-    //        |> Seq.distinctBy (fun x -> x.Start, x.End)
-    //        |> List.ofSeq
-    //        |> create
-                        
-    //    f [] tracer tracer   
-
-    let run2 linedefs sectorId =
+    let run2 linedefs sectorId = 
         let rec f  (polygons: LinedefPolygon list) (originalTracer: LinedefTracer) (tracer: LinedefTracer) =
             match tryVisitNextLinedef tracer with
             | tracer, true -> f polygons originalTracer tracer
@@ -198,7 +172,7 @@ module LinedefTracer =
 
                 else
                     match nonVisitedLinedefs originalTracer with
-                    | [] -> [] // Used to return "polygons". Return nothing because something broke.
+                    | [] -> polygons // Used to return "polygons". Return nothing because something broke.
                                // We might need to handle it a better way.
                     | linedefs ->
                         let tracer = create originalTracer.sectorId linedefs

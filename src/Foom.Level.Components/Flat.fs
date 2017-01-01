@@ -36,8 +36,10 @@ module Flat =
                     map linedefPolygons
                     |> Seq.map (Foom.Wad.Triangulation.EarClipping.computeTree)
                     |> Seq.reduce Seq.append
+                    |> Array.ofSeq
 
                 sectorTriangles
+                |> Seq.filter (fun x -> x.Length <> 0)
                 |> Seq.map (fun triangles ->
                   
                     let ceiling =

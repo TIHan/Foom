@@ -195,7 +195,7 @@ type FRenderer =
 
                 let getTransform = bucket.GetTransforms.[i]
                 let mesh = bucket.Meshes.[i]
-
+                  
                 let position = mesh.Position
                 let uv = mesh.Uv
                 let color = mesh.Color

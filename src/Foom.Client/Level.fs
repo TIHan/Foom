@@ -178,8 +178,8 @@ let updates (clientWorld: ClientWorld) =
             (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
             (fun wad _ ->
                 ()
-               // wad |> exportFlatTextures
-                //wad |> exportTextures
+                wad |> exportFlatTextures
+                wad |> exportTextures
             )
 
         Behavior.levelLoading (fun wad level em ->
@@ -187,6 +187,9 @@ let updates (clientWorld: ClientWorld) =
 
             level
             |> Level.iteriSector (fun i sector ->
+//                if i <> 279 then ()
+//                else
+
                 let lightLevel = Level.lightLevelBySectorId sector.Id level
                 ()
 
