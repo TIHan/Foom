@@ -19,13 +19,13 @@ type Mesh =
     {
         Position: Vector3ArrayBuffer
         Uv: Vector2ArrayBuffer
+        Color: Vector4ArrayBuffer
     }
 
 type Material =
     {
         Shader: Shader
         Texture: Texture
-        Color: Vector4ArrayBuffer
     }
 
 [<ReferenceEquality>]
@@ -34,14 +34,12 @@ type FRendererBucket =
         GetTransforms: (unit -> Matrix4x4) ResizeArray
 
         Meshes: Mesh ResizeArray
-        Colors: Vector4ArrayBuffer ResizeArray
         IdRefs: int Ref ResizeArray
     }
 
-    member this.Add (color, mesh: Mesh, getTransform: unit -> Matrix4x4) =
+    member this.Add (mesh: Mesh, getTransform: unit -> Matrix4x4) =
         let idRef = ref this.IdRefs.Count
 
-        this.Colors.Add (color)
         this.Meshes.Add (mesh)
         this.GetTransforms.Add (getTransform)
         this.IdRefs.Add (idRef)
@@ -51,13 +49,11 @@ type FRendererBucket =
     member this.RemoveById id =
         let lastIndex = this.IdRefs.Count - 1
 
-        this.Colors.[id] <- this.Colors.[lastIndex]
         this.Meshes.[id] <- this.Meshes.[lastIndex]
         this.GetTransforms.[id] <- this.GetTransforms.[lastIndex]
         this.IdRefs.[id] <- this.IdRefs.[lastIndex]
         this.IdRefs.[id] := id
 
-        this.Colors.RemoveAt (lastIndex)
         this.Meshes.RemoveAt (lastIndex)
         this.GetTransforms.RemoveAt (lastIndex)
         this.IdRefs.RemoveAt (lastIndex)
@@ -94,10 +90,16 @@ type FRenderer =
             Buffer = Texture2DBuffer (bmp)
         }
 
-    member this.CreateMaterial (shader, texture, color: Color []) =
+    member this.CreateMaterial (shader, texture) =
         {
             Shader = shader
             Texture = texture
+        }
+
+    member this.CreateMesh (position, uv, color: Color []) =
+        {
+            Position = Vector3ArrayBuffer (position)
+            Uv = Vector2ArrayBuffer (uv)
             Color =
                 color
                 |> Array.map (fun c ->
@@ -108,12 +110,6 @@ type FRenderer =
                         single c.A / 255.f)
                 )
                 |> Vector4ArrayBuffer
-        }
-
-    member this.CreateMesh (position, uv) =
-        {
-            Position = Vector3ArrayBuffer (position)
-            Uv = Vector2ArrayBuffer (uv)
         }
 
     member this.TryAdd (material: Material, mesh: Mesh, getTransform: unit -> Matrix4x4) =
@@ -131,7 +127,6 @@ type FRenderer =
                         {
                             GetTransforms = ResizeArray ()
                             Meshes = ResizeArray ()
-                            Colors = ResizeArray ()
                             IdRefs = ResizeArray ()
                         }
                     bucketLookup.Add (texture.Buffer.Id, (texture, bucket))
@@ -151,7 +146,7 @@ type FRenderer =
 
             let bucket = addTexture bucketLookup material.Texture
 
-            let idRef = bucket.Add (material.Color, mesh, getTransform)
+            let idRef = bucket.Add (mesh, getTransform)
 
             let render =
                 {
@@ -200,10 +195,10 @@ type FRenderer =
 
                 let getTransform = bucket.GetTransforms.[i]
                 let mesh = bucket.Meshes.[i]
-                let color = bucket.Colors.[i]
 
                 let position = mesh.Position
                 let uv = mesh.Uv
+                let color = mesh.Color
                 let textureBuffer = texture.Buffer
                 let programId = shader.ProgramId
 

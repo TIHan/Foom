@@ -24,6 +24,7 @@ type MeshInfo =
     {
         Position: Vector3 []
         Uv: Vector2 []
+        Color: Color []
     }
 
 type TextureInfo =
@@ -41,13 +42,18 @@ type MaterialInfo =
     {
         TextureInfo: TextureInfo
         ShaderInfo: ShaderInfo
-        Color: Color []
     }
 
 type RenderInfo =
     {
         MeshInfo: MeshInfo
         MaterialInfo: MaterialInfo
+    }
+
+type RenderBatchInfo =
+    {
+        MaterialInfo: MaterialInfo
+        MeshInfos: MeshInfo ResizeArray
     }
 
 type RenderInfoComponent (renderInfo) =
@@ -69,7 +75,7 @@ let handleSomething () =
             |> Option.iter (fun transformComp ->
                 let info = comp.RenderInfo
 
-                let mesh = renderer.CreateMesh (info.MeshInfo.Position, info.MeshInfo.Uv)
+                let mesh = renderer.CreateMesh (info.MeshInfo.Position, info.MeshInfo.Uv, info.MeshInfo.Color)
 
                 let shader =
                     match shaderCache.TryGetValue ((info.MaterialInfo.ShaderInfo.VertexShader, info.MaterialInfo.ShaderInfo.FragmentShader)) with
@@ -99,7 +105,7 @@ let handleSomething () =
 
                         texture
                 
-                let material = renderer.CreateMaterial (shader, texture, info.MaterialInfo.Color)
+                let material = renderer.CreateMaterial (shader, texture)
 
                 renderer.TryAdd (material, mesh, fun () -> transformComp.Transform)
                 |> Option.iter (fun render ->

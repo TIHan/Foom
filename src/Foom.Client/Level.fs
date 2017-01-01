@@ -85,6 +85,7 @@ let runGlobalBatch (em: EntityManager) =
             {
                 Position = vertices |> Seq.toArray
                 Uv = uv |> Seq.toArray
+                Color = color |> Seq.toArray
             }
 
         let materialInfo : RendererSystem.MaterialInfo =
@@ -99,8 +100,6 @@ let runGlobalBatch (em: EntityManager) =
                     {
                         TexturePath = texturePath
                     }
-
-                Color = color |> Seq.toArray
             }
 
         let renderInfo : RendererSystem.RenderInfo =
@@ -124,39 +123,6 @@ let spawnMesh (vertices: IEnumerable<Vector3>) uv texturePath lightLevel (em: En
         gColor.AddRange(color)
     | _ ->
         globalBatch.Add (texturePath, (ResizeArray vertices, ResizeArray uv, ResizeArray color))
-//    let ent = em.Spawn ()
-
-//    em.Add (ent, TransformComponent (Matrix4x4.Identity))
-
-//    let meshInfo : RendererSystem.MeshInfo =
-//        {
-//            Position = vertices
-//            Uv = uv
-//        }
-//
-//    let materialInfo : RendererSystem.MaterialInfo =
-//        {
-//            ShaderInfo =
-//                {
-//                    VertexShader = "triangle.vertex"
-//                    FragmentShader = "triangle.fragment"
-//                }
-//            
-//            TextureInfo =
-//                {
-//                    TexturePath = texturePath
-//                }
-//
-//            Color = Color.FromArgb (0, int lightLevel, int lightLevel, int lightLevel)
-//        }
-//
-//    let renderInfo : RendererSystem.RenderInfo =
-//        {
-//            MeshInfo = meshInfo
-//            MaterialInfo = materialInfo
-//        }
-//
-//    em.Add (ent, RendererSystem.RenderInfoComponent (renderInfo))
 
 let spawnCeilingMesh (flat: Flat) lightLevel wad em =
     flat.Ceiling.TextureName
@@ -206,40 +172,6 @@ let spawnWallMesh (wall: Wall) lightLevel wad em =
     spawnWallPartMesh wall.Middle lightLevel wad em
     spawnWallPartMesh wall.Lower lightLevel wad em
 
-// let spawnAABBWireframe (aabb: AABB2D) (em: EntityManager) =
-//     let min = aabb.Min ()
-//     let max = aabb.Max ()
-
-//     let ent = em.Spawn ()
-//     em.Add (ent, TransformComponent (Matrix4x4.Identity))
-//     em.Add (ent,
-//         {
-//             WireframeComponent.Position =
-//                 [|
-//                     Vector3 (min.X, min.Y, 0.f)
-//                     Vector3 (max.X, min.Y, 0.f)
-
-//                     Vector3 (max.X, min.Y, 0.f)
-//                     Vector3 (max.X, max.Y, 0.f)
-
-//                     Vector3 (max.X, max.Y, 0.f)
-//                     Vector3 (min.X, max.Y, 0.f)
-
-//                     Vector3 (min.X, max.Y, 0.f)
-//                     Vector3 (min.X, min.Y, 0.f)
-//                 |]
-//                 |> Vector3ArrayBuffer
-//         }
-//     )
-//     em.Add (ent,
-//         MaterialComponent (
-//             "v.vertex",
-//             "f.fragment",
-//             None,
-//             Color.FromArgb (0, 255, 255, 255)
-//         )
-//     )
-
 let updates (clientWorld: ClientWorld) =
     [
         Behavior.wadLoading
@@ -251,10 +183,6 @@ let updates (clientWorld: ClientWorld) =
             )
 
         Behavior.levelLoading (fun wad level em ->
-            let levelAABB = Level.getAABB level
-
-            //spawnAABBWireframe levelAABB em
-
             let physicsEngineComp = PhysicsEngineComponent.Create 128
 
             level
@@ -313,25 +241,6 @@ let updates (clientWorld: ClientWorld) =
 
             runGlobalBatch em
             em.Add (clientWorld.Entity, physicsEngineComp)
-
-            // *** TEMPORARY ***
-            // em.Add (clientWorld.Entity, TransformComponent (Matrix4x4.Identity))
-            // em.Add (clientWorld.Entity,
-            //     {
-            //         WireframeComponent.Position =
-            //             [||]
-            //             |> Vector3ArrayBuffer
-            //     }
-            // )
-            // em.Add (clientWorld.Entity,
-            //     MaterialComponent (
-            //         "v.vertex",
-            //         "f.fragment",
-            //         None,
-            //         Color.FromArgb (0, 255, 255, 255)
-            //     )
-            // )
-            // *****************
 
             level
             |> Level.tryFindPlayer1Start
