@@ -176,7 +176,7 @@ let physicsUpdateBehavior (clientWorld: ClientWorld) =
 
 
 let create (app: Application) (clientWorld: ClientWorld) =
-    ESystem.create "Client"
+    Behavior.merge
         (
             [
                 loadWadAndLevelBehavior clientWorld

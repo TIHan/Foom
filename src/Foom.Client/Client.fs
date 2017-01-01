@@ -7,11 +7,11 @@ open Foom.Renderer
 let init (world: World) =
     let app = Renderer.init ()
     let renderSystem = RendererSystem.create (app)
-    let renderSystemUpdate = world.AddESystem renderSystem
+    let renderSystemUpdate = world.AddBehavior renderSystem
 
     let clientSubworld = world.CreateSubworld ()
     let clientWorld = ClientWorld.Create (clientSubworld, world.SpawnEntity ())
-    let clientSystemUpdate = ClientSystem.create app clientWorld |> clientSubworld.AddESystem
+    let clientSystemUpdate = ClientSystem.create app clientWorld |> clientSubworld.AddBehavior
 
    // world.Publish (ClientSystem.LoadWadAndLevelRequested ("doom.wad", "e1m1"))
     world.Publish (ClientSystem.LoadWadAndLevelRequested ("doom2.wad", "map03"))

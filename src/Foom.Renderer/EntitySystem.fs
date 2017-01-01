@@ -115,11 +115,11 @@ let handleSomething () =
         )
     )
 
-let create (app: Application) : ESystem<float32 * float32> =
+let create (app: Application) : Behavior<float32 * float32> =
 
     let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
 
-    ESystem.create "Renderer"
+    Behavior.merge
         [
             handleSomething ()
 

@@ -46,8 +46,8 @@
     <Compile Include="EventAggregator.fs" />
     <Compile Include="EntityManager.fsi" />
     <Compile Include="EntityManager.fs" />
-    <Compile Include="ESystem.fsi" />
-    <Compile Include="ESystem.fs" />
+    <Compile Include="Behavior.fsi" />
+    <Compile Include="Behavior.fs" />
     <Compile Include="World.fsi" />
     <Compile Include="World.fs" />
   </ItemGroup>

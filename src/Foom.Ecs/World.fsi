@@ -6,7 +6,7 @@ open Foom.Ecs
 [<Sealed>]
 type Subworld =
 
-    member AddESystem<'Update> : ESystem<'Update> -> ('Update -> unit)
+    member AddBehavior<'Update> : Behavior<'Update> -> ('Update -> unit)
 
     member DestroyEntities : unit -> unit
 
@@ -20,7 +20,7 @@ type World =
     new : maxEntityAmount: int -> World
    
     /// Adds an Entity System to the world and returns a handle.
-    member AddESystem<'Update> : ESystem<'Update> -> ('Update -> unit)
+    member AddBehavior<'Update> : Behavior<'Update> -> ('Update -> unit)
 
     member CreateSubworld : unit -> Subworld
 

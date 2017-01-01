@@ -19,12 +19,17 @@ type Subworld (eventAggregator: EventAggregator, entityManager: EntityManager) =
                 entities.Add (evt.Entity)
         )
 
-    member this.AddESystem<'Update> (sys: ESystem<'Update>) =
-        let context = sys.CreateContext entityManager eventAggregator
-        sys.Behavior
-        |> List.iter (fun (Behavior f) ->
-            f context
-        )
+    member this.AddBehavior<'Update> (behav: Behavior<'Update>) =
+        let context =
+            {
+                EntityManager = entityManager
+                EventAggregator = eventAggregator
+                Actions = ResizeArray ()
+            }
+
+        match behav with
+        | Behavior f -> f context
+
         fun updateData ->
 
             recordEntities <- true
@@ -50,12 +55,17 @@ type World (maxEntityAmount) =
     let eventAggregator = EventAggregator.Create ()
     let entityManager = EntityManager.Create (eventAggregator, maxEntityAmount)
 
-    member this.AddESystem<'Update> (sys: ESystem<'Update>) =
-        let context = sys.CreateContext entityManager eventAggregator
-        sys.Behavior
-        |> List.iter (fun (Behavior f) ->
-            f context
-        )
+    member this.AddBehavior<'Update> (behav: Behavior<'Update>) =
+        let context =
+            {
+                EntityManager = entityManager
+                EventAggregator = eventAggregator
+                Actions = ResizeArray ()
+            }
+
+        match behav with
+        | Behavior f -> f context
+
         fun updateData ->
 
             for i = 0 to context.Actions.Count - 1 do

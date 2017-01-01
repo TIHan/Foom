@@ -4,28 +4,14 @@ open System
 open System.Collections.Generic
 open System.Collections.Concurrent
 
-type ESystemState =
+type BehaviorContext<'Update> =
     {
-        Name: string
-        Queues: ResizeArray<obj>
-    }
-
-type ESystemContext<'Update> =
-    {
-        ESystemState: ESystemState
         EntityManager: EntityManager
         EventAggregator: EventAggregator
         Actions: ResizeArray<'Update -> unit>
     }
 
-type Behavior<'Update> = Behavior of (ESystemContext<'Update> -> unit)
-
-type ESystem<'Update> =
-    {
-        State: ESystemState
-        CreateContext: EntityManager -> EventAggregator -> ESystemContext<'Update>
-        Behavior: Behavior<'Update> list
-    }
+type Behavior<'Update> = internal Behavior of (BehaviorContext<'Update> -> unit)
 
 [<RequireQualifiedAccess>]
 module Behavior =
@@ -64,25 +50,10 @@ module Behavior =
             |> context.Actions.Add
         )
 
-[<RequireQualifiedAccess>]
-module ESystem =
-
-    let create name behavior =
-        let state =
-            {
-                Name = name
-                Queues = ResizeArray ()
-            }
-
-        {
-            State = state
-            CreateContext =
-                fun entityManager eventManager ->
-                    {
-                        ESystemState = state
-                        EntityManager = entityManager
-                        EventAggregator = eventManager
-                        Actions = ResizeArray ()
-                    }
-            Behavior = behavior
-        }
+    let merge (behaviors: Behavior<'Update> list) =
+        Behavior (fun context ->
+            behaviors
+            |> List.iter (function
+                | Behavior f ->  f context
+            )
+        )
