@@ -11,8 +11,117 @@ open Foom.Client
 open Foom.Common.Components
 open Foom.Renderer
 
+type PlayerCommandRequested =
+    | MoveForward of bool
+    | MoveLeft of bool
+    | MoveRight of bool
+    | MoveBackward of bool
+
+    interface IEvent
+
+type PlayerMouseMoveRequested =
+    {
+        x: int
+        y: int
+        xrel: int
+        yrel: int
+    }
+
+    interface IEvent
+
+type PlayerComponent () =
+
+    member val IsMovingForward = false with get, set
+
+    member val IsMovingLeft = false with get, set
+
+    member val IsMovingRight = false with get, set
+
+    member val IsMovingBackward = false with get, set
+
+    member val Yaw = 0.f with get, set
+
+    member val Pitch = 0.f with get, set
+
+    interface IComponent
+
 [<RequireQualifiedAccess>]
 module Camera =
+
+    let playerFixedUpdate () =
+        Behavior.merge
+            [
+                Behavior.handleEvent (fun (evt: PlayerCommandRequested) (time, deltaTime) em ->
+                    em.TryFind<CameraComponent> (fun _ _ -> true)
+                    |> Option.iter (fun (ent, cameraComp) ->
+                        em.TryGet<TransformComponent> (ent)
+                        |> Option.iter (fun (transformComp) ->
+                            em.TryGet<PlayerComponent> (ent)
+                            |> Option.iter (fun playerComp ->
+
+                                match evt with
+                                | MoveForward isMovingForward -> playerComp.IsMovingForward <- isMovingForward
+                                | MoveLeft isMovingLeft -> playerComp.IsMovingLeft <- isMovingLeft
+                                | MoveRight isMovingRight -> playerComp.IsMovingRight <- isMovingRight
+                                | MoveBackward isMovingBackward -> playerComp.IsMovingBackward <- isMovingBackward 
+
+                            )
+                       )
+                    )
+                )
+
+                Behavior.update (fun (time, deltaTime) em ea ->
+                    em.ForEach<CameraComponent, TransformComponent, PlayerComponent> (fun ent cameraComp transformComp playerComp ->
+
+                        transformComp.TransformLerp <- transformComp.Transform
+                        cameraComp.AngleLerp <- cameraComp.Angle
+
+                        transformComp.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+
+                        transformComp.Rotation <- transformComp.Rotation *
+                            Quaternion.CreateFromYawPitchRoll (
+                                cameraComp.AngleX,
+                                cameraComp.AngleY,
+                                0.f
+                            )
+
+                        let mutable acc = Vector3.Zero
+                        
+                        if playerComp.IsMovingForward then
+                            let v = Vector3.Transform (-Vector3.UnitZ, transformComp.Rotation)
+                            acc <- (Vector3 (v.X, v.Y, v.Z))
+
+                        if playerComp.IsMovingLeft then
+                            let v = Vector3.Transform (-Vector3.UnitX, transformComp.Rotation)
+                            acc <- acc + (Vector3 (v.X, v.Y, v.Z))
+
+                        if playerComp.IsMovingBackward then
+                            let v = Vector3.Transform (Vector3.UnitZ, transformComp.Rotation)
+                            acc <- acc + (Vector3 (v.X, v.Y, v.Z))
+
+                        if playerComp.IsMovingRight then
+                            let v = Vector3.Transform (Vector3.UnitX, transformComp.Rotation)
+                            acc <- acc + (Vector3 (v.X, v.Y, v.Z))
+                        
+                        acc <- 
+                            if acc <> Vector3.Zero then
+                                acc |> Vector3.Normalize |> (*) 10.f
+                            else
+                                acc
+
+                        transformComp.Translate(acc)
+
+                    )
+                )
+            ]
+
+    let playerUpdate () =
+        Behavior.merge
+            [
+//                em.ForEach<CameraComponent, TransformComponent, PlayerComponent> (fun ent cameraComp transformComp playerComp ->
+//                    ()
+//                )
+            ]
 
     let update (app: Application) =
         let mutable isMovingForward = false

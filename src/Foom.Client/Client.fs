@@ -7,7 +7,7 @@ open Foom.Renderer
 let init (world: World) =
     let app = Renderer.init ()
     let renderSystem = RendererSystem.create (app)
-    let renderSystemUpdate = world.AddBehavior renderSystem
+    let renderSystemUpdate = world.AddBehavior (Behavior.merge [ Camera.update app; renderSystem ])
 
     let clientSubworld = world.CreateSubworld ()
     let clientWorld = ClientWorld.Create (clientSubworld, world.SpawnEntity ())
