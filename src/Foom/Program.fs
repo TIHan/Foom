@@ -16,6 +16,7 @@ let start (invoke: Task ref) =
     let stopwatch = System.Diagnostics.Stopwatch ()
 
     GameLoop.start 30.
+        client.AlwaysUpdate
         (fun time interval ->
             stopwatch.Reset ()
             stopwatch.Start ()

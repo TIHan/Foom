@@ -186,8 +186,9 @@ let create (app: Application) (clientWorld: ClientWorld) =
             @
             [
                // Camera.update (app)
+               Camera.playerFixedUpdate ()
 
-                addRigidBodyBehavior clientWorld
+               addRigidBodyBehavior clientWorld
                // physicsUpdateBehavior clientWorld
             ]
         )

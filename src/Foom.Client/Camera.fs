@@ -11,24 +11,6 @@ open Foom.Client
 open Foom.Common.Components
 open Foom.Renderer
 
-type PlayerCommandRequested =
-    | MoveForward of bool
-    | MoveLeft of bool
-    | MoveRight of bool
-    | MoveBackward of bool
-
-    interface IEvent
-
-type PlayerMouseMoveRequested =
-    {
-        x: int
-        y: int
-        xrel: int
-        yrel: int
-    }
-
-    interface IEvent
-
 type PlayerComponent () =
 
     member val IsMovingForward = false with get, set
@@ -51,39 +33,10 @@ module Camera =
     let playerFixedUpdate () =
         Behavior.merge
             [
-                Behavior.handleEvent (fun (evt: PlayerCommandRequested) (time, deltaTime) em ->
-                    em.TryFind<CameraComponent> (fun _ _ -> true)
-                    |> Option.iter (fun (ent, cameraComp) ->
-                        em.TryGet<TransformComponent> (ent)
-                        |> Option.iter (fun (transformComp) ->
-                            em.TryGet<PlayerComponent> (ent)
-                            |> Option.iter (fun playerComp ->
-
-                                match evt with
-                                | MoveForward isMovingForward -> playerComp.IsMovingForward <- isMovingForward
-                                | MoveLeft isMovingLeft -> playerComp.IsMovingLeft <- isMovingLeft
-                                | MoveRight isMovingRight -> playerComp.IsMovingRight <- isMovingRight
-                                | MoveBackward isMovingBackward -> playerComp.IsMovingBackward <- isMovingBackward 
-
-                            )
-                       )
-                    )
-                )
-
                 Behavior.update (fun (time, deltaTime) em ea ->
                     em.ForEach<CameraComponent, TransformComponent, PlayerComponent> (fun ent cameraComp transformComp playerComp ->
 
                         transformComp.TransformLerp <- transformComp.Transform
-                        cameraComp.AngleLerp <- cameraComp.Angle
-
-                        transformComp.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
-
-                        transformComp.Rotation <- transformComp.Rotation *
-                            Quaternion.CreateFromYawPitchRoll (
-                                cameraComp.AngleX,
-                                cameraComp.AngleY,
-                                0.f
-                            )
 
                         let mutable acc = Vector3.Zero
                         
@@ -111,16 +64,60 @@ module Camera =
 
                         transformComp.Translate(acc)
 
+                        let v1 = Vector2 (transformComp.Position.X, transformComp.Position.Y)
+                        let v2 = Vector2 (transformComp.TransformLerp.Translation.X, transformComp.TransformLerp.Translation.Y)
+
+                        cameraComp.HeightOffsetLerp <- cameraComp.HeightOffset
+                        //cameraComp.HeightOffset <- sin(8.f * time) * (v1 - v2).Length()
                     )
                 )
             ]
 
-    let playerUpdate () =
+    let playerUpdate (app: Application) =
         Behavior.merge
             [
-//                em.ForEach<CameraComponent, TransformComponent, PlayerComponent> (fun ent cameraComp transformComp playerComp ->
-//                    ()
-//                )
+                Behavior.update (fun () em ea ->
+                    em.ForEach<CameraComponent, TransformComponent, PlayerComponent> (fun ent cameraComp transformComp playerComp ->
+
+                        Input.pollEvents (app.Window)
+                        let inputState = Input.getState ()
+
+                        inputState.Events
+                        |> List.iter (function
+                            | MouseMoved (x, y, xrel, yrel) ->
+                                playerComp.Yaw <- playerComp.Yaw + (single xrel * -0.25f) * (float32 Math.PI / 180.f)
+                                playerComp.Pitch <- playerComp.Pitch + (single yrel * -0.25f) * (float32 Math.PI / 180.f)
+
+                            | KeyPressed x when x = 'w' -> playerComp.IsMovingForward <- true
+                            | KeyReleased x when x = 'w' -> playerComp.IsMovingForward <- false
+
+                            | KeyPressed x when x = 'a' -> playerComp.IsMovingLeft <- true
+                            | KeyReleased x when x = 'a' -> playerComp.IsMovingLeft <- false
+ 
+                            | KeyPressed x when x = 's' -> playerComp.IsMovingBackward <- true
+                            | KeyReleased x when x = 's' -> playerComp.IsMovingBackward <- false
+
+                            | KeyPressed x when x = 'd' -> playerComp.IsMovingRight <- true
+                            | KeyReleased x when x = 'd' -> playerComp.IsMovingRight <- false
+
+                            | _ -> ()
+                        )
+                    )
+                )
+
+                Behavior.update (fun () em ea ->
+                    em.ForEach<CameraComponent, TransformComponent, PlayerComponent> (fun ent cameraComp transformComp playerComp ->
+
+                        transformComp.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+
+                        transformComp.Rotation <- transformComp.Rotation *
+                            Quaternion.CreateFromYawPitchRoll (
+                                playerComp.Yaw,
+                                playerComp.Pitch,
+                                0.f
+                            )
+                    )
+                )
             ]
 
     let update (app: Application) =

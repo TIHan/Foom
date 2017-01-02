@@ -25,7 +25,7 @@ module GameLoop
             UpdateAccumulator: int64 
         }
 
-    let start updateInterval (update: int64 -> int64 -> unit) (render: int64 -> float32 -> unit) : unit =
+    let start updateInterval (alwaysUpdate: unit -> unit) (update: int64 -> int64 -> unit) (render: int64 -> float32 -> unit) : unit =
         let targetUpdateInterval = (1000. / updateInterval) * 10000. |> int64
         let skip = (1000. / 5.) * 10000. |> int64
 
@@ -46,6 +46,8 @@ module GameLoop
             let updateAcc = gl.UpdateAccumulator + deltaTime
 
             let rec processUpdate gl =
+                alwaysUpdate ()
+
                 if gl.UpdateAccumulator >= targetUpdateInterval
                 then
                     ctx.Process ()

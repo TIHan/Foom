@@ -258,6 +258,7 @@ let updates (clientWorld: ClientWorld) =
                         em.Add (cameraEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f)))
                         em.Add (cameraEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
                         em.Add (cameraEnt, CharacterControllerComponent (position, 17.1f, 56.f))
+                        em.Add (cameraEnt, PlayerComponent ())
 
                     | _ -> ()
                 | _ -> ()
