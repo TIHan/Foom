@@ -27,9 +27,21 @@ let exportFlatTextures (wad: Wad) =
             let width = Array2D.length1 tex.Data
             let height = Array2D.length2 tex.Data
 
-            let bmp = new Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
-
             let mutable isTransparent = false
+
+            tex.Data
+            |> Array2D.iter (fun p ->
+                if p.Equals Pixel.Cyan then
+                    isTransparent <- true
+            )
+
+            let format =
+                if isTransparent then
+                    Imaging.PixelFormat.Format32bppArgb
+                else
+                    Imaging.PixelFormat.Format24bppRgb
+
+            let bmp = new Bitmap(width, height, format)
 
             tex.Data
             |> Array2D.iteri (fun i j pixel ->
@@ -52,9 +64,21 @@ let exportTextures (wad: Wad) =
             let width = Array2D.length1 tex.Data
             let height = Array2D.length2 tex.Data
 
-            let bmp = new Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
-
             let mutable isTransparent = false
+
+            tex.Data
+            |> Array2D.iter (fun p ->
+                if p.Equals Pixel.Cyan then
+                    isTransparent <- true
+            )
+
+            let format =
+                if isTransparent then
+                    Imaging.PixelFormat.Format32bppArgb
+                else
+                    Imaging.PixelFormat.Format24bppRgb
+
+            let bmp = new Bitmap(width, height, format)
 
             tex.Data
             |> Array2D.iteri (fun i j pixel ->

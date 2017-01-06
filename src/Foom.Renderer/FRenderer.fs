@@ -73,6 +73,7 @@ type MeshRender =
 type FRenderer =
     {
         Lookup: Dictionary<ShaderProgramId, Shader * Dictionary<TextureId, Texture * FRendererBucket>> 
+       // TransparentLookup: List<ShaderProgramId * Material * Mesh>
     }
 
     static member Create () =
@@ -117,6 +118,11 @@ type FRenderer =
         material.Texture.Buffer.TryBufferData () |> ignore
         mesh.Position.TryBufferData () |> ignore
         mesh.Uv.TryBufferData () |> ignore
+
+        // TODO: What shall we do with transparent textures? :D
+//        if material.Texture.Buffer.IsTransparent then
+//            None
+//        else
 
         let addTexture (bucketLookup: Dictionary<TextureId, Texture * FRendererBucket>) texture = 
             let bucket =

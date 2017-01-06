@@ -529,12 +529,15 @@ type Texture2DBuffer (bmp: Bitmap) =
     let mutable width = bmp.Width
     let mutable height = bmp.Height
     let mutable queuedData = Some bmp
+    let mutable isTransparent = false
 
     member this.Id = id
 
     member this.Width = width
 
     member this.Height = height
+
+    member this.IsTransparent = isTransparent
 
     member this.Bind () =
         if id <> 0 then
@@ -543,6 +546,8 @@ type Texture2DBuffer (bmp: Bitmap) =
     member this.TryBufferData () =
         match queuedData with
         | Some bmp ->
+            isTransparent <- bmp.PixelFormat = System.Drawing.Imaging.PixelFormat.Format32bppArgb
+
             let bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
 
             id <- Renderer.createTexture bmp.Width bmp.Height bmpData.Scan0

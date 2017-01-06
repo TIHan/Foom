@@ -26,7 +26,7 @@ type Texture =
 
 type Wad = 
     {
-        mutable Wads : Wad list
+        mutable Wads : Wad list // TODO: Should just be a parent wad.
         mutable TextureInfoLookup: Dictionary<string, TextureInfo> option
         mutable FlatHeaderLookup: Dictionary<string, LumpHeader> option
         stream: Stream
@@ -136,31 +136,42 @@ module Wad =
         if wad.FlatHeaderLookup.IsNone then
             loadFlatHeaders wad
 
-        match wad.defaultPaletteData with
+        let f wad =
+            match wad.defaultPaletteData with
+            | None ->
+                Debug.WriteLine "Warning: Unable to load flat textures because there is no default palette."
+                None
+            | Some palette ->
+
+                match wad.FlatHeaderLookup.Value.TryGetValue (name) with
+                | false, _ -> None
+                | true, h ->
+
+                    // Assert Flat Headers are valid
+                    if h.Offset.Equals 0 then failwithf "Invalid flat header, %A. Offset is 0." h
+                    if not (h.Size.Equals 4096) then failwithf "Invalid flat header, %A. Size is not 4096." h
+
+                    let bytes = loadLump u_lumpRaw h wad.stream
+
+                    {
+                        Name = h.Name
+                        Data =
+                            let pixels = Array2D.zeroCreate<Pixel> 64 64
+                            for i = 0 to 64 - 1 do
+                                for j = 0 to 64 - 1 do
+                                    pixels.[i, j] <- palette.Pixels.[int bytes.[i + j * 64]]
+                            pixels
+                    } |> Some
+
+        match f wad with
+        | Some result -> Some result
         | None ->
-            Debug.WriteLine "Warning: Unable to load flat textures because there is no default palette."
-            None
-        | Some palette ->
-
-            match wad.FlatHeaderLookup.Value.TryGetValue (name) with
-            | false, _ -> None
-            | true, h ->
-
-                // Assert Flat Headers are valid
-                if h.Offset.Equals 0 then failwithf "Invalid flat header, %A. Offset is 0." h
-                if not (h.Size.Equals 4096) then failwithf "Invalid flat header, %A. Size is not 4096." h
-
-                let bytes = loadLump u_lumpRaw h wad.stream
-
-                {
-                    Name = h.Name
-                    Data =
-                        let pixels = Array2D.zeroCreate<Pixel> 64 64
-                        for i = 0 to 64 - 1 do
-                            for j = 0 to 64 - 1 do
-                                pixels.[i, j] <- palette.Pixels.[int bytes.[i + j * 64]]
-                        pixels
-                } |> Some
+            if wad.Wads.IsEmpty then
+                None
+            else
+                wad.Wads
+                |> List.map f
+                |> List.last
 
     [<RequireQualifiedAccess>]
     type PatchTexture =
@@ -307,7 +318,7 @@ module Wad =
 
         Level.Create (lumpSectors.Sectors, lumpThings.Things)
 
-    let iterFlatTextureName f wad =
+    let rec iterFlatTextureName f wad =
         if wad.FlatHeaderLookup.IsNone then
             loadFlatHeaders wad
 
@@ -317,7 +328,10 @@ module Wad =
             |> Seq.iter f
         | _ -> ()
 
-    let iterTextureName f wad =
+        wad.Wads
+        |> List.iter (iterFlatTextureName f)
+
+    let rec iterTextureName f wad =
         if wad.TextureInfoLookup.IsNone then
             loadTextureInfos wad
 
@@ -326,3 +340,6 @@ module Wad =
             lookup.Keys
             |> Seq.iter f
         | _ -> ()
+
+        wad.Wads
+        |> List.iter (iterTextureName f)
