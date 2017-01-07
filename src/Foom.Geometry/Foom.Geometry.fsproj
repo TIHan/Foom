@@ -50,6 +50,8 @@
     <Compile Include="Polygon2D.fs" />
     <Compile Include="Polygon2DTree.fsi" />
     <Compile Include="Polygon2DTree.fs" />
+	<Compile Include="EarClipping.fsi" />
+	<Compile Include="EarClipping.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

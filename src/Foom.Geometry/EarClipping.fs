@@ -1,10 +1,8 @@
 ﻿[<RequireQualifiedAccess>]
-module Foom.Wad.Triangulation.EarClipping
+module Foom.Geometry.EarClipping
 
 open System
 open System.Numerics
-
-open Foom.Geometry
 
 type Ray =
     {

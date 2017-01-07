@@ -5,7 +5,6 @@ open System.Numerics
 open System.Collections.Generic
 open Foom.Pickler.Core
 open Foom.Pickler.Unpickle
-open Foom.Wad.Level.Structures
 
 type Header = { IsPwad: bool; LumpCount: int; LumpOffset: int }
  

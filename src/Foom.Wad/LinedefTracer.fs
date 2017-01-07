@@ -1,10 +1,9 @@
-﻿namespace Foom.Wad.Level
+﻿namespace Foom.Wad
 
 open System.Numerics
 open System.Collections.Immutable
 
 open Foom.Geometry
-open Foom.Wad.Level.Structures
 
 type LinedefTracer = 
     { 

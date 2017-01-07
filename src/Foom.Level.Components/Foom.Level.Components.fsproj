@@ -1,11 +1,10 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{7EBB87FB-C951-4FCE-9B0D-FD825A66AF32}</ProjectGuid>
     <TargetProfile>netcore</TargetProfile>
-    <TargetFSharpCoreVersion>3.7.4.0</TargetFSharpCoreVersion>
+    <TargetFSharpCoreVersion>3.3.1.0</TargetFSharpCoreVersion>
     <OutputType>Library</OutputType>
     <RootNamespace>Foom.Level.Components</RootNamespace>
     <AssemblyName>Foom.Level.Components</AssemblyName>
@@ -19,18 +18,15 @@
     <OutputPath>bin\Debug</OutputPath>
     <DefineConstants>DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <PlatformTarget>
-    </PlatformTarget>
+    <PlatformTarget></PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <Optimize>true</Optimize>
     <OutputPath>bin\Release</OutputPath>
-    <DefineConstants>
-    </DefineConstants>
+    <DefineConstants></DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <GenerateTailCalls>true</GenerateTailCalls>
-    <PlatformTarget>
-    </PlatformTarget>
+    <PlatformTarget></PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="FSharp.Core">
@@ -52,6 +48,7 @@
     <Compile Include="Flat.fs" />
     <Compile Include="Sector.fs" />
     <Compile Include="Components.fs" />
+    <Compile Include="WadLevel.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Foom.Geometry\Foom.Geometry.fsproj">

@@ -14,8 +14,6 @@ open Foom.Renderer
 open Foom.Geometry
 open Foom.Level
 open Foom.Wad
-open Foom.Wad.Level
-open Foom.Wad.Level.Structures
 open Foom.Common.Components
 open Foom.Wad.Components
 
@@ -234,7 +232,7 @@ let updates (clientWorld: ClientWorld) =
                     |> PhysicsEngine.addRigidBody rBody
                 )
 
-                Flat.createFlats i level
+                WadLevel.createFlats i level
                 |> Seq.iter (fun flat ->
                     ()
                     spawnCeilingMesh flat lightLevel wad em
@@ -259,7 +257,7 @@ let updates (clientWorld: ClientWorld) =
                         j <- j + 3
                 )
 
-                Wall.createWalls i level
+                WadLevel.createWalls i level
                 |> Seq.iter (fun wall ->
                     ()
                     spawnWallMesh wall lightLevel wad em

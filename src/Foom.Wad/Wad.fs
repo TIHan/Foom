@@ -9,9 +9,6 @@ open System.Diagnostics
 
 open Foom.Wad.Pickler
 
-open Foom.Wad.Level
-open Foom.Wad.Level.Structures
-
 open Foom.Pickler.Core
 open Foom.Pickler.Unpickle
 open Microsoft.FSharp.NativeInterop

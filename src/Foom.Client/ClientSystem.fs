@@ -13,7 +13,6 @@ open Foom.Geometry
 open Foom.Renderer
 open Foom.Wad
 open Foom.Wad.Level
-open Foom.Wad.Level.Structures
 open Foom.Wad.Components
 open Foom.Common.Components
 

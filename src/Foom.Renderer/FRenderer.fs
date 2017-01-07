@@ -73,12 +73,13 @@ type MeshRender =
 type FRenderer =
     {
         Lookup: Dictionary<ShaderProgramId, Shader * Dictionary<TextureId, Texture * FRendererBucket>> 
-       // TransparentLookup: List<ShaderProgramId * Material * Mesh>
+        Transparents: ResizeArray<ShaderProgramId * Material * Mesh>
     }
 
     static member Create () =
         {
             Lookup = Dictionary ()
+            Transparents = ResizeArray ()
         }
 
     member this.CreateShader (vertexShader, fragmentShader) =
@@ -178,7 +179,14 @@ type FRenderer =
                 let textureId = pair.Key
                 let (texture, bucket) = pair.Value
 
-                f shader texture bucket
+                let count = bucket.Meshes.Count
+
+                for i = 0 to count - 1 do
+
+                    let getTransform = bucket.GetTransforms.[i]
+                    let mesh = bucket.Meshes.[i]
+
+                    f shader texture (getTransform ()) mesh
             )
         )
 
@@ -193,46 +201,36 @@ type FRenderer =
 
         let mutable drawCalls = 0
 
-        this.ProcessPrograms (fun shader texture bucket ->
+        this.ProcessPrograms (fun shader texture model mesh ->
+            let position = mesh.Position
+            let uv = mesh.Uv
+            let color = mesh.Color
+            let textureBuffer = texture.Buffer
+            let programId = shader.ProgramId
 
-            let count = bucket.Meshes.Count
+            position.TryBufferData () |> ignore
+            uv.TryBufferData () |> ignore
+            color.TryBufferData () |> ignore
 
-            for i = 0 to count - 1 do
+            let uniformProjection = Renderer.getUniformLocation programId "uni_projection"
 
-                let getTransform = bucket.GetTransforms.[i]
-                let mesh = bucket.Meshes.[i]
-                  
-                let position = mesh.Position
-                let uv = mesh.Uv
-                let color = mesh.Color
-                let textureBuffer = texture.Buffer
-                let programId = shader.ProgramId
+            Renderer.setUniformProjection uniformProjection mvp
 
-                let model = getTransform ()
+            position.Bind ()
+            Renderer.bindPosition programId
 
-                position.TryBufferData () |> ignore
-                uv.TryBufferData () |> ignore
-                color.TryBufferData () |> ignore
+            uv.Bind ()
+            Renderer.bindUv programId
 
-                let uniformProjection = Renderer.getUniformLocation programId "uni_projection"
+            color.Bind ()
+            Renderer.bindColor programId
 
-                Renderer.setUniformProjection uniformProjection mvp
+            Renderer.setTexture programId textureBuffer.Id
+            textureBuffer.Bind ()
 
-                position.Bind ()
-                Renderer.bindPosition programId
+            Renderer.drawTriangles 0 position.Length
 
-                uv.Bind ()
-                Renderer.bindUv programId
-
-                color.Bind ()
-                Renderer.bindColor programId
-
-                Renderer.setTexture programId textureBuffer.Id
-                textureBuffer.Bind ()
-
-                Renderer.drawTriangles 0 position.Length
-
-                drawCalls <- drawCalls + 1
+            drawCalls <- drawCalls + 1
         )
 
         Renderer.disableDepth ()

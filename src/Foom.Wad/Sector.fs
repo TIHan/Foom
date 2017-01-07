@@ -1,10 +1,8 @@
-﻿namespace Foom.Wad.Level.Structures
+﻿namespace Foom.Wad
 
 open System.Numerics
 
 open Foom.Geometry
-open Foom.Wad.Level
-open Foom.Wad.Level.Structures
 
 type SectorType =
     | Normal = 0

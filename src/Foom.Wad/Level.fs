@@ -1,11 +1,10 @@
-﻿namespace Foom.Wad.Level
+﻿namespace Foom.Wad
 
 open System
 open System.Numerics
 open System.Collections.Generic
 
 open Foom.Geometry
-open Foom.Wad.Level.Structures
 
 type Level =
     {
@@ -115,7 +114,7 @@ module Level =
             loadSectorPolygons level
         
         level.sectorPolygons.[sector.Id]
-        |> Seq.map (Foom.Wad.Triangulation.EarClipping.computeTree)
+        |> Seq.map (EarClipping.computeTree)
         |> Seq.reduce Seq.append
 
     let sectorAt (point: Vector2) (level: Level) =

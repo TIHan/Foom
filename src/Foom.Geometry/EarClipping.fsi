@@ -1,7 +1,5 @@
 ﻿[<RequireQualifiedAccess>]
-module Foom.Wad.Triangulation.EarClipping
-
-open Foom.Geometry
+module Foom.Geometry.EarClipping
 
 val compute : Polygon2D -> Triangle2D []
 

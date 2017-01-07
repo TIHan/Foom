@@ -1,9 +1,8 @@
-﻿namespace Foom.Wad.Level
+﻿namespace Foom.Wad
 
 open System.Numerics
 
 open Foom.Geometry
-open Foom.Wad.Level.Structures
 
 [<Sealed>]
 type Level =

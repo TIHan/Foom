@@ -1,4 +1,4 @@
-﻿namespace Foom.Wad.Level.Structures
+﻿namespace Foom.Wad
 
 open System.Numerics
 
