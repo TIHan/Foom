@@ -26,7 +26,6 @@ type SectorType =
 type Sector = 
     {
         Id: int
-        Linedefs: Linedef list
         FloorTextureName: string
         FloorHeight: int
         CeilingTextureName: string

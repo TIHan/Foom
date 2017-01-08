@@ -13,8 +13,8 @@ type LinedefPolygon =
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module LinedefTracer =
-    //val run : Linedef seq -> Linedef list list
-    val run2 : Linedef seq -> int -> LinedefPolygon list
+
+    val run : sectorId: int -> Level -> LinedefPolygon list
 
 module Polygon =
 

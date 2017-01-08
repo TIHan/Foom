@@ -17,7 +17,7 @@ type ThingFormat =
     | Hexen = 1
 
 type LumpThings = { Things: Thing [] }
-type LumpLinedefs = { Linedefs: Dictionary<int, Linedef ResizeArray> }
+type LumpLinedefs = { Linedefs: Linedef ResizeArray; LinedefLookup: Dictionary<int, Linedef ResizeArray> }
 type LumpSidedefs = { Sidedefs: Sidedef [] }
 type LumpVertices = { Vertices: Vector2 [] }
 type LumpSectors = { Sectors: Sector [] }
@@ -170,7 +170,11 @@ module UnpickleWad =
             }
 
     let u_linedefs (vertices: Vector2 []) (sidedefs: Sidedef []) count offset =
+        let linedefs = ResizeArray ()
+
         u_skipBytes offset >>. u_dictionary count (fun dict linedef ->
+            linedefs.Add linedef
+
             match linedef.FrontSidedef with
             | Some sidedef ->
                 let arr =
@@ -194,17 +198,18 @@ module UnpickleWad =
                         arr
                 arr.Add linedef
             | _ -> ()
-        ) (u_linedef vertices sidedefs)
+        ) (u_linedef vertices sidedefs) |>> (fun linedefLookup -> (linedefs, linedefLookup))
         
     let u_lumpLinedefs (vertices: Vector2 []) (sidedefs: Sidedef []) size offset : Unpickle<LumpLinedefs> =
-        u_lookAhead (u_linedefs vertices sidedefs (size / linedefSize) offset) |>> fun linedefs -> { Linedefs = linedefs }
+        u_lookAhead (u_linedefs vertices sidedefs (size / linedefSize) offset) 
+        |>> fun (linedefs, linedefLookup) -> { Linedefs = linedefs; LinedefLookup = linedefLookup }
 
     [<Literal>]
     let sectorSize = 26
-    let u_sector (linedefs: Dictionary<int, Linedef ResizeArray>) (i: int) : Unpickle<Sector> =
+    let u_sector (sectorId: int) : Unpickle<Sector> =
         u_pipe7 u_int16 u_int16 (u_string 8) (u_string 8) u_int16 u_int16 u_int16 <|
         fun floorHeight ceilingHeight floorTexName ceilingTexName lightLevel typ tag ->
-            { Id = i
+            { Id = sectorId
               FloorHeight = int floorHeight
               CeilingHeight = int ceilingHeight
               FloorTextureName = floorTexName.Trim().Trim('\000')
@@ -212,16 +217,13 @@ module UnpickleWad =
               LightLevel = int lightLevel
               Type = enum<SectorType> (int typ)
               Tag = int tag
-              Linedefs = 
-                linedefs.[i]
-                |> List.ofSeq
             }
 
-    let u_sectors linedefs count offset : Unpickle<Sector []> =
-        u_skipBytes offset >>. u_arrayi count (u_sector linedefs)
+    let u_sectors count offset : Unpickle<Sector []> =
+        u_skipBytes offset >>. u_arrayi count (u_sector)
 
-    let u_lumpSectors linedefs size offset : Unpickle<LumpSectors> =
-        u_lookAhead (u_sectors linedefs (size / sectorSize) offset) |>> fun sectors -> { Sectors = sectors }
+    let u_lumpSectors size offset : Unpickle<LumpSectors> =
+        u_lookAhead (u_sectors (size / sectorSize) offset) |>> fun sectors -> { Sectors = sectors }
 
     [<Literal>]
     let flatSize = 4096

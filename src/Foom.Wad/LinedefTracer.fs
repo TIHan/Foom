@@ -129,7 +129,7 @@ module LinedefTracer =
 
                 visit linedef tracer, true
 
-    let run2 linedefs sectorId = 
+    let run sectorId level = 
         let rec f  (polygons: LinedefPolygon list) (originalTracer: LinedefTracer) (tracer: LinedefTracer) =
             match tryVisitNextLinedef tracer with
             | tracer, true -> f polygons originalTracer tracer
@@ -178,13 +178,21 @@ module LinedefTracer =
                         let tracer = create originalTracer.sectorId linedefs
                         f polygons tracer tracer
 
-        let tracer =
-            linedefs
-            |> Seq.filter (fun x -> 
+        let linedefs = ResizeArray ()
+        (sectorId, level)
+        ||> Level.iterLinedefBySectorId (fun x ->
+            let canUseLinedef =
                 if (x.FrontSidedef.IsSome && x.BackSidedef.IsSome && x.FrontSidedef.Value.SectorNumber = sectorId && x.BackSidedef.Value.SectorNumber = sectorId) then
                     false
                 else
-                    not (x.FrontSidedef.IsNone && x.BackSidedef.IsNone)) 
+                    not (x.FrontSidedef.IsNone && x.BackSidedef.IsNone) 
+
+            if canUseLinedef then
+                linedefs.Add x
+        )
+
+        let tracer =
+            linedefs
             |> List.ofSeq
             |> create sectorId
                         

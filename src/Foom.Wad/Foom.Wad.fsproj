@@ -44,14 +44,14 @@
     <Compile Include="Sidedef.fs" />
     <Compile Include="Linedef.fsi" />
     <Compile Include="Linedef.fs" />
-    <Compile Include="LinedefTracer.fsi" />
-    <Compile Include="LinedefTracer.fs" />
     <Compile Include="Sector.fsi" />
     <Compile Include="Sector.fs" />
     <Compile Include="Thing.fsi" />
     <Compile Include="Thing.fs" />
     <Compile Include="Level.fsi" />
     <Compile Include="Level.fs" />
+    <Compile Include="LinedefTracer.fsi" />
+    <Compile Include="LinedefTracer.fs" />
     <Compile Include="Pixel.fsi" />
     <Compile Include="Pixel.fs" />
     <Compile Include="UnpickleWad.fsi" />

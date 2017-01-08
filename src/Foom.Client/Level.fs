@@ -199,7 +199,6 @@ let updates (clientWorld: ClientWorld) =
         Behavior.wadLoading
             (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
             (fun wad _ ->
-                ()
                 wad |> exportFlatTextures
                 wad |> exportTextures
             )
@@ -209,14 +208,11 @@ let updates (clientWorld: ClientWorld) =
 
             level
             |> Level.iteriSector (fun i sector ->
-//                if i <> 279 then ()
-//                else
 
-                let lightLevel = Level.lightLevelBySectorId sector.Id level
-                ()
+                let lightLevel = sector.LightLevel
 
-                sector.Linedefs
-                |> List.iter (fun linedef ->
+                (i, level)
+                ||> Level.iterLinedefBySectorId (fun linedef ->
                     let wut = not (linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged))
                     let staticWall =
                         {
@@ -271,18 +267,18 @@ let updates (clientWorld: ClientWorld) =
             |> Level.tryFindPlayer1Start
             |> Option.iter (function
                 | Doom doomThing ->
-                    match (level |> Level.sectorAt (Vector2 (single doomThing.X, single doomThing.Y))) with
-                    | Some sector ->
+                    let sector =
+                        physicsEngineComp.PhysicsEngine
+                        |> PhysicsEngine.findWithPoint (Vector2 (single doomThing.X, single doomThing.Y)) :?> Sector
 
-                        let position = Vector3 (single doomThing.X, single doomThing.Y, single sector.FloorHeight + 28.f)
+                    let position = Vector3 (single doomThing.X, single doomThing.Y, single sector.FloorHeight + 28.f)
 
-                        let cameraEnt = em.Spawn ()
-                        em.Add (cameraEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f)))
-                        em.Add (cameraEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
-                        em.Add (cameraEnt, CharacterControllerComponent (position, 17.1f, 56.f))
-                        em.Add (cameraEnt, PlayerComponent ())
+                    let cameraEnt = em.Spawn ()
+                    em.Add (cameraEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f)))
+                    em.Add (cameraEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
+                    em.Add (cameraEnt, CharacterControllerComponent (position, 17.1f, 56.f))
+                    em.Add (cameraEnt, PlayerComponent ())
 
-                    | _ -> ()
                 | _ -> ()
             )
         )

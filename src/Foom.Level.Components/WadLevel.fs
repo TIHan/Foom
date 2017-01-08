@@ -16,8 +16,9 @@ module WadLevel =
         let arr = ResizeArray<Wall> ()
         let sector = level |> Level.getSector sectorId
 
-        sector.Linedefs
-        |> Seq.iter (fun linedef ->
+        //sector.Linedefs
+        (sectorId, level)
+        ||> Level.iterLinedefBySectorId (fun linedef ->
             let isLowerUnpegged = linedef.Flags.HasFlag(LinedefFlags.LowerTextureUnpegged)
             let isUpperUnpegged = linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged)
 
@@ -280,7 +281,7 @@ module WadLevel =
         | None -> Seq.empty
         | Some sector ->
 
-            match LinedefTracer.run2 (sector.Linedefs) sectorId with
+            match LinedefTracer.run sectorId level with
             | [] -> Seq.empty
             | linedefPolygons ->
                 let rec map (linedefPolygons: LinedefPolygon list) =
