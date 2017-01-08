@@ -46,7 +46,7 @@ module Behavior =
 
                     let wad = Wad.create (openWad fileName)
                     //let wad = Wad.extend (openWad "matt.wad") wad
-                    let wad = Wad.extend (openWad "sunder.wad") wad
+                    //let wad = Wad.extend (openWad "sunder.wad") wad
                     wadComp.State <- WadState.Loaded wad
                     f wad entityManager
 

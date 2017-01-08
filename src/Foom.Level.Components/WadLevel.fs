@@ -292,51 +292,58 @@ module WadLevel =
                         }
                     )
 
-                let sectorTriangles = 
-                    map linedefPolygons
-                    |> Seq.map (EarClipping.computeTree)
-                    |> Seq.reduce Seq.append
-                    |> Array.ofSeq
+                try
+                    let sectorTriangles =
+                        map linedefPolygons
+                        |> Seq.map (fun t ->
+                                EarClipping.computeTree t
+                        )
+                        |> Seq.reduce Seq.append
+                        |> Array.ofSeq
 
-                sectorTriangles
-                |> Seq.filter (fun x -> x.Length <> 0)
-                |> Seq.map (fun triangles ->
+                    sectorTriangles
+                    |> Seq.filter (fun x -> x.Length <> 0)
+                    |> Seq.map (fun triangles ->
                   
-                    let ceiling =
-                        FlatPart.create
-                            (
-                                triangles
-                                |> Seq.map (fun tri ->
-                                    [|
-                                        Vector3 (tri.C.X, tri.C.Y, single sector.CeilingHeight)
-                                        Vector3 (tri.B.X, tri.B.Y, single sector.CeilingHeight)
-                                        Vector3 (tri.A.X, tri.A.Y, single sector.CeilingHeight)
-                                    |]
+                        let ceiling =
+                            FlatPart.create
+                                (
+                                    triangles
+                                    |> Seq.map (fun tri ->
+                                        [|
+                                            Vector3 (tri.C.X, tri.C.Y, single sector.CeilingHeight)
+                                            Vector3 (tri.B.X, tri.B.Y, single sector.CeilingHeight)
+                                            Vector3 (tri.A.X, tri.A.Y, single sector.CeilingHeight)
+                                        |]
+                                    )
+                                    |> Seq.reduce Array.append
                                 )
-                                |> Seq.reduce Array.append
-                            )
-                            (float32 sector.CeilingHeight)
-                            (Some sector.CeilingTextureName)
+                                (float32 sector.CeilingHeight)
+                                (Some sector.CeilingTextureName)
 
-                    let floor =
-                        FlatPart.create
-                            (
-                                triangles
-                                |> Seq.map (fun tri ->
-                                    [|
-                                        Vector3 (tri.A.X, tri.A.Y, single sector.FloorHeight)
-                                        Vector3 (tri.B.X, tri.B.Y, single sector.FloorHeight)
-                                        Vector3 (tri.C.X, tri.C.Y, single sector.FloorHeight)
-                                    |]
+                        let floor =
+                            FlatPart.create
+                                (
+                                    triangles
+                                    |> Seq.map (fun tri ->
+                                        [|
+                                            Vector3 (tri.A.X, tri.A.Y, single sector.FloorHeight)
+                                            Vector3 (tri.B.X, tri.B.Y, single sector.FloorHeight)
+                                            Vector3 (tri.C.X, tri.C.Y, single sector.FloorHeight)
+                                        |]
+                                    )
+                                    |> Seq.reduce Array.append
                                 )
-                                |> Seq.reduce Array.append
-                            )
-                            (float32 sector.FloorHeight)
-                            (Some sector.FloorTextureName)
+                                (float32 sector.FloorHeight)
+                                (Some sector.FloorTextureName)
 
-                    {
-                        SectorId = sectorId
-                        Ceiling = ceiling
-                        Floor = floor
-                    }
-                )
+                        {
+                            SectorId = sectorId
+                            Ceiling = ceiling
+                            Floor = floor
+                        }
+                    )
+
+                with | _ ->
+                    System.Diagnostics.Debug.WriteLine("Unable to triangulate a polygon in sector: " + sectorId.ToString())
+                    Seq.empty

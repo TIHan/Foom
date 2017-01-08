@@ -93,7 +93,7 @@ module LinedefTracer =
             sectorId = sectorId
         }
 
-    let inline isFinished tracer = tracer.currentVertex.Equals tracer.endVertex 
+    let inline isFinished tracer = tracer.currentVertex.Equals tracer.endVertex && tracer.path.Length >= 3
 
     let inline currentDirection tracer =
         let v =
@@ -135,6 +135,7 @@ module LinedefTracer =
             | tracer, true -> f polygons originalTracer tracer
             | tracer, _ ->
                 if isFinished tracer then
+
                     let polygon = 
                         {
                             Linedefs = tracer.path
