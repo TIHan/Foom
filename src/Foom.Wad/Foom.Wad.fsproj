@@ -40,8 +40,6 @@
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
   <ItemGroup>
-    <Compile Include="EarClipping.fsi" />
-    <Compile Include="EarClipping.fs" />
     <Compile Include="Sidedef.fsi" />
     <Compile Include="Sidedef.fs" />
     <Compile Include="Linedef.fsi" />
