@@ -26,3 +26,5 @@ module Level =
     val tryFindPlayer1Start : Level -> Thing option
 
     val lightLevelBySectorId : sectorId: int -> Level -> byte
+
+    val iterThing : (Thing -> unit) -> Level -> unit

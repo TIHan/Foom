@@ -56,3 +56,6 @@ module Level =
         if lightLevel > 255 then 255uy
         else byte lightLevel
 
+    let iterThing f level =
+        level.things |> Array.iter f
+

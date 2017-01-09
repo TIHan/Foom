@@ -7,6 +7,7 @@ type ThingType =
     | Player2Start = 2
     | Player3Start = 3
     | Player4Start = 4
+    | Barrel = 2035
 
 [<Flags>]
 type DoomThingFlags =

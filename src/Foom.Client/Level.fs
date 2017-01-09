@@ -319,6 +319,44 @@ let updates (clientWorld: ClientWorld) =
                 spawnWallMesh wall level wad em
             )
 
+            level
+            |> Level.iterThing (fun thing ->
+                match thing with
+                | Thing.Doom thing ->
+                    if thing.Type = ThingType.Barrel then
+                        let bitmap = new Bitmap("BAR1A0.bmp")
+                        let halfWidth = single bitmap.Width / 2.f
+
+                        
+                        let pos = Vector2 (single thing.X, single thing.Y)
+                        let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos :?> Sector
+                        let pos = Vector3 (pos, single sector.FloorHeight)
+                        let vertices =
+                            [|
+                                Vector3 (-halfWidth, 0.f, 0.f) + pos
+                                Vector3 (halfWidth, 0.f, 0.f) + pos
+                                Vector3 (halfWidth, 0.f, single bitmap.Height) + pos
+                                Vector3 (halfWidth, 0.f, single bitmap.Height) + pos
+                                Vector3 (-halfWidth, 0.f, single bitmap.Height) + pos
+                                Vector3 (-halfWidth, 0.f, 0.f) + pos
+                            |]
+
+                        let uv =
+                            [|
+                                Vector2 (0.f, 0.f * -1.f)
+                                Vector2 (1.f, 0.f * -1.f)
+                                Vector2 (1.f, 1.f * -1.f)
+                                Vector2 (1.f, 1.f * -1.f)
+                                Vector2 (0.f, 1.f * -1.f)
+                                Vector2 (0.f, 0.f * -1.f)
+                            |]
+
+                        let lightLevel = Level.lightLevelBySectorId sector.Id level
+                        spawnMesh vertices uv "BAR1A0.bmp" lightLevel em
+                        ()
+                | _ -> ()
+            )
+
             runGlobalBatch em
             em.Add (clientWorld.Entity, physicsEngineComp)
 
