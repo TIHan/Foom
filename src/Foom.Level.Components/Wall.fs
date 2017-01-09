@@ -10,12 +10,18 @@ type WallSpecial =
     | Nothing
     | Door of ceilingSectorId: int
 
-type Wall =
+type WallSide =
     {
         SectorId: int
-        Special: WallSpecial
 
-        Upper: WallPart
-        Middle: WallPart
-        Lower: WallPart
+        Upper: WallPart option
+        Middle: WallPart option
+        Lower: WallPart option
+    }
+
+type Wall =
+    {
+        Special: WallSpecial
+        FrontSide: WallSide option
+        BackSide: WallSide option
     }

@@ -8,7 +8,7 @@ type TextureAlignment =
     | UpperUnpegged of offsetY: int
     | LowerUnpegged
 
-type WallPartSide =
+type WallPart =
     {
         TextureOffsetX: int
         TextureOffsetY: int
@@ -17,19 +17,9 @@ type WallPartSide =
         TextureAlignment: TextureAlignment
     }
 
-type WallPart =
-    {
-        FrontSide: WallPartSide option
-        BackSide: WallPartSide option
-    }
-
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module WallPart =
 
-    val updateFrontUV : uv: Vector2 [] -> width: int -> height: int -> WallPart -> unit
+    val updateUV : uv: Vector2 [] -> width: int -> height: int -> WallPart -> unit
 
-    val createFrontUV : width: int -> height: int -> WallPart -> Vector2 []
-
-    val updateBackUV : uv: Vector2 [] -> width: int -> height: int -> WallPart -> unit
-
-    val createBackUV : width: int -> height: int -> WallPart -> Vector2 []
+    val createUV : width: int -> height: int -> WallPart -> Vector2 []

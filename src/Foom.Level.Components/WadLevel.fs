@@ -254,23 +254,22 @@ module WadLevel =
 
             arr.Add
                 {
-                    SectorId = sectorId
                     Special = special
-                    Upper =
+                    FrontSide =
                         {
-                            FrontSide = upperFront
-                            BackSide = upperBack
-                        }
-                    Middle =
+                            SectorId = sectorId
+                            Upper = upperFront
+                            Middle = middleFront
+                            Lower = lowerFront
+                        } |> Some
+
+                    BackSide =
                         {
-                            FrontSide = middleFront
-                            BackSide = middleBack
-                        }
-                    Lower =
-                        {
-                            FrontSide = lowerFront
-                            BackSide = lowerBack
-                        }
+                            SectorId = sectorId
+                            Upper = upperBack
+                            Middle = middleBack
+                            Lower = lowerBack
+                        } |> Some
                 }
         )
 

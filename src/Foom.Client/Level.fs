@@ -199,37 +199,38 @@ let spawnFloorMesh (flat: Flat) lightLevel wad em =
         spawnMesh flat.Floor.Vertices (FlatPart.createUV t.Width t.Height flat.Floor) texturePath lightLevel em
     )
 
-let spawnFrontWallPartSideMesh (wallPart: WallPart) (side: WallPartSide) lightLevel wad em =
-    side.TextureName
+let spawnWallPartMesh (part: WallPart) lightLevel wad em =
+    part.TextureName
     |> Option.iter (fun textureName ->
         let texturePath = textureName + ".bmp"
         let t = new Bitmap(texturePath)
-        spawnMesh side.Vertices (WallPart.createFrontUV t.Width t.Height wallPart) texturePath lightLevel em
+        spawnMesh part.Vertices (WallPart.createUV t.Width t.Height part) texturePath lightLevel em
     )
 
-let spawnBackWallPartSideMesh (wallPart: WallPart) (side: WallPartSide) lightLevel wad em =
-    side.TextureName
-    |> Option.iter (fun textureName ->
-        let texturePath = textureName + ".bmp"
-        let t = new Bitmap(texturePath)
-        spawnMesh side.Vertices (WallPart.createBackUV t.Width t.Height wallPart) texturePath lightLevel em
-    )
-
-let spawnWallPartMesh (wallPart: WallPart) lightLevel wad em =
-    wallPart.FrontSide
-    |> Option.iter (fun side ->
-        spawnFrontWallPartSideMesh wallPart side lightLevel wad em
-    )
-
-    wallPart.BackSide
-    |> Option.iter (fun side ->
-        spawnBackWallPartSideMesh wallPart side lightLevel wad em
+let spawnWallSideMesh (part: WallPart option) lightLevel wad em =
+    part
+    |> Option.iter (fun part ->
+        spawnWallPartMesh part lightLevel wad em
     )
 
 let spawnWallMesh (wall: Wall) lightLevel wad em =
-    spawnWallPartMesh wall.Upper lightLevel wad em
-    spawnWallPartMesh wall.Middle lightLevel wad em
-    spawnWallPartMesh wall.Lower lightLevel wad em
+    match wall.FrontSide with
+    | Some frontSide ->
+        
+        spawnWallSideMesh frontSide.Upper lightLevel wad em
+        spawnWallSideMesh frontSide.Middle lightLevel wad em
+        spawnWallSideMesh frontSide.Lower lightLevel wad em
+
+    | _ -> ()
+
+    match wall.BackSide with
+    | Some backSide ->
+
+        spawnWallSideMesh backSide.Upper lightLevel wad em
+        spawnWallSideMesh backSide.Middle lightLevel wad em
+        spawnWallSideMesh backSide.Lower lightLevel wad em
+
+    | _ -> ()
 
 let updates (clientWorld: ClientWorld) =
     [
