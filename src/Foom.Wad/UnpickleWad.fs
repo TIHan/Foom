@@ -79,7 +79,13 @@ module UnpickleWad =
               LumpOffset = lumpOffset }
 
     let u_lumpHeader : Unpickle<LumpHeader> =
-        u_pipe3 u_int32 u_int32 (u_string 8) <| fun offset size name -> { Offset = offset; Size = size; Name = name.Trim().Trim('\000') }
+        u_pipe3 u_int32 u_int32 (u_string 8) <| 
+        fun offset size name -> 
+            { 
+                Offset = offset
+                Size = size
+                Name = name.Replace("\\", "").Trim().Trim('\000') 
+            }
 
     let u_lumpHeaders count offset : Unpickle<LumpHeader []> =
         u_skipBytes offset >>. u_array count u_lumpHeader

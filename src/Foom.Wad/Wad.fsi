@@ -28,6 +28,10 @@ module Wad =
 
     val tryFindFlatTexture : textureName: string -> wad: Wad -> Texture option
 
+    val tryFindSpriteTexture : textureName: string -> wad: Wad -> Texture option
+
     val iterFlatTextureName : (string -> unit) -> wad: Wad -> unit
 
     val iterTextureName : (string -> unit) -> wad: Wad -> unit
+
+    val iterSpriteTextureName : (string -> unit) -> wad: Wad -> unit

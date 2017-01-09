@@ -106,69 +106,6 @@ let physicsUpdateBehavior (clientWorld: ClientWorld) =
             |> PhysicsEngine.moveRigidBody transformComp.Position rbody
 
             transformComp.Position <- Vector3 (rbody.WorldPosition, single sector.FloorHeight + 50.f)
-
-            // *** TEMPORARY ***
-            //wireframeComp.Position.Set [||]
-
-            //let boxes = ResizeArray ()
-            //physicsEngineComp.PhysicsEngine
-            //|> PhysicsEngine.debugFindSpacesByRigidBody charContrComp.RigidBody
-            //|> Seq.iter (fun b ->
-            //    let b = rbody.AABB
-            //    let min = b.Min () + rbody.WorldPosition
-            //    let max = b.Max () + rbody.WorldPosition
-            //    [|
-            //        Vector3 (min.X, min.Y, 0.f)
-            //        Vector3 (max.X, min.Y, 0.f)
-
-            //        Vector3 (max.X, min.Y, 0.f)
-            //        Vector3 (max.X, max.Y, 0.f)
-
-            //        Vector3 (max.X, max.Y, 0.f)
-            //        Vector3 (min.X, max.Y, 0.f)
-
-            //        Vector3 (min.X, max.Y, 0.f)
-            //        Vector3 (min.X, min.Y, 0.f)
-            //    |]
-            //    |> boxes.AddRange
-            //)
-
-            //boxes
-            //|> Array.ofSeq
-            //|> wireframeComp.Position.Set
-
-            //let tris = ResizeArray ()
-            //let lines = ResizeArray ()
-            //physicsEngineComp.PhysicsEngine
-            //|> PhysicsEngine.iterWithPoint pos 
-            //    (fun tri ->
-            //        tris.Add tri
-            //    )
-            //    (fun seg ->
-            //        let t, d = seg |> LineSegment2D.findClosestPointByPoint pos
-            //        lines.Add (Vector3 (seg.A, 0.f))
-            //        lines.Add (Vector3 (seg.B, 0.f))
-            //        lines.Add (Vector3 (d, 0.f))
-            //        lines.Add (Vector3 (pos, 0.f))
-            //    )
-
-            //let renderLines =
-            //    tris
-            //    |> Seq.map (fun tri -> 
-            //        [|
-            //        Vector3 (tri.A, 0.f);Vector3 (tri.B, 0.f)
-            //        Vector3 (tri.B, 0.f);Vector3 (tri.C, 0.f)
-            //        Vector3 (tri.C, 0.f);Vector3 (tri.A, 0.f)
-            //        |]
-            //    )
-
-            //if renderLines |> Seq.isEmpty |> not then
-            //    //renderLines
-            //    //|> Seq.reduce Array.append
-            //    //|> Array.append (lines |> Array.ofSeq)
-            //    (lines |> Array.ofSeq)
-            //    |> wireframeComp.Position.Set
-            // ******************
         } |> ignore
 
     )
@@ -188,6 +125,6 @@ let create (app: Application) (clientWorld: ClientWorld) =
                Camera.playerFixedUpdate ()
 
                addRigidBodyBehavior clientWorld
-               // physicsUpdateBehavior clientWorld
+              // physicsUpdateBehavior clientWorld
             ]
         )

@@ -259,6 +259,52 @@ module Wad =
                 |> List.map f
                 |> List.last
 
+    let tryFindSpriteTexture (textureName: string) wad =
+
+        let f wad =
+            let stream = wad.stream
+            let lumpHeaders = wad.wadData.LumpHeaders
+
+            let lumpFlatsHeaderStartIndex = lumpHeaders |> Array.tryFindIndex (fun x -> x.Name.ToUpper () = "S_START")
+            let lumpFlatsHeaderEndIndex = lumpHeaders |> Array.tryFindIndex (fun x -> x.Name.ToUpper () = "S_END")
+
+            match lumpFlatsHeaderStartIndex, lumpFlatsHeaderEndIndex with
+            | None, None -> None
+
+            | Some _, None ->
+                Debug.WriteLine """Warning: Unable to load flat textures because "S_END" lump was not found."""
+                None
+
+            | None, Some _ ->
+                Debug.WriteLine """Warning: Unable to load flat textures because "S_START" lump was not found."""
+                None
+
+            | Some lumpFlatsHeaderStartIndex, Some lumpFlatsHeaderEndIndex ->
+                let lumpFlatHeaders =
+                    lumpHeaders.[(lumpFlatsHeaderStartIndex + 1)..(lumpFlatsHeaderEndIndex - 1)]
+                    |> filterLumpHeaders
+
+                match lumpFlatHeaders |> Array.tryFind (fun x -> x.Name.ToLower() = textureName.ToLower()), wad.defaultPaletteData with
+                | Some h, Some palette ->
+                    let pic = stream |> runUnpickle (UnpickleWad.uDoomPicture h palette)
+                    Some
+                        {
+                            Data = pic.Data
+                            Name = textureName
+                        }
+                | _ -> None
+
+        match f wad with
+        | Some result -> Some result
+        | None ->
+            if wad.Wads.IsEmpty then
+                None
+            else
+                wad.Wads
+                |> List.map f
+                |> List.last
+        
+
     let create stream =
         let wadData = runUnpickle u_wad stream
 
@@ -340,3 +386,31 @@ module Wad =
 
         wad.Wads
         |> List.iter (iterTextureName f)
+
+    let rec iterSpriteTextureName f wad =
+
+        let stream = wad.stream
+        let lumpHeaders = wad.wadData.LumpHeaders
+
+        let lumpFlatsHeaderStartIndex = lumpHeaders |> Array.tryFindIndex (fun x -> x.Name.ToUpper () = "S_START")
+        let lumpFlatsHeaderEndIndex = lumpHeaders |> Array.tryFindIndex (fun x -> x.Name.ToUpper () = "S_END")
+
+        match lumpFlatsHeaderStartIndex, lumpFlatsHeaderEndIndex with
+        | None, None -> ()
+
+        | Some _, None ->
+            Debug.WriteLine """Warning: Unable to load flat textures because "S_END" lump was not found."""
+
+        | None, Some _ ->
+            Debug.WriteLine """Warning: Unable to load flat textures because "S_START" lump was not found."""
+
+        | Some lumpFlatsHeaderStartIndex, Some lumpFlatsHeaderEndIndex ->
+            let lumpFlatHeaders =
+                lumpHeaders.[(lumpFlatsHeaderStartIndex + 1)..(lumpFlatsHeaderEndIndex - 1)]
+                |> filterLumpHeaders
+
+            lumpFlatHeaders
+            |> Array.iter (fun h -> f h.Name)
+
+        wad.Wads
+        |> List.iter (iterSpriteTextureName f)
