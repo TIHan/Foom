@@ -12,13 +12,15 @@ module WadLevel =
 
     open Foom.Wad
 
-    let createWalls (sectorId: int) level =
+    let createWalls level =
         let arr = ResizeArray<Wall> ()
-        let sector = level |> Level.getSector sectorId
+        //let sector = level |> Level.getSector sectorId
 
         //sector.Linedefs
-        (sectorId, level)
-        ||> Level.iterLinedefBySectorId (fun linedef ->
+        //(sectorId, level)
+        //||> Level.iterLinedefBySectorId (fun linedef ->
+        level
+        |> Level.iterLinedef (fun linedef ->
             let isLowerUnpegged = linedef.Flags.HasFlag(LinedefFlags.LowerTextureUnpegged)
             let isUpperUnpegged = linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged)
 
@@ -76,13 +78,15 @@ module WadLevel =
                     |]
 
             match linedef.BackSidedef with
-            | Some backSidedef when backSidedef.SectorNumber = sectorId ->
+            | Some backSidedef ->
+
+                let backSideSector = level |> Level.getSector backSidedef.SectorNumber
 
                 match linedef.FrontSidedef with
                 | Some frontSidedef ->
                     let frontSideSector = level |> Level.getSector frontSidedef.SectorNumber
 
-                    if backSidedef.UpperTextureName.IsSome && frontSideSector.CeilingHeight < sector.CeilingHeight then
+                    if frontSideSector.CeilingHeight < backSideSector.CeilingHeight then
 
                         upperBack <-
                             {
@@ -93,10 +97,10 @@ module WadLevel =
                                     [|
                                         Vector3 (linedef.End, single frontSideSector.CeilingHeight)
                                         Vector3 (linedef.Start, single frontSideSector.CeilingHeight)
-                                        Vector3 (linedef.Start, single sector.CeilingHeight)
+                                        Vector3 (linedef.Start, single backSideSector.CeilingHeight)
 
-                                        Vector3 (linedef.Start, single sector.CeilingHeight)
-                                        Vector3 (linedef.End, single sector.CeilingHeight)
+                                        Vector3 (linedef.Start, single backSideSector.CeilingHeight)
+                                        Vector3 (linedef.End, single backSideSector.CeilingHeight)
                                         Vector3 (linedef.End, single frontSideSector.CeilingHeight)
                                     |]
                                 TextureAlignment = 
@@ -106,7 +110,7 @@ module WadLevel =
                                         UpperUnpegged 0
                             } |> Some
                        
-                    if backSidedef.LowerTextureName.IsSome && frontSideSector.FloorHeight > sector.FloorHeight then
+                    if frontSideSector.FloorHeight > backSideSector.FloorHeight then
                         let frontSideSector = level |> Level.getSector frontSidedef.SectorNumber
 
                         lowerBack <-
@@ -116,18 +120,18 @@ module WadLevel =
                                 TextureOffsetY = backSidedef.OffsetY
                                 Vertices = 
                                     [|
-                                        Vector3 (linedef.End, single sector.FloorHeight)
-                                        Vector3 (linedef.Start, single sector.FloorHeight)
+                                        Vector3 (linedef.End, single backSideSector.FloorHeight)
+                                        Vector3 (linedef.Start, single backSideSector.FloorHeight)
                                         Vector3 (linedef.Start, single frontSideSector.FloorHeight)
 
                                         Vector3 (linedef.Start, single frontSideSector.FloorHeight)
                                         Vector3 (linedef.End, single frontSideSector.FloorHeight)
-                                        Vector3 (linedef.End, single sector.FloorHeight)
+                                        Vector3 (linedef.End, single backSideSector.FloorHeight)
                                     |]
                                 TextureAlignment = 
                                     if isLowerUnpegged then
                                         if isTwoSided then
-                                            UpperUnpegged (abs (sector.CeilingHeight - frontSideSector.FloorHeight))
+                                            UpperUnpegged (abs (backSideSector.CeilingHeight - frontSideSector.FloorHeight))
                                         else
                                             LowerUnpegged
                                     else
@@ -136,7 +140,7 @@ module WadLevel =
             
                 | _ -> ()
 
-                if backSidedef.MiddleTextureName.IsSome then
+                if true then
 
                     let floorHeight, ceilingHeight =
                         match linedef.FrontSidedef with
@@ -145,33 +149,34 @@ module WadLevel =
 
                             (
                                 (
-                                    if frontSideSector.FloorHeight > sector.FloorHeight then
+                                    if frontSideSector.FloorHeight > backSideSector.FloorHeight then
                                         frontSideSector.FloorHeight
                                     else
-                                        sector.FloorHeight
+                                        backSideSector.FloorHeight
                                 ),
                                 (
-                                    if frontSideSector.CeilingHeight < sector.CeilingHeight then
+                                    if frontSideSector.CeilingHeight < backSideSector.CeilingHeight then
                                         frontSideSector.CeilingHeight
                                     else
-                                        sector.CeilingHeight
+                                        backSideSector.CeilingHeight
                                 )
                             )
 
-                        | _ -> sector.FloorHeight, sector.CeilingHeight
+                        | _ -> backSideSector.FloorHeight, backSideSector.CeilingHeight
 
                     addMiddleBack floorHeight ceilingHeight backSidedef
 
             | _ -> ()
 
             match linedef.FrontSidedef with
-            | Some frontSidedef when frontSidedef.SectorNumber = sectorId ->
+            | Some frontSidedef ->
+                let frontSideSector = level |> Level.getSector frontSidedef.SectorNumber
 
                 match linedef.BackSidedef with
                 | Some backSidedef ->
                     let backSideSector = level |> Level.getSector backSidedef.SectorNumber
 
-                    if frontSidedef.UpperTextureName.IsSome && sector.CeilingHeight > backSideSector.CeilingHeight then
+                    if frontSideSector.CeilingHeight > backSideSector.CeilingHeight then
 
                         upperFront <-
                             {
@@ -182,10 +187,10 @@ module WadLevel =
                                     [|
                                         Vector3 (linedef.Start, single backSideSector.CeilingHeight)
                                         Vector3 (linedef.End, single backSideSector.CeilingHeight)
-                                        Vector3 (linedef.End, single sector.CeilingHeight)
+                                        Vector3 (linedef.End, single frontSideSector.CeilingHeight)
 
-                                        Vector3 (linedef.End, single sector.CeilingHeight)
-                                        Vector3 (linedef.Start, single sector.CeilingHeight)
+                                        Vector3 (linedef.End, single frontSideSector.CeilingHeight)
+                                        Vector3 (linedef.Start, single frontSideSector.CeilingHeight)
                                         Vector3 (linedef.Start, single backSideSector.CeilingHeight)
                                     |]
                                 TextureAlignment = 
@@ -195,7 +200,7 @@ module WadLevel =
                                         UpperUnpegged 0
                             } |> Some
 
-                    if frontSidedef.LowerTextureName.IsSome && sector.FloorHeight < backSideSector.FloorHeight then
+                    if frontSideSector.FloorHeight < backSideSector.FloorHeight then
 
                         lowerFront <-
                             {
@@ -206,16 +211,16 @@ module WadLevel =
                                     [|
                                         Vector3 (linedef.End, single backSideSector.FloorHeight)
                                         Vector3 (linedef.Start, single backSideSector.FloorHeight)
-                                        Vector3 (linedef.Start, single sector.FloorHeight)
+                                        Vector3 (linedef.Start, single frontSideSector.FloorHeight)
 
-                                        Vector3 (linedef.Start, single sector.FloorHeight)
-                                        Vector3 (linedef.End, single sector.FloorHeight)
+                                        Vector3 (linedef.Start, single frontSideSector.FloorHeight)
+                                        Vector3 (linedef.End, single frontSideSector.FloorHeight)
                                         Vector3 (linedef.End, single backSideSector.FloorHeight)
                                     |]
                                 TextureAlignment = 
                                     if isLowerUnpegged then
                                         if isTwoSided then
-                                            UpperUnpegged (abs (sector.CeilingHeight - backSideSector.FloorHeight))
+                                            UpperUnpegged (abs (frontSideSector.CeilingHeight - backSideSector.FloorHeight))
                                         else
                                             LowerUnpegged
                                     else
@@ -224,7 +229,7 @@ module WadLevel =
 
                 | _ -> ()
 
-                if frontSidedef.MiddleTextureName.IsSome then
+                if true then
 
                     let floorHeight, ceilingHeight =
                         match linedef.BackSidedef with
@@ -233,20 +238,20 @@ module WadLevel =
 
                             (
                                 (
-                                    if backSideSector.FloorHeight > sector.FloorHeight then
+                                    if backSideSector.FloorHeight > frontSideSector.FloorHeight then
                                         backSideSector.FloorHeight
                                     else
-                                        sector.FloorHeight
+                                        frontSideSector.FloorHeight
                                 ),
                                 (
-                                    if backSideSector.CeilingHeight < sector.CeilingHeight then
+                                    if backSideSector.CeilingHeight < frontSideSector.CeilingHeight then
                                         backSideSector.CeilingHeight
                                     else
-                                        sector.CeilingHeight
+                                        frontSideSector.CeilingHeight
                                 )
                             )
 
-                        | _ -> sector.FloorHeight, sector.CeilingHeight
+                        | _ -> frontSideSector.FloorHeight, frontSideSector.CeilingHeight
                        
                     addMiddleFront floorHeight ceilingHeight frontSidedef
 
@@ -256,20 +261,26 @@ module WadLevel =
                 {
                     Special = special
                     FrontSide =
-                        {
-                            SectorId = sectorId
-                            Upper = upperFront
-                            Middle = middleFront
-                            Lower = lowerFront
-                        } |> Some
+                        if linedef.FrontSidedef.IsSome then
+                            {
+                                SectorId = linedef.FrontSidedef.Value.SectorNumber
+                                Upper = upperFront
+                                Middle = middleFront
+                                Lower = lowerFront
+                            } |> Some
+                        else
+                            None
 
                     BackSide =
-                        {
-                            SectorId = sectorId
-                            Upper = upperBack
-                            Middle = middleBack
-                            Lower = lowerBack
-                        } |> Some
+                        if linedef.BackSidedef.IsSome then
+                            {
+                                SectorId = linedef.BackSidedef.Value.SectorNumber
+                                Upper = upperBack
+                                Middle = middleBack
+                                Lower = lowerBack
+                            } |> Some
+                        else
+                            None
                 }
         )
 
