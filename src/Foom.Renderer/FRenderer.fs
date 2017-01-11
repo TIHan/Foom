@@ -20,6 +20,7 @@ type Mesh =
         Position: Vector3ArrayBuffer
         Uv: Vector2ArrayBuffer
         Color: Vector4ArrayBuffer
+        Center: Vector3ArrayBuffer
     }
 
 type Material =
@@ -31,17 +32,14 @@ type Material =
 [<ReferenceEquality>]
 type FRendererBucket =
     {
-        GetTransforms: (unit -> Matrix4x4) ResizeArray
-
         Meshes: Mesh ResizeArray
         IdRefs: int Ref ResizeArray
     }
 
-    member this.Add (mesh: Mesh, getTransform: unit -> Matrix4x4) =
+    member this.Add (mesh: Mesh) =
         let idRef = ref this.IdRefs.Count
 
         this.Meshes.Add (mesh)
-        this.GetTransforms.Add (getTransform)
         this.IdRefs.Add (idRef)
 
         idRef
@@ -50,12 +48,10 @@ type FRendererBucket =
         let lastIndex = this.IdRefs.Count - 1
 
         this.Meshes.[id] <- this.Meshes.[lastIndex]
-        this.GetTransforms.[id] <- this.GetTransforms.[lastIndex]
         this.IdRefs.[id] <- this.IdRefs.[lastIndex]
         this.IdRefs.[id] := id
 
         this.Meshes.RemoveAt (lastIndex)
-        this.GetTransforms.RemoveAt (lastIndex)
         this.IdRefs.RemoveAt (lastIndex)
 
 
@@ -98,7 +94,7 @@ type FRenderer =
             Texture = texture
         }
 
-    member this.CreateMesh (position, uv, color: Color []) =
+    member this.CreateMesh (position, uv, color: Color [], center) =
         {
             Position = Vector3ArrayBuffer (position)
             Uv = Vector2ArrayBuffer (uv)
@@ -112,9 +108,10 @@ type FRenderer =
                         single c.A / 255.f)
                 )
                 |> Vector4ArrayBuffer
+            Center = Vector3ArrayBuffer (center)
         }
 
-    member this.TryAdd (material: Material, mesh: Mesh, getTransform: unit -> Matrix4x4) =
+    member this.TryAdd (material: Material, mesh: Mesh) =
 
         material.Texture.Buffer.TryBufferData () |> ignore
         mesh.Position.TryBufferData () |> ignore
@@ -132,7 +129,6 @@ type FRenderer =
                 | _ ->
                     let bucket =
                         {
-                            GetTransforms = ResizeArray ()
                             Meshes = ResizeArray ()
                             IdRefs = ResizeArray ()
                         }
@@ -153,7 +149,7 @@ type FRenderer =
 
             let bucket = addTexture bucketLookup material.Texture
 
-            let idRef = bucket.Add (mesh, getTransform)
+            let idRef = bucket.Add (mesh)
 
             let render =
                 {
@@ -183,10 +179,9 @@ type FRenderer =
 
                 for i = 0 to count - 1 do
 
-                    let getTransform = bucket.GetTransforms.[i]
                     let mesh = bucket.Meshes.[i]
 
-                    f shader texture (getTransform ()) mesh
+                    f shader texture mesh
             )
         )
 
@@ -197,24 +192,29 @@ type FRenderer =
 
         Renderer.enableDepth ()
 
-        let mvp = (projection * view) |> Matrix4x4.Transpose
-
         let mutable drawCalls = 0
 
-        this.ProcessPrograms (fun shader texture model mesh ->
+        this.ProcessPrograms (fun shader texture mesh ->
             let position = mesh.Position
             let uv = mesh.Uv
             let color = mesh.Color
+            let center = mesh.Center
+
             let textureBuffer = texture.Buffer
             let programId = shader.ProgramId
 
             position.TryBufferData () |> ignore
             uv.TryBufferData () |> ignore
             color.TryBufferData () |> ignore
+            center.TryBufferData () |> ignore
 
             let uniformProjection = Renderer.getUniformLocation programId "uni_projection"
 
-            Renderer.setUniformProjection uniformProjection mvp
+            Renderer.setUniformMatrix4x4 uniformProjection projection
+
+            let uniformView = Renderer.getUniformLocation programId "uni_view"
+
+            Renderer.setUniformMatrix4x4 uniformView view
 
             position.Bind ()
             Renderer.bindPosition programId
@@ -224,6 +224,9 @@ type FRenderer =
 
             color.Bind ()
             Renderer.bindColor programId
+
+            center.Bind ()
+            Renderer.bindCenter programId
 
             Renderer.setTexture programId textureBuffer.Id
             textureBuffer.Bind ()
@@ -235,4 +238,4 @@ type FRenderer =
 
         Renderer.disableDepth ()
 
-        printfn "Draw Calls: %A" drawCalls
+        //printfn "Draw Calls: %A" drawCalls

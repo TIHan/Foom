@@ -25,6 +25,7 @@ type MeshInfo =
         Position: Vector3 []
         Uv: Vector2 []
         Color: Color []
+        Center: Vector3 []
     }
 
 type TextureInfo =
@@ -71,46 +72,43 @@ let handleSomething () =
     Behavior.handleEvent (fun (evt: Events.ComponentAdded<RenderInfoComponent>) ((time, deltaTime): float32 * float32) em ->
         em.TryGet<RenderInfoComponent> (evt.Entity)
         |> Option.iter (fun comp ->
-            em.TryGet<TransformComponent> (evt.Entity)
-            |> Option.iter (fun transformComp ->
-                let info = comp.RenderInfo
+            let info = comp.RenderInfo
 
-                let mesh = renderer.CreateMesh (info.MeshInfo.Position, info.MeshInfo.Uv, info.MeshInfo.Color)
+            let mesh = renderer.CreateMesh (info.MeshInfo.Position, info.MeshInfo.Uv, info.MeshInfo.Color, info.MeshInfo.Center)
 
-                let shader =
-                    match shaderCache.TryGetValue ((info.MaterialInfo.ShaderInfo.VertexShader, info.MaterialInfo.ShaderInfo.FragmentShader)) with
-                    | true, shader -> shader
-                    | _ -> 
-                        let vertexFile = info.MaterialInfo.ShaderInfo.VertexShader
-                        let fragmentFile = info.MaterialInfo.ShaderInfo.FragmentShader
+            let shader =
+                match shaderCache.TryGetValue ((info.MaterialInfo.ShaderInfo.VertexShader, info.MaterialInfo.ShaderInfo.FragmentShader)) with
+                | true, shader -> shader
+                | _ -> 
+                    let vertexFile = info.MaterialInfo.ShaderInfo.VertexShader
+                    let fragmentFile = info.MaterialInfo.ShaderInfo.FragmentShader
 
-                        let vertexBytes = File.ReadAllBytes (vertexFile)
-                        let fragmentBytes = File.ReadAllBytes (fragmentFile)
+                    let vertexBytes = File.ReadAllBytes (vertexFile)
+                    let fragmentBytes = File.ReadAllBytes (fragmentFile)
 
-                        let shader = renderer.CreateShader (vertexBytes, fragmentBytes)
+                    let shader = renderer.CreateShader (vertexBytes, fragmentBytes)
 
-                        shaderCache.Add ((vertexFile, fragmentFile), shader)
+                    shaderCache.Add ((vertexFile, fragmentFile), shader)
 
-                        shader
+                    shader
 
-                let texture =
-                    match textureCache.TryGetValue (info.MaterialInfo.TextureInfo.TexturePath) with
-                    | true, texture -> texture
-                    | _ ->
+            let texture =
+                match textureCache.TryGetValue (info.MaterialInfo.TextureInfo.TexturePath) with
+                | true, texture -> texture
+                | _ ->
 
-                        let bmp = new Bitmap(info.MaterialInfo.TextureInfo.TexturePath)
-                        let texture = renderer.CreateTexture (bmp)
+                    let bmp = new Bitmap(info.MaterialInfo.TextureInfo.TexturePath)
+                    let texture = renderer.CreateTexture (bmp)
 
-                        textureCache.Add(info.MaterialInfo.TextureInfo.TexturePath, texture)
+                    textureCache.Add(info.MaterialInfo.TextureInfo.TexturePath, texture)
 
-                        texture
+                    texture
                 
-                let material = renderer.CreateMaterial (shader, texture)
+            let material = renderer.CreateMaterial (shader, texture)
 
-                renderer.TryAdd (material, mesh, fun () -> transformComp.Transform)
-                |> Option.iter (fun render ->
-                    em.Add (evt.Entity, RenderComponent (mesh, material, render))
-                )
+            renderer.TryAdd (material, mesh)
+            |> Option.iter (fun render ->
+                em.Add (evt.Entity, RenderComponent (mesh, material, render))
             )
         )
     )
@@ -135,11 +133,10 @@ let create (app: Application) : Behavior<float32 * float32> =
 
                         let heightOffset = Mathf.lerp cameraComp.HeightOffsetLerp cameraComp.HeightOffset deltaTime
 
-                        let projection = cameraComp.Projection |> Matrix4x4.Transpose
+                        let projection = cameraComp.Projection
                         let mutable transform = Matrix4x4.Lerp (transformComp.TransformLerp, transformComp.Transform, deltaTime)
 
                         let mutable v = transform.Translation
-
 
                         v.Z <- zEasing.Update (transformComp.Position.Z, time)
 
@@ -149,7 +146,7 @@ let create (app: Application) : Behavior<float32 * float32> =
 
                         Matrix4x4.Invert(transform, &invertedTransform) |> ignore
 
-                        let invertedTransform = invertedTransform |> Matrix4x4.Transpose
+                        let invertedTransform = invertedTransform
 
                         renderer.Draw projection invertedTransform
                     )

@@ -57,6 +57,9 @@
   <ItemGroup>
     <Compile Include="Renderer.fs" />
     <Compile Include="FRenderer.fs" />
+    <None Include="sprite.vertex">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="f.fragment">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -64,13 +67,13 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Content Include="packages.config" />
+    <Compile Include="EntitySystem.fs" />
     <None Include="triangle.vertex">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="triangle.fragment">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Include="EntitySystem.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />

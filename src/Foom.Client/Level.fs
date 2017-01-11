@@ -128,30 +128,48 @@ let exportSpriteTextures (wad: Wad) =
         )
     )
 
-let globalBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray * Color ResizeArray> ()
+let globalBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray * Color ResizeArray * bool> ()
 
 let runGlobalBatch (em: EntityManager) =
     globalBatch
     |> Seq.iter (fun pair ->
         let texturePath = pair.Key
-        let vertices, uv, color = pair.Value
+        let vertices, uv, color, isSprite = pair.Value
 
         let ent = em.Spawn ()
-
-        em.Add (ent, TransformComponent (Matrix4x4.Identity))
 
         let meshInfo : RendererSystem.MeshInfo =
             {
                 Position = vertices |> Seq.toArray
                 Uv = uv |> Seq.toArray
                 Color = color |> Seq.toArray
+                Center = 
+                    if not isSprite then Array.zeroCreate vertices.Count
+                    else
+                        vertices
+                        |> Seq.chunkBySize 6
+                        |> Seq.map (fun quadVerts ->
+                            let min = 
+                                quadVerts
+                                |> Array.sortBy (fun x -> x.X)
+                                |> Array.sortBy (fun x -> x.Z)
+                                |> Array.head
+                            let max =
+                                quadVerts
+                                |> Array.sortByDescending (fun x -> x.X)
+                                |> Array.sortByDescending (fun x -> x.Z)
+                                |> Array.head
+                            let mid = min + ((max - min) / 2.f)
+                            Array.init quadVerts.Length (fun _ -> mid)
+                        )
+                        |> Seq.reduce Array.append
             }
 
         let materialInfo : RendererSystem.MaterialInfo =
             {
                 ShaderInfo =
                     {
-                        VertexShader = "triangle.vertex"
+                        VertexShader = if isSprite then "sprite.vertex" else "triangle.vertex"
                         FragmentShader = "triangle.fragment"
                     }
             
@@ -176,12 +194,23 @@ let spawnMesh (vertices: IEnumerable<Vector3>) uv texturePath lightLevel (em: En
     let color = Array.init (vertices.Count ()) (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
 
     match globalBatch.TryGetValue(texturePath) with
-    | true, (gVertices, gUv, gColor) ->
+    | true, (gVertices, gUv, gColor, gIsSprite) ->
         gVertices.AddRange(vertices)
         gUv.AddRange(uv)
         gColor.AddRange(color)
     | _ ->
-        globalBatch.Add (texturePath, (ResizeArray vertices, ResizeArray uv, ResizeArray color))
+        globalBatch.Add (texturePath, (ResizeArray vertices, ResizeArray uv, ResizeArray color, false))
+
+let spawnSprite (vertices: IEnumerable<Vector3>) uv texturePath lightLevel (em: EntityManager) =
+    let color = Array.init (vertices.Count ()) (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
+
+    match globalBatch.TryGetValue(texturePath) with
+    | true, (gVertices, gUv, gColor, gIsSprite) ->
+        gVertices.AddRange(vertices)
+        gUv.AddRange(uv)
+        gColor.AddRange(color)
+    | _ ->
+        globalBatch.Add (texturePath, (ResizeArray vertices, ResizeArray uv, ResizeArray color, true))
 
 let spawnCeilingMesh (flat: Flat) lightLevel wad em =
     flat.Ceiling.TextureName
@@ -352,7 +381,7 @@ let updates (clientWorld: ClientWorld) =
                             |]
 
                         let lightLevel = Level.lightLevelBySectorId sector.Id level
-                        spawnMesh vertices uv "BAR1A0.bmp" lightLevel em
+                        spawnSprite vertices uv "BAR1A0.bmp" lightLevel em
                         ()
                 | _ -> ()
             )

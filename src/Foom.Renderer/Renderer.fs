@@ -144,6 +144,13 @@ module Renderer =
         """
 
     [<Import; MI (MIO.NoInlining)>]
+    let bufferVboMatrix4x4 (data: Matrix4x4 []) (size: int) (vbo: int) : unit =
+        C """
+        glBindBuffer (GL_ARRAY_BUFFER, vbo);
+        glBufferData (GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
     let getMaxTextureSize () : int =
         C """
         int intmax = 0;
@@ -347,13 +354,46 @@ module Renderer =
         """
 
     [<Import; MI (MIO.NoInlining)>]
+    let bindCenter (programID: int) : unit =
+        C """
+        GLint posAttrib = glGetAttribLocation (programID, "in_center");
+
+        glVertexAttribPointer (posAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+        glEnableVertexAttribArray (posAttrib);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let bindModel (programID: int) : unit =
+        C """
+        GLint pos = glGetAttribLocation (programID, "in_model");
+
+        int pos1 = pos + 0; 
+        int pos2 = pos + 1; 
+        int pos3 = pos + 2; 
+        int pos4 = pos + 3; 
+        glEnableVertexAttribArray(pos1);
+        glEnableVertexAttribArray(pos2);
+        glEnableVertexAttribArray(pos3);
+        glEnableVertexAttribArray(pos4);
+        glVertexAttribPointer(pos1, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(0));
+        glVertexAttribPointer(pos2, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(sizeof(float) * 4));
+        glVertexAttribPointer(pos3, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(sizeof(float) * 8));
+        glVertexAttribPointer(pos4, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(sizeof(float) * 12));
+        glVertexAttribDivisor(pos1, 1);
+        glVertexAttribDivisor(pos2, 1);
+        glVertexAttribDivisor(pos3, 1);
+        glVertexAttribDivisor(pos4, 1);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
     let getUniformProjection (program: int) : int =
         C """
         return glGetUniformLocation (program, "uni_projection");
         """
 
     [<Import; MI (MIO.NoInlining)>]
-    let setUniformProjection (uni: int) (m: Matrix4x4)  : unit =
+    let setUniformMatrix4x4 (uni: int) (m: Matrix4x4)  : unit =
         C """
         glUniformMatrix4fv (uni, 1, GL_FALSE, &m);
         """
@@ -369,6 +409,12 @@ module Renderer =
     let setUniformColor (uniformColor: int) (color: RenderColor) : unit =
         C """
         glUniform4f (uniformColor, color.R, color.G, color.B, color.A);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let setUniformVector4 (v: Vector4) (uniformId: int) : unit =
+        C """
+        glUniform4f (uniformId, v.X, v.Y, v.Z, v.W);
         """
 
     [<Import; MI (MIO.NoInlining)>]
@@ -516,6 +562,35 @@ type Vector4ArrayBuffer (data) =
                 id <- Renderer.makeVbo ()
             
             Renderer.bufferVboVector4 data (sizeof<Vector4> * data.Length) id
+            length <- data.Length
+            queuedData <- None
+            true
+        | _ -> false
+
+    member this.Id = id
+
+type Matrix4x4ArrayBuffer (data) =
+
+    let mutable id = 0
+    let mutable length = 0
+    let mutable queuedData = Some data
+
+    member this.Set (data: Matrix4x4 []) =
+        queuedData <- Some data
+
+    member this.Length = length
+
+    member this.Bind () =
+        if id <> 0 then
+            Renderer.bindVbo id
+
+    member this.TryBufferData () =
+        match queuedData with
+        | Some data ->
+            if id = 0 then
+                id <- Renderer.makeVbo ()
+            
+            Renderer.bufferVboMatrix4x4 data (sizeof<Matrix4x4> * data.Length) id
             length <- data.Length
             queuedData <- None
             true
