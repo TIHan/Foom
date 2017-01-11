@@ -16,11 +16,15 @@ void main ()
 	vec3 CameraRight_worldspace = vec3 (uni_view[0][0], uni_view[1][0], uni_view[2][0]);
 	vec3 CameraUp_worldspace = vec3 (uni_view[0][1], uni_view[1][1], uni_view[2][1]);
 
-	vec3 pos = position - in_center;
+	vec3 c = vec3 (in_center.x, in_center.y, position.z);
+	vec3 pos = position - c;
 	vec3 vertexPosition_worldspace =
-		in_center
-		+ CameraRight_worldspace * pos.x 
-		+ CameraUp_worldspace * pos.z;
+		c
+		+ CameraRight_worldspace * pos.x + CameraUp_worldspace * pos.z;
+
+	//vertexPosition_worldspace.z = position.z;
+	//vertexPosition_worldspace.y += in_center.y;
+	//vertexPosition_worldspace.x += in_center.x;
 
 	vec4 snapToPixel = uni_projection * uni_view * vec4(vertexPosition_worldspace, 1.0);
 	vec4 vertex = snapToPixel;
@@ -33,7 +37,6 @@ void main ()
 
 
     gl_Position = vertex;
-	gl_Position /= gl_Position.w;
 
 
     uv = in_uv;
