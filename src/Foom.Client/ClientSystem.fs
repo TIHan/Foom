@@ -95,17 +95,21 @@ let physicsUpdateBehavior (clientWorld: ClientWorld) =
             let pos = transformComp.Position
             let pos = Vector2 (pos.X, pos.Y)
 
-            // TODO: This can be null, fix it.
-            let sector =
-                physicsEngineComp.PhysicsEngine
-                |> PhysicsEngine.findWithPoint pos :?> Sector
-
             let rbody : RigidBody = charContrComp.RigidBody
-
             physicsEngineComp.PhysicsEngine
             |> PhysicsEngine.moveRigidBody transformComp.Position rbody
 
-            transformComp.Position <- Vector3 (rbody.WorldPosition, single sector.FloorHeight + 50.f)
+            transformComp.Position <- Vector3 (rbody.WorldPosition, transformComp.Position.Z)
+
+            // TODO: This can be null, fix it.
+            let sector =
+                physicsEngineComp.PhysicsEngine
+                |> PhysicsEngine.findWithPoint pos
+
+            if obj.ReferenceEquals (sector, null) |> not then
+                let sector = sector :?> Sector
+
+                transformComp.Position <- Vector3 (rbody.WorldPosition, single sector.FloorHeight + 50.f)
         } |> ignore
 
     )
@@ -125,6 +129,6 @@ let create (app: Application) (clientWorld: ClientWorld) =
                Camera.playerFixedUpdate ()
 
                addRigidBodyBehavior clientWorld
-              // physicsUpdateBehavior clientWorld
+               physicsUpdateBehavior clientWorld
             ]
         )
