@@ -190,7 +190,7 @@ module Camera =
                         
                     acc <- 
                         if acc <> Vector3.Zero then
-                            acc |> Vector3.Normalize |> (*) 10.f
+                            acc |> Vector3.Normalize |> (*) 70.f
                         else
                             acc
 

@@ -240,7 +240,7 @@ module PhysicsEngine =
                 | _ -> ()
 
 
-    let moveRigidBody (position: Vector3) (rBody: RigidBody) eng =
+    let rec moveRigidBody (position: Vector3) (rBody: RigidBody) eng =
         if Vector3 (rBody.WorldPosition, rBody.Z) = position then ()
         else
         
@@ -271,8 +271,134 @@ module PhysicsEngine =
                     narrowPhase.Add seg
             )
 
-            // TODO: Implement solver.
+            let mutable t = Single.MaxValue
+            let mutable firstSegHit = None
+            let mutable point = None
+            let v = (pos2d - rBody.WorldPosition)
 
-            warpRigidBody (Vector3 (pos2d, position.Z)) rBody eng
+            // TODO: Implement solver.
+            narrowPhase
+            |> Seq.distinct
+            |> Seq.iter (fun seg ->
+
+                let v00 = rBody.WorldPosition + Vector2 (min.X, min.Y)
+                let v01 = rBody.WorldPosition + Vector2 (max.X, min.Y)
+                let v02 = rBody.WorldPosition + Vector2 (min.X, max.Y)
+                let v03 = rBody.WorldPosition + Vector2 (max.X, max.Y)
+
+                let v10 = pos2d + Vector2 (min.X, min.Y)
+                let v11 = pos2d + Vector2 (max.X, min.Y)
+                let v12 = pos2d + Vector2 (min.X, max.Y)
+                let v13 = pos2d + Vector2 (max.X, max.Y)
+
+                let check (p: Vector2) isOrigin =
+                    let t, v = LineSegment2D.findClosestPointByPoint p seg
+
+                    let sign =
+                        if LineSegment2D.isPointOnLeftSide p seg then
+                            -1.f
+                        else
+                            1.f
+
+                    if t = 1.f || t = 0.f then
+                        p, (p - v).Length ()
+                    else
+                        p, (p - v).Length () * sign
+
+                let f p0 p1 p2 p3 isOrigin =
+                    let leftSides, rightSides =
+                        [
+                            check p0 isOrigin
+                            check p1 isOrigin
+                            check p2 isOrigin
+                            check p3 isOrigin
+                        ]
+                        |> List.partition (fun (p, _) -> LineSegment2D.isPointOnLeftSide p seg)
+
+                    match leftSides, rightSides with
+                    | [], _ ->
+                        rightSides
+                        |> List.minBy (fun (_, l) -> l)
+                    | _ ->
+                        leftSides
+                        |> List.minBy (fun (_, l) -> l)
+
+                let p0, d0 = f v00 v01 v02 v03 true
+                let p1, d1 = 
+//                    if p0 = v00 then
+//                        check v10 false
+//                    elif p0 = v01 then
+//                        check v11 false
+//                    elif p0 = v02 then
+//                        check v12 false
+//                    else
+//                        check v13 false
+                    f v10 v11 v12 v13 false
+
+                if d1 < 0.f && d0 >= 0.f then
+                    let newT = ((-d0) / (d1 - d0))
+
+                    if (newT >= 0.f && newT < 1.f) then
+                        //if newT < t then
+                           // t <- newT
+                        if d0 < t then
+                            t <- d0
+                            firstSegHit <- Some seg
+                            point <- Some p1
+            )
+
+            //let pos2d = rBody.WorldPosition + (v * t)
+
+
+            match firstSegHit, point with
+            | Some seg, Some p ->
+
+//                let stopPos = rBody.WorldPosition + (v * t)
+//
+//                warpRigidBody (Vector3 (stopPos, position.Z)) rBody eng
+
+              //  let normal = LineSegment2D.normal seg
+              //  let _, p1 = LineSegment2D.findClosestPointByPoint p seg
+
+                let v10 = pos2d + Vector2 (min.X, min.Y)
+                let v11 = pos2d + Vector2 (max.X, min.Y)
+                let v12 = pos2d + Vector2 (min.X, max.Y)
+                let v13 = pos2d + Vector2 (max.X, max.Y)
+
+                let check (p: Vector2) =
+                    if LineSegment2D.isPointOnLeftSide p seg then
+                        let t, v = LineSegment2D.findClosestPointByPoint p seg
+                        Some (v, (v - p))
+                    else
+                        None
+
+                let results =
+                    [
+                        check v10
+                        check v11
+                        check v12
+                        check v13
+                    ]
+                    |> List.choose id
+
+                match results with
+                | [] -> ()
+                | results ->
+                    let _, pushOut =
+                        results
+                        |> List.maxBy (fun (_, x) -> x.Length ())
+
+                    let normal = LineSegment2D.normal seg
+                    let force = (Vector2.Dot (normal, pushOut) + 0.1f) * normal
+
+                    pos2d <- pos2d + force
+
+
+            | _ -> ()
+
+            if firstSegHit.IsSome then
+                moveRigidBody (Vector3 (pos2d, position.Z)) rBody eng
+            else
+                warpRigidBody (Vector3 (pos2d, position.Z)) rBody eng
 
         | _ -> ()
