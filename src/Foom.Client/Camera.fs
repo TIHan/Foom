@@ -55,7 +55,7 @@ module Camera =
                         if playerComp.IsMovingRight then
                             let v = Vector3.Transform (Vector3.UnitX, transformComp.Rotation)
                             acc <- acc + (Vector3 (v.X, v.Y, v.Z))
-                        
+                       
                         acc <- 
                             if acc <> Vector3.Zero then
                                 acc |> Vector3.Normalize |> (*) 10.f

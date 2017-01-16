@@ -104,7 +104,7 @@ let physicsUpdateBehavior (clientWorld: ClientWorld) =
             // TODO: This can be null, fix it.
             let sector =
                 physicsEngineComp.PhysicsEngine
-                |> PhysicsEngine.findWithPoint pos
+                |> PhysicsEngine.findWithPoint rbody.WorldPosition
 
             if obj.ReferenceEquals (sector, null) |> not then
                 let sector = sector :?> Sector
