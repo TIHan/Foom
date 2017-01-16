@@ -21,6 +21,7 @@ type WallSide =
 
 type Wall =
     {
+        Segment: LineSegment2D
         Special: WallSpecial
         FrontSide: WallSide option
         BackSide: WallSide option

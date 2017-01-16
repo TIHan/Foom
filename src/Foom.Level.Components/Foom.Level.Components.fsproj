@@ -5,7 +5,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{7EBB87FB-C951-4FCE-9B0D-FD825A66AF32}</ProjectGuid>
     <TargetProfile>netcore</TargetProfile>
-    <TargetFSharpCoreVersion>3.3.1.0</TargetFSharpCoreVersion>
+    <TargetFSharpCoreVersion>3.7.4.0</TargetFSharpCoreVersion>
     <OutputType>Library</OutputType>
     <RootNamespace>Foom.Level.Components</RootNamespace>
     <AssemblyName>Foom.Level.Components</AssemblyName>
@@ -36,6 +36,10 @@
     <Reference Include="FSharp.Core">
       <HintPath>$(MSBuildExtensionsPath32)\..\Reference Assemblies\Microsoft\FSharp\.NETCore\$(TargetFSharpCoreVersion)\FSharp.Core.dll</HintPath>
     </Reference>
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>..\..\packages\System.Collections.Immutable.1.3.1\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Numerics.Vectors">
       <HintPath>..\..\packages\System.Numerics.Vectors.4.1.1\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
     </Reference>
@@ -51,6 +55,9 @@
     <Compile Include="Flat.fsi" />
     <Compile Include="Flat.fs" />
     <Compile Include="Sector.fs" />
+    <Compile Include="Level.fs" />
+    <Compile Include="LinedefTracer.fsi" />
+    <Compile Include="LinedefTracer.fs" />
     <Compile Include="WadLevel.fs" />
   </ItemGroup>
   <ItemGroup>

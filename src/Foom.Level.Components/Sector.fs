@@ -2,12 +2,7 @@
 
 type Sector =
     {
-        Walls: Wall list
-        Flat: Flat
+        lightLevel: int
+        floorHeight: int
+        ceilingHeight: int
     }
-
-[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
-module Sector =
-
-    let changeCeilingHeight height sector =
-        sector.Flat.Ceiling |> FlatPart.changeHeight height

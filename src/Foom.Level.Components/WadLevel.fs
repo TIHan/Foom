@@ -259,6 +259,7 @@ module WadLevel =
 
             arr.Add
                 {
+                    Segment = LineSegment2D (linedef.Start, linedef.End)
                     Special = special
                     FrontSide =
                         if linedef.FrontSidedef.IsSome then
