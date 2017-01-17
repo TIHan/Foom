@@ -17,7 +17,7 @@ module WadLevel =
         | Middle
         | Lower
 
-    let mapToWallPart (level: Foom.Wad.Level) (linedef: Linedef) (sidedef: Sidedef) (isFrontSide: bool) (section: WallSection) (texName: string) : WallPart option =
+    let mapToWallPart (level: Foom.Wad.Level) (linedef: Linedef) (sidedef: Sidedef) (isFrontSide: bool) (section: WallSection) (texName: string option) : WallPart option =
         let isLowerUnpegged = linedef.Flags.HasFlag(LinedefFlags.LowerTextureUnpegged)
         let isUpperUnpegged = linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged)
 
@@ -26,7 +26,7 @@ module WadLevel =
         {
             TextureOffsetX = sidedef.OffsetX
             TextureOffsetY = sidedef.OffsetY
-            TextureName = Some texName
+            TextureName = texName
             Vertices = [||]
             TextureAlignment =
                 match section with
@@ -61,14 +61,11 @@ module WadLevel =
         {
             SectorId = sidedef.SectorNumber
             Upper =
-                sidedef.UpperTextureName
-                |> Option.bind (mapToWallPart level linedef sidedef isFrontSide WallSection.Upper)
+                mapToWallPart level linedef sidedef isFrontSide WallSection.Upper sidedef.UpperTextureName
             Middle =
-                sidedef.MiddleTextureName
-                |> Option.bind (mapToWallPart level linedef sidedef isFrontSide WallSection.Middle)
+                mapToWallPart level linedef sidedef isFrontSide WallSection.Middle sidedef.MiddleTextureName
             Lower =
-                sidedef.LowerTextureName
-                |> Option.bind (mapToWallPart level linedef sidedef isFrontSide WallSection.Lower)
+                mapToWallPart level linedef sidedef isFrontSide WallSection.Lower sidedef.LowerTextureName
         } |> Some
 
     let toWalls (level: Foom.Wad.Level) =
