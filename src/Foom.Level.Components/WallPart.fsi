@@ -20,8 +20,6 @@ type WallPart =
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module WallPart =
 
-    val updateUV : uv: Vector2 [] -> width: int -> height: int -> WallPart -> unit
+    val updateUV : vertices: Vector3 [] -> uv: Vector2 [] -> width: int -> height: int -> WallPart -> unit
 
-    val createUV : width: int -> height: int -> WallPart -> Vector2 []
-
-    val newCreateUV : Vector3 [] -> width: int -> height: int -> WallPart -> Vector2 []
+    val createUV : vertices: Vector3 [] -> width: int -> height: int -> WallPart -> Vector2 []
