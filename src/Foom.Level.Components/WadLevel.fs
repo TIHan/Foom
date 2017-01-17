@@ -12,7 +12,12 @@ module WadLevel =
 
     open Foom.Wad
 
-    let mapToWallPart (level: Foom.Wad.Level) (linedef: Linedef) (sidedef: Sidedef) (isFrontSide: bool) (isLowerPart: bool) (texName: string) : WallPart option =
+    type WallSection =
+        | Upper
+        | Middle
+        | Lower
+
+    let mapToWallPart (level: Foom.Wad.Level) (linedef: Linedef) (sidedef: Sidedef) (isFrontSide: bool) (section: WallSection) (texName: string) : WallPart option =
         let isLowerUnpegged = linedef.Flags.HasFlag(LinedefFlags.LowerTextureUnpegged)
         let isUpperUnpegged = linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged)
 
@@ -24,25 +29,32 @@ module WadLevel =
             TextureName = Some texName
             Vertices = [||]
             TextureAlignment =
-                if not isUpperUnpegged then
-                    if isTwoSided && isLowerPart then
-                        let frontSideSector = 
-                            level
-                            |> Foom.Wad.Level.getSector linedef.FrontSidedef.Value.SectorNumber
-
-                        let backSideSector =
-                            level
-                            |> Foom.Wad.Level.getSector linedef.BackSidedef.Value.SectorNumber
-
-
-                        if isFrontSide then
-                            UpperUnpegged (abs (frontSideSector.CeilingHeight - backSideSector.FloorHeight))
-                        else
-                            UpperUnpegged (abs (backSideSector.CeilingHeight - frontSideSector.FloorHeight))
-                    else
+                match section with
+                | Upper ->
+                    if not isUpperUnpegged then
                         LowerUnpegged
-                else
-                    UpperUnpegged 0
+                    else
+                        UpperUnpegged 0
+                | _ ->
+                    if isLowerUnpegged then
+                        if isTwoSided && section = WallSection.Lower then
+                            let frontSideSector = 
+                                level
+                                |> Foom.Wad.Level.getSector linedef.FrontSidedef.Value.SectorNumber
+
+                            let backSideSector =
+                                level
+                                |> Foom.Wad.Level.getSector linedef.BackSidedef.Value.SectorNumber
+
+
+                            if isFrontSide then
+                                UpperUnpegged (abs (frontSideSector.CeilingHeight - backSideSector.FloorHeight))
+                            else
+                                UpperUnpegged (abs (backSideSector.CeilingHeight - frontSideSector.FloorHeight))
+                        else
+                            LowerUnpegged
+                    else
+                        UpperUnpegged 0
         }  |> Some
 
     let mapToWallSide level (linedef: Linedef) isFrontSide (sidedef: Sidedef) : WallSide option =
@@ -50,13 +62,13 @@ module WadLevel =
             SectorId = sidedef.SectorNumber
             Upper =
                 sidedef.UpperTextureName
-                |> Option.bind (mapToWallPart level linedef sidedef isFrontSide false)
+                |> Option.bind (mapToWallPart level linedef sidedef isFrontSide WallSection.Upper)
             Middle =
                 sidedef.MiddleTextureName
-                |> Option.bind (mapToWallPart level linedef sidedef isFrontSide false)
+                |> Option.bind (mapToWallPart level linedef sidedef isFrontSide WallSection.Middle)
             Lower =
                 sidedef.LowerTextureName
-                |> Option.bind (mapToWallPart level linedef sidedef isFrontSide true)
+                |> Option.bind (mapToWallPart level linedef sidedef isFrontSide WallSection.Lower)
         } |> Some
 
     let toWalls (level: Foom.Wad.Level) =
@@ -76,6 +88,33 @@ module WadLevel =
             }
             |> arr.Add
         )
+
+        arr
+
+    let toSectors (level: Foom.Wad.Level) =
+        let arr = ResizeArray<Foom.Level.Sector> ()
+
+        level
+        |> Level.iteriSector (fun i sector ->
+            let s =
+                {
+                    lightLevel = sector.LightLevel
+                    floorHeight = sector.FloorHeight
+                    ceilingHeight = sector.CeilingHeight
+                    floorTextureName = sector.FloorTextureName
+                    ceilingTextureName = sector.CeilingTextureName
+                }
+            arr.Add s
+        )
+
+        arr
+
+    let toLevel level =
+        let walls = toWalls level
+        let sectors = toSectors level
+
+
+        Level.create walls sectors
 
     let createWalls level =
         let arr = ResizeArray<Wall> ()

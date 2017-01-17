@@ -228,40 +228,64 @@ let spawnFloorMesh (flat: Flat) lightLevel wad em =
         spawnMesh flat.Floor.Vertices (FlatPart.createUV t.Width t.Height flat.Floor) texturePath lightLevel em
     )
 
-let spawnWallPartMesh (part: WallPart) lightLevel wad em isSky =
-    if not isSky then
-        part.TextureName
-        |> Option.iter (fun textureName ->
-            let texturePath = textureName + ".bmp"
-            let t = new Bitmap(texturePath)
-            spawnMesh part.Vertices (WallPart.createUV t.Width t.Height part) texturePath lightLevel em
-        )
-    else
-        let texturePath = "F_SKY1" + "_flat.bmp"
-        let t = new Bitmap(texturePath)
-        spawnMesh part.Vertices (WallPart.createUV t.Width t.Height part) texturePath lightLevel em
+//let spawnWallPartMesh (part: WallPart) lightLevel wad em isSky =
+//    if not isSky then
+//        part.TextureName
+//        |> Option.iter (fun textureName ->
+//            let texturePath = textureName + ".bmp"
+//            let t = new Bitmap(texturePath)
+//            spawnMesh part.Vertices (WallPart.createUV t.Width t.Height part) texturePath lightLevel em
+//        )
+//    else
+//        let texturePath = "F_SKY1" + "_flat.bmp"
+//        let t = new Bitmap(texturePath)
+//        spawnMesh part.Vertices (WallPart.createUV t.Width t.Height part) texturePath lightLevel em
 
-let spawnWallSideMesh (part: WallPart option) lightLevel wad em isSky =
+let spawnWallPartMesh (part: WallPart) (vertices: Vector3 []) lightLevel wad em isSky =
+    if vertices.Length >= 3 then
+        if not isSky then
+            part.TextureName
+            |> Option.iter (fun textureName ->
+                let texturePath = textureName + ".bmp"
+                let t = new Bitmap(texturePath)
+                spawnMesh vertices (WallPart.newCreateUV vertices t.Width t.Height part) texturePath lightLevel em
+            )
+        else
+            let texturePath = "F_SKY1" + "_flat.bmp"
+            let t = new Bitmap(texturePath)
+            spawnMesh vertices (WallPart.newCreateUV vertices t.Width t.Height part) texturePath lightLevel em
+
+//let spawnWallSideMesh (part: WallPart option) lightLevel wad em isSky =
+//    part
+//    |> Option.iter (fun part ->
+//        spawnWallPartMesh part lightLevel wad em isSky
+//    )
+
+let spawnWallSideMesh (part: WallPart option) vertices lightLevel wad em isSky =
     part
     |> Option.iter (fun part ->
-        spawnWallPartMesh part lightLevel wad em isSky
+        spawnWallPartMesh part vertices lightLevel wad em isSky
     )
 
 let spawnWallMesh (wall: Wall) level wad em =
+    let (
+        (upperFront, middleFront, lowerFront),
+        (upperBack, middleBack, lowerBack)) = Foom.Level.Level.createWallGeometry wall level
+
     match wall.FrontSide with
     | Some frontSide ->
 
         let isSky =
             match wall.BackSide with
             | Some backSide ->
-                let sector = Level.getSector backSide.SectorId level
-                sector.CeilingTextureName.Equals("F_SKY1")
+                let sector = Foom.Level.Level.getSector backSide.SectorId level
+                sector.ceilingTextureName.Equals("F_SKY1")
             | _ -> false
         
-        let lightLevel = Level.lightLevelBySectorId frontSide.SectorId level
-        spawnWallSideMesh frontSide.Upper lightLevel wad em isSky
-        spawnWallSideMesh frontSide.Middle lightLevel wad em false
-        spawnWallSideMesh frontSide.Lower lightLevel wad em false
+        let lightLevel = Foom.Level.Level.lightLevelBySectorId frontSide.SectorId level
+        spawnWallSideMesh frontSide.Upper upperFront lightLevel wad em isSky
+        spawnWallSideMesh frontSide.Middle middleFront lightLevel wad em false
+        spawnWallSideMesh frontSide.Lower lowerFront lightLevel wad em false
 
     | _ -> ()
 
@@ -271,16 +295,51 @@ let spawnWallMesh (wall: Wall) level wad em =
         let isSky =
             match wall.FrontSide with
             | Some frontSide ->
-                let sector = Level.getSector frontSide.SectorId level
-                sector.CeilingTextureName.Equals("F_SKY1")
+                let sector = Foom.Level.Level.getSector frontSide.SectorId level
+                sector.ceilingTextureName.Equals("F_SKY1")
             | _ -> false
 
-        let lightLevel = Level.lightLevelBySectorId backSide.SectorId level
-        spawnWallSideMesh backSide.Upper lightLevel wad em isSky
-        spawnWallSideMesh backSide.Middle lightLevel wad em false
-        spawnWallSideMesh backSide.Lower lightLevel wad em false
+        let lightLevel = Foom.Level.Level.lightLevelBySectorId backSide.SectorId level
+        spawnWallSideMesh backSide.Upper upperBack lightLevel wad em isSky
+        spawnWallSideMesh backSide.Middle middleBack lightLevel wad em false
+        spawnWallSideMesh backSide.Lower lowerBack lightLevel wad em false
 
     | _ -> ()
+
+//let spawnWallMesh (wall: Wall) level wad em =
+//    match wall.FrontSide with
+//    | Some frontSide ->
+//
+//        let isSky =
+//            match wall.BackSide with
+//            | Some backSide ->
+//                let sector = Level.getSector backSide.SectorId level
+//                sector.CeilingTextureName.Equals("F_SKY1")
+//            | _ -> false
+//        
+//        let lightLevel = Level.lightLevelBySectorId frontSide.SectorId level
+//        spawnWallSideMesh frontSide.Upper lightLevel wad em isSky
+//        spawnWallSideMesh frontSide.Middle lightLevel wad em false
+//        spawnWallSideMesh frontSide.Lower lightLevel wad em false
+//
+//    | _ -> ()
+//
+//    match wall.BackSide with
+//    | Some backSide ->
+//
+//        let isSky =
+//            match wall.FrontSide with
+//            | Some frontSide ->
+//                let sector = Level.getSector frontSide.SectorId level
+//                sector.CeilingTextureName.Equals("F_SKY1")
+//            | _ -> false
+//
+//        let lightLevel = Level.lightLevelBySectorId backSide.SectorId level
+//        spawnWallSideMesh backSide.Upper lightLevel wad em isSky
+//        spawnWallSideMesh backSide.Middle lightLevel wad em false
+//        spawnWallSideMesh backSide.Lower lightLevel wad em false
+//
+//    | _ -> ()
 
 let updates (clientWorld: ClientWorld) =
     [
@@ -343,10 +402,17 @@ let updates (clientWorld: ClientWorld) =
                 )
             )
 
-            WadLevel.createWalls level
-            |> Seq.iter (fun wall ->
-                spawnWallMesh wall level wad em
+            // New Level creation
+            let lvl = WadLevel.toLevel level
+            
+            lvl
+            |> Level.iterWall (fun wall ->
+                spawnWallMesh wall lvl wad em
             )
+//            WadLevel.createWalls level
+//            |> Seq.iter (fun wall ->
+//                spawnWallMesh wall level wad em
+//            )
 
             level
             |> Level.iterThing (fun thing ->

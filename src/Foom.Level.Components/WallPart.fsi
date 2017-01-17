@@ -23,3 +23,5 @@ module WallPart =
     val updateUV : uv: Vector2 [] -> width: int -> height: int -> WallPart -> unit
 
     val createUV : width: int -> height: int -> WallPart -> Vector2 []
+
+    val newCreateUV : Vector3 [] -> width: int -> height: int -> WallPart -> Vector2 []

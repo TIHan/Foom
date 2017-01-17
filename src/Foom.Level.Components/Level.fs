@@ -14,15 +14,7 @@ type Level =
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Level =
 
-    let createWallGeometry (wall: Wall) (level: Level) : (Vector3 [] * Vector3 [] * Vector3 []) * (Vector3 [] * Vector3 [] * Vector3 [])  =
-        let seg = wall.Segment
-
-        (
-            ([||], [||], [||]),
-            ([||], [||], [||])
-        )
-
-    let create (walls: Wall seq) =
+    let create (walls: Wall seq) (sectors: Sector seq) =
 
         let wallLookup = Dictionary ()
 
@@ -62,7 +54,7 @@ module Level =
         {
             walls = ResizeArray (walls)
             wallLookup = wallLookup
-            sectors = ResizeArray ()
+            sectors = ResizeArray (sectors)
             things = ResizeArray ()
         }
 
@@ -102,3 +94,105 @@ module Level =
 
     let iterThing f level =
         level.things |> Seq.iter f
+
+    let createWallGeometry (wall: Wall) (level: Level) : (Vector3 [] * Vector3 [] * Vector3 []) * (Vector3 [] * Vector3 [] * Vector3 [])  =
+        let seg = wall.Segment
+
+        // Upper Front
+        let mutable upperFront = [||]
+        wall.FrontSide
+        |> Option.iter (fun frontSide ->
+            let frontSideSector = level |> getSector frontSide.SectorId
+
+            let floorHeight, ceilingHeight =
+                match wall.BackSide with
+                | Some backSide ->
+                    let backSideSector = level |> getSector backSide.SectorId
+
+                    backSideSector.ceilingHeight, frontSideSector.ceilingHeight
+
+                | _ -> frontSideSector.ceilingHeight, frontSideSector.ceilingHeight
+
+            upperFront <-
+                [|
+                    Vector3 (seg.A, single floorHeight)
+                    Vector3 (seg.B, single floorHeight)
+                    Vector3 (seg.B, single ceilingHeight)
+
+                    Vector3 (seg.B, single ceilingHeight)
+                    Vector3 (seg.A, single ceilingHeight)
+                    Vector3 (seg.A, single floorHeight)
+                |]
+        )
+
+        // Middle Front
+        let mutable middleFront = [||]
+        wall.FrontSide
+        |> Option.iter (fun frontSide ->
+            let frontSideSector = level |> getSector frontSide.SectorId
+
+            let floorHeight, ceilingHeight =
+                match wall.BackSide with
+                | Some backSide ->
+                    let backSideSector = level |> getSector backSide.SectorId
+
+                    (
+                        (
+                            if backSideSector.floorHeight > frontSideSector.floorHeight then
+                                backSideSector.floorHeight
+                            else
+                                frontSideSector.floorHeight
+                        ),
+                        (
+                            if backSideSector.ceilingHeight < frontSideSector.ceilingHeight then
+                                backSideSector.ceilingHeight
+                            else
+                                frontSideSector.ceilingHeight
+                        )
+                    )
+
+                | _ -> frontSideSector.floorHeight, frontSideSector.ceilingHeight
+
+            middleFront <-
+                [|
+                    Vector3 (seg.A, single floorHeight)
+                    Vector3 (seg.B, single floorHeight)
+                    Vector3 (seg.B, single ceilingHeight)
+
+                    Vector3 (seg.B, single ceilingHeight)
+                    Vector3 (seg.A, single ceilingHeight)
+                    Vector3 (seg.A, single floorHeight)
+                |]
+        )
+
+        // Lower Front
+        let mutable lowerFront = [||]
+        wall.FrontSide
+        |> Option.iter (fun frontSide ->
+            let frontSideSector = level |> getSector frontSide.SectorId
+
+            let floorHeight, ceilingHeight =
+                match wall.BackSide with
+                | Some backSide ->
+                    let backSideSector = level |> getSector backSide.SectorId
+
+                    frontSideSector.floorHeight, backSideSector.floorHeight
+
+                | _ -> frontSideSector.floorHeight, frontSideSector.floorHeight
+
+            lowerFront <-
+                [|
+                    Vector3 (seg.A, single floorHeight)
+                    Vector3 (seg.B, single floorHeight)
+                    Vector3 (seg.B, single ceilingHeight)
+
+                    Vector3 (seg.B, single ceilingHeight)
+                    Vector3 (seg.A, single ceilingHeight)
+                    Vector3 (seg.A, single floorHeight)
+                |]
+        )
+
+        (
+            (upperFront, middleFront, lowerFront),
+            ([||], [||], [||])
+        )
