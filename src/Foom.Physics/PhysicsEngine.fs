@@ -291,69 +291,72 @@ module PhysicsEngine =
 
                 let mutable nope = false
 
-                let check p =
-                    if LineSegment2D.isPointOnLeftSide p seg then
+                let check point =
+                    if LineSegment2D.isPointOnLeftSide point seg then
                         nope <- true
-                        Vector2.Zero, Single.MaxValue
+                        1.f
                     else
-                        let _, pp = LineSegment2D.findClosestPointByPoint p seg
-                        p, (pp - p).Length ()
+                    // p + t r = q + u s
+                    // u = (q − p) × r / (r × s)
 
-                let findClosestPoint () =
+                        let p = seg.A
+                        let r = (seg.B - p)
+                        let q = point
+                        let s = velocity
+
+                        let qp = (q - p)
+                        let qpXr = Vec2.perpDot qp r
+                        let qpXs = Vec2.perpDot qp s
+                        let rXs = Vec2.perpDot r s
+
+
+    //		if (CmPxr == 0f)
+    //		{
+    //			// Lines are collinear, and so intersect if they have any overlap
+    // 
+    //			return ((C.X - A.X < 0f) != (C.X - B.X < 0f))
+    //				|| ((C.Y - A.Y < 0f) != (C.Y - B.Y < 0f));
+    //		}
+    // 
+    //		if (rxs == 0f)
+    //			return false; // Lines are parallel
+
+                        if (qpXr <> 0.f || rXs <> 0.f) then
+
+                            if (rXs = 0.f) then 
+                                1.f
+                            else
+
+                            let u = qpXr / rXs
+                            let t = qpXs / rXs
+
+                            if (t >= 0.f) && (t <= 1.f) && (u >= 0.f) && (u <= 1.f) then
+                                u
+                            else
+                                1.f
+                        else
+                            1.f
+
+                let findShortestHitTime () =
                     [
                         check v00
                         check v01
                         check v02
                         check v03
                     ]
-                    |> List.minBy (fun (_, len) -> len)
+                    |> List.min
 
-                let closestPoint, _ = findClosestPoint ()
+                let u = findShortestHitTime ()
 
                 if nope = true then ()
                 else
 
-                    // p + t r = q + u s
-                    // u = (q − p) × r / (r × s)
+                    let newHitTime = u
 
-                    let p = seg.A
-                    let r = (seg.B - p)
-                    let q = closestPoint
-                    let s = velocity
-
-                    let qp = (q - p)
-                    let qpXr = Vec2.perpDot qp r
-                    let qpXs = Vec2.perpDot qp s
-                    let rXs = Vec2.perpDot r s
-
-
-//		if (CmPxr == 0f)
-//		{
-//			// Lines are collinear, and so intersect if they have any overlap
-// 
-//			return ((C.X - A.X < 0f) != (C.X - B.X < 0f))
-//				|| ((C.Y - A.Y < 0f) != (C.Y - B.Y < 0f));
-//		}
-// 
-//		if (rxs == 0f)
-//			return false; // Lines are parallel
-
-                    if (qpXr <> 0.f || rXs <> 0.f) then
-
-                        if (rXs = 0.f) then ()
-                        else
-
-                        let u = qpXr / rXs
-                        let t = qpXs / rXs
-
-                        if (t >= 0.f) && (t <= 1.f) && (u >= 0.f) && (u <= 1.f) then
-
-                            let newHitTime = u
-
-                            if (newHitTime > 0.f && newHitTime < 1.f) then
-                                if newHitTime < hitTime then
-                                    hitTime <- newHitTime
-                                    firstSegHit <- Some seg
+                    if (newHitTime > 0.f && newHitTime < 1.f) then
+                        if newHitTime < hitTime then
+                            hitTime <- newHitTime
+                            firstSegHit <- Some seg
                         
             )
 
