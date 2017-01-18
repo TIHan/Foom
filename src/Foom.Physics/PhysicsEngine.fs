@@ -275,10 +275,9 @@ module PhysicsEngine =
                     narrowPhase.Add seg
             )
 
-            let mutable t = 1.f//Single.MaxValue
+            let mutable hitTime = 1.f
             let mutable firstSegHit : LineSegment2D option = None
-            let mutable point = None
-            let v = (pos2d - rBody.WorldPosition)
+            let velocity = (pos2d - rBody.WorldPosition)
 
             // TODO: Implement solver.
             narrowPhase
@@ -290,100 +289,86 @@ module PhysicsEngine =
                 let v02 = rBody.WorldPosition + Vector2 (min.X, max.Y)
                 let v03 = rBody.WorldPosition + Vector2 (max.X, max.Y)
 
-                let v10 = pos2d + Vector2 (min.X, min.Y)
-                let v11 = pos2d + Vector2 (max.X, min.Y)
-                let v12 = pos2d + Vector2 (min.X, max.Y)
-                let v13 = pos2d + Vector2 (max.X, max.Y)
+                let mutable nope = false
 
-                let normal = LineSegment2D.normal seg
-
-                let check (p: Vector2) isOrigin =
-                    let t, v = LineSegment2D.findClosestPointByPoint p seg
-
-                    let sign =
-                        if LineSegment2D.isPointOnLeftSide p seg then
-                            -1.f
-                        else
-                            1.f
-
-                    if t = 1.f || t = 0.f then
-                        if isOrigin then
-
-                            p, Single.MaxValue
-                        else
-                            p, (p - v).Length () * sign
+                let check p =
+                    if LineSegment2D.isPointOnLeftSide p seg then
+                        nope <- true
+                        Vector2.Zero, Single.MaxValue
                     else
-                        p, (p - v).Length () * sign
+                        let _, pp = LineSegment2D.findClosestPointByPoint p seg
+                        p, (pp - p).Length ()
+
+                let findClosestPoint () =
+                    [
+                        check v00
+                        check v01
+                        check v02
+                        check v03
+                    ]
+                    |> List.minBy (fun (_, len) -> len)
+
+                let closestPoint, _ = findClosestPoint ()
+
+                if nope = true then ()
+                else
+
+                    // p + t r = q + u s
+                    // u = (q − p) × r / (r × s)
+
+                    let p = seg.A
+                    let r = (seg.B - p)
+                    let q = closestPoint
+                    let s = velocity
+
+                    let qp = (q - p)
+                    let qpXr = Vec2.perpDot qp r
+                    let qpXs = Vec2.perpDot qp s
+                    let rXs = Vec2.perpDot r s
 
 
-                let f p0 p1 p2 p3 isOrigin =
-                    let leftSides, rightSides =
-                        [
-                            check p0 isOrigin
-                            check p1 isOrigin
-                            check p2 isOrigin
-                            check p3 isOrigin
-                        ]
-                        |> List.partition (fun (p, _) -> LineSegment2D.isPointOnLeftSide p seg)
+//		if (CmPxr == 0f)
+//		{
+//			// Lines are collinear, and so intersect if they have any overlap
+// 
+//			return ((C.X - A.X < 0f) != (C.X - B.X < 0f))
+//				|| ((C.Y - A.Y < 0f) != (C.Y - B.Y < 0f));
+//		}
+// 
+//		if (rxs == 0f)
+//			return false; // Lines are parallel
 
-                    match leftSides, rightSides with
-                    | [], _ ->
-                        rightSides
-                        |> List.minBy (fun (_, l) -> l)
-                    | _ ->
-                        leftSides
-                        |> List.minBy (fun (_, l) -> l)
+                    if (qpXr <> 0.f || rXs <> 0.f) then
 
-                let p0, d0 = f v00 v01 v02 v03 true
-                let p1, d1 = 
-                    if p0 = v00 then
-                        check v10 false
-                    elif p0 = v01 then
-                        check v11 false
-                    elif p0 = v02 then
-                        check v12 false
-                    else
-                        check v13 false
-                    //f v10 v11 v12 v13 false
+                        if (rXs = 0.f) then ()
+                        else
 
-                if d1 - Single.Epsilon < 0.f then
+                        let u = qpXr / rXs
+                        let t = qpXs / rXs
 
+                        if (t >= 0.f) && (t <= 1.f) && (u >= 0.f) && (u <= 1.f) then
 
-                    
+                            let newHitTime = u
 
-                    let newT = (-d0) / (d1 - d0)
-                    if (newT - Single.Epsilon > 0.f && newT + Single.Epsilon < 1.f) then
-                        if newT < t then
-                            t <- newT
-//                        if d0 = t then
-//                            let n1 = firstSegHit.Value |> LineSegment2D.normal
-//                            let n2 = seg |> LineSegment2D.normal
-//                            let dir = v |> Vector2.Normalize
-//                            if Vector2.Dot (-dir, n1) > Vector2.Dot (-dir, n2) then
-//                                ()
-//                            else
-//                                t <- d0
-//                                firstSegHit <- Some seg
-//                                point <- Some p1                                
-//                        elif d0 < t then
-//                        if d0 < t then
-//                            t <- d0
-                            firstSegHit <- Some seg
-                            point <- Some p1
+                            if (newHitTime > 0.f && newHitTime < 1.f) then
+                                if newHitTime < hitTime then
+                                    hitTime <- newHitTime
+                                    firstSegHit <- Some seg
+                        
             )
 
             //let pos2d = rBody.WorldPosition + (v * t)
 
 
-            match firstSegHit, point with
-            | Some seg, Some p ->
+            match firstSegHit with
+            | Some seg ->
 
-                pos2d <- rBody.WorldPosition + (v * (t - padding))
+                pos2d <- rBody.WorldPosition + (velocity * (hitTime - padding))
 
-                System.Diagnostics.Debug.WriteLine("=================")
-                System.Diagnostics.Debug.WriteLine("Segment Hit First")
-                System.Diagnostics.Debug.WriteLine(seg.A.ToString() + seg.B.ToString())
-                System.Diagnostics.Debug.WriteLine("=================")
+//                System.Diagnostics.Debug.WriteLine("=================")
+//                System.Diagnostics.Debug.WriteLine("Segment Hit First")
+//                System.Diagnostics.Debug.WriteLine(seg.A.ToString() + seg.B.ToString())
+//                System.Diagnostics.Debug.WriteLine("=================")
 
               //  let normal = LineSegment2D.normal seg
               //  let _, p1 = LineSegment2D.findClosestPointByPoint p seg
