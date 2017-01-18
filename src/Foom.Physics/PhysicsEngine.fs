@@ -240,7 +240,7 @@ module PhysicsEngine =
                 | _ -> ()
 
     [<Literal>] 
-    let padding = 0.0001f
+    let padding = 0.1f
 
     let rec moveRigidBody (position: Vector3) (rBody: RigidBody) eng =
         if Vector3 (rBody.WorldPosition, rBody.Z) = position then ()
@@ -270,7 +270,6 @@ module PhysicsEngine =
             // Narrow
             broadPhase
             |> Seq.iter (fun seg ->
-
                 if LineSegment2D.isPointOnLeftSide rBody.WorldPosition seg |> not then
                     narrowPhase.Add seg
             )
@@ -360,61 +359,32 @@ module PhysicsEngine =
                         
             )
 
-            //let pos2d = rBody.WorldPosition + (v * t)
-
-
             match firstSegHit with
             | Some seg ->
 
-                pos2d <- rBody.WorldPosition + (velocity * (hitTime - padding))
+                let segDir = (seg.B - seg.A) |> Vector2.Normalize
 
-//                System.Diagnostics.Debug.WriteLine("=================")
-//                System.Diagnostics.Debug.WriteLine("Segment Hit First")
-//                System.Diagnostics.Debug.WriteLine(seg.A.ToString() + seg.B.ToString())
-//                System.Diagnostics.Debug.WriteLine("=================")
+                let newVelocity = (velocity * (hitTime - padding))
+                let remainingVelocity = velocity - newVelocity
 
-              //  let normal = LineSegment2D.normal seg
-              //  let _, p1 = LineSegment2D.findClosestPointByPoint p seg
+                let wallVelocity = 
+                    let dot1 = Vector2.Dot (remainingVelocity, segDir)
+                    let dot2 = Vector2.Dot (remainingVelocity, -segDir)
+                    if dot1 > dot2 then
+                        (dot1 - padding) * segDir
+                    elif dot1 < dot2 then
+                        (dot2 - padding) * -segDir
+                    else
+                        Vector2.Zero
 
-//                let v10 = pos2d + Vector2 (min.X, min.Y)
-//                let v11 = pos2d + Vector2 (max.X, min.Y)
-//                let v12 = pos2d + Vector2 (min.X, max.Y)
-//                let v13 = pos2d + Vector2 (max.X, max.Y)
-//
-//                let check (p: Vector2) =
-//                    if LineSegment2D.isPointOnLeftSide p seg then
-//                        let t, v = LineSegment2D.findClosestPointByPoint p seg
-//                        Some (v, (v - p))
-//                    else
-//                        None
-//
-//                let results =
-//                    [
-//                        check v10
-//                        check v11
-//                        check v12
-//                        check v13
-//                    ]
-//                    |> List.choose id
-//
-//                match results with
-//                | [] -> ()
-//                | results ->
-//                    let _, pushOut =
-//                        results
-//                        |> List.maxBy (fun (_, x) -> x.Length ())
-//
-//                    let normal = LineSegment2D.normal seg
-//                    let force = (Vector2.Dot (normal, pushOut) + 0.1f) * normal
-//
-//                    pos2d <- pos2d + force
+                pos2d <- rBody.WorldPosition + newVelocity + wallVelocity
 
 
             | _ -> ()
-//
-//            if firstSegHit.IsSome then
-//                moveRigidBody (Vector3 (pos2d, position.Z)) rBody eng
-//            else
-            warpRigidBody (Vector3 (pos2d, position.Z)) rBody eng
+
+            if firstSegHit.IsSome then
+                moveRigidBody (Vector3 (pos2d, position.Z)) rBody eng
+            else
+                warpRigidBody (Vector3 (pos2d, position.Z)) rBody eng
 
         | _ -> ()

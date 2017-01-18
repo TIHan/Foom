@@ -139,8 +139,11 @@ module Wad =
                 Debug.WriteLine "Warning: Unable to load flat textures because there is no default palette."
                 None
             | Some palette ->
+                match wad.FlatHeaderLookup with
+                | None -> None
+                | Some flatHeaderLookup ->
 
-                match wad.FlatHeaderLookup.Value.TryGetValue (name) with
+                match flatHeaderLookup.TryGetValue (name) with
                 | false, _ -> None
                 | true, h ->
 

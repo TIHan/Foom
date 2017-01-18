@@ -314,7 +314,7 @@ let updates (clientWorld: ClientWorld) =
                         {
                             LineSegment = (LineSegment2D (linedef.Start, linedef.End))
 
-                            IsTrigger = (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone) |> not
+                            IsTrigger = (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone || wut) |> not
 
                         }
 
@@ -322,6 +322,21 @@ let updates (clientWorld: ClientWorld) =
 
                     physicsEngineComp.PhysicsEngine
                     |> PhysicsEngine.addRigidBody rBody
+
+                    if linedef.Flags.HasFlag(LinedefFlags.BlocksPlayersAndMonsters) then
+                        let wut = not (linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged))
+                        let staticWall =
+                            {
+                                LineSegment = (LineSegment2D (linedef.End, linedef.Start))
+
+                                IsTrigger = (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone || wut) |> not
+
+                            }
+
+                        let rBody = RigidBody (StaticWall staticWall, Vector3.Zero)
+
+                        physicsEngineComp.PhysicsEngine
+                        |> PhysicsEngine.addRigidBody rBody                        
                 )
 
                 WadLevel.createFlats i level
