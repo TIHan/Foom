@@ -242,6 +242,9 @@ module PhysicsEngine =
     [<Literal>] 
     let padding = 0.1f
 
+    [<Literal>]
+    let maxIterations = 10
+
     let findIntersectionTime p r q s =
         // p + t r = q + u s
         // u = (q − p) × r / (r × s)
@@ -278,8 +281,8 @@ module PhysicsEngine =
         else
             1.f
 
-    let rec moveRigidBodyf (originalVelocity: Vector2) (rtime: float32) (velocity: Vector2) (z: float32) (rBody: RigidBody) eng =
-        if velocity = Vector2.Zero then ()
+    let rec moveRigidBodyf iterations (velocity: Vector2) (z: float32) (rBody: RigidBody) eng =
+        if velocity = Vector2.Zero || iterations = maxIterations then ()
         else
         
         match rBody.Shape with
@@ -313,6 +316,7 @@ module PhysicsEngine =
 
             let mutable hitTime = 1.f
             let mutable firstSegHit : LineSegment2D option = None
+            let mutable firstPointHit : Vector2 option = None
 
             // TODO: Implement solver.
             narrowPhase
@@ -329,13 +333,43 @@ module PhysicsEngine =
                 let check point =
                     if LineSegment2D.isPointOnLeftSide point seg then
                         nope <- true
-                        1.f
+                        Vector2.Zero, 1.f
                     else
                         let p = seg.A
                         let r = (seg.B - p)
                         let q = point
                         let s = velocity
-                        findIntersectionTime p r q s
+                        let result = findIntersectionTime p r q s
+
+                        if result = 1.f then
+                            let e0 = LineSegment2D (v00, v01)
+                            let e1 = LineSegment2D (v01, v02)
+                            let e2 = LineSegment2D (v02, v03)
+                            let e3 = LineSegment2D (v03, v00)
+
+                            let f e =
+                                let mid = (seg.A + seg.B) / 2.f
+                                let _, p0 = LineSegment2D.findClosestPointByPoint mid e
+
+                                p0, (p0 - mid)
+
+                            let point, _ =
+                                [
+                                    f e0
+                                    f e1
+                                    f e2
+                                    f e3
+                                ]
+                                |> List.minBy (fun (_, vel) -> vel.Length ())
+
+                            let p = seg.A
+                            let r = (seg.B - p)
+                            let q = point
+                            let s = velocity
+                            let result = findIntersectionTime p r q s
+                            point, result
+                        else
+                            point, result
 
                 let findShortestHitTime () =
                     [
@@ -344,9 +378,9 @@ module PhysicsEngine =
                         check v02
                         check v03
                     ]
-                    |> List.min
+                    |> List.minBy (fun (_, t) -> t)
 
-                let u = findShortestHitTime ()
+                let point, u = findShortestHitTime ()
 
                 if nope = true then ()
                 else
@@ -357,31 +391,25 @@ module PhysicsEngine =
                         if newHitTime < hitTime then
                             hitTime <- newHitTime
                             firstSegHit <- Some seg
+                            firstPointHit <- Some point
                         
             )
 
-            match firstSegHit with
-            | Some seg ->
+            match firstSegHit, firstPointHit with
+            | Some seg, Some point ->
 
                 let segDir = (seg.B - seg.A) |> Vector2.Normalize
+                let newVelocity = velocity * (hitTime)
+                let remainingVelocity = velocity * (1.f - hitTime)
 
-                let time = Mathf.clamp (hitTime - padding) 0.f 1.f
-                let newVelocity = velocity * time
-                let remainingTime = Mathf.clamp (1.f - hitTime - padding) 0.f 1.f
+                let newVelocity = newVelocity + (-newVelocity |> Vector2.Normalize |> (*) padding)
+                warpRigidBody (Vector3 (rBody.WorldPosition + newVelocity, z)) rBody eng
 
+                let wallVelocity = 
+                    let dot1 = Vector2.Dot (remainingVelocity, segDir)
+                    dot1 * segDir
 
-                if remainingTime > 0.f && rtime > 0.f then
-                    let remainingVelocity = velocity * remainingTime
-
-                    warpRigidBody (Vector3 (rBody.WorldPosition + newVelocity, z)) rBody eng
-
-                    let wallVelocity = 
-                        let dot1 = Vector2.Dot (originalVelocity, segDir)
-                        dot1 * segDir
-
-                    let newDistTime = (newVelocity.Length ()) / (originalVelocity.Length ())
-                    let newDistTime = Math.Round (double newDistTime, 3, MidpointRounding.AwayFromZero)
-                    moveRigidBodyf originalVelocity (single newDistTime) wallVelocity z rBody eng
+                moveRigidBodyf (iterations + 1) wallVelocity z rBody eng
 
             | _ -> warpRigidBody (Vector3 (rBody.WorldPosition + velocity, z)) rBody eng
         | _ -> ()
@@ -389,4 +417,4 @@ module PhysicsEngine =
     let moveRigidBody (position: Vector3) (rBody: RigidBody) eng =
         let pos = Vector2 (position.X, position.Y)
         let velocity = (pos - rBody.WorldPosition)
-        moveRigidBodyf velocity 1.f velocity position.Z rBody eng
+        moveRigidBodyf 0 velocity position.Z rBody eng
