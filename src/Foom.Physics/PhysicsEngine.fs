@@ -242,14 +242,15 @@ module PhysicsEngine =
     [<Literal>] 
     let padding = 0.1f
 
-    let rec moveRigidBody (position: Vector3) (rBody: RigidBody) eng =
-        if Vector3 (rBody.WorldPosition, rBody.Z) = position then ()
+    let rec moveRigidBodyf (originalVelocity: Vector2) (rtime: float32) (velocity: Vector2) (z: float32) (rBody: RigidBody) eng =
+        if velocity = Vector2.Zero then ()
         else
         
         match rBody.Shape with
         | DynamicAABB dAABB ->
 
-            let mutable pos2d = Vector2 (position.X, position.Y)
+            let currentPos = rBody.WorldPosition
+            let pos2d = currentPos + velocity
             let extents = dAABB.AABB.Extents + Vector2 (padding, padding)
             let shapeAABB = AABB2D.ofCenterAndExtents dAABB.AABB.Center extents
             let aabb = (AABB2D.ofCenterAndExtents rBody.WorldPosition extents, AABB2D.ofCenterAndExtents pos2d extents) ||> AABB2D.merge
@@ -276,7 +277,6 @@ module PhysicsEngine =
 
             let mutable hitTime = 1.f
             let mutable firstSegHit : LineSegment2D option = None
-            let velocity = (pos2d - rBody.WorldPosition)
 
             // TODO: Implement solver.
             narrowPhase
@@ -364,27 +364,29 @@ module PhysicsEngine =
 
                 let segDir = (seg.B - seg.A) |> Vector2.Normalize
 
-                let newVelocity = (velocity * (hitTime - padding))
-                let remainingVelocity = velocity - newVelocity
-
-                let wallVelocity = 
-                    let dot1 = Vector2.Dot (remainingVelocity, segDir)
-                    let dot2 = Vector2.Dot (remainingVelocity, -segDir)
-                    if dot1 > dot2 then
-                        (dot1 - padding) * segDir
-                    elif dot1 < dot2 then
-                        (dot2 - padding) * -segDir
-                    else
-                        Vector2.Zero
-
-                pos2d <- rBody.WorldPosition + newVelocity + wallVelocity
+                let time = Mathf.clamp (hitTime - padding) 0.f 1.f
+                let newVelocity = velocity * time
+                let remainingTime = Mathf.clamp (1.f - hitTime - padding) 0.f 1.f
 
 
-            | _ -> ()
+                if remainingTime > 0.f && rtime > 0.f then
+                    let remainingVelocity = velocity * remainingTime
 
-            if firstSegHit.IsSome then
-                moveRigidBody (Vector3 (pos2d, position.Z)) rBody eng
-            else
-                warpRigidBody (Vector3 (pos2d, position.Z)) rBody eng
+                    warpRigidBody (Vector3 (rBody.WorldPosition + newVelocity, z)) rBody eng
 
+                    let wallVelocity = 
+                        let dot1 = Vector2.Dot (originalVelocity, segDir)
+                        dot1 * segDir
+
+                    let newDistTime = (newVelocity.Length ()) / (originalVelocity.Length ())
+                    let newDistTime = Math.Round (double newDistTime, 3, MidpointRounding.AwayFromZero)
+                    moveRigidBodyf originalVelocity (single newDistTime) wallVelocity z rBody eng
+
+            | _ -> warpRigidBody (Vector3 (rBody.WorldPosition + velocity, z)) rBody eng
         | _ -> ()
+
+
+    let moveRigidBody (position: Vector3) (rBody: RigidBody) eng =
+        let pos = Vector2 (position.X, position.Y)
+        let velocity = (pos - rBody.WorldPosition)
+        moveRigidBodyf velocity 1.f velocity position.Z rBody eng

@@ -314,7 +314,7 @@ let updates (clientWorld: ClientWorld) =
                         {
                             LineSegment = (LineSegment2D (linedef.Start, linedef.End))
 
-                            IsTrigger = (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone || wut) |> not
+                            IsTrigger = (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone) |> not
 
                         }
 
@@ -329,7 +329,7 @@ let updates (clientWorld: ClientWorld) =
                             {
                                 LineSegment = (LineSegment2D (linedef.End, linedef.Start))
 
-                                IsTrigger = (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone || wut) |> not
+                                IsTrigger = (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone) |> not
 
                             }
 

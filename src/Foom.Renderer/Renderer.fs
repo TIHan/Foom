@@ -81,7 +81,7 @@ module Renderer =
         SDL_GL_SetAttribute (SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
         app.GLContext = SDL_GL_CreateContext ((SDL_Window*)app.Window);
-        SDL_GL_SetSwapInterval (0);
+        SDL_GL_SetSwapInterval (1);
 
         #if defined(__GNUC__)
         #else
