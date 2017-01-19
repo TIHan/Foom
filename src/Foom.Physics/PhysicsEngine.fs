@@ -242,6 +242,42 @@ module PhysicsEngine =
     [<Literal>] 
     let padding = 0.1f
 
+    let findIntersectionTime p r q s =
+        // p + t r = q + u s
+        // u = (q − p) × r / (r × s)
+        let qp = (q - p)
+        let qpXr = Vec2.perpDot qp r
+        let qpXs = Vec2.perpDot qp s
+        let rXs = Vec2.perpDot r s
+
+
+//		if (CmPxr == 0f)
+//		{
+//			// Lines are collinear, and so intersect if they have any overlap
+// 
+//			return ((C.X - A.X < 0f) != (C.X - B.X < 0f))
+//				|| ((C.Y - A.Y < 0f) != (C.Y - B.Y < 0f));
+//		}
+// 
+//		if (rxs == 0f)
+//			return false; // Lines are parallel
+
+        if (qpXr <> 0.f || rXs <> 0.f) then
+
+            if (rXs = 0.f) then 
+                1.f
+            else
+
+            let u = qpXr / rXs
+            let t = qpXs / rXs
+
+            if (t >= 0.f) && (t <= 1.f) && (u >= 0.f) && (u <= 1.f) then
+                u
+            else
+                1.f
+        else
+            1.f
+
     let rec moveRigidBodyf (originalVelocity: Vector2) (rtime: float32) (velocity: Vector2) (z: float32) (rBody: RigidBody) eng =
         if velocity = Vector2.Zero then ()
         else
@@ -295,46 +331,11 @@ module PhysicsEngine =
                         nope <- true
                         1.f
                     else
-                    // p + t r = q + u s
-                    // u = (q − p) × r / (r × s)
-
                         let p = seg.A
                         let r = (seg.B - p)
                         let q = point
                         let s = velocity
-
-                        let qp = (q - p)
-                        let qpXr = Vec2.perpDot qp r
-                        let qpXs = Vec2.perpDot qp s
-                        let rXs = Vec2.perpDot r s
-
-
-    //		if (CmPxr == 0f)
-    //		{
-    //			// Lines are collinear, and so intersect if they have any overlap
-    // 
-    //			return ((C.X - A.X < 0f) != (C.X - B.X < 0f))
-    //				|| ((C.Y - A.Y < 0f) != (C.Y - B.Y < 0f));
-    //		}
-    // 
-    //		if (rxs == 0f)
-    //			return false; // Lines are parallel
-
-                        if (qpXr <> 0.f || rXs <> 0.f) then
-
-                            if (rXs = 0.f) then 
-                                1.f
-                            else
-
-                            let u = qpXr / rXs
-                            let t = qpXs / rXs
-
-                            if (t >= 0.f) && (t <= 1.f) && (u >= 0.f) && (u <= 1.f) then
-                                u
-                            else
-                                1.f
-                        else
-                            1.f
+                        findIntersectionTime p r q s
 
                 let findShortestHitTime () =
                     [
@@ -384,7 +385,6 @@ module PhysicsEngine =
 
             | _ -> warpRigidBody (Vector3 (rBody.WorldPosition + velocity, z)) rBody eng
         | _ -> ()
-
 
     let moveRigidBody (position: Vector3) (rBody: RigidBody) eng =
         let pos = Vector2 (position.X, position.Y)
