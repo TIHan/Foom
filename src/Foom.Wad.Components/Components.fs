@@ -45,7 +45,7 @@ module Behavior =
                 | WadState.ReadyToLoad fileName ->
 
                     let wad = Wad.create (openWad fileName)
-                   // let wad = Wad.extend (openWad "sandbox.wad") wad
+                    let wad = Wad.extend (openWad "sandbox.wad") wad
                    // let wad = Wad.extend (openWad "sunder.wad") wad
                     wadComp.State <- WadState.Loaded wad
                     f wad entityManager

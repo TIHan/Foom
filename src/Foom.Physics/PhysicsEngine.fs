@@ -282,7 +282,10 @@ module PhysicsEngine =
             1.f
 
     let rec moveRigidBodyf iterations (velocity: Vector2) (z: float32) (rBody: RigidBody) eng =
-        if velocity = Vector2.Zero || iterations = maxIterations then ()
+        if velocity = Vector2.Zero then
+            ()
+        elif maxIterations = iterations then
+            ()
         else
         
         match rBody.Shape with
@@ -310,7 +313,7 @@ module PhysicsEngine =
             // Narrow
             broadPhase
             |> Seq.iter (fun seg ->
-                if LineSegment2D.isPointOnLeftSide rBody.WorldPosition seg |> not then
+               // if LineSegment2D.isPointOnLeftSide rBody.WorldPosition seg |> not then
                     narrowPhase.Add seg
             )
 
@@ -325,73 +328,141 @@ module PhysicsEngine =
 
                 let v00 = rBody.WorldPosition + Vector2 (min.X, min.Y)
                 let v01 = rBody.WorldPosition + Vector2 (max.X, min.Y)
-                let v02 = rBody.WorldPosition + Vector2 (min.X, max.Y)
-                let v03 = rBody.WorldPosition + Vector2 (max.X, max.Y)
+                let v02 = rBody.WorldPosition + Vector2 (max.X, max.Y)
+                let v03 = rBody.WorldPosition + Vector2 (min.X, max.Y)
 
                 let mutable nope = false
 
-                let check point =
-                    if LineSegment2D.isPointOnLeftSide point seg then
-                        nope <- true
-                        Vector2.Zero, 1.f
-                    else
-                        let p = seg.A
-                        let r = (seg.B - p)
-                        let q = point
-                        let s = velocity
-                        let result = findIntersectionTime p r q s
+                let mutable replaceSeg = None
 
-                        if result = 1.f then
-                            let e0 = LineSegment2D (v00, v01)
-                            let e1 = LineSegment2D (v01, v02)
-                            let e2 = LineSegment2D (v02, v03)
-                            let e3 = LineSegment2D (v03, v00)
-
-                            let f e =
-                                let mid = (seg.A + seg.B) / 2.f
-                                let _, p0 = LineSegment2D.findClosestPointByPoint mid e
-
-                                p0, (p0 - mid)
-
-                            let point, _ =
-                                [
-                                    f e0
-                                    f e1
-                                    f e2
-                                    f e3
-                                ]
-                                |> List.minBy (fun (_, vel) -> vel.Length ())
-
-                            let p = seg.A
-                            let r = (seg.B - p)
-                            let q = point
-                            let s = velocity
-                            let result = findIntersectionTime p r q s
-                            point, result
+                let checkTip () =
+                    let e0 = LineSegment2D (v00, v01)
+                    let e1 = LineSegment2D (v01, v02)
+                    let e2 = LineSegment2D (v02, v03)
+                    let e3 = LineSegment2D (v03, v00)
+    
+                    let f (e: LineSegment2D) =
+                        if (LineSegment2D.isPointOnLeftSide e.A seg && LineSegment2D.isPointOnLeftSide e.B seg) then None
                         else
-                            point, result
+
+                        let _, p0 = LineSegment2D.findClosestPointByPoint seg.A e
+                        let _, p1 = LineSegment2D.findClosestPointByPoint seg.B e
+    
+                        let len0 = (seg.A - p0).Length ()
+                        let len1 = (seg.B - p1).Length ()
+    
+                        if len0 < len1 then
+                            (p0, e, seg.A, (seg.A - p0))
+                        elif len0 > len1 then
+                            (p1, e, seg.B, (seg.B - p1))
+                        else
+                            failwith "should not happen"
+                        |> Some
+
+                    let ls = 
+                        [
+                            f e0
+                            f e1
+                            f e2
+                            f e3
+                        ]
+                        |> List.choose (id)
+
+                    if ls.IsEmpty then Vector2.Zero, 1.f
+                    else
+    
+                    let pp, e, segp, v =
+                        ls
+                        |> List.minBy (fun (_, _, _, vel) -> vel.Length ())
+    
+                    let dir = (e.A - e.B) |> Vector2.Normalize
+                    let seg = LineSegment2D (segp + (-dir * extents.Length ()), segp + (dir * extents.Length ()))
+//                            if (e.A - pp).Length () < (e.B - pp).Length () then
+//                                let start = e.B + v
+//                                let dist = (start - segp)
+//                                LineSegment2D (segp - dist, start)
+//                            else
+//                                let start = e.A + v
+//                                let dist = (start - segp)
+//                                LineSegment2D (start, segp - dist)
+    
+                    let p = seg.A
+                    let r = (seg.B - p)
+                    let q = pp
+                    let s = velocity
+                    let result = findIntersectionTime p r q s
+
+                    if result = 1.f then
+                        Vector2.Zero, result
+                    else
+                        replaceSeg <- Some seg
+                        pp, result
+
+                let check point (seg: LineSegment2D) =
+                    if LineSegment2D.isPointOnLeftSide point seg then
+                        point, 1.f
+                    else
+
+                    let p = seg.A
+                    let r = (seg.B - p)
+                    let q = point
+                    let s = velocity
+                    let result = findIntersectionTime p r q s
+
+                    if result = 1.f then
+//                        let e0 = LineSegment2D (v00, v01)
+//                        let e1 = LineSegment2D (v01, v02)
+//                        let e2 = LineSegment2D (v02, v03)
+//                        let e3 = LineSegment2D (v03, v00)
+//
+//                        let f e =
+//                            let mid = (seg.A + seg.B) / 2.f
+//                            let t, p0 = LineSegment2D.findClosestPointByPoint mid e
+//
+//                            p0, (p0 - mid)
+//
+//                        let point, _ =
+//                            [
+//                                f e0
+//                                f e1
+//                                f e2
+//                                f e3
+//                            ]
+//                            |> List.minBy (fun (_, vel) -> vel.Length ())
+//
+//                        let p = seg.A
+//                        let r = (seg.B - p)
+//                        let q = point
+//                        let s = velocity
+//                        let result = findIntersectionTime p r q s
+                        point, result
+                    else
+                        point, result
 
                 let findShortestHitTime () =
                     [
-                        check v00
-                        check v01
-                        check v02
-                        check v03
+                       // checkTip ()
+                        check v00 seg
+                        check v01 seg
+                        check v02 seg
+                        check v03 seg
                     ]
                     |> List.minBy (fun (_, t) -> t)
 
                 let point, u = findShortestHitTime ()
 
-                if nope = true then ()
-                else
+                let seg =
+                    match replaceSeg with
+                    | Some s -> s
+                    | _ -> seg
 
-                    let newHitTime = u
+                let newHitTime = u
 
-                    if (newHitTime > 0.f && newHitTime < 1.f) then
-                        if newHitTime < hitTime then
-                            hitTime <- newHitTime
-                            firstSegHit <- Some seg
-                            firstPointHit <- Some point
+                if (newHitTime > 0.f && newHitTime < 1.f) then
+                    if newHitTime < hitTime then
+                        hitTime <- newHitTime
+                        firstSegHit <- Some seg
+                        firstPointHit <- Some point
                         
             )
 

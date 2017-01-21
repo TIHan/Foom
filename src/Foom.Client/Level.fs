@@ -309,12 +309,13 @@ let updates (clientWorld: ClientWorld) =
 
                 (i, level)
                 ||> Level.iterLinedefBySectorId (fun linedef ->
-                    let wut = not (linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged))
+                    let isImpassible = (linedef.Flags.HasFlag(LinedefFlags.BlocksPlayersAndMonsters))
+                    let isUpper = linedef.Flags.HasFlag (LinedefFlags.UpperTextureUnpegged)
                     let staticWall =
                         {
                             LineSegment = (LineSegment2D (linedef.Start, linedef.End))
 
-                            IsTrigger = (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone || wut) |> not
+                            IsTrigger = (linedef.FrontSidedef.IsSome && linedef.BackSidedef.IsSome) && not isImpassible && isUpper
 
                         }
 
@@ -323,13 +324,12 @@ let updates (clientWorld: ClientWorld) =
                     physicsEngineComp.PhysicsEngine
                     |> PhysicsEngine.addRigidBody rBody
 
-                    if linedef.Flags.HasFlag(LinedefFlags.BlocksPlayersAndMonsters) then
-                        let wut = not (linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged))
+                    if isImpassible then
                         let staticWall =
                             {
                                 LineSegment = (LineSegment2D (linedef.End, linedef.Start))
 
-                                IsTrigger = (linedef.FrontSidedef.IsNone || linedef.BackSidedef.IsNone || wut) |> not
+                                IsTrigger = false
 
                             }
 
@@ -424,7 +424,7 @@ let updates (clientWorld: ClientWorld) =
                     let cameraEnt = em.Spawn ()
                     em.Add (cameraEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f)))
                     em.Add (cameraEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
-                    em.Add (cameraEnt, CharacterControllerComponent (position, 16.f, 56.f))
+                    em.Add (cameraEnt, CharacterControllerComponent (position, 15.f, 56.f))
                     em.Add (cameraEnt, PlayerComponent ())
 
                 | _ -> ()
