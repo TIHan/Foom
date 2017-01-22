@@ -357,7 +357,7 @@ module PhysicsEngine =
 
                         let origSeg = seg
                         let dir = (e.A - e.B) |> Vector2.Normalize
-                        let seg = LineSegment2D (segp + (-dir * extents.Length ()), segp + (dir * extents.Length ()))
+                        let seg = LineSegment2D (segp + (-dir * velocity.Length ()), segp + (dir * velocity.Length ()))
     
                         let p = seg.A
                         let r = (seg.B - p)
@@ -383,7 +383,7 @@ module PhysicsEngine =
                         ]
                         |> List.choose (id)
 
-                    if ls.IsEmpty then Vector2.Zero, 1.f
+                    if ls.IsEmpty then seg, Vector2.Zero, 1.f
                     else
     
                     let pp, seg, result =
@@ -391,14 +391,42 @@ module PhysicsEngine =
                         |> List.minBy (fun (_, _, result) -> result)
 
                     if result = 1.f then
-                        Vector2.Zero, result
+                        seg, Vector2.Zero, result
                     else
-                        replaceSeg <- Some seg
-                        pp, result
+                        seg, pp, result
+
+                let checkMid (seg: LineSegment2D) =
+                    let e0 = LineSegment2D (v00, v01)
+                    let e1 = LineSegment2D (v01, v02)
+                    let e2 = LineSegment2D (v02, v03)
+                    let e3 = LineSegment2D (v03, v00)
+
+                    let f e =
+                        let mid = (seg.A + seg.B) / 2.f
+                        let t, p0 = LineSegment2D.findClosestPointByPoint mid e
+
+                        p0, (p0 - mid)
+
+                    let point, _ =
+                        [
+                            f e0
+                            f e1
+                            f e2
+                            f e3
+                        ]
+                        |> List.minBy (fun (_, vel) -> vel.Length ())
+
+                    let p = seg.A
+                    let r = (seg.B - p)
+                    let q = point
+                    let s = velocity
+                    let result = findIntersectionTime p r q s
+
+                    seg, point, result
 
                 let check point (seg: LineSegment2D) =
                     if LineSegment2D.isPointOnLeftSide point seg then
-                        point, 1.f
+                        seg, point, 1.f
                     else
 
                     let p = seg.A
@@ -407,35 +435,7 @@ module PhysicsEngine =
                     let s = velocity
                     let result = findIntersectionTime p r q s
 
-                    if result = 1.f then
-//                        let e0 = LineSegment2D (v00, v01)
-//                        let e1 = LineSegment2D (v01, v02)
-//                        let e2 = LineSegment2D (v02, v03)
-//                        let e3 = LineSegment2D (v03, v00)
-//
-//                        let f e =
-//                            let mid = (seg.A + seg.B) / 2.f
-//                            let t, p0 = LineSegment2D.findClosestPointByPoint mid e
-//
-//                            p0, (p0 - mid)
-//
-//                        let point, _ =
-//                            [
-//                                f e0
-//                                f e1
-//                                f e2
-//                                f e3
-//                            ]
-//                            |> List.minBy (fun (_, vel) -> vel.Length ())
-//
-//                        let p = seg.A
-//                        let r = (seg.B - p)
-//                        let q = point
-//                        let s = velocity
-//                        let result = findIntersectionTime p r q s
-                        point, result
-                    else
-                        point, result
+                    seg, point, result
 
                 let findShortestHitTime () =
                     [
@@ -443,22 +443,12 @@ module PhysicsEngine =
                         check v01 seg
                         check v02 seg
                         check v03 seg
-                       // checkTip ()
-                    ]
-                    |> List.minBy (fun (_, t) -> t)
-
-                let point, u = findShortestHitTime ()
-
-                let point, u =
-                    if u = 1.f then
+                        checkMid seg
                         checkTip ()
-                    else
-                        point, u
+                    ]
+                    |> List.minBy (fun (_, _, t) -> t)
 
-                let seg =
-                    match replaceSeg with
-                    | Some s -> s
-                    | _ -> seg
+                let seg, point, u = findShortestHitTime ()
 
                 let newHitTime = u
 
