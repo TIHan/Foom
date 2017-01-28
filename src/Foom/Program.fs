@@ -21,6 +21,7 @@ let start (invoke: Task ref) =
             stopwatch.Reset ()
             stopwatch.Start ()
 
+            System.Threading.Thread.Sleep(1)
             GC.Collect (0)
 
             (!invoke).RunSynchronously ()

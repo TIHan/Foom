@@ -21,6 +21,7 @@ type Mesh =
         Uv: Vector2ArrayBuffer
         Color: Vector4ArrayBuffer
         Center: Vector3ArrayBuffer
+        IsWireframe: bool
     }
 
 type Material =
@@ -94,7 +95,7 @@ type FRenderer =
             Texture = texture
         }
 
-    member this.CreateMesh (position, uv, color: Color [], center) =
+    member this.CreateMesh (position, uv, color: Color [], center, isWireframe) =
         {
             Position = Vector3ArrayBuffer (position)
             Uv = Vector2ArrayBuffer (uv)
@@ -109,6 +110,7 @@ type FRenderer =
                 )
                 |> Vector4ArrayBuffer
             Center = Vector3ArrayBuffer (center)
+            IsWireframe = isWireframe
         }
 
     member this.TryAdd (material: Material, mesh: Mesh) =
@@ -231,7 +233,10 @@ type FRenderer =
             Renderer.setTexture programId textureBuffer.Id
             textureBuffer.Bind ()
 
-            Renderer.drawTriangles 0 position.Length
+            if mesh.IsWireframe then
+                Renderer.drawArrays 0 position.Length
+            else
+                Renderer.drawTriangles 0 position.Length
 
             drawCalls <- drawCalls + 1
         )

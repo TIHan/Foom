@@ -60,10 +60,10 @@
     <None Include="sprite.vertex">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="f.fragment">
+    <None Include="wireframe.fragment">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="v.vertex">
+    <None Include="wireframe.vertex">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Content Include="packages.config" />
