@@ -316,7 +316,7 @@ let updates (clientWorld: ClientWorld) =
                         {
                             LineSegment = (LineSegment2D (linedef.Start, linedef.End))
 
-                            IsTrigger = (linedef.FrontSidedef.IsSome && linedef.BackSidedef.IsSome) && not isImpassible && isUpper
+                            IsTrigger = (linedef.FrontSidedef.IsSome && linedef.BackSidedef.IsSome) //&& not isImpassible && isUpper
 
                         }
 

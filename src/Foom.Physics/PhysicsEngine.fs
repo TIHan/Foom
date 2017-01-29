@@ -240,10 +240,10 @@ module PhysicsEngine =
                 | _ -> ()
 
     [<Literal>] 
-    let padding = 0.01f
+    let padding = 0.005f
 
     [<Literal>]
-    let maxIterations = 3
+    let maxIterations = 2
 
     let findIntersectionTime p r q s =
         // p + t r = q + u s
@@ -353,9 +353,9 @@ module PhysicsEngine =
                 let e3 = LineSegment2D (v03, v00)
 
                 let checkRev point (seg: LineSegment2D) =
-                    //if LineSegment2D.isPointOnLeftSide point seg then
-                    //    seg, point, 1.f, true
-                    //else
+                    if LineSegment2D.isPointOnLeftSide point seg then
+                        seg, point, 1.f, true
+                    else
 
                     let p = seg.A
                     let r = (seg.B - p)
@@ -408,7 +408,7 @@ module PhysicsEngine =
                 warpRigidBody (Vector3 (rBody.WorldPosition + newVelocity, z)) rBody eng
 
                 let wallVelocity = 
-                    let dot1 = Vector2.Dot (remainingVelocity, segDir)
+                    let dot1 = Vector2.Dot (directionalVelocity, segDir)
                     dot1 * segDir
 
                 moveRigidBodyf (directionalVelocity) (iterations + 1) wallVelocity z rBody eng
