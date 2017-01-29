@@ -281,6 +281,95 @@ module PhysicsEngine =
         else
             1.f
 
+    let findIntersectionTimeOfPointAndVelocity point velocity seg =
+        if LineSegment2D.isPointOnLeftSide point seg then
+            1.f
+        else
+
+            let p = seg.A
+            let r = (seg.B - p)
+            let q = point
+            let s = velocity
+            let result = findIntersectionTime p r q s
+
+            result
+
+    let rec updateAABB (originalVelocity: Vector3) (aabb: AABB2D) (currentPosition: Vector3) (velocity: Vector3) iterations eng =
+        if velocity.Equals Vector3.Zero then ()
+        elif maxIterations.Equals iterations then ()
+        else
+
+        // Let's get 2d versions.
+        let originalVelocity2d = Vector2 (originalVelocity.X, originalVelocity.Y)
+        let currentPosition2d = Vector2 (currentPosition.X, currentPosition.Y)
+        let velocity2d = Vector2 (velocity.X, velocity.Y)
+        let velocityReverse2d = -velocity2d
+
+        // Create padded velocity used to nudge a little bit to prevent walking through stuff.
+        let paddedVelocity2d = (-velocity2d |> Vector2.Normalize |> (*) padding)
+
+        // Pad the AABB (Axis-Aligned Bounding Box) so its just very very slighly bigger than what was put in.
+        let extents = aabb.Extents + Vector2 (padding, padding)
+        let aabb = AABB2D.ofCenterAndExtents aabb.Center extents
+
+        let min = aabb.Min ()
+        let max = aabb.Max ()
+
+        let v00 = currentPosition2d + Vector2 (min.X, min.Y)
+        let v01 = currentPosition2d + Vector2 (max.X, min.Y)
+        let v02 = currentPosition2d + Vector2 (max.X, max.Y)
+        let v03 = currentPosition2d + Vector2 (min.X, max.Y)
+
+        let e0 = LineSegment2D (v00, v01)
+        let e1 = LineSegment2D (v01, v02)
+        let e2 = LineSegment2D (v02, v03)
+        let e3 = LineSegment2D (v03, v00)
+
+        // Begin collision detection and response for an AABB against walls.
+
+        let mutable hasHitSeg = false
+        let mutable hitTime = 1.f
+        let mutable segHit = Unchecked.defaultof<LineSegment2D>
+        let mutable responseDir = Vector2.Zero
+
+        let aabbTest = 
+            (AABB2D.ofCenterAndExtents currentPosition2d extents, AABB2D.ofCenterAndExtents (currentPosition2d + velocity2d) extents) 
+            ||> AABB2D.merge
+
+        (aabbTest, eng)
+        ||> iterSolidWallByAABB (fun seg ->
+            let t =
+                [|
+                    findIntersectionTimeOfPointAndVelocity v00 velocity2d seg
+                    findIntersectionTimeOfPointAndVelocity v01 velocity2d seg
+                    findIntersectionTimeOfPointAndVelocity v02 velocity2d seg
+                    findIntersectionTimeOfPointAndVelocity v03 velocity2d seg
+                |]
+                |> Array.min
+
+            let t = 1.f
+               // if t = 1.f then
+               //     [|
+               //         findIntersectionTimeOfPointAndVelocity seg.A velocityReverse2d e0
+               //         findIntersectionTimeOfPointAndVelocity seg.B velocityReverse2d e0
+               //         findIntersectionTimeOfPointAndVelocity seg.A velocityReverse2d e1
+               //         findIntersectionTimeOfPointAndVelocity seg.B velocityReverse2d e1
+               //         findIntersectionTimeOfPointAndVelocity seg.A velocityReverse2d e2
+               //         findIntersectionTimeOfPointAndVelocity seg.B velocityReverse2d e2
+               //         findIntersectionTimeOfPointAndVelocity seg.A velocityReverse2d e3
+               //         findIntersectionTimeOfPointAndVelocity seg.B velocityReverse2d e3
+               //     |]
+               //     |> Array.min
+               //else t
+                
+            if (t - Single.Epsilon > 0.f && t + Single.Epsilon < 1.f) then
+                if (t < hitTime) then
+                    hitTime <- t
+        )
+
+
+        ()
+
     let rec moveRigidBodyf directionalVelocity iterations (velocity: Vector2) (z: float32) (rBody: RigidBody) eng =
         if velocity = Vector2.Zero then
             ()
