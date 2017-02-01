@@ -240,10 +240,10 @@ module PhysicsEngine =
                 | _ -> ()
 
     [<Literal>] 
-    let padding = 0.005f
+    let padding = 0.01f
 
     [<Literal>]
-    let maxIterations = 2
+    let maxIterations = 3
 
     let findIntersectionTime p r q s =
         // p + t r = q + u s
@@ -377,7 +377,7 @@ module PhysicsEngine =
             ()
         else
         
-        let paddedVelocity = (-velocity |> Vector2.Normalize |> (*) padding)
+        let paddedVelocity = (velocity |> Vector2.Normalize |> (*) -padding)
 
         match rBody.Shape with
         | DynamicAABB dAABB ->
@@ -491,16 +491,15 @@ module PhysicsEngine =
             | Some seg, Some point ->
 
                 let segDir = (seg.B - seg.A) |> Vector2.Normalize
-                let newVelocity = velocity * (hitTime) + paddedVelocity
-                let remainingVelocity = velocity - newVelocity
+                let newVelocity = velocity * (hitTime)
 
-                warpRigidBody (Vector3 (rBody.WorldPosition + newVelocity, z)) rBody eng
+                warpRigidBody (Vector3 (rBody.WorldPosition + newVelocity + paddedVelocity, z)) rBody eng
 
                 let wallVelocity = 
                     let dot1 = Vector2.Dot (directionalVelocity, segDir)
                     dot1 * segDir
 
-                moveRigidBodyf (directionalVelocity) (iterations + 1) wallVelocity z rBody eng
+                moveRigidBodyf directionalVelocity (iterations + 1) wallVelocity z rBody eng
 
             | _ -> warpRigidBody (Vector3 (rBody.WorldPosition + velocity, z)) rBody eng
         | _ -> ()

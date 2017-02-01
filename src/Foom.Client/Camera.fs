@@ -58,7 +58,7 @@ module Camera =
                        
                         acc <- 
                             if acc <> Vector3.Zero then
-                                acc |> Vector3.Normalize |> (*) 70.f
+                                acc |> Vector3.Normalize |> (*) 10.f
                             else
                                 acc
 
@@ -112,8 +112,8 @@ module Camera =
 
                         transformComp.Rotation <- transformComp.Rotation *
                             Quaternion.CreateFromYawPitchRoll (
-                                playerComp.Yaw,
-                                playerComp.Pitch,
+                                playerComp.Yaw * 0.25f,
+                                playerComp.Pitch * 0.25f,
                                 0.f
                             )
                     )
