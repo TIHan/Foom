@@ -267,6 +267,23 @@ module Renderer =
         System.Text.Encoding.UTF8.GetBytes (name)
         |> _getAttributeLocation programId
 
+    [<Import; MI (MIO.NoInlining)>]
+    let bindVertexAttributePointer_Float (location: int) (size: int) : unit =
+        C """
+        glVertexAttribPointer (location, size, GL_FLOAT, GL_FALSE, 0, 0);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let enableVertexAttribute (location: int) : unit =
+        C """
+        glEnableVertexAttribArray (location);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let disableVertexAttribute (location: int) : unit =
+        C """
+        glDisableVertexAttribArray (location);
+        """
 
     [<Import; MI (MIO.NoInlining)>]
     let _getUniformLocation (programId: int) (name: byte []) : int =

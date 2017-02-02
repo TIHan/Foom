@@ -165,6 +165,199 @@ type Texture2DBuffer (bmp: Bitmap) =
 // *****************************************
 // *****************************************
 
+module NewShader =
+
+    type UniformValue<'T> =
+        {
+            mutable programId: int
+            mutable value: 'T
+            mutable isDirty: bool
+        }
+
+        static member (<--) (uniValue: UniformValue<'T>, value: 'T) =
+            uniValue.value <- value
+            uniValue.isDirty <- true
+
+        member this.Value = this.value
+
+    type Uniform =
+        {
+            name: string
+            mutable location: int
+        }
+
+        static member Create (name) =
+            {
+                name = name
+                location = 0
+            }
+
+    [<RequireQualifiedAccess>]
+    type UniformKind =
+        | Int of int UniformValue
+        | Vector4 of Vector4 UniformValue
+        | Matrix4x4 of Matrix4x4 UniformValue
+        | Texture2D of Texture2DBuffer UniformValue
+
+    type Attribute =
+        {
+            name: string
+
+            mutable location: int
+        }
+
+        static member Create (name) =
+            {
+                name = name
+                location = 0
+            }
+
+    [<RequireQualifiedAccess>]
+    type AttributeKind =
+        | Vector2 of Vector2Buffer ref
+        | Vector3 of Vector3Buffer ref
+        | Vector4 of Vector4Buffer ref
+
+    type Shader =
+        {
+            mutable programId: int
+            mutable isInitialized: bool
+            mutable length: int
+            mutable inits: ResizeArray<unit -> unit>
+            mutable binds: ResizeArray<unit -> unit>
+            mutable unbinds: ResizeArray<unit -> unit>
+        }
+
+        member this.AddUniform (uni: Uniform, kind: UniformKind) =
+
+            if not this.isInitialized then
+
+                let initSetId =
+                    match kind with
+                    | UniformKind.Int value ->              fun () -> value.programId <- this.programId
+                    | UniformKind.Vector4 value ->          fun () -> value.programId <- this.programId
+                    | UniformKind.Matrix4x4 value ->        fun () -> value.programId <- this.programId
+                    | UniformKind.Texture2D value ->        fun () -> value.programId <- this.programId
+            
+                let initUni =
+                    fun () ->
+                        uni.location <- Renderer.getUniformLocation this.programId uni.name
+
+                let setValue =
+                    match kind with
+                    | UniformKind.Int value ->              
+                        fun () -> 
+                            if value.isDirty && value.programId = this.programId && uni.location > 0 then 
+                                Renderer.bindUniformInt uni.location value.value
+                                value.isDirty <- false
+
+                    | UniformKind.Vector4 value ->         
+                        fun () -> 
+                            if value.isDirty && value.programId = this.programId && uni.location > 0 then 
+                                Renderer.bindUniformVector4 uni.location value.value
+                                value.isDirty <- false
+
+                    | UniformKind.Matrix4x4 value ->        
+                        fun () -> 
+                            if value.isDirty && value.programId = this.programId && uni.location > 0 then 
+                                Renderer.bindUniformMatrix4x4 uni.location value.value
+                                value.isDirty <- false
+
+                    | UniformKind.Texture2D value ->
+                        fun () ->
+                            if value.isDirty && value.programId = this.programId && uni.location > 0 then
+                                value.value.TryBufferData () |> ignore
+                                Renderer.bindUniformInt uni.location value.value.Id
+                                value.value.Bind ()
+                                value.isDirty <- false
+
+                let bind = setValue
+
+                this.inits.Add initSetId
+                this.inits.Add initUni
+                this.inits.Add setValue
+
+                this.binds.Add bind
+
+        member this.AddAttribute (attrib: Attribute, kind: AttributeKind) =
+
+            if not this.isInitialized then
+
+                let initAttrib =
+                    fun () ->
+                        attrib.location <- Renderer.getAttributeLocation this.programId attrib.name
+
+                let bufferData =
+                    match kind with
+                    | AttributeKind.Vector2 b -> fun () -> (!b).TryBufferData () |> ignore
+                    | AttributeKind.Vector3 b -> fun () -> (!b).TryBufferData () |> ignore
+                    | AttributeKind.Vector4 b -> fun () -> (!b).TryBufferData () |> ignore
+
+                let bindBuffer =
+                    match kind with
+                    | AttributeKind.Vector2 b -> fun () -> (!b).Bind ()
+                    | AttributeKind.Vector3 b -> fun () -> (!b).Bind ()
+                    | AttributeKind.Vector4 b -> fun () -> (!b).Bind ()
+
+                let size =
+                    match kind with
+                    | AttributeKind.Vector2 b -> 2
+                    | AttributeKind.Vector3 b -> 3
+                    | AttributeKind.Vector4 b -> 4
+
+                let getLength =
+                    match kind with
+                    | AttributeKind.Vector2 b -> fun () -> (!b).Length
+                    | AttributeKind.Vector3 b -> fun () -> (!b).Length
+                    | AttributeKind.Vector4 b -> fun () -> (!b).Length
+
+                let bind =
+                    fun () ->
+                        if attrib.location > 0 then
+                            bufferData ()
+
+                            this.length <-
+                                let length = getLength ()
+
+                                if this.length = 0 then
+                                    length
+                                elif length < this.length then
+                                    length
+                                else
+                                    this.length
+
+                            bindBuffer ()
+                            Renderer.bindVertexAttributePointer_Float attrib.location size
+
+                this.inits.Add initAttrib
+                this.inits.Add bufferData
+
+                this.binds.Add bind
+
+        member this.Run () =
+
+            if this.programId > 0 then
+
+                if not this.isInitialized then
+
+                    for i = 0 to this.inits.Count - 1 do
+                        let f = this.inits.[i]
+                        f ()
+
+                    this.isInitialized <- true
+
+                for i = 0 to this.binds.Count - 1 do
+                    let f = this.binds.[i]
+                    f ()
+
+                if this.length > 0 then
+                    Renderer.drawTriangles 0 this.length
+
+                for i = 0 to this.unbinds.Count - 1 do
+                    let f = this.unbinds.[i]
+                    f ()
+
+
 // *****************************************
 // *****************************************
 // Renderer
