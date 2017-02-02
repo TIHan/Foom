@@ -5,6 +5,172 @@ open System.Drawing
 open System.Numerics
 open System.Collections.Generic
 
+// *****************************************
+// *****************************************
+// Array Buffers
+// *****************************************
+// *****************************************
+
+type Vector2Buffer (data) =
+
+    let mutable id = 0
+    let mutable length = 0
+    let mutable queuedData = Some data
+
+    member this.Set (data: Vector2 []) =
+        queuedData <- Some data
+
+    member this.Length = length
+
+    member this.Bind () =
+        if id <> 0 then
+            Renderer.bindVbo id
+
+    member this.TryBufferData () =
+        match queuedData with
+        | Some data ->
+            if id = 0 then
+                id <- Renderer.makeVbo ()
+            
+            Renderer.bufferVbo data (sizeof<Vector2> * data.Length) id
+            length <- data.Length
+            queuedData <- None
+            true
+        | _ -> false
+
+    member this.Id = id
+
+type Vector3Buffer (data) =
+
+    let mutable id = 0
+    let mutable length = 0
+    let mutable queuedData = Some data
+
+    member this.Set (data: Vector3 []) =
+        queuedData <- Some data
+
+    member this.Length = length
+
+    member this.Bind () =
+        if id <> 0 then
+            Renderer.bindVbo id
+
+    member this.TryBufferData () =
+        match queuedData with
+        | Some data ->
+            if id = 0 then
+                id <- Renderer.makeVbo ()
+            
+            Renderer.bufferVboVector3 data (sizeof<Vector3> * data.Length) id
+            length <- data.Length
+            queuedData <- None
+            true
+        | _ -> false
+
+    member this.Id = id
+
+type Vector4Buffer (data) =
+
+    let mutable id = 0
+    let mutable length = 0
+    let mutable queuedData = Some data
+
+    member this.Set (data: Vector4 []) =
+        queuedData <- Some data
+
+    member this.Length = length
+
+    member this.Bind () =
+        if id <> 0 then
+            Renderer.bindVbo id
+
+    member this.TryBufferData () =
+        match queuedData with
+        | Some data ->
+            if id = 0 then
+                id <- Renderer.makeVbo ()
+            
+            Renderer.bufferVboVector4 data (sizeof<Vector4> * data.Length) id
+            length <- data.Length
+            queuedData <- None
+            true
+        | _ -> false
+
+    member this.Id = id
+
+type Matrix4x4Buffer (data) =
+
+    let mutable id = 0
+    let mutable length = 0
+    let mutable queuedData = Some data
+
+    member this.Set (data: Matrix4x4 []) =
+        queuedData <- Some data
+
+    member this.Length = length
+
+    member this.Bind () =
+        if id <> 0 then
+            Renderer.bindVbo id
+
+    member this.TryBufferData () =
+        match queuedData with
+        | Some data ->
+            if id = 0 then
+                id <- Renderer.makeVbo ()
+            
+            Renderer.bufferVboMatrix4x4 data (sizeof<Matrix4x4> * data.Length) id
+            length <- data.Length
+            queuedData <- None
+            true
+        | _ -> false
+
+    member this.Id = id
+
+type Texture2DBuffer (bmp: Bitmap) =
+
+    let mutable id = 0
+    let mutable width = bmp.Width
+    let mutable height = bmp.Height
+    let mutable queuedData = Some bmp
+    let mutable isTransparent = false
+
+    member this.Id = id
+
+    member this.Width = width
+
+    member this.Height = height
+
+    member this.IsTransparent = isTransparent
+
+    member this.Bind () =
+        if id <> 0 then
+            Renderer.bindTexture id // this does activetexture0, change this eventually
+
+    member this.TryBufferData () =
+        match queuedData with
+        | Some bmp ->
+            isTransparent <- bmp.PixelFormat = System.Drawing.Imaging.PixelFormat.Format32bppArgb
+
+            let bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
+
+            id <- Renderer.createTexture bmp.Width bmp.Height bmpData.Scan0
+
+            bmp.UnlockBits (bmpData)
+            bmp.Dispose ()
+            queuedData <- None
+            true
+        | _ -> false
+
+// *****************************************
+// *****************************************
+
+// *****************************************
+// *****************************************
+// Renderer
+// *****************************************
+// *****************************************
+
 type Shader =
     {
         ProgramId: int
@@ -17,10 +183,10 @@ type Texture =
 
 type Mesh =
     {
-        Position: Vector3ArrayBuffer
-        Uv: Vector2ArrayBuffer
-        Color: Vector4ArrayBuffer
-        Center: Vector3ArrayBuffer
+        Position: Vector3Buffer
+        Uv: Vector2Buffer
+        Color: Vector4Buffer
+        Center: Vector3Buffer
         IsWireframe: bool
     }
 
@@ -55,8 +221,6 @@ type FRendererBucket =
         this.Meshes.RemoveAt (lastIndex)
         this.IdRefs.RemoveAt (lastIndex)
 
-
-
 type ShaderProgramId = int
 type TextureId = int
 
@@ -79,6 +243,18 @@ type FRenderer =
             Transparents = ResizeArray ()
         }
 
+    member this.CreateVector2Buffer (data) =
+        Vector2Buffer (data)
+
+    member this.CreateVector3Buffer (data) =
+        Vector3Buffer (data)
+
+    member this.CreateVector4Buffer (data) =
+        Vector4Buffer (data)
+
+    member this.CreateTexture2DBuffer (bmp) =
+        Texture2DBuffer (bmp)
+
     member this.CreateShader (vertexShader, fragmentShader) =
         {
             ProgramId = Renderer.loadShaders vertexShader fragmentShader
@@ -97,8 +273,8 @@ type FRenderer =
 
     member this.CreateMesh (position, uv, color: Color [], center, isWireframe) =
         {
-            Position = Vector3ArrayBuffer (position)
-            Uv = Vector2ArrayBuffer (uv)
+            Position = Vector3Buffer (position)
+            Uv = Vector2Buffer (uv)
             Color =
                 color
                 |> Array.map (fun c ->
@@ -108,8 +284,8 @@ type FRenderer =
                         single c.B / 255.f,
                         single c.A / 255.f)
                 )
-                |> Vector4ArrayBuffer
-            Center = Vector3ArrayBuffer (center)
+                |> Vector4Buffer
+            Center = Vector3Buffer (center)
             IsWireframe = isWireframe
         }
 
@@ -244,3 +420,6 @@ type FRenderer =
         Renderer.disableDepth ()
 
         //printfn "Draw Calls: %A" drawCalls
+
+// *****************************************
+// *****************************************
