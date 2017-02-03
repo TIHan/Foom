@@ -240,10 +240,10 @@ module PhysicsEngine =
                 | _ -> ()
 
     [<Literal>] 
-    let padding = 0.01f
+    let padding = 0.1f
 
     [<Literal>]
-    let maxIterations = 3
+    let maxIterations = 10
 
     let findIntersectionTime p r q s =
         // p + t r = q + u s
@@ -497,7 +497,7 @@ module PhysicsEngine =
 
                 let wallVelocity = 
                     let dot1 = Vector2.Dot (directionalVelocity, segDir)
-                    dot1 * segDir
+                    dot1 * segDir 
 
                 moveRigidBodyf directionalVelocity (iterations + 1) wallVelocity z rBody eng
 

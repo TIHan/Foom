@@ -165,197 +165,226 @@ type Texture2DBuffer (bmp: Bitmap) =
 // *****************************************
 // *****************************************
 
-module NewShader =
+type Uniform<'T> =
+    {
+        name: string
+        mutable location: int
+        mutable value: 'T
+        mutable isDirty: bool
+    }
 
-    type UniformValue<'T> =
+    member this.Set value = 
+            this.value <- value
+            this.isDirty <- true
+
+type VertexAttribute<'T> =
+    {
+        name: string
+        mutable value: 'T
+        mutable location: int
+    }
+
+    member this.Set value = this.value <- value
+
+type Shader =
+    {
+        programId: int
+        mutable isInitialized: bool
+        mutable length: int
+        mutable inits: ResizeArray<unit -> unit>
+        mutable binds: ResizeArray<unit -> unit>
+        mutable unbinds: ResizeArray<unit -> unit>
+    }
+
+    static member Create programId =
         {
-            mutable programId: int
-            mutable value: 'T
-            mutable isDirty: bool
+            programId = programId
+            isInitialized = false
+            length = 0
+            inits = ResizeArray ()
+            binds = ResizeArray ()
+            unbinds = ResizeArray ()
         }
 
-        static member (<--) (uniValue: UniformValue<'T>, value: 'T) =
-            uniValue.value <- value
-            uniValue.isDirty <- true
+    member this.CreateUniform<'T> (name) =
+        if this.isInitialized then failwithf "Cannot create uniform, %s. Shader already initialized." name
 
-        member this.Value = this.value
-
-    type Uniform =
-        {
-            name: string
-            mutable location: int
-        }
-
-        static member Create (name) =
+        let uni =
             {
                 name = name
-                location = 0
+                location = -1
+                value = Unchecked.defaultof<'T>
+                isDirty = false
             }
-
-    [<RequireQualifiedAccess>]
-    type UniformKind =
-        | Int of int UniformValue
-        | Vector4 of Vector4 UniformValue
-        | Matrix4x4 of Matrix4x4 UniformValue
-        | Texture2D of Texture2DBuffer UniformValue
-
-    type Attribute =
-        {
-            name: string
-
-            mutable location: int
-        }
-
-        static member Create (name) =
-            {
-                name = name
-                location = 0
-            }
-
-    [<RequireQualifiedAccess>]
-    type AttributeKind =
-        | Vector2 of Vector2Buffer ref
-        | Vector3 of Vector3Buffer ref
-        | Vector4 of Vector4Buffer ref
-
-    type Shader =
-        {
-            mutable programId: int
-            mutable isInitialized: bool
-            mutable length: int
-            mutable inits: ResizeArray<unit -> unit>
-            mutable binds: ResizeArray<unit -> unit>
-            mutable unbinds: ResizeArray<unit -> unit>
-        }
-
-        member this.AddUniform (uni: Uniform, kind: UniformKind) =
-
-            if not this.isInitialized then
-
-                let initSetId =
-                    match kind with
-                    | UniformKind.Int value ->              fun () -> value.programId <- this.programId
-                    | UniformKind.Vector4 value ->          fun () -> value.programId <- this.programId
-                    | UniformKind.Matrix4x4 value ->        fun () -> value.programId <- this.programId
-                    | UniformKind.Texture2D value ->        fun () -> value.programId <- this.programId
             
-                let initUni =
-                    fun () ->
-                        uni.location <- Renderer.getUniformLocation this.programId uni.name
+        let initUni =
+            fun () ->
+                uni.location <- Renderer.getUniformLocation this.programId uni.name
 
-                let setValue =
-                    match kind with
-                    | UniformKind.Int value ->              
-                        fun () -> 
-                            if value.isDirty && value.programId = this.programId && uni.location > 0 then 
-                                Renderer.bindUniformInt uni.location value.value
-                                value.isDirty <- false
+        let setValue =
+            match uni :> obj with
+            | :? Uniform<int> as uni ->              
+                fun () -> 
+                    if uni.isDirty && uni.location > -1 then 
+                        Renderer.bindUniformInt uni.location uni.value
+                        uni.isDirty <- false
 
-                    | UniformKind.Vector4 value ->         
-                        fun () -> 
-                            if value.isDirty && value.programId = this.programId && uni.location > 0 then 
-                                Renderer.bindUniformVector4 uni.location value.value
-                                value.isDirty <- false
+            | :? Uniform<Vector4> as uni ->         
+                fun () -> 
+                    if uni.isDirty && uni.location > -1 then 
+                        Renderer.bindUniformVector4 uni.location uni.value
+                        uni.isDirty <- false
 
-                    | UniformKind.Matrix4x4 value ->        
-                        fun () -> 
-                            if value.isDirty && value.programId = this.programId && uni.location > 0 then 
-                                Renderer.bindUniformMatrix4x4 uni.location value.value
-                                value.isDirty <- false
+            | :? Uniform<Matrix4x4> as uni ->        
+                fun () -> 
+                    if uni.isDirty && uni.location > -1 then 
+                        Renderer.bindUniformMatrix4x4 uni.location uni.value
+                        uni.isDirty <- false
 
-                    | UniformKind.Texture2D value ->
-                        fun () ->
-                            if value.isDirty && value.programId = this.programId && uni.location > 0 then
-                                value.value.TryBufferData () |> ignore
-                                Renderer.bindUniformInt uni.location value.value.Id
-                                value.value.Bind ()
-                                value.isDirty <- false
+            | :? Uniform<Texture2DBuffer> as uni ->
+                fun () ->
+                    if uni.isDirty && not (obj.ReferenceEquals (uni.value, null)) && uni.location > 0 then 
+                        uni.value.TryBufferData () |> ignore
+                        Renderer.bindUniformInt uni.location 0
+                        uni.value.Bind ()
+                        uni.isDirty <- false
 
-                let bind = setValue
+            | _ -> failwith "This should not happen."
 
-                this.inits.Add initSetId
-                this.inits.Add initUni
-                this.inits.Add setValue
+        let bind = setValue
 
-                this.binds.Add bind
+        let unbind =
+            fun () -> uni.value <- Unchecked.defaultof<'T>
 
-        member this.AddAttribute (attrib: Attribute, kind: AttributeKind) =
+        this.inits.Add initUni
+        this.inits.Add setValue
+
+        this.binds.Add bind
+        this.unbinds.Add unbind
+
+        uni
+
+    member this.CreateVertexAttribute<'T> (name) =
+        if this.isInitialized then failwithf "Cannot create vertex attribute, %s. Shader already initialized." name
+
+        let attrib =
+            {
+                name = name
+                value = Unchecked.defaultof<'T>
+                location = -1
+            }
+
+        let initAttrib =
+            fun () ->
+                attrib.location <- Renderer.getAttributeLocation this.programId attrib.name
+
+        let bufferData =
+            match attrib :> obj with
+            | :? VertexAttribute<Vector2Buffer> as attrib -> fun () -> attrib.value.TryBufferData () |> ignore
+            | :? VertexAttribute<Vector3Buffer> as attrib -> fun () -> attrib.value.TryBufferData () |> ignore
+            | :? VertexAttribute<Vector4Buffer> as attrib -> fun () -> attrib.value.TryBufferData () |> ignore
+            | _ -> failwith "Should not happen."
+
+        let bindBuffer =
+            match attrib :> obj with
+            | :? VertexAttribute<Vector2Buffer> as attrib -> fun () -> attrib.value.Bind ()
+            | :? VertexAttribute<Vector3Buffer> as attrib -> fun () -> attrib.value.Bind ()
+            | :? VertexAttribute<Vector4Buffer> as attrib -> fun () -> attrib.value.Bind ()
+            | _ -> failwith "Should not happen."
+
+        let size =
+            match attrib :> obj with
+            | :? VertexAttribute<Vector2Buffer> -> 2
+            | :? VertexAttribute<Vector3Buffer> -> 3
+            | :? VertexAttribute<Vector4Buffer> -> 4
+            | _ -> failwith "Should not happen."
+
+        let getLength =
+            match attrib :> obj with
+            | :? VertexAttribute<Vector2Buffer> as attrib  -> fun () -> attrib.value.Length
+            | :? VertexAttribute<Vector3Buffer> as attrib  -> fun () -> attrib.value.Length
+            | :? VertexAttribute<Vector4Buffer> as attrib  -> fun () -> attrib.value.Length
+            | _ -> failwith "Should not happen."
+
+        let bind =
+            fun () ->
+                if not (obj.ReferenceEquals (attrib.value, null)) && attrib.location > -1 then
+                    bufferData ()
+
+                    this.length <-
+                        let length = getLength ()
+
+                        if this.length = 0 then
+                            length
+                        elif length < this.length then
+                            length
+                        else
+                            this.length
+
+                    bindBuffer ()
+
+                    // TODO: this will change
+                    Renderer.bindVertexAttributePointer_Float attrib.location size
+                    Renderer.enableVertexAttribute attrib.location
+
+        let unbind =
+            fun () ->
+                attrib.value <- Unchecked.defaultof<'T>
+
+        this.inits.Add initAttrib
+        this.inits.Add bufferData
+
+        this.binds.Add bind
+        this.unbinds.Add unbind
+
+        attrib
+
+    member this.CreateUniformInt (name) =
+        this.CreateUniform<int> (name)
+
+    member this.CreateUniformVector4 (name) =
+        this.CreateUniform<Vector4> (name)
+
+    member this.CreateUniformMatrix4x4 (name) =
+        this.CreateUniform<Matrix4x4> (name)
+
+    member this.CreateUniformTexture2D (name) =
+        this.CreateUniform<Texture2DBuffer> (name)
+
+    member this.CreateVertexAttributeVector2 (name) =
+        this.CreateVertexAttribute<Vector2Buffer> (name)
+
+    member this.CreateVertexAttributeVector3 (name) =
+        this.CreateVertexAttribute<Vector3Buffer> (name)
+
+    member this.CreateVertexAttributeVector4 (name) =
+        this.CreateVertexAttribute<Vector4Buffer> (name)
+
+    member this.Run () =
+
+        if this.programId > 0 then
 
             if not this.isInitialized then
 
-                let initAttrib =
-                    fun () ->
-                        attrib.location <- Renderer.getAttributeLocation this.programId attrib.name
-
-                let bufferData =
-                    match kind with
-                    | AttributeKind.Vector2 b -> fun () -> (!b).TryBufferData () |> ignore
-                    | AttributeKind.Vector3 b -> fun () -> (!b).TryBufferData () |> ignore
-                    | AttributeKind.Vector4 b -> fun () -> (!b).TryBufferData () |> ignore
-
-                let bindBuffer =
-                    match kind with
-                    | AttributeKind.Vector2 b -> fun () -> (!b).Bind ()
-                    | AttributeKind.Vector3 b -> fun () -> (!b).Bind ()
-                    | AttributeKind.Vector4 b -> fun () -> (!b).Bind ()
-
-                let size =
-                    match kind with
-                    | AttributeKind.Vector2 b -> 2
-                    | AttributeKind.Vector3 b -> 3
-                    | AttributeKind.Vector4 b -> 4
-
-                let getLength =
-                    match kind with
-                    | AttributeKind.Vector2 b -> fun () -> (!b).Length
-                    | AttributeKind.Vector3 b -> fun () -> (!b).Length
-                    | AttributeKind.Vector4 b -> fun () -> (!b).Length
-
-                let bind =
-                    fun () ->
-                        if attrib.location > 0 then
-                            bufferData ()
-
-                            this.length <-
-                                let length = getLength ()
-
-                                if this.length = 0 then
-                                    length
-                                elif length < this.length then
-                                    length
-                                else
-                                    this.length
-
-                            bindBuffer ()
-                            Renderer.bindVertexAttributePointer_Float attrib.location size
-
-                this.inits.Add initAttrib
-                this.inits.Add bufferData
-
-                this.binds.Add bind
-
-        member this.Run () =
-
-            if this.programId > 0 then
-
-                if not this.isInitialized then
-
-                    for i = 0 to this.inits.Count - 1 do
-                        let f = this.inits.[i]
-                        f ()
-
-                    this.isInitialized <- true
-
-                for i = 0 to this.binds.Count - 1 do
-                    let f = this.binds.[i]
+                for i = 0 to this.inits.Count - 1 do
+                    let f = this.inits.[i]
                     f ()
 
-                if this.length > 0 then
-                    Renderer.drawTriangles 0 this.length
+                this.isInitialized <- true
 
-                for i = 0 to this.unbinds.Count - 1 do
-                    let f = this.unbinds.[i]
-                    f ()
+            for i = 0 to this.binds.Count - 1 do
+                let f = this.binds.[i]
+                f ()
+
+            if this.length > 0 then
+                // TODO: this will change
+                Renderer.drawTriangles 0 this.length
+
+            for i = 0 to this.unbinds.Count - 1 do
+                let f = this.unbinds.[i]
+                f ()
+
+            this.length <- 0
 
 
 // *****************************************
@@ -363,11 +392,6 @@ module NewShader =
 // Renderer
 // *****************************************
 // *****************************************
-
-type Shader =
-    {
-        ProgramId: int
-    }
 
 type Texture =
     {
@@ -424,9 +448,18 @@ type MeshRender =
         IdRef: int ref
     }
 
+type MeshInput =
+    {
+        Position:   VertexAttribute<Vector3Buffer>
+        Uv:         VertexAttribute<Vector2Buffer>
+        Texture:    Uniform<Texture2DBuffer>
+        View:       Uniform<Matrix4x4>
+        Projection: Uniform<Matrix4x4>
+    }
+
 type FRenderer =
     {
-        Lookup: Dictionary<ShaderProgramId, Shader * Dictionary<TextureId, Texture * FRendererBucket>> 
+        Lookup: Dictionary<ShaderProgramId, Shader * MeshInput * Dictionary<TextureId, Texture * FRendererBucket>> 
         Transparents: ResizeArray<ShaderProgramId * Material * Mesh>
     }
 
@@ -449,9 +482,8 @@ type FRenderer =
         Texture2DBuffer (bmp)
 
     member this.CreateShader (vertexShader, fragmentShader) =
-        {
-            ProgramId = Renderer.loadShaders vertexShader fragmentShader
-        }
+        Renderer.loadShaders vertexShader fragmentShader
+        |> Shader.Create
 
     member this.CreateTexture (bmp) =
         {
@@ -509,11 +541,19 @@ type FRenderer =
 
         let add shader =
             let bucketLookup =
-                match this.Lookup.TryGetValue (shader.ProgramId) with
-                | true, (_, bucketLookup) -> bucketLookup
+                match this.Lookup.TryGetValue (shader.programId) with
+                | true, (_, _, bucketLookup) -> bucketLookup
                 | _, _ ->
                     let bucketLookup = Dictionary ()
-                    this.Lookup.Add (shader.ProgramId, (shader, bucketLookup))
+                    let input =
+                        {
+                            Position = shader.CreateVertexAttributeVector3 ("position")
+                            Uv = shader.CreateVertexAttributeVector2 ("in_uv")
+                            Texture = shader.CreateUniformTexture2D ("uni_texture")
+                            View = shader.CreateUniformMatrix4x4 ("uni_view")
+                            Projection = shader.CreateUniformMatrix4x4 ("uni_projection")
+                        }
+                    this.Lookup.Add (shader.programId, (shader, input, bucketLookup))
                     bucketLookup
 
             material.Texture.Buffer.TryBufferData () |> ignore
@@ -524,7 +564,7 @@ type FRenderer =
 
             let render =
                 {
-                    ShaderProgramId = shader.ProgramId
+                    ShaderProgramId = shader.programId
                     TextureId = material.Texture.Buffer.Id
                     IdRef = idRef
                 }
@@ -537,7 +577,7 @@ type FRenderer =
         this.Lookup
         |> Seq.iter (fun pair ->
             let programId = pair.Key
-            let (shader, textureLookup) = pair.Value
+            let (shader, input, textureLookup) = pair.Value
 
             Renderer.useProgram programId
 
@@ -552,7 +592,9 @@ type FRenderer =
 
                     let mesh = bucket.Meshes.[i]
 
-                    f shader texture mesh
+                    f shader input texture mesh
+
+                    shader.Run ()
             )
         )
 
@@ -563,56 +605,29 @@ type FRenderer =
 
         Renderer.enableDepth ()
 
-        let mutable drawCalls = 0
+        this.ProcessPrograms (fun shader input texture mesh ->
+            input.Position.Set      mesh.Position
+            input.Uv.Set            mesh.Uv
+            input.Texture.Set       texture.Buffer
+            input.View.Set          view
+            input.Projection.Set    projection
 
-        this.ProcessPrograms (fun shader texture mesh ->
-            let position = mesh.Position
-            let uv = mesh.Uv
             let color = mesh.Color
             let center = mesh.Center
 
-            let textureBuffer = texture.Buffer
-            let programId = shader.ProgramId
+            let programId = shader.programId
 
-            position.TryBufferData () |> ignore
-            uv.TryBufferData () |> ignore
             color.TryBufferData () |> ignore
             center.TryBufferData () |> ignore
-
-            let uniformProjection = Renderer.getUniformLocation programId "uni_projection"
-
-            Renderer.setUniformMatrix4x4 uniformProjection projection
-
-            let uniformView = Renderer.getUniformLocation programId "uni_view"
-
-            Renderer.setUniformMatrix4x4 uniformView view
-
-            position.Bind ()
-            Renderer.bindPosition programId
-
-            uv.Bind ()
-            Renderer.bindUv programId
 
             color.Bind ()
             Renderer.bindColor programId
 
             center.Bind ()
             Renderer.bindCenter programId
-
-            Renderer.setTexture programId textureBuffer.Id
-            textureBuffer.Bind ()
-
-            if mesh.IsWireframe then
-                Renderer.drawArrays 0 position.Length
-            else
-                Renderer.drawTriangles 0 position.Length
-
-            drawCalls <- drawCalls + 1
         )
 
         Renderer.disableDepth ()
-
-        //printfn "Draw Calls: %A" drawCalls
 
 // *****************************************
 // *****************************************
