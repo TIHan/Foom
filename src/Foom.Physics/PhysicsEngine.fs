@@ -491,13 +491,13 @@ module PhysicsEngine =
             | Some seg, Some point ->
 
                 let segDir = (seg.B - seg.A) |> Vector2.Normalize
-                let newVelocity = velocity * (hitTime)
+                let newVelocity = velocity * (hitTime) + paddedVelocity
 
-                warpRigidBody (Vector3 (rBody.WorldPosition + newVelocity + paddedVelocity, z)) rBody eng
+                warpRigidBody (Vector3 (rBody.WorldPosition + newVelocity, z)) rBody eng
 
                 let wallVelocity = 
                     let dot1 = Vector2.Dot (directionalVelocity, segDir)
-                    dot1 * segDir 
+                    dot1 * segDir
 
                 moveRigidBodyf directionalVelocity (iterations + 1) wallVelocity z rBody eng
 
