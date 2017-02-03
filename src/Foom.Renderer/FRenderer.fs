@@ -180,13 +180,13 @@ type Uniform<'T> =
 type VertexAttribute<'T> =
     {
         name: string
-        mutable value: 'T
         mutable location: int
+        mutable value: 'T
     }
 
     member this.Set value = this.value <- value
 
-type Shader =
+type ShaderProgram =
     {
         programId: int
         mutable isInitialized: bool
@@ -407,12 +407,6 @@ type Mesh =
         IsWireframe: bool
     }
 
-type Material =
-    {
-        Shader: Shader
-        Texture: Texture
-    }
-
 [<ReferenceEquality>]
 type FRendererBucket =
     {
@@ -457,16 +451,32 @@ type MeshInput =
         Projection: Uniform<Matrix4x4>
     }
 
+type ShaderType =
+    | Normal
+    | Texture
+    | TextureMesh
+
+type Shader =
+    {
+        ShaderProgram: ShaderProgram
+    }
+
+type Material =
+    {
+        Shader: Shader
+        Texture: Texture
+    }
+
 type FRenderer =
     {
-        Lookup: Dictionary<ShaderProgramId, Shader * MeshInput * Dictionary<TextureId, Texture * FRendererBucket>> 
-        Transparents: ResizeArray<ShaderProgramId * Material * Mesh>
+        Shaders: Dictionary<ShaderProgramId, Matrix4x4 -> Matrix4x4 -> unit>
+        Lookup: Dictionary<ShaderProgramId, Dictionary<TextureId, Texture * FRendererBucket>> 
     }
 
     static member Create () =
         {
+            Shaders = Dictionary ()
             Lookup = Dictionary ()
-            Transparents = ResizeArray ()
         }
 
     member this.CreateVector2Buffer (data) =
@@ -481,9 +491,72 @@ type FRenderer =
     member this.CreateTexture2DBuffer (bmp) =
         Texture2DBuffer (bmp)
 
+    member this.CreateShader (vertexShader, fragmentShader, f: ShaderProgram -> (Matrix4x4 -> Matrix4x4 -> unit)) =
+        let shaderProgram =
+            Renderer.loadShaders vertexShader fragmentShader
+            |> ShaderProgram.Create
+
+        this.Shaders.[shaderProgram.programId] <- f shaderProgram
+
+        {
+            ShaderProgram = shaderProgram
+        }
+
+    // TextureMesh shader
     member this.CreateShader (vertexShader, fragmentShader) =
-        Renderer.loadShaders vertexShader fragmentShader
-        |> Shader.Create
+        this.CreateShader (vertexShader, fragmentShader,
+
+            fun shaderProgram ->
+                let in_position = shaderProgram.CreateVertexAttributeVector3 ("position")
+                let in_uv = shaderProgram.CreateVertexAttributeVector2 ("in_uv")
+                let in_texture = shaderProgram.CreateUniformTexture2D ("uni_texture")
+                let uni_view = shaderProgram.CreateUniformMatrix4x4 ("uni_view")
+                let uni_projection = shaderProgram.CreateUniformMatrix4x4 ("uni_projection")
+
+                fun view projection ->
+                    this.Lookup
+                    |> Seq.iter (fun pair ->
+                        let programId = pair.Key
+                        let textureLookup = pair.Value
+
+                        Renderer.useProgram programId
+
+                        textureLookup
+                        |> Seq.iter (fun pair ->
+                            let textureId = pair.Key
+                            let (texture, bucket) = pair.Value
+
+                            let count = bucket.Meshes.Count
+
+                            for i = 0 to count - 1 do
+
+                                let mesh = bucket.Meshes.[i]
+
+                                in_position.Set     mesh.Position
+                                in_uv.Set           mesh.Uv
+                                in_texture.Set      texture.Buffer
+                                uni_view.Set        view
+                                uni_projection.Set  projection
+
+                                let color = mesh.Color
+                                let center = mesh.Center
+
+                                let programId = shaderProgram.programId
+
+                                color.TryBufferData () |> ignore
+                                center.TryBufferData () |> ignore
+
+                                color.Bind ()
+                                Renderer.bindColor programId
+
+                                center.Bind ()
+                                Renderer.bindCenter programId
+
+                                shaderProgram.Run ()
+                        )
+                    ) 
+
+        )
 
     member this.CreateTexture (bmp) =
         {
@@ -516,15 +589,6 @@ type FRenderer =
 
     member this.TryAdd (material: Material, mesh: Mesh) =
 
-        material.Texture.Buffer.TryBufferData () |> ignore
-        mesh.Position.TryBufferData () |> ignore
-        mesh.Uv.TryBufferData () |> ignore
-
-        // TODO: What shall we do with transparent textures? :D
-//        if material.Texture.Buffer.IsTransparent then
-//            None
-//        else
-
         let addTexture (bucketLookup: Dictionary<TextureId, Texture * FRendererBucket>) texture = 
             let bucket =
                 match bucketLookup.TryGetValue (texture.Buffer.Id) with
@@ -535,28 +599,23 @@ type FRenderer =
                             Meshes = ResizeArray ()
                             IdRefs = ResizeArray ()
                         }
+
+                    // Need to do this to make sure we get an id.
+                    texture.Buffer.TryBufferData () |> ignore
+
                     bucketLookup.Add (texture.Buffer.Id, (texture, bucket))
                     bucket
             bucket
 
         let add shader =
+            let shaderProgram = shader.ShaderProgram
             let bucketLookup =
-                match this.Lookup.TryGetValue (shader.programId) with
-                | true, (_, _, bucketLookup) -> bucketLookup
+                match this.Lookup.TryGetValue (shaderProgram.programId) with
+                | true, (bucketLookup) -> bucketLookup
                 | _, _ ->
                     let bucketLookup = Dictionary ()
-                    let input =
-                        {
-                            Position = shader.CreateVertexAttributeVector3 ("position")
-                            Uv = shader.CreateVertexAttributeVector2 ("in_uv")
-                            Texture = shader.CreateUniformTexture2D ("uni_texture")
-                            View = shader.CreateUniformMatrix4x4 ("uni_view")
-                            Projection = shader.CreateUniformMatrix4x4 ("uni_projection")
-                        }
-                    this.Lookup.Add (shader.programId, (shader, input, bucketLookup))
+                    this.Lookup.Add (shader.ShaderProgram.programId, bucketLookup)
                     bucketLookup
-
-            material.Texture.Buffer.TryBufferData () |> ignore
 
             let bucket = addTexture bucketLookup material.Texture
 
@@ -564,7 +623,7 @@ type FRenderer =
 
             let render =
                 {
-                    ShaderProgramId = shader.programId
+                    ShaderProgramId = shaderProgram.programId
                     TextureId = material.Texture.Buffer.Id
                     IdRef = idRef
                 }
@@ -573,58 +632,16 @@ type FRenderer =
 
         add material.Shader
 
-    member this.ProcessPrograms f =
-        this.Lookup
-        |> Seq.iter (fun pair ->
-            let programId = pair.Key
-            let (shader, input, textureLookup) = pair.Value
-
-            Renderer.useProgram programId
-
-            textureLookup
-            |> Seq.iter (fun pair ->
-                let textureId = pair.Key
-                let (texture, bucket) = pair.Value
-
-                let count = bucket.Meshes.Count
-
-                for i = 0 to count - 1 do
-
-                    let mesh = bucket.Meshes.[i]
-
-                    f shader input texture mesh
-
-                    shader.Run ()
-            )
-        )
-
     member this.Clear () =
         Renderer.clear ()
 
     member this.Draw (projection: Matrix4x4) (view: Matrix4x4) =
-
+        
         Renderer.enableDepth ()
 
-        this.ProcessPrograms (fun shader input texture mesh ->
-            input.Position.Set      mesh.Position
-            input.Uv.Set            mesh.Uv
-            input.Texture.Set       texture.Buffer
-            input.View.Set          view
-            input.Projection.Set    projection
-
-            let color = mesh.Color
-            let center = mesh.Center
-
-            let programId = shader.programId
-
-            color.TryBufferData () |> ignore
-            center.TryBufferData () |> ignore
-
-            color.Bind ()
-            Renderer.bindColor programId
-
-            center.Bind ()
-            Renderer.bindCenter programId
+        this.Shaders
+        |> Seq.iter (fun pair ->
+            pair.Value view projection
         )
 
         Renderer.disableDepth ()
