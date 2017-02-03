@@ -507,6 +507,19 @@ type FRenderer =
         this.CreateShader (vertexShader, fragmentShader,
 
             fun shaderProgram ->
+                (*
+                    // Ideal
+                    shaderInput {
+                        let! in_position = in_vec3 "position"
+                        let! in_uv = in_vec2 "in_uv"
+                        let! in_texture = in_sampler2D "uni_texture"
+                        let! uni_view = uni_mat4x4 "uni_view"
+                        let! uni_projection = uni_mat4x4 "uni_projection"
+
+                        fun view projection ->
+                            ....
+                    }
+                *)
                 let in_position = shaderProgram.CreateVertexAttributeVector3 ("position")
                 let in_uv = shaderProgram.CreateVertexAttributeVector2 ("in_uv")
                 let in_texture = shaderProgram.CreateUniformTexture2D ("uni_texture")
