@@ -76,7 +76,7 @@ type Material =
 type Renderer =
     {
         mutable nextShaderId: int
-        Shaders: Dictionary<ShaderId, Matrix4x4 -> Matrix4x4 -> unit>
+        Shaders: Dictionary<ShaderId, ShaderProgram * (Matrix4x4 -> Matrix4x4 -> unit)>
         TextureMeshes: Dictionary<ShaderId, Dictionary<TextureId, Texture * Bucket>> 
     }
 
@@ -107,7 +107,7 @@ type Renderer =
         let shaderId = this.nextShaderId
 
         this.nextShaderId <- this.nextShaderId + 1
-        this.Shaders.[shaderId] <- f shaderId shaderProgram
+        this.Shaders.[shaderId] <- (shaderProgram, (f shaderId shaderProgram))
 
         {
             Id = shaderId
@@ -262,7 +262,7 @@ type Renderer =
 
         this.Shaders
         |> Seq.iter (fun pair ->
-            pair.Value view projection
+            (snd pair.Value) view projection
         )
 
         Backend.disableDepth ()
