@@ -5,7 +5,7 @@ open Foom.Ecs
 open Foom.Renderer
 
 let init (world: World) =
-    let app = Renderer.init ()
+    let app = Backend.init ()
     let renderSystem = 
         app
         |> RendererSystem.create

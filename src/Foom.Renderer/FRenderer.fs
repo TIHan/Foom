@@ -24,15 +24,15 @@ type Vector2Buffer (data) =
 
     member this.Bind () =
         if id <> 0 then
-            Renderer.bindVbo id
+            Backend.bindVbo id
 
     member this.TryBufferData () =
         match queuedData with
         | Some data ->
             if id = 0 then
-                id <- Renderer.makeVbo ()
+                id <- Backend.makeVbo ()
             
-            Renderer.bufferVbo data (sizeof<Vector2> * data.Length) id
+            Backend.bufferVbo data (sizeof<Vector2> * data.Length) id
             length <- data.Length
             queuedData <- None
             true
@@ -53,15 +53,15 @@ type Vector3Buffer (data) =
 
     member this.Bind () =
         if id <> 0 then
-            Renderer.bindVbo id
+            Backend.bindVbo id
 
     member this.TryBufferData () =
         match queuedData with
         | Some data ->
             if id = 0 then
-                id <- Renderer.makeVbo ()
+                id <- Backend.makeVbo ()
             
-            Renderer.bufferVboVector3 data (sizeof<Vector3> * data.Length) id
+            Backend.bufferVboVector3 data (sizeof<Vector3> * data.Length) id
             length <- data.Length
             queuedData <- None
             true
@@ -82,15 +82,15 @@ type Vector4Buffer (data) =
 
     member this.Bind () =
         if id <> 0 then
-            Renderer.bindVbo id
+            Backend.bindVbo id
 
     member this.TryBufferData () =
         match queuedData with
         | Some data ->
             if id = 0 then
-                id <- Renderer.makeVbo ()
+                id <- Backend.makeVbo ()
             
-            Renderer.bufferVboVector4 data (sizeof<Vector4> * data.Length) id
+            Backend.bufferVboVector4 data (sizeof<Vector4> * data.Length) id
             length <- data.Length
             queuedData <- None
             true
@@ -111,15 +111,15 @@ type Matrix4x4Buffer (data) =
 
     member this.Bind () =
         if id <> 0 then
-            Renderer.bindVbo id
+            Backend.bindVbo id
 
     member this.TryBufferData () =
         match queuedData with
         | Some data ->
             if id = 0 then
-                id <- Renderer.makeVbo ()
+                id <- Backend.makeVbo ()
             
-            Renderer.bufferVboMatrix4x4 data (sizeof<Matrix4x4> * data.Length) id
+            Backend.bufferVboMatrix4x4 data (sizeof<Matrix4x4> * data.Length) id
             length <- data.Length
             queuedData <- None
             true
@@ -145,7 +145,7 @@ type Texture2DBuffer (bmp: Bitmap) =
 
     member this.Bind () =
         if id <> 0 then
-            Renderer.bindTexture id // this does activetexture0, change this eventually
+            Backend.bindTexture id // this does activetexture0, change this eventually
 
     member this.TryBufferData () =
         match queuedData with
@@ -154,7 +154,7 @@ type Texture2DBuffer (bmp: Bitmap) =
 
             let bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
 
-            id <- Renderer.createTexture bmp.Width bmp.Height bmpData.Scan0
+            id <- Backend.createTexture bmp.Width bmp.Height bmpData.Scan0
 
             bmp.UnlockBits (bmpData)
             bmp.Dispose ()
@@ -219,33 +219,33 @@ type ShaderProgram =
             
         let initUni =
             fun () ->
-                uni.location <- Renderer.getUniformLocation this.programId uni.name
+                uni.location <- Backend.getUniformLocation this.programId uni.name
 
         let setValue =
             match uni :> obj with
             | :? Uniform<int> as uni ->              
                 fun () -> 
                     if uni.isDirty && uni.location > -1 then 
-                        Renderer.bindUniformInt uni.location uni.value
+                        Backend.bindUniformInt uni.location uni.value
                         uni.isDirty <- false
 
             | :? Uniform<Vector4> as uni ->         
                 fun () -> 
                     if uni.isDirty && uni.location > -1 then 
-                        Renderer.bindUniformVector4 uni.location uni.value
+                        Backend.bindUniformVector4 uni.location uni.value
                         uni.isDirty <- false
 
             | :? Uniform<Matrix4x4> as uni ->        
                 fun () -> 
                     if uni.isDirty && uni.location > -1 then 
-                        Renderer.bindUniformMatrix4x4 uni.location uni.value
+                        Backend.bindUniformMatrix4x4 uni.location uni.value
                         uni.isDirty <- false
 
             | :? Uniform<Texture2DBuffer> as uni ->
                 fun () ->
                     if uni.isDirty && not (obj.ReferenceEquals (uni.value, null)) && uni.location > 0 then 
                         uni.value.TryBufferData () |> ignore
-                        Renderer.bindUniformInt uni.location 0
+                        Backend.bindUniformInt uni.location 0
                         uni.value.Bind ()
                         uni.isDirty <- false
 
@@ -276,7 +276,7 @@ type ShaderProgram =
 
         let initAttrib =
             fun () ->
-                attrib.location <- Renderer.getAttributeLocation this.programId attrib.name
+                attrib.location <- Backend.getAttributeLocation this.programId attrib.name
 
         let bufferData =
             match attrib :> obj with
@@ -324,8 +324,8 @@ type ShaderProgram =
                     bindBuffer ()
 
                     // TODO: this will change
-                    Renderer.bindVertexAttributePointer_Float attrib.location size
-                    Renderer.enableVertexAttribute attrib.location
+                    Backend.bindVertexAttributePointer_Float attrib.location size
+                    Backend.enableVertexAttribute attrib.location
 
         let unbind =
             fun () ->
@@ -378,7 +378,7 @@ type ShaderProgram =
 
             if this.length > 0 then
                 // TODO: this will change
-                Renderer.drawTriangles 0 this.length
+                Backend.drawTriangles 0 this.length
 
             for i = 0 to this.unbinds.Count - 1 do
                 let f = this.unbinds.[i]
@@ -482,7 +482,7 @@ type FRenderer =
 
     member this.CreateShader (vertexShader, fragmentShader, f: ShaderProgram -> (Matrix4x4 -> Matrix4x4 -> unit)) =
         let shaderProgram =
-            Renderer.loadShaders vertexShader fragmentShader
+            Backend.loadShaders vertexShader fragmentShader
             |> ShaderProgram.Create
 
         this.Shaders.[shaderProgram.programId] <- f shaderProgram
@@ -521,7 +521,7 @@ type FRenderer =
                     match this.Lookup.TryGetValue(shaderProgram.programId) with
                     | true, textureLookup ->
 
-                        Renderer.useProgram shaderProgram.programId
+                        Backend.useProgram shaderProgram.programId
 
                         textureLookup
                         |> Seq.iter (fun pair ->
@@ -551,7 +551,7 @@ type FRenderer =
                                 color.TryBufferData () |> ignore
 
                                 color.Bind ()
-                                Renderer.bindColor programId
+                                Backend.bindColor programId
 
                                 shaderProgram.Run ()
                         )
@@ -634,18 +634,18 @@ type FRenderer =
         add material.Shader
 
     member this.Clear () =
-        Renderer.clear ()
+        Backend.clear ()
 
     member this.Draw (projection: Matrix4x4) (view: Matrix4x4) =
         
-        Renderer.enableDepth ()
+        Backend.enableDepth ()
 
         this.Shaders
         |> Seq.iter (fun pair ->
             pair.Value view projection
         )
 
-        Renderer.disableDepth ()
+        Backend.disableDepth ()
 
 // *****************************************
 // *****************************************
