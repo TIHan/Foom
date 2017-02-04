@@ -21,7 +21,6 @@ type Mesh =
         Position: Vector3Buffer
         Uv: Vector2Buffer
         Color: Vector4Buffer
-        IsWireframe: bool
     }
 
 [<ReferenceEquality>]
@@ -188,7 +187,7 @@ type Renderer =
             Texture = texture
         }
 
-    member this.CreateMesh (position, uv, color: Color [], isWireframe) =
+    member this.CreateMesh (position, uv, color: Color []) =
         {
             Position = Vector3Buffer (position)
             Uv = Vector2Buffer (uv)
@@ -202,7 +201,6 @@ type Renderer =
                         single c.A / 255.f)
                 )
                 |> Vector4Buffer
-            IsWireframe = isWireframe
         }
 
     member this.TryAdd (material: Material, mesh: Mesh, data: obj) =

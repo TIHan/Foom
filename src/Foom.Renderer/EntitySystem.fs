@@ -25,7 +25,6 @@ type MeshInfo =
         Position: Vector3 []
         Uv: Vector2 []
         Color: Color []
-        IsWireframe: bool
     }
 
 type TextureInfo =
@@ -88,19 +87,11 @@ let handleSomething () =
         |> Option.iter (fun comp ->
             let info = comp.RenderInfo
 
-            let mesh = renderer.CreateMesh (info.MeshInfo.Position, info.MeshInfo.Uv, info.MeshInfo.Color, info.MeshInfo.IsWireframe)
+            let mesh = renderer.CreateMesh (info.MeshInfo.Position, info.MeshInfo.Uv, info.MeshInfo.Color)
 
-            let vertexShader =
-                if info.MeshInfo.IsWireframe then
-                    "wireframe.vertex"
-                else
-                    info.MaterialInfo.ShaderInfo.VertexShader
+            let vertexShader = info.MaterialInfo.ShaderInfo.VertexShader
 
-            let fragmentShader =
-                if info.MeshInfo.IsWireframe then
-                    "wireframe.fragment"
-                else
-                    info.MaterialInfo.ShaderInfo.FragmentShader
+            let fragmentShader = info.MaterialInfo.ShaderInfo.FragmentShader
 
             let shader, f =
                 match shaderCache.TryGetValue ((vertexShader, fragmentShader)) with

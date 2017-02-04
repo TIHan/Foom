@@ -143,7 +143,6 @@ let runGlobalBatch (em: EntityManager) =
                 Position = vertices |> Seq.toArray
                 Uv = uv |> Seq.toArray
                 Color = color |> Seq.toArray
-                IsWireframe = false
             }
 
         let materialInfo : RendererSystem.MaterialInfo =
