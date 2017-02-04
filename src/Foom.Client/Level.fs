@@ -147,12 +147,7 @@ let runGlobalBatch (em: EntityManager) =
 
         let materialInfo : RendererSystem.MaterialInfo =
             {
-                ShaderInfo =
-                    {
-                        VertexShader = if isSprite then "sprite.vertex" else "triangle.vertex"
-                        FragmentShader = "triangle.fragment"
-                    }
-            
+                ShaderName = if isSprite then "Sprite" else "TextureMesh"
                 TextureInfo =
                     {
                         TexturePath = texturePath

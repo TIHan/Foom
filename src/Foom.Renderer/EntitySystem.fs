@@ -32,16 +32,10 @@ type TextureInfo =
         TexturePath: string
     }
 
-type ShaderInfo =
-    {
-        VertexShader: string
-        FragmentShader: string
-    }
-
 type MaterialInfo =
     {
         TextureInfo: TextureInfo
-        ShaderInfo: ShaderInfo
+        ShaderName: string
     }
 
 type RenderInfo =
@@ -77,8 +71,8 @@ type SpriteInfoComponent =
     interface IComponent
 
 let renderer = Renderer.Create ()
-let functionCache = Dictionary<string * string, (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> unit)> ()
-let shaderCache = Dictionary<string * string, Shader> ()
+let functionCache = Dictionary<string, (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> unit)> ()
+let shaderCache = Dictionary<string, Shader> ()
 let textureCache = Dictionary<string, Texture> ()
 
 let handleSomething () =
@@ -88,29 +82,28 @@ let handleSomething () =
             let info = comp.RenderInfo
 
             let mesh = renderer.CreateMesh (info.MeshInfo.Position, info.MeshInfo.Uv, info.MeshInfo.Color)
+            let shaderName = info.MaterialInfo.ShaderName
 
-            let vertexShader = info.MaterialInfo.ShaderInfo.VertexShader
+            let vertexShaderFile = shaderName + ".vert"
 
-            let fragmentShader = info.MaterialInfo.ShaderInfo.FragmentShader
+            let fragmentShaderFile = shaderName + ".frag"
 
             let shader, f =
-                match shaderCache.TryGetValue ((vertexShader, fragmentShader)) with
+                match shaderCache.TryGetValue (shaderName) with
                 | true, shader -> shader, (fun _ _ _ -> null)
                 | _ -> 
-                    let vertexFile = vertexShader
-                    let fragmentFile = fragmentShader
 
-                    let vertexBytes = File.ReadAllText (vertexFile) |> System.Text.Encoding.UTF8.GetBytes
-                    let fragmentBytes = File.ReadAllText (fragmentFile) |> System.Text.Encoding.UTF8.GetBytes
+                    let vertexBytes = File.ReadAllText (vertexShaderFile) |> System.Text.Encoding.UTF8.GetBytes
+                    let fragmentBytes = File.ReadAllText (fragmentShaderFile) |> System.Text.Encoding.UTF8.GetBytes
 
                     let f, g =
-                        match functionCache.TryGetValue((vertexFile, fragmentFile)) with
+                        match functionCache.TryGetValue(shaderName) with
                         | true, (f, g) -> f, g
                         | _ -> (fun _ _ _ -> null), (fun _ _ -> ())
 
                     let shader = renderer.CreateTextureMeshShader (vertexBytes, fragmentBytes, g)
 
-                    shaderCache.Add ((vertexFile, fragmentFile), shader)
+                    shaderCache.Add (shaderName, shader)
 
                     shader, f
 
@@ -135,7 +128,7 @@ let handleSomething () =
         )
     )
 
-let create (shaders: ((string * string) * (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> unit)) list) (app: Application) : Behavior<float32 * float32> =
+let create (shaders: (string * (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> unit)) list) (app: Application) : Behavior<float32 * float32> =
 
     let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
 

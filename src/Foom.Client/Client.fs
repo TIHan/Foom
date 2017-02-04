@@ -10,7 +10,7 @@ let init (world: World) =
         app
         |> RendererSystem.create
             [
-                (("sprite.vertex", "triangle.fragment"),
+                ("Sprite",
                     (fun em ent renderer ->
                         match em.TryGet<RendererSystem.SpriteInfoComponent> (ent), em.TryGet<RendererSystem.RenderInfoComponent> (ent) with
                         | Some spriteInfoComp, Some renderInfoComp ->

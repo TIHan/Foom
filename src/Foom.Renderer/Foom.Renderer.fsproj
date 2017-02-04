@@ -59,21 +59,24 @@
     <Compile Include="Buffers.fs" />
     <Compile Include="ShaderProgram.fs" />
     <Compile Include="Renderer.fs" />
-    <None Include="sprite.vertex">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wireframe.fragment">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="wireframe.vertex">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <Content Include="packages.config" />
     <Compile Include="EntitySystem.fs" />
-    <None Include="triangle.vertex">
+    <Content Include="packages.config" />
+    <None Include="Sprite.vert">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="triangle.fragment">
+    <None Include="Sprite.frag">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Wireframe.frag">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Wireframe.vert">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TextureMesh.vert">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TextureMesh.frag">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
