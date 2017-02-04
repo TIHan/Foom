@@ -493,7 +493,7 @@ type FRenderer =
         }
 
     // TextureMesh shader
-    member this.CreateTextureMeshShader (vertexShader, fragmentShader) =
+    member this.CreateTextureMeshShader (vertexShader, fragmentShader, f) =
         this.CreateShader (vertexShader, fragmentShader,
 
             fun shaderProgram ->
@@ -516,6 +516,8 @@ type FRenderer =
                 let uni_view = shaderProgram.CreateUniformMatrix4x4 ("uni_view")
                 let uni_projection = shaderProgram.CreateUniformMatrix4x4 ("uni_projection")
 
+                let update = f shaderProgram
+
                 fun view projection ->
                     this.Lookup
                     |> Seq.iter (fun pair ->
@@ -534,12 +536,15 @@ type FRenderer =
                             for i = 0 to count - 1 do
 
                                 let mesh = bucket.Meshes.[i]
+                                let o = bucket.Data.[i]
 
                                 in_position.Set     mesh.Position
                                 in_uv.Set           mesh.Uv
                                 in_texture.Set      texture.Buffer
                                 uni_view.Set        view
                                 uni_projection.Set  projection
+
+                                update o
 
                                 let color = mesh.Color
                                 let center = mesh.Center

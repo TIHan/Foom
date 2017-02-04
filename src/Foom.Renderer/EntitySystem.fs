@@ -67,6 +67,7 @@ type RenderInfoComponent (renderInfo) =
 
 
 let renderer = FRenderer.Create ()
+let functionCache = Dictionary<string * string, ShaderProgram -> obj -> unit> ()
 let shaderCache = Dictionary<string * string, Shader> ()
 let textureCache = Dictionary<string, Texture> ()
 
@@ -100,7 +101,12 @@ let handleSomething () =
                     let vertexBytes = File.ReadAllText (vertexFile) |> System.Text.Encoding.UTF8.GetBytes
                     let fragmentBytes = File.ReadAllText (fragmentFile) |> System.Text.Encoding.UTF8.GetBytes
 
-                    let shader = renderer.CreateTextureMeshShader (vertexBytes, fragmentBytes)
+                    let f =
+                        match functionCache.TryGetValue((vertexFile, fragmentFile)) with
+                        | true, f -> f
+                        | _ -> fun _ _ -> ()
+
+                    let shader = renderer.CreateTextureMeshShader (vertexBytes, fragmentBytes, f)
 
                     shaderCache.Add ((vertexFile, fragmentFile), shader)
 
