@@ -52,18 +52,19 @@ type Bucket =
         this.Data.RemoveAt (lastIndex)
         this.IdRefs.RemoveAt (lastIndex)
 
-type ShaderProgramId = int
+type ShaderId = int
 type TextureId = int
 
 type TextureMeshId =
     {
-        ShaderProgramId: int
+        ShaderId: int
         TextureId: int
         IdRef: int ref
     }
 
 type Shader =
     {
+        Id: int
         ShaderProgram: ShaderProgram
     }
 
@@ -75,14 +76,16 @@ type Material =
 
 type Renderer =
     {
-        Shaders: Dictionary<ShaderProgramId, Matrix4x4 -> Matrix4x4 -> unit>
-        Lookup: Dictionary<ShaderProgramId, Dictionary<TextureId, Texture * Bucket>> 
+        mutable nextShaderId: int
+        Shaders: Dictionary<ShaderId, Matrix4x4 -> Matrix4x4 -> unit>
+        TextureMeshes: Dictionary<ShaderId, Dictionary<TextureId, Texture * Bucket>> 
     }
 
     static member Create () =
         {
+            nextShaderId = 0
             Shaders = Dictionary ()
-            Lookup = Dictionary ()
+            TextureMeshes = Dictionary ()
         }
 
     member this.CreateVector2Buffer (data) =
@@ -97,14 +100,18 @@ type Renderer =
     member this.CreateTexture2DBuffer (bmp) =
         Texture2DBuffer (bmp)
 
-    member this.CreateShader (vertexShader, fragmentShader, f: ShaderProgram -> (Matrix4x4 -> Matrix4x4 -> unit)) =
+    member this.CreateShader (vertexShader, fragmentShader, f: ShaderId -> ShaderProgram -> (Matrix4x4 -> Matrix4x4 -> unit)) =
         let shaderProgram =
             Backend.loadShaders vertexShader fragmentShader
             |> ShaderProgram.Create
 
-        this.Shaders.[shaderProgram.programId] <- f shaderProgram
+        let shaderId = this.nextShaderId
+
+        this.nextShaderId <- this.nextShaderId + 1
+        this.Shaders.[shaderId] <- f shaderId shaderProgram
 
         {
+            Id = shaderId
             ShaderProgram = shaderProgram
         }
 
@@ -112,7 +119,7 @@ type Renderer =
     member this.CreateTextureMeshShader (vertexShader, fragmentShader, f) =
         this.CreateShader (vertexShader, fragmentShader,
 
-            fun shaderProgram ->
+            fun shaderId shaderProgram ->
                 (*
                     // Ideal
                     shaderInput {
@@ -135,7 +142,7 @@ type Renderer =
                 let update = f shaderProgram
 
                 fun view projection ->
-                    match this.Lookup.TryGetValue(shaderProgram.programId) with
+                    match this.TextureMeshes.TryGetValue(shaderId) with
                     | true, textureLookup ->
 
                         Backend.useProgram shaderProgram.programId
@@ -225,13 +232,12 @@ type Renderer =
             bucket
 
         let add shader =
-            let shaderProgram = shader.ShaderProgram
             let bucketLookup =
-                match this.Lookup.TryGetValue (shaderProgram.programId) with
+                match this.TextureMeshes.TryGetValue (shader.Id) with
                 | true, (bucketLookup) -> bucketLookup
                 | _, _ ->
                     let bucketLookup = Dictionary ()
-                    this.Lookup.Add (shader.ShaderProgram.programId, bucketLookup)
+                    this.TextureMeshes.Add (shader.Id, bucketLookup)
                     bucketLookup
 
             let bucket = addTexture bucketLookup material.Texture
@@ -240,7 +246,7 @@ type Renderer =
 
             let render =
                 {
-                    ShaderProgramId = shaderProgram.programId
+                    ShaderId = shader.Id
                     TextureId = material.Texture.Buffer.Id
                     IdRef = idRef
                 }
