@@ -403,7 +403,6 @@ type Mesh =
         Position: Vector3Buffer
         Uv: Vector2Buffer
         Color: Vector4Buffer
-        Center: Vector3Buffer
         IsWireframe: bool
     }
 
@@ -519,12 +518,10 @@ type FRenderer =
                 let update = f shaderProgram
 
                 fun view projection ->
-                    this.Lookup
-                    |> Seq.iter (fun pair ->
-                        let programId = pair.Key
-                        let textureLookup = pair.Value
+                    match this.Lookup.TryGetValue(shaderProgram.programId) with
+                    | true, textureLookup ->
 
-                        Renderer.useProgram programId
+                        Renderer.useProgram shaderProgram.programId
 
                         textureLookup
                         |> Seq.iter (fun pair ->
@@ -544,25 +541,21 @@ type FRenderer =
                                 uni_view.Set        view
                                 uni_projection.Set  projection
 
-                                update o
+                                if o <> null then
+                                    update o
 
                                 let color = mesh.Color
-                                let center = mesh.Center
 
                                 let programId = shaderProgram.programId
 
                                 color.TryBufferData () |> ignore
-                                center.TryBufferData () |> ignore
 
                                 color.Bind ()
                                 Renderer.bindColor programId
 
-                                center.Bind ()
-                                Renderer.bindCenter programId
-
                                 shaderProgram.Run ()
                         )
-                    ) 
+                    | _ -> ()
 
         )
 
@@ -577,7 +570,7 @@ type FRenderer =
             Texture = texture
         }
 
-    member this.CreateMesh (position, uv, color: Color [], center, isWireframe) =
+    member this.CreateMesh (position, uv, color: Color [], isWireframe) =
         {
             Position = Vector3Buffer (position)
             Uv = Vector2Buffer (uv)
@@ -591,13 +584,15 @@ type FRenderer =
                         single c.A / 255.f)
                 )
                 |> Vector4Buffer
-            Center = Vector3Buffer (center)
             IsWireframe = isWireframe
         }
 
     member this.TryAdd (material: Material, mesh: Mesh, data: obj) =
 
         let addTexture (bucketLookup: Dictionary<TextureId, Texture * FRendererBucket>) texture = 
+            // Need to do this to make sure we get an id.
+            texture.Buffer.TryBufferData () |> ignore
+
             let bucket =
                 match bucketLookup.TryGetValue (texture.Buffer.Id) with
                 | true, (_, bucket) -> bucket
@@ -608,9 +603,6 @@ type FRenderer =
                             Data = ResizeArray ()
                             IdRefs = ResizeArray ()
                         }
-
-                    // Need to do this to make sure we get an id.
-                    texture.Buffer.TryBufferData () |> ignore
 
                     bucketLookup.Add (texture.Buffer.Id, (texture, bucket))
                     bucket

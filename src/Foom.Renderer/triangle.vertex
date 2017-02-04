@@ -3,7 +3,6 @@
 in vec3 position;
 in vec2 in_uv;
 in vec4 in_color;
-in vec3 in_center;
 
 uniform mat4x4 uni_projection;
 uniform mat4x4 uni_view;

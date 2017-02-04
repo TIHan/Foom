@@ -143,26 +143,6 @@ let runGlobalBatch (em: EntityManager) =
                 Position = vertices |> Seq.toArray
                 Uv = uv |> Seq.toArray
                 Color = color |> Seq.toArray
-                Center = 
-                    if not isSprite then Array.zeroCreate vertices.Count
-                    else
-                        vertices
-                        |> Seq.chunkBySize 6
-                        |> Seq.map (fun quadVerts ->
-                            let min = 
-                                quadVerts
-                                |> Array.sortBy (fun x -> x.X)
-                                |> Array.sortBy (fun x -> x.Z)
-                                |> Array.head
-                            let max =
-                                quadVerts
-                                |> Array.sortByDescending (fun x -> x.X)
-                                |> Array.sortByDescending (fun x -> x.Z)
-                                |> Array.head
-                            let mid = min + ((max - min) / 2.f)
-                            Array.init quadVerts.Length (fun _ -> mid)
-                        )
-                        |> Seq.reduce Array.append
                 IsWireframe = false
             }
 
@@ -183,11 +163,39 @@ let runGlobalBatch (em: EntityManager) =
         let renderInfo : RendererSystem.RenderInfo =
             {
                 MeshInfo = meshInfo
-                Data = null
                 MaterialInfo = materialInfo
             }
 
         em.Add (ent, RendererSystem.RenderInfoComponent (renderInfo))
+
+        if isSprite then
+            let center =
+                if not isSprite then Array.zeroCreate vertices.Count
+                else
+                    vertices
+                    |> Seq.chunkBySize 6
+                    |> Seq.map (fun quadVerts ->
+                        let min = 
+                            quadVerts
+                            |> Array.sortBy (fun x -> x.X)
+                            |> Array.sortBy (fun x -> x.Z)
+                            |> Array.head
+                        let max =
+                            quadVerts
+                            |> Array.sortByDescending (fun x -> x.X)
+                            |> Array.sortByDescending (fun x -> x.Z)
+                            |> Array.head
+                        let mid = min + ((max - min) / 2.f)
+                        Array.init quadVerts.Length (fun _ -> mid)
+                    )
+                    |> Seq.reduce Array.append
+
+            let spriteInfoComp : RendererSystem.SpriteInfoComponent =
+                {
+                    Center = center
+                }
+
+            em.Add (ent, spriteInfoComp)
     )
 
 open System.Linq

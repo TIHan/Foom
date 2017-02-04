@@ -25,7 +25,6 @@ type MeshInfo =
         Position: Vector3 []
         Uv: Vector2 []
         Color: Color []
-        Center: Vector3 []
         IsWireframe: bool
     }
 
@@ -50,7 +49,6 @@ type RenderInfo =
     {
         MeshInfo: MeshInfo
         MaterialInfo: MaterialInfo
-        Data: obj
     }
 
 type RenderBatchInfo =
@@ -65,9 +63,22 @@ type RenderInfoComponent (renderInfo) =
 
     interface IComponent
 
+type SpriteComponent =
+    {
+        Center: Vector3Buffer
+    }
+
+    interface IComponent
+
+type SpriteInfoComponent =
+    {
+        Center: Vector3 []
+    }
+
+    interface IComponent
 
 let renderer = FRenderer.Create ()
-let functionCache = Dictionary<string * string, ShaderProgram -> obj -> unit> ()
+let functionCache = Dictionary<string * string, (EntityManager -> Entity -> FRenderer -> obj) * (ShaderProgram -> obj -> unit)> ()
 let shaderCache = Dictionary<string * string, Shader> ()
 let textureCache = Dictionary<string, Texture> ()
 
@@ -77,7 +88,7 @@ let handleSomething () =
         |> Option.iter (fun comp ->
             let info = comp.RenderInfo
 
-            let mesh = renderer.CreateMesh (info.MeshInfo.Position, info.MeshInfo.Uv, info.MeshInfo.Color, info.MeshInfo.Center, info.MeshInfo.IsWireframe)
+            let mesh = renderer.CreateMesh (info.MeshInfo.Position, info.MeshInfo.Uv, info.MeshInfo.Color, info.MeshInfo.IsWireframe)
 
             let vertexShader =
                 if info.MeshInfo.IsWireframe then
@@ -91,9 +102,9 @@ let handleSomething () =
                 else
                     info.MaterialInfo.ShaderInfo.FragmentShader
 
-            let shader =
+            let shader, f =
                 match shaderCache.TryGetValue ((vertexShader, fragmentShader)) with
-                | true, shader -> shader
+                | true, shader -> shader, (fun _ _ _ -> null)
                 | _ -> 
                     let vertexFile = vertexShader
                     let fragmentFile = fragmentShader
@@ -101,16 +112,16 @@ let handleSomething () =
                     let vertexBytes = File.ReadAllText (vertexFile) |> System.Text.Encoding.UTF8.GetBytes
                     let fragmentBytes = File.ReadAllText (fragmentFile) |> System.Text.Encoding.UTF8.GetBytes
 
-                    let f =
+                    let f, g =
                         match functionCache.TryGetValue((vertexFile, fragmentFile)) with
-                        | true, f -> f
-                        | _ -> fun _ _ -> ()
+                        | true, (f, g) -> f, g
+                        | _ -> (fun _ _ _ -> null), (fun _ _ -> ())
 
-                    let shader = renderer.CreateTextureMeshShader (vertexBytes, fragmentBytes, f)
+                    let shader = renderer.CreateTextureMeshShader (vertexBytes, fragmentBytes, g)
 
                     shaderCache.Add ((vertexFile, fragmentFile), shader)
 
-                    shader
+                    shader, f
 
             let texture =
                 match textureCache.TryGetValue (info.MaterialInfo.TextureInfo.TexturePath) with
@@ -126,18 +137,21 @@ let handleSomething () =
                 
             let material = renderer.CreateMaterial (shader, texture)
 
-            renderer.TryAdd (material, mesh, info.Data)
+            renderer.TryAdd (material, mesh, f em evt.Entity renderer)
             |> Option.iter (fun render ->
                 em.Add (evt.Entity, RenderComponent (mesh, material, render))
             )
-
-            em.Remove<RenderInfoComponent> (evt.Entity)
         )
     )
 
-let create (app: Application) : Behavior<float32 * float32> =
+let create (shaders: ((string * string) * (EntityManager -> Entity -> FRenderer -> obj) * (ShaderProgram -> obj -> unit)) list) (app: Application) : Behavior<float32 * float32> =
 
     let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
+
+    shaders
+    |> List.iter (fun (key, f, g) ->
+        functionCache.[key] <- (f, g)
+    )
 
     Behavior.merge
         [
