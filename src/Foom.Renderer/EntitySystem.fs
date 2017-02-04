@@ -10,13 +10,13 @@ open Foom.Ecs
 open Foom.Math
 open Foom.Common.Components
 
-type RenderComponent (mesh, material, meshRender) =
+type RenderComponent (mesh, material, textureMeshId) =
 
     member val Mesh : Mesh = mesh
 
     member val Material : Material = material
 
-    member val MeshRender : MeshRender = meshRender
+    member val TextureMeshId : TextureMeshId = textureMeshId
 
     interface IComponent
 
@@ -50,6 +50,7 @@ type RenderInfo =
     {
         MeshInfo: MeshInfo
         MaterialInfo: MaterialInfo
+        Data: obj
     }
 
 type RenderBatchInfo =
@@ -96,10 +97,10 @@ let handleSomething () =
                     let vertexFile = vertexShader
                     let fragmentFile = fragmentShader
 
-                    let vertexBytes = File.ReadAllBytes (vertexFile)
-                    let fragmentBytes = File.ReadAllBytes (fragmentFile)
+                    let vertexBytes = File.ReadAllText (vertexFile) |> System.Text.Encoding.UTF8.GetBytes
+                    let fragmentBytes = File.ReadAllText (fragmentFile) |> System.Text.Encoding.UTF8.GetBytes
 
-                    let shader = renderer.CreateShader (vertexBytes, fragmentBytes)
+                    let shader = renderer.CreateTextureMeshShader (vertexBytes, fragmentBytes)
 
                     shaderCache.Add ((vertexFile, fragmentFile), shader)
 
@@ -119,10 +120,12 @@ let handleSomething () =
                 
             let material = renderer.CreateMaterial (shader, texture)
 
-            renderer.TryAdd (material, mesh)
+            renderer.TryAdd (material, mesh, info.Data)
             |> Option.iter (fun render ->
                 em.Add (evt.Entity, RenderComponent (mesh, material, render))
             )
+
+            em.Remove<RenderInfoComponent> (evt.Entity)
         )
     )
 

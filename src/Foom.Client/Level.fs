@@ -183,6 +183,7 @@ let runGlobalBatch (em: EntityManager) =
         let renderInfo : RendererSystem.RenderInfo =
             {
                 MeshInfo = meshInfo
+                Data = null
                 MaterialInfo = materialInfo
             }
 

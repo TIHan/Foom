@@ -188,6 +188,11 @@ module Renderer =
         glDrawArrays (GL_TRIANGLES, first, count);
         """
 
+    [<Export>]
+    let printFSharp (bytes: nativeptr<sbyte>) =
+        let str = String (bytes)
+        printfn "%s" str
+
     [<Import; MI (MIO.NoInlining)>]
     let loadShaders (vertexSource: byte[]) (fragmentSource: byte[]) : int =
         C """
@@ -209,7 +214,7 @@ module Renderer =
         glGetShaderiv(VertexShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
         if ( InfoLogLength > 0 ){
             glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &VertexShaderErrorMessage[0]);
-            printf("%s\n", &VertexShaderErrorMessage[0]);
+            Renderer_printFSharp (&VertexShaderErrorMessage[0]);
             for (int i = 0; i < 65536; ++i) { VertexShaderErrorMessage[i] = '\0'; }
         }
 
@@ -224,7 +229,7 @@ module Renderer =
         glGetShaderiv(FragmentShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
         if ( InfoLogLength > 0 ){
             glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, &FragmentShaderErrorMessage[0]);
-            printf("%s\n", &FragmentShaderErrorMessage[0]);
+            Renderer_printFSharp (&FragmentShaderErrorMessage[0]);
             for (int i = 0; i < 65536; ++i) { FragmentShaderErrorMessage[i] = '\0'; }
         }
 
@@ -242,7 +247,7 @@ module Renderer =
         glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
         if ( InfoLogLength > 0 ){
             glGetProgramInfoLog(ProgramID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
-            printf("%s\n", &ProgramErrorMessage[0]);
+            Renderer_printFSharp (&ProgramErrorMessage[0]);
             for (int i = 0; i < 65536; ++i) { ProgramErrorMessage[i] = '\0'; }
         }
 
@@ -264,8 +269,10 @@ module Renderer =
         """
 
     let getAttributeLocation programId (name: string) =
-        System.Text.Encoding.UTF8.GetBytes (name)
-        |> _getAttributeLocation programId
+        let hopac =
+            System.Text.Encoding.UTF8.GetBytes (name)
+            |> _getAttributeLocation programId
+        hopac
 
     [<Import; MI (MIO.NoInlining)>]
     let bindVertexAttributePointer_Float (location: int) (size: int) : unit =
@@ -292,8 +299,10 @@ module Renderer =
         """
 
     let getUniformLocation programId (name: string) =
-        System.Text.Encoding.UTF8.GetBytes (name)
-        |> _getUniformLocation programId
+        let hopac =
+            System.Text.Encoding.UTF8.GetBytes (name)
+            |> _getUniformLocation programId
+        hopac
 
     //
 

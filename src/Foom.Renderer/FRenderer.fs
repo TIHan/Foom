@@ -174,8 +174,8 @@ type Uniform<'T> =
     }
 
     member this.Set value = 
-            this.value <- value
-            this.isDirty <- true
+        this.value <- value
+        this.isDirty <- true
 
 type VertexAttribute<'T> =
     {
@@ -411,13 +411,15 @@ type Mesh =
 type FRendererBucket =
     {
         Meshes: Mesh ResizeArray
+        Data: obj ResizeArray
         IdRefs: int Ref ResizeArray
     }
 
-    member this.Add (mesh: Mesh) =
+    member this.Add (mesh: Mesh, data: obj) =
         let idRef = ref this.IdRefs.Count
 
         this.Meshes.Add (mesh)
+        this.Data.Add (data)
         this.IdRefs.Add (idRef)
 
         idRef
@@ -426,35 +428,23 @@ type FRendererBucket =
         let lastIndex = this.IdRefs.Count - 1
 
         this.Meshes.[id] <- this.Meshes.[lastIndex]
+        this.Data.[id] <- this.Data.[lastIndex]
         this.IdRefs.[id] <- this.IdRefs.[lastIndex]
         this.IdRefs.[id] := id
 
         this.Meshes.RemoveAt (lastIndex)
+        this.Data.RemoveAt (lastIndex)
         this.IdRefs.RemoveAt (lastIndex)
 
 type ShaderProgramId = int
 type TextureId = int
 
-type MeshRender =
+type TextureMeshId =
     {
         ShaderProgramId: int
         TextureId: int
         IdRef: int ref
     }
-
-type MeshInput =
-    {
-        Position:   VertexAttribute<Vector3Buffer>
-        Uv:         VertexAttribute<Vector2Buffer>
-        Texture:    Uniform<Texture2DBuffer>
-        View:       Uniform<Matrix4x4>
-        Projection: Uniform<Matrix4x4>
-    }
-
-type ShaderType =
-    | Normal
-    | Texture
-    | TextureMesh
 
 type Shader =
     {
@@ -503,7 +493,7 @@ type FRenderer =
         }
 
     // TextureMesh shader
-    member this.CreateShader (vertexShader, fragmentShader) =
+    member this.CreateTextureMeshShader (vertexShader, fragmentShader) =
         this.CreateShader (vertexShader, fragmentShader,
 
             fun shaderProgram ->
@@ -600,7 +590,7 @@ type FRenderer =
             IsWireframe = isWireframe
         }
 
-    member this.TryAdd (material: Material, mesh: Mesh) =
+    member this.TryAdd (material: Material, mesh: Mesh, data: obj) =
 
         let addTexture (bucketLookup: Dictionary<TextureId, Texture * FRendererBucket>) texture = 
             let bucket =
@@ -610,6 +600,7 @@ type FRenderer =
                     let bucket =
                         {
                             Meshes = ResizeArray ()
+                            Data = ResizeArray ()
                             IdRefs = ResizeArray ()
                         }
 
@@ -632,7 +623,7 @@ type FRenderer =
 
             let bucket = addTexture bucketLookup material.Texture
 
-            let idRef = bucket.Add (mesh)
+            let idRef = bucket.Add (mesh, data)
 
             let render =
                 {
