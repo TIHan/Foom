@@ -65,7 +65,6 @@ type TextureMeshId =
 type Shader =
     {
         Id: int
-        ShaderProgram: ShaderProgram
     }
 
 type Material =
@@ -112,7 +111,6 @@ type Renderer =
 
         {
             Id = shaderId
-            ShaderProgram = shaderProgram
         }
 
     // TextureMesh shader
