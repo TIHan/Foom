@@ -77,8 +77,8 @@ type SpriteInfoComponent =
 
     interface IComponent
 
-let renderer = FRenderer.Create ()
-let functionCache = Dictionary<string * string, (EntityManager -> Entity -> FRenderer -> obj) * (ShaderProgram -> obj -> unit)> ()
+let renderer = Renderer.Create ()
+let functionCache = Dictionary<string * string, (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> unit)> ()
 let shaderCache = Dictionary<string * string, Shader> ()
 let textureCache = Dictionary<string, Texture> ()
 
@@ -144,7 +144,7 @@ let handleSomething () =
         )
     )
 
-let create (shaders: ((string * string) * (EntityManager -> Entity -> FRenderer -> obj) * (ShaderProgram -> obj -> unit)) list) (app: Application) : Behavior<float32 * float32> =
+let create (shaders: ((string * string) * (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> unit)) list) (app: Application) : Behavior<float32 * float32> =
 
     let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
 
