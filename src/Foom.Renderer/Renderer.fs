@@ -97,7 +97,9 @@ type Renderer =
         Vector4Buffer (data)
 
     member this.CreateTexture2DBuffer (bmp) =
-        Texture2DBuffer (bmp)
+        let buffer = Texture2DBuffer ()
+        buffer.Set bmp
+        buffer
 
     member this.CreateShader (vertexShader, fragmentShader, f: ShaderId -> ShaderProgram -> (Matrix4x4 -> Matrix4x4 -> unit)) =
         let shaderProgram =
@@ -181,8 +183,8 @@ type Renderer =
 
         )
 
-    member this.CreateTexture (format, bmp) =
-        let buffer = Texture2DBuffer (format)
+    member this.CreateTexture (bmp) =
+        let buffer = Texture2DBuffer ()
         buffer.Set bmp
         {
             Buffer = buffer

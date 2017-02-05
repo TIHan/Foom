@@ -112,7 +112,7 @@ let handleSomething (functionCache: FunctionCache) (shaderCache: ShaderCache) (t
                 | _ ->
 
                     let bmp = new Bitmap(info.MaterialInfo.TextureInfo.TexturePath)
-                    let texture = renderer.CreateTexture (TextureFormat.RGBA, bmp)
+                    let texture = renderer.CreateTexture (bmp)
 
                     textureCache.Add(info.MaterialInfo.TextureInfo.TexturePath, texture)
 

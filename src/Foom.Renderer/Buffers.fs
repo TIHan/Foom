@@ -127,11 +127,7 @@ type Matrix4x4Buffer (data) =
 
     member this.Id = id
 
-type TextureFormat =
-    | RGB = 0
-    | RGBA = 1
-
-type Texture2DBuffer (format: TextureFormat) =
+type Texture2DBuffer () =
 
     let mutable id = 0
     let mutable width = 0
@@ -164,11 +160,7 @@ type Texture2DBuffer (format: TextureFormat) =
 
             let bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
 
-            id <- 
-                match format with
-                | TextureFormat.RGB -> Backend.createFramebufferTexture bmp.Width bmp.Height bmpData.Scan0
-                | TextureFormat.RGBA -> Backend.createTexture bmp.Width bmp.Height bmpData.Scan0
-                | _ -> failwith "bad format"
+            id <- Backend.createTexture bmp.Width bmp.Height bmpData.Scan0
 
             bmp.UnlockBits (bmpData)
             bmp.Dispose ()
@@ -176,31 +168,45 @@ type Texture2DBuffer (format: TextureFormat) =
             true
         | _ -> false
 
-//type Framebuffer () =
-//
-//    let mutable id = 0
-//    let mutable length = 0
-//    let mutable queuedData = None
-//
-//    member this.Set (data: Texture2DBuffer) =
-//        queuedData <- Some data
-//
-//    member this.Length = length
-//
-//    member this.Bind () =
-//        if id <> 0 then
-//            Backend.bindVbo id
-//
-//    member this.TryBufferData () =
-//        match queuedData with
-//        | Some data ->
-//            if id = 0 then
-//                id <- Backend.makeVbo ()
-//            
-//            Backend.bufferVboMatrix4x4 data (sizeof<Matrix4x4> * data.Length) id
-//            length <- data.Length
-//            queuedData <- None
-//            true
-//        | _ -> false
-//
-//    member this.Id = id
+type FramebufferTexture (width, height) =
+
+    let mutable id = 0
+    let mutable isDirty = false
+    let mutable width = width
+    let mutable height = height
+
+    member this.Id = id
+
+    member this.Width = width
+
+    member this.Height = height
+
+    member this.TryBufferData () =
+        if id = 0 then
+            id <- Backend.createFramebufferTexture width height (nativeint 0)
+
+type Framebuffer () =
+
+    let mutable id = 0
+    let mutable length = 0
+    let mutable queuedData = None
+
+    member this.Set (data: FramebufferTexture) =
+        queuedData <- Some data
+
+    member this.Length = length
+
+    member this.TryBufferData () =
+
+        if id = 0 then
+            id <- Backend.createFramebuffer ()
+        
+        match queuedData with
+        | Some data ->
+            Backend.bindFramebuffer id
+            Backend.setFramebufferTexture data.Id
+            queuedData <- None
+            true
+        | _ -> false
+
+    member this.Id = id
