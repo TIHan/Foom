@@ -4,6 +4,25 @@ module Foom.Client.Client
 open Foom.Ecs
 open Foom.Renderer
 
+(*
+type ShaderAction =
+    | Depth of unit -> Shader list
+    | Blend of unit -> Shader list 
+
+type RenderAction =
+    | CaptureRender of ShaderAction list * (RenderTexture -> ShaderAction list)
+[
+    CaptureRender (
+        [
+            textureMeshShader
+            spriteShader
+        ],
+        fun renderTexture ->
+            fullscreenShader renderTexture
+    )
+]
+*)
+
 let init (world: World) =
     let app = Backend.init ()
     let renderSystem = 
