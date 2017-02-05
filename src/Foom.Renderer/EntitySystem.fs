@@ -70,12 +70,11 @@ type SpriteInfoComponent =
 
     interface IComponent
 
-let renderer = Renderer.Create ()
-let functionCache = Dictionary<string, (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> unit)> ()
-let shaderCache = Dictionary<string, Shader> ()
-let textureCache = Dictionary<string, Texture> ()
+type FunctionCache = Dictionary<string, (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> unit)>
+type ShaderCache = Dictionary<string, Shader>
+type TextureCache = Dictionary<string, Texture>
 
-let handleSomething () =
+let handleSomething (functionCache: FunctionCache) (shaderCache: ShaderCache) (textureCache: TextureCache) (renderer: Renderer) =
     Behavior.handleEvent (fun (evt: Events.ComponentAdded<RenderInfoComponent>) ((time, deltaTime): float32 * float32) em ->
         em.TryGet<RenderInfoComponent> (evt.Entity)
         |> Option.iter (fun comp ->
@@ -113,7 +112,7 @@ let handleSomething () =
                 | _ ->
 
                     let bmp = new Bitmap(info.MaterialInfo.TextureInfo.TexturePath)
-                    let texture = renderer.CreateTexture (bmp)
+                    let texture = renderer.CreateTexture (TextureFormat.RGBA, bmp)
 
                     textureCache.Add(info.MaterialInfo.TextureInfo.TexturePath, texture)
 
@@ -130,7 +129,13 @@ let handleSomething () =
 
 let create (shaders: (string * (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> unit)) list) (app: Application) : Behavior<float32 * float32> =
 
+    // This should probably be on the camera itself :)
     let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
+
+    let renderer = Renderer.Create ()
+    let functionCache = Dictionary<string, (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> unit)> ()
+    let shaderCache = Dictionary<string, Shader> ()
+    let textureCache = Dictionary<string, Texture> ()
 
     shaders
     |> List.iter (fun (key, f, g) ->
@@ -139,7 +144,7 @@ let create (shaders: (string * (EntityManager -> Entity -> Renderer -> obj) * (S
 
     Behavior.merge
         [
-            handleSomething ()
+            handleSomething functionCache shaderCache textureCache renderer
 
             Behavior.update (fun ((time, deltaTime): float32 * float32) entityManager eventManager ->
 

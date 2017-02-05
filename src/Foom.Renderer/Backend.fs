@@ -503,3 +503,59 @@ module Backend =
         C """
         glDisable (GL_BLEND);
         """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let createFramebuffer () : int =
+        C """
+        GLuint id = 0;
+        glGenFramebuffers (1, &id);
+        glBindFramebuffer (GL_FRAMEBUFFER, id);
+        return id;
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let bindFramebuffer (id: int) : unit =
+        C """
+        glBindFramebuffer (GL_FRAMEBUFFER, id);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let createFramebufferTexture (width: int) (height: int) (data: nativeint) : int =
+        C """
+        // Create one OpenGL texture
+        GLuint textureID;
+        glGenTextures(1, &textureID);
+         
+        // "Bind" the newly created texture : all future texture functions will modify this texture
+        glBindTexture(GL_TEXTURE_2D, textureID);
+         
+        // Give the image to OpenGL
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+         
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+        return textureID;
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let createRenderbuffer (width: int) (height: int) : int =
+        C """
+        GLuint depthrenderbuffer;
+        glGenRenderbuffers(1, &depthrenderbuffer);
+        glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+        return depthrenderbuffer;
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let setFramebufferTexture  (textureId: int) : unit =
+        C """
+        // Set "renderedTexture" as our colour attachement #0
+        glFramebufferTexture (GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureId, 0);
+
+        // Set the list of draw buffers.
+        GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+        glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+        """

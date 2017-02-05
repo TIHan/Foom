@@ -181,9 +181,11 @@ type Renderer =
 
         )
 
-    member this.CreateTexture (bmp) =
+    member this.CreateTexture (format, bmp) =
+        let buffer = Texture2DBuffer (format)
+        buffer.Set bmp
         {
-            Buffer = Texture2DBuffer (bmp)
+            Buffer = buffer
         }
 
     member this.CreateMaterial (shader, texture) =
