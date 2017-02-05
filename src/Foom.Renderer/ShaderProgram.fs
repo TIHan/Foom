@@ -95,12 +95,11 @@ type ShaderProgram =
                         uni.value.Bind ()
                         uni.isDirty <- false
 
-            | :? Uniform<FramebufferTexture> as uni ->
+            | :? Uniform<RenderTexture> as uni ->
                 fun () ->
                     if uni.isDirty && not (obj.ReferenceEquals (uni.value, null)) && uni.location > -1 then 
-                        uni.value.TryBufferData () |> ignore
                         Backend.bindUniformInt uni.location 0
-                        uni.value.Bind ()
+                        uni.value.BindTexture ()
                         uni.isDirty <- false
 
             | _ -> failwith "This should not happen."
@@ -208,8 +207,8 @@ type ShaderProgram =
     member this.CreateUniformTexture2D (name) =
         this.CreateUniform<Texture2DBuffer> (name)
 
-    member this.CreateUniformFramebufferTexture (name) =
-        this.CreateUniform<FramebufferTexture> (name)
+    member this.CreateUniformRenderTexture (name) =
+        this.CreateUniform<RenderTexture> (name)
 
     member this.CreateVertexAttributeVector2 (name) =
         this.CreateVertexAttribute<Vector2Buffer> (name)

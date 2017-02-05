@@ -80,12 +80,11 @@ type Renderer =
         Shaders: Dictionary<ShaderId, ShaderProgram * (Matrix4x4 -> Matrix4x4 -> unit)>
         TextureMeshes: Dictionary<ShaderId, Dictionary<TextureId, Texture * Bucket>> 
 
-        finalFramebufferTexture: FramebufferTexture
-        finalFramebuffer: Framebuffer
+        finalRenderTexture: RenderTexture
         finalShaderProgram: ShaderProgram
         finalPositionBuffer: Vector3Buffer
         finalPosition: VertexAttribute<Vector3Buffer>
-        finalTexture: Uniform<FramebufferTexture>
+        finalTexture: Uniform<RenderTexture>
         finalTime: Uniform<float32>
     }
 
@@ -107,14 +106,13 @@ type Renderer =
         let positionBuffer = Vector3Buffer (vertices)
 
         let position = shaderProgram.CreateVertexAttributeVector3 ("position")
-        let tex = shaderProgram.CreateUniformFramebufferTexture ("uni_texture")
+        let tex = shaderProgram.CreateUniformRenderTexture ("uni_texture")
         let time = shaderProgram.CreateUniformFloat ("time")
         {
             nextShaderId = 0
             Shaders = Dictionary ()
             TextureMeshes = Dictionary ()
-            finalFramebufferTexture = FramebufferTexture (1280, 720)
-            finalFramebuffer = Framebuffer ()
+            finalRenderTexture = RenderTexture (1280, 720)
             finalShaderProgram = shaderProgram
             finalPositionBuffer = positionBuffer
             finalPosition = position
@@ -294,14 +292,9 @@ type Renderer =
 
     member this.Draw (time: float32) (projection: Matrix4x4) (view: Matrix4x4) =
 
-        this.finalFramebufferTexture.TryBufferData ()
+        this.finalRenderTexture.TryBufferData () |> ignore
 
-        this.finalFramebuffer.Set this.finalFramebufferTexture
-
-        this.finalFramebuffer.TryBufferData () |> ignore
-
-
-        this.finalFramebuffer.Bind ()
+        this.finalRenderTexture.BindFramebuffer ()
 
         Backend.clear ()
         
@@ -314,14 +307,14 @@ type Renderer =
 
         Backend.disableDepth ()
 
-        this.finalFramebuffer.Render ()
+        this.finalRenderTexture.Render ()
 
         Backend.clear ()
 
         Backend.useProgram this.finalShaderProgram.programId
 
         this.finalPosition.Set this.finalPositionBuffer
-        this.finalTexture.Set this.finalFramebufferTexture
+        this.finalTexture.Set this.finalRenderTexture
         this.finalTime.Set time
 
         this.finalShaderProgram.Run ()

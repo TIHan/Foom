@@ -168,69 +168,47 @@ type Texture2DBuffer () =
             true
         | _ -> false
 
-type FramebufferTexture (width, height) =
+type RenderTexture (width, height) =
 
-    let mutable id = 0
-    let mutable isDirty = false
+    let mutable framebufferId = 0
+    let mutable depthBufferId = 0
+    let mutable textureId = 0
     let mutable width = width
     let mutable height = height
 
-    member this.Id = id
-
     member this.Width = width
 
     member this.Height = height
 
-    member this.Bind () =
-        if id <> 0 then
-            Backend.bindTexture id // this does activetexture0, change this eventually
+    member this.BindFramebuffer () =
+        if framebufferId <> 0 then
+           Backend.framebufferRender width height framebufferId
 
-    member this.TryBufferData () =
-        if id = 0 then
-            id <- Backend.createFramebufferTexture width height (nativeint 0)
-
-type Framebuffer () =
-
-    let mutable id = 0
-    let mutable depthBufferId = 0
-    let mutable queuedData = None
-    let mutable width = 0
-    let mutable height = 0
-
-    member this.Set (data: FramebufferTexture) =
-        queuedData <- Some data
-
-    member this.Width = width
-
-    member this.Height = height
-
-    member this.Bind () =
-        if id <> 0 then
-           Backend.framebufferRender width height id
+    member this.BindTexture () =
+        if textureId <> 0 then
+            Backend.bindTexture textureId // this does activetexture0, change this eventually    
 
     member this.Render () =
-        if id <> 0 then
+        if framebufferId <> 0 then
             Backend.framebufferRender width height 0
 
     member this.TryBufferData () =
         
-        match queuedData with
-        | Some data ->
-            if id = 0 then
-                id <- Backend.createFramebuffer ()
-                Backend.bindFramebuffer id
-                depthBufferId <- Backend.createRenderbuffer data.Width data.Height
-                Backend.bindFramebuffer 0
-                width <- data.Width
-                height <- data.Height
+        if framebufferId = 0 then
+            textureId <- Backend.createFramebufferTexture width height (nativeint 0)
+            framebufferId <- Backend.createFramebuffer ()
 
-            Backend.bindFramebuffer id
-            Backend.bindTexture data.Id
-            Backend.setFramebufferTexture data.Id
+            Backend.bindFramebuffer framebufferId
+            depthBufferId <- Backend.createRenderbuffer width height
+            Backend.bindFramebuffer 0
+
+            Backend.bindFramebuffer framebufferId
+            Backend.bindTexture textureId
+            Backend.setFramebufferTexture textureId
             Backend.bindTexture 0
             Backend.bindFramebuffer 0
-            queuedData <- None
             true
-        | _ -> false
+        else
+            false
 
-    member this.Id = id
+    member this.TextureId = textureId
