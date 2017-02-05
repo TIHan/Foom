@@ -181,6 +181,10 @@ type FramebufferTexture (width, height) =
 
     member this.Height = height
 
+    member this.Bind () =
+        if id <> 0 then
+            Backend.bindTexture id // this does activetexture0, change this eventually
+
     member this.TryBufferData () =
         if id = 0 then
             id <- Backend.createFramebufferTexture width height (nativeint 0)
@@ -188,23 +192,43 @@ type FramebufferTexture (width, height) =
 type Framebuffer () =
 
     let mutable id = 0
-    let mutable length = 0
+    let mutable depthBufferId = 0
     let mutable queuedData = None
+    let mutable width = 0
+    let mutable height = 0
 
     member this.Set (data: FramebufferTexture) =
         queuedData <- Some data
 
-    member this.Length = length
+    member this.Width = width
+
+    member this.Height = height
+
+    member this.Bind () =
+        if id <> 0 then
+           Backend.framebufferRender width height id
+
+    member this.Render () =
+        if id <> 0 then
+            Backend.framebufferRender width height 0
 
     member this.TryBufferData () =
-
-        if id = 0 then
-            id <- Backend.createFramebuffer ()
         
         match queuedData with
         | Some data ->
+            if id = 0 then
+                id <- Backend.createFramebuffer ()
+                Backend.bindFramebuffer id
+                depthBufferId <- Backend.createRenderbuffer data.Width data.Height
+                Backend.bindFramebuffer 0
+                width <- data.Width
+                height <- data.Height
+
             Backend.bindFramebuffer id
+            Backend.bindTexture data.Id
             Backend.setFramebufferTexture data.Id
+            Backend.bindTexture 0
+            Backend.bindFramebuffer 0
             queuedData <- None
             true
         | _ -> false

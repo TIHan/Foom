@@ -4,6 +4,7 @@ open System
 open System.Drawing
 open System.Numerics
 open System.Collections.Generic
+open System.IO
 
 // *****************************************
 // *****************************************
@@ -78,13 +79,47 @@ type Renderer =
         mutable nextShaderId: int
         Shaders: Dictionary<ShaderId, ShaderProgram * (Matrix4x4 -> Matrix4x4 -> unit)>
         TextureMeshes: Dictionary<ShaderId, Dictionary<TextureId, Texture * Bucket>> 
+
+        finalFramebufferTexture: FramebufferTexture
+        finalFramebuffer: Framebuffer
+        finalShaderProgram: ShaderProgram
+        finalPositionBuffer: Vector3Buffer
+        finalPosition: VertexAttribute<Vector3Buffer>
+        finalTexture: Uniform<FramebufferTexture>
+        finalTime: Uniform<float32>
     }
 
     static member Create () =
+        let vertexBytes = File.ReadAllText ("Fullscreen.vert") |> System.Text.Encoding.UTF8.GetBytes
+        let fragmentBytes = File.ReadAllText ("Fullscreen.frag") |> System.Text.Encoding.UTF8.GetBytes
+        let shaderProgram = ShaderProgram.Create (Backend.loadShaders vertexBytes fragmentBytes)
+
+        let vertices =
+            [|
+                Vector3 (-1.f,-1.f, 0.f)
+                Vector3 (1.f, -1.f, 0.f)
+                Vector3 (1.f, 1.f, 0.f)
+                Vector3 (1.f, 1.f, 0.f)
+                Vector3 (-1.f,  1.f, 0.f)
+                Vector3 (-1.f, -1.f, 0.f)
+            |]
+
+        let positionBuffer = Vector3Buffer (vertices)
+
+        let position = shaderProgram.CreateVertexAttributeVector3 ("position")
+        let tex = shaderProgram.CreateUniformFramebufferTexture ("uni_texture")
+        let time = shaderProgram.CreateUniformFloat ("time")
         {
             nextShaderId = 0
             Shaders = Dictionary ()
             TextureMeshes = Dictionary ()
+            finalFramebufferTexture = FramebufferTexture (1280, 720)
+            finalFramebuffer = Framebuffer ()
+            finalShaderProgram = shaderProgram
+            finalPositionBuffer = positionBuffer
+            finalPosition = position
+            finalTexture = tex
+            finalTime = time
         }
 
     member this.CreateVector2Buffer (data) =
@@ -257,10 +292,18 @@ type Renderer =
 
         add material.Shader
 
-    member this.Clear () =
-        Backend.clear ()
+    member this.Draw (time: float32) (projection: Matrix4x4) (view: Matrix4x4) =
 
-    member this.Draw (projection: Matrix4x4) (view: Matrix4x4) =
+        this.finalFramebufferTexture.TryBufferData ()
+
+        this.finalFramebuffer.Set this.finalFramebufferTexture
+
+        this.finalFramebuffer.TryBufferData () |> ignore
+
+
+        this.finalFramebuffer.Bind ()
+
+        Backend.clear ()
         
         Backend.enableDepth ()
 
@@ -270,6 +313,18 @@ type Renderer =
         )
 
         Backend.disableDepth ()
+
+        this.finalFramebuffer.Render ()
+
+        Backend.clear ()
+
+        Backend.useProgram this.finalShaderProgram.programId
+
+        this.finalPosition.Set this.finalPositionBuffer
+        this.finalTexture.Set this.finalFramebufferTexture
+        this.finalTime.Set time
+
+        this.finalShaderProgram.Run ()
 
 // *****************************************
 // *****************************************

@@ -69,6 +69,12 @@ type ShaderProgram =
                         Backend.bindUniformInt uni.location uni.value
                         uni.isDirty <- false
 
+            | :? Uniform<float32> as uni ->              
+                fun () -> 
+                    if uni.isDirty && uni.location > -1 then 
+                        Backend.bindUniform_float uni.location uni.value
+                        uni.isDirty <- false
+
             | :? Uniform<Vector4> as uni ->         
                 fun () -> 
                     if uni.isDirty && uni.location > -1 then 
@@ -83,7 +89,15 @@ type ShaderProgram =
 
             | :? Uniform<Texture2DBuffer> as uni ->
                 fun () ->
-                    if uni.isDirty && not (obj.ReferenceEquals (uni.value, null)) && uni.location > 0 then 
+                    if uni.isDirty && not (obj.ReferenceEquals (uni.value, null)) && uni.location > -1 then 
+                        uni.value.TryBufferData () |> ignore
+                        Backend.bindUniformInt uni.location 0
+                        uni.value.Bind ()
+                        uni.isDirty <- false
+
+            | :? Uniform<FramebufferTexture> as uni ->
+                fun () ->
+                    if uni.isDirty && not (obj.ReferenceEquals (uni.value, null)) && uni.location > -1 then 
                         uni.value.TryBufferData () |> ignore
                         Backend.bindUniformInt uni.location 0
                         uni.value.Bind ()
@@ -182,6 +196,9 @@ type ShaderProgram =
     member this.CreateUniformInt (name) =
         this.CreateUniform<int> (name)
 
+    member this.CreateUniformFloat (name) =
+        this.CreateUniform<float32> (name)
+
     member this.CreateUniformVector4 (name) =
         this.CreateUniform<Vector4> (name)
 
@@ -190,6 +207,9 @@ type ShaderProgram =
 
     member this.CreateUniformTexture2D (name) =
         this.CreateUniform<Texture2DBuffer> (name)
+
+    member this.CreateUniformFramebufferTexture (name) =
+        this.CreateUniform<FramebufferTexture> (name)
 
     member this.CreateVertexAttributeVector2 (name) =
         this.CreateVertexAttribute<Vector2Buffer> (name)

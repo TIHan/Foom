@@ -148,8 +148,6 @@ let create (shaders: (string * (EntityManager -> Entity -> Renderer -> obj) * (S
 
             Behavior.update (fun ((time, deltaTime): float32 * float32) entityManager eventManager ->
 
-                renderer.Clear ()
-
                 entityManager.TryFind<CameraComponent> (fun _ _ -> true)
                 |> Option.iter (fun (ent, cameraComp) ->
 
@@ -173,7 +171,7 @@ let create (shaders: (string * (EntityManager -> Entity -> Renderer -> obj) * (S
 
                         let invertedTransform = invertedTransform
 
-                        renderer.Draw projection invertedTransform
+                        renderer.Draw time projection invertedTransform
                     )
                 )
 

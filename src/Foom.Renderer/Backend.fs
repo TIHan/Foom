@@ -337,6 +337,12 @@ module Backend =
         """
 
     [<Import; MI (MIO.NoInlining)>]
+    let bindUniform_float (id: int) (value: float32) : unit =
+        C """
+        glUniform1f (id, value);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
     let bindTexture2D (textureId: int) (textureNumber: int) : unit =
         C """
         glActiveTexture(GL_TEXTURE0);
@@ -509,7 +515,6 @@ module Backend =
         C """
         GLuint id = 0;
         glGenFramebuffers (1, &id);
-        glBindFramebuffer (GL_FRAMEBUFFER, id);
         return id;
         """
 
@@ -534,6 +539,8 @@ module Backend =
          
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         return textureID;
         """
@@ -546,6 +553,7 @@ module Backend =
         glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+        glBindRenderbuffer (GL_RENDERBUFFER, 0);
         return depthrenderbuffer;
         """
 
@@ -558,4 +566,11 @@ module Backend =
         // Set the list of draw buffers.
         GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
         glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let framebufferRender (width: int) (height: int) (id: int) : unit =
+        C """
+        glBindFramebuffer (GL_FRAMEBUFFER, id);
+        glViewport(0,0,width,height); // Render on the whole framebuffer, complete from the lower left corner to the upper right
         """
