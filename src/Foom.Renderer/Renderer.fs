@@ -74,6 +74,136 @@ type Material =
         Texture: Texture
     }
 
+type CompactManager<'T> =
+    {
+        mutable nextId: int
+        nextIdQueue: Queue<int>
+        dataIndexLookup: int []
+
+        dataIds: int ResizeArray
+        data: 'T ResizeArray
+    }
+
+    static member Create (maxSize) =
+        {
+            nextId = 0
+            nextIdQueue = Queue ()
+            dataIndexLookup = Array.init maxSize (fun _ -> -1)
+            dataIds = ResizeArray ()
+            data = ResizeArray ()
+        }
+
+    member this.Count =
+        this.data.Count
+
+    member this.Add datum =
+        let id =
+            if this.nextIdQueue.Count > 0 then
+                this.nextIdQueue.Dequeue ()
+            else
+                let id = this.nextId
+                this.nextId <- this.nextId + 1
+                id
+
+        let index = this.data.Count
+
+        this.dataIds.Add id
+        this.data.Add datum
+
+        this.dataIndexLookup.[id] <- index
+
+        id
+
+    member this.RemoveById id =
+
+        this.nextIdQueue.Enqueue id
+
+        let index = this.dataIndexLookup.[id]
+
+        let lastIndex = this.data.Count - 1
+        let lastId = this.dataIds.[lastIndex]
+
+        this.dataIds.[index] <- this.dataIds.[lastIndex]
+        this.data.[index] <- this.data.[lastIndex]
+
+        this.dataIds.RemoveAt (lastIndex)
+        this.data.RemoveAt (lastIndex)
+
+        this.dataIndexLookup.[id] <- -1
+        this.dataIndexLookup.[lastId] <- index 
+
+    member this.IsValid id =
+
+        if id < this.dataIndexLookup.Length then
+
+            let index = this.dataIndexLookup.[id]
+
+            if index <> -1 then
+                true
+            else
+                false
+
+        else
+            false    
+
+    member this.FindById id =
+
+        if id < this.dataIndexLookup.Length then
+
+            let index = this.dataIndexLookup.[id]
+
+            if index <> -1 then
+                this.data.[index]
+            else
+                failwith "Unable to find datum with id, %i." id
+
+        else
+            failwith "Not a valid id, %i." id
+
+    member this.ForEach f =
+
+        for i = 0 to this.data.Count - 1 do
+            
+            f this.dataIds.[i] this.data.[i]
+
+type RenderLayer =
+    {
+        shaders: Dictionary<ShaderId, ShaderProgram * (Matrix4x4 -> Matrix4x4 -> unit)>
+        textureMeshes: Dictionary<ShaderId, Dictionary<TextureId, Texture * Bucket>> 
+        mutable nextShaderId: int
+    }
+
+    member this.CreateShader (vertexShader, fragmentShader, f: ShaderId -> ShaderProgram -> (Matrix4x4 -> Matrix4x4 -> unit)) =
+        let shaderProgram =
+            Backend.loadShaders vertexShader fragmentShader
+            |> ShaderProgram.Create
+
+        let shaderId = this.nextShaderId
+
+        this.nextShaderId <- this.nextShaderId + 1
+        this.shaders.[shaderId] <- (shaderProgram, (f shaderId shaderProgram))
+
+        {
+            Id = shaderId
+        }
+
+type RenderLayerId =
+    {
+        id: int
+    }
+
+type RenderCamera =
+    {
+        renderTexture: RenderTexture
+        renderLayerId: RenderLayerId
+    }
+
+type RenderCameraId =
+    {
+        id: int
+    }
+
+
 type Renderer =
     {
         mutable nextShaderId: int
@@ -86,6 +216,10 @@ type Renderer =
         finalPosition: VertexAttribute<Vector3Buffer>
         finalTexture: Uniform<RenderTexture>
         finalTime: Uniform<float32>
+
+
+        layerManager: CompactManager<RenderLayer>
+        cameraManager: CompactManager<RenderCamera>
     }
 
     static member Create () =
@@ -118,6 +252,9 @@ type Renderer =
             finalPosition = position
             finalTexture = tex
             finalTime = time
+
+            layerManager = CompactManager<RenderLayer>.Create (256)
+            cameraManager = CompactManager<RenderCamera>.Create (256)
         }
 
     member this.CreateVector2Buffer (data) =
@@ -147,6 +284,24 @@ type Renderer =
         {
             Id = shaderId
         }
+
+    member this.TryCreateRenderCamera (renderLayerId: RenderLayerId) =
+        if this.layerManager.IsValid renderLayerId.id then
+
+            let renderCamera =
+                {
+                    renderTexture = RenderTexture (1280, 720)
+                    renderLayerId = renderLayerId
+                }
+
+            let renderCameraId =
+                {
+                    RenderCameraId.id = this.cameraManager.Add renderCamera
+                }
+
+            Some renderCameraId
+        else
+            None
 
     // TextureMesh shader
     member this.CreateTextureMeshShader (vertexShader, fragmentShader, f) =
@@ -290,7 +445,7 @@ type Renderer =
 
         add material.Shader
 
-    member this.Draw (time: float32) (projection: Matrix4x4) (view: Matrix4x4) =
+    member this.Draw (time: float32) (projection: Matrix4x4) (view: Matrix4x4) =            
 
         this.finalRenderTexture.TryBufferData () |> ignore
 
