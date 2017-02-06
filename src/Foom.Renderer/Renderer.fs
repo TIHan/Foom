@@ -342,7 +342,9 @@ type Renderer =
 
                             let count = bucket.Meshes.Count
 
-                            in_texture.Set texture.Buffer
+                            in_texture.Set      texture.Buffer
+                            uni_view.Set        view
+                            uni_projection.Set  projection
 
                             for i = 0 to count - 1 do
 
@@ -351,8 +353,6 @@ type Renderer =
 
                                 in_position.Set     mesh.Position
                                 in_uv.Set           mesh.Uv
-                                uni_view.Set        view
-                                uni_projection.Set  projection
 
                                 if o <> null then
                                     update o
