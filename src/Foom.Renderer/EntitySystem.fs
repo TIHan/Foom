@@ -127,6 +127,17 @@ let handleSomething (functionCache: FunctionCache) (shaderCache: ShaderCache) (t
         )
     )
 
+let handleCamera (renderer: Renderer) =
+    Behavior.handleEvent (fun (evt: Events.ComponentAdded<CameraComponent>) ((time, deltaTime): float32 * float32) em ->
+        em.TryGet<CameraComponent> (evt.Entity)
+        |> Option.iter (fun cameraComp ->
+            match renderer.TryCreateRenderCamera Matrix4x4.Identity cameraComp.Projection 1 100 with
+            | Some renderCamera ->
+                cameraComp.RenderCamera <- renderCamera
+            | _ -> ()
+        )
+    )
+
 let create (shaders: (string * (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> unit)) list) (app: Application) : Behavior<float32 * float32> =
 
     // This should probably be on the camera itself :)
@@ -144,6 +155,7 @@ let create (shaders: (string * (EntityManager -> Entity -> Renderer -> obj) * (S
 
     Behavior.merge
         [
+            handleCamera renderer
             handleSomething functionCache shaderCache textureCache renderer
 
             Behavior.update (fun ((time, deltaTime): float32 * float32) entityManager eventManager ->

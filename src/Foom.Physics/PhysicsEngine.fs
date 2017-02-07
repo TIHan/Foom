@@ -23,6 +23,115 @@ type StaticWallSOA =
             RigidBody = ResizeArray ()
         }
 
+type PhysicsData =
+    {
+        StaticWalls: StaticWallSOA
+        Triangles: ResizeArray<Triangle2D>
+        TriangleData: ResizeArray<obj>
+
+        RigidBodies: Dictionary<int, RigidBody>
+    }
+
+    static member Create () =
+        {
+            StaticWalls = StaticWallSOA.Create ()
+            Triangles = ResizeArray ()
+            TriangleData = ResizeArray ()
+            RigidBodies = Dictionary ()
+        }
+
+type NewPhysicsEngine =
+    {
+        mutable nextId: int
+        spatialHash: SpatialHash2D<PhysicsData>
+    }
+
+    static member Create (cellSize) =
+        {
+            nextId = 0
+            spatialHash = 
+                SpatialHash2D<PhysicsData>.Create 
+                    cellSize 
+
+                    // ctorData
+                    PhysicsData.Create
+
+                    // findByPoint
+                    (fun data p ->
+                        let mutable result = Unchecked.defaultof<obj>
+
+                        for i = 0 to data.Triangles.Count - 1 do
+                            if Triangle2D.containsPoint p data.Triangles.[i] then
+                                result <- data.TriangleData.[i]
+
+                        result
+                    )
+        }
+
+    member this.FindByPoint p = this.spatialHash.FindByPoint p
+
+    member this.AddTriangle tri (o: obj) =
+        tri
+        |> this.spatialHash.AddByTriangle (fun _ data ->
+            data.Triangles.Add tri
+            data.TriangleData.Add o
+        )
+
+    member this.WarpRigidBody (position: Vector3) (rbody: RigidBody) =
+        rbody.Hashes
+        |> Seq.iter (fun hash ->
+            match this.spatialHash.TryFindDataByHash (Hash2D (hash.X, hash.Y)) with
+            | Some data ->
+
+                match rbody.Shape with
+                | StaticWall _ ->
+                    let index =
+                        // Not efficient, but works and shouldn't do anyway.
+                        data.StaticWalls.RigidBody.IndexOf (rbody)
+
+                    if (index <> -1) then
+                        data.StaticWalls.LineSegment.RemoveAt (index)
+                        data.StaticWalls.Id.RemoveAt (index)
+                        data.StaticWalls.IsTrigger.RemoveAt (index)
+                        data.StaticWalls.RigidBody.RemoveAt (index)
+                | _ ->
+                    // Anything non-static
+                    data.RigidBodies.Remove rbody.Id |> ignore
+
+            | _ -> ()
+        )
+
+        rbody.Hashes.Clear ()
+
+        let pos2D = Vector2 (position.X, position.Y)
+
+        let aabb = rbody.AABB
+
+        let min = aabb.Min () + pos2D
+        let max = aabb.Max () + pos2D
+
+        let aabb = AABB2D.ofMinAndMax min max
+
+        aabb
+        |> this.spatialHash.AddByAABB (fun hash data ->
+
+            match rbody.Shape with
+            | StaticWall staticWall ->
+                data.StaticWalls.LineSegment.Add (staticWall.LineSegment)
+                data.StaticWalls.Id.Add (rbody.Id)
+                data.StaticWalls.IsTrigger.Add (staticWall.IsTrigger)
+                data.StaticWalls.RigidBody.Add (rbody)
+                rbody.Hashes.Add (Hash (hash.X, hash.Y)) |> ignore
+
+            | _ ->
+                data.RigidBodies.Add (rbody.Id, rbody) |> ignore
+                rbody.Hashes.Add (Hash (hash.X, hash.Y)) |> ignore
+
+        )
+
+        rbody.WorldPosition <- pos2D
+        rbody.Z <- position.Z
+
 type SpatialHashBucket =
     {
         AABB: AABB2D

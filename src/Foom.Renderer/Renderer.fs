@@ -74,20 +74,33 @@ type Material =
         Texture: Texture
     }
 
+type CompactId =
+
+    val Index : int
+
+    val Version : uint32
+
+    new (index, version) = { Index = index; Version = version }
+
 type CompactManager<'T> =
     {
-        mutable nextId: int
-        nextIdQueue: Queue<int>
+        mutable nextIndex: int
+
+        maxSize: int
+        versions: uint32 []
+        nextIndexQueue: Queue<int>
         dataIndexLookup: int []
 
-        dataIds: int ResizeArray
+        dataIds: CompactId ResizeArray
         data: 'T ResizeArray
     }
 
     static member Create (maxSize) =
         {
-            nextId = 0
-            nextIdQueue = Queue ()
+            nextIndex = 1
+            maxSize = maxSize
+            versions = Array.init maxSize (fun _ -> 1u)
+            nextIndexQueue = Queue ()
             dataIndexLookup = Array.init maxSize (fun _ -> -1)
             dataIds = ResizeArray ()
             data = ResizeArray ()
@@ -97,46 +110,58 @@ type CompactManager<'T> =
         this.data.Count
 
     member this.Add datum =
-        let id =
-            if this.nextIdQueue.Count > 0 then
-                this.nextIdQueue.Dequeue ()
-            else
-                let id = this.nextId
-                this.nextId <- this.nextId + 1
-                id
+        if this.nextIndex >= this.maxSize then
+            printfn "Unable to add datum. Reached max size, %i." this.maxSize
+            CompactId (0, 0u)
+        else
 
-        let index = this.data.Count
+        let id =
+            if this.nextIndexQueue.Count > 0 then
+                let index = this.nextIndexQueue.Dequeue ()
+                let version = this.versions.[index] + 1u
+                CompactId (index, version)
+            else
+                let index = this.nextIndex
+                this.nextIndex <- this.nextIndex + 1
+                CompactId (index, 1u)
+
+        let index = this.dataIds.Count
 
         this.dataIds.Add id
         this.data.Add datum
 
-        this.dataIndexLookup.[id] <- index
+        this.dataIndexLookup.[id.Index] <- index
+        this.versions.[id.Index] <- id.Version
 
         id
 
-    member this.RemoveById id =
+    member this.RemoveById (id: CompactId) =
+        if this.IsValid id then
 
-        this.nextIdQueue.Enqueue id
+            this.nextIndexQueue.Enqueue id.Index
 
-        let index = this.dataIndexLookup.[id]
+            let index = this.dataIndexLookup.[id.Index]
 
-        let lastIndex = this.data.Count - 1
-        let lastId = this.dataIds.[lastIndex]
+            let lastIndex = this.data.Count - 1
+            let lastId = this.dataIds.[lastIndex]
 
-        this.dataIds.[index] <- this.dataIds.[lastIndex]
-        this.data.[index] <- this.data.[lastIndex]
+            this.dataIds.[index] <- this.dataIds.[lastIndex]
+            this.data.[index] <- this.data.[lastIndex]
 
-        this.dataIds.RemoveAt (lastIndex)
-        this.data.RemoveAt (lastIndex)
+            this.dataIds.RemoveAt (lastIndex)
+            this.data.RemoveAt (lastIndex)
 
-        this.dataIndexLookup.[id] <- -1
-        this.dataIndexLookup.[lastId] <- index 
+            this.dataIndexLookup.[id.Index] <- -1
+            this.dataIndexLookup.[lastId.Index] <- index 
 
-    member this.IsValid id =
+        else
+            failwithf "Not a valid id, %A." id
 
-        if id < this.dataIndexLookup.Length then
+    member this.IsValid (id: CompactId) =
 
-            let index = this.dataIndexLookup.[id]
+        if id.Index < this.dataIndexLookup.Length && id.Version = this.versions.[id.Index] then
+
+            let index = this.dataIndexLookup.[id.Index]
 
             if index <> -1 then
                 true
@@ -146,19 +171,19 @@ type CompactManager<'T> =
         else
             false    
 
-    member this.FindById id =
+    member this.FindById (id: CompactId) =
 
-        if id < this.dataIndexLookup.Length then
+        if this.IsValid id then
 
-            let index = this.dataIndexLookup.[id]
+            let index = this.dataIndexLookup.[id.Index]
 
             if index <> -1 then
                 this.data.[index]
             else
-                failwith "Unable to find datum with id, %i." id
+                failwithf "Unable to find datum with id, %A." id
 
         else
-            failwith "Not a valid id, %i." id
+            failwithf "Not a valid id, %A." id
 
     member this.ForEach f =
 
@@ -166,12 +191,33 @@ type CompactManager<'T> =
             
             f this.dataIds.[i] this.data.[i]
 
+type RenderCamera =
+    {
+        mutable view: Matrix4x4
+        mutable projection: Matrix4x4
+        depth: int
+        renderTexture: RenderTexture
+        renderLayerIndex: int
+    }
+
+type RenderCameraId =
+    {
+        id: CompactId
+    }
+
 type RenderLayer =
     {
         shaders: Dictionary<ShaderId, ShaderProgram * (Matrix4x4 -> Matrix4x4 -> unit)>
         textureMeshes: Dictionary<ShaderId, Dictionary<TextureId, Texture * Bucket>> 
         mutable nextShaderId: int
     }
+
+    static member Create () =
+        {
+            shaders = Dictionary ()
+            textureMeshes = Dictionary ()
+            nextShaderId = 0
+        }
 
     member this.CreateShader (vertexShader, fragmentShader, f: ShaderId -> ShaderProgram -> (Matrix4x4 -> Matrix4x4 -> unit)) =
         let shaderProgram =
@@ -186,23 +232,6 @@ type RenderLayer =
         {
             Id = shaderId
         }
-
-type RenderLayerId =
-    {
-        id: int
-    }
-
-type RenderCamera =
-    {
-        renderTexture: RenderTexture
-        renderLayerId: RenderLayerId
-    }
-
-type RenderCameraId =
-    {
-        id: int
-    }
-
 
 type Renderer =
     {
@@ -220,9 +249,13 @@ type Renderer =
 
         layerManager: CompactManager<RenderLayer>
         cameraManager: CompactManager<RenderCamera>
+        renderCameraDepths: RenderCameraId ResizeArray []
+        mutable mainRenderCameraId: RenderCameraId option
     }
 
     static member Create () =
+        let maxRenderCameraDepth = 128
+
         let vertexBytes = File.ReadAllText ("Fullscreen.vert") |> System.Text.Encoding.UTF8.GetBytes
         let fragmentBytes = File.ReadAllText ("Fullscreen.frag") |> System.Text.Encoding.UTF8.GetBytes
         let shaderProgram = ShaderProgram.Create (Backend.loadShaders vertexBytes fragmentBytes)
@@ -242,6 +275,13 @@ type Renderer =
         let position = shaderProgram.CreateVertexAttributeVector3 ("position")
         let tex = shaderProgram.CreateUniformRenderTexture ("uni_texture")
         let time = shaderProgram.CreateUniformFloat ("time")
+
+
+        let layerManager = CompactManager<RenderLayer>.Create (16)
+
+        for i = 1 to 16 do
+            layerManager.Add (RenderLayer.Create ()) |> ignore
+
         {
             nextShaderId = 0
             Shaders = Dictionary ()
@@ -253,8 +293,10 @@ type Renderer =
             finalTexture = tex
             finalTime = time
 
-            layerManager = CompactManager<RenderLayer>.Create (256)
-            cameraManager = CompactManager<RenderCamera>.Create (256)
+            layerManager = layerManager
+            cameraManager = CompactManager<RenderCamera>.Create (16)
+            renderCameraDepths = Array.init maxRenderCameraDepth (fun _ -> ResizeArray ())
+            mainRenderCameraId = None
         }
 
     member this.CreateVector2Buffer (data) =
@@ -285,13 +327,16 @@ type Renderer =
             Id = shaderId
         }
 
-    member this.TryCreateRenderCamera (renderLayerId: RenderLayerId) =
-        if this.layerManager.IsValid renderLayerId.id then
+    member this.TryCreateRenderCamera view projection renderLayerIndex depth =
+        if this.layerManager.IsValid (CompactId (renderLayerIndex, 1u)) then
 
             let renderCamera =
                 {
+                    view = view
+                    projection = projection
+                    depth = depth
                     renderTexture = RenderTexture (1280, 720)
-                    renderLayerId = renderLayerId
+                    renderLayerIndex = renderLayerIndex
                 }
 
             let renderCameraId =
@@ -299,7 +344,12 @@ type Renderer =
                     RenderCameraId.id = this.cameraManager.Add renderCamera
                 }
 
-            Some renderCameraId
+            this.renderCameraDepths.[depth].Add renderCameraId
+
+            if this.mainRenderCameraId.IsNone then
+                this.mainRenderCameraId <- Some renderCameraId
+
+            Some renderCamera
         else
             None
 
@@ -445,6 +495,51 @@ type Renderer =
             Some render
 
         add material.Shader
+
+    member this.NewDraw (time: float32) =
+
+        for i = 0 to this.renderCameraDepths.Length - 1 do
+
+            let renderCameraIds = this.renderCameraDepths.[i]
+
+            for i = 0 to renderCameraIds.Count - 1 do
+
+                let renderCameraId = renderCameraIds.[i]
+
+                let renderCamera = this.cameraManager.FindById renderCameraId.id
+
+                let renderLayer = this.layerManager.FindById (CompactId (renderCamera.renderLayerIndex, 1u))
+
+                let renderCamera = this.cameraManager.FindById renderCameraId.id
+
+                renderCamera.renderTexture.TryBufferData () |> ignore
+
+                renderCamera.renderTexture.BindFramebuffer ()
+
+                Backend.clear ()
+
+                Backend.enableDepth ()
+
+                renderLayer.shaders
+                |> Seq.iter (fun pair ->
+                    (snd pair.Value) renderCamera.view renderCamera.projection
+                )
+
+                Backend.disableDepth ()
+
+
+        match this.mainRenderCameraId with
+        | Some renderCameraId ->
+
+            let renderCamera = this.cameraManager.FindById renderCameraId.id
+
+            this.finalPosition.Set this.finalPositionBuffer
+            this.finalTexture.Set this.finalRenderTexture
+            this.finalTime.Set time
+
+            this.finalShaderProgram.Run ()
+
+        | _ -> ()
 
     member this.Draw (time: float32) (projection: Matrix4x4) (view: Matrix4x4) =            
 

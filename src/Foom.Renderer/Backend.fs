@@ -574,3 +574,21 @@ module Backend =
         glBindFramebuffer (GL_FRAMEBUFFER, id);
         glViewport(0,0,width,height); // Render on the whole framebuffer, complete from the lower left corner to the upper right
         """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let enableCullFace () : unit =
+        C """
+        glEnable(GL_CULL_FACE);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let disableCullFace () : unit =
+        C """
+        glDisable(GL_CULL_FACE);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let clearDepth () : unit =
+        C """
+        glClear(GL_DEPTH_BUFFER_BIT);
+        """
