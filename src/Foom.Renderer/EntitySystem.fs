@@ -120,7 +120,7 @@ let handleSomething (functionCache: FunctionCache) (shaderCache: ShaderCache) (t
                 
             let material = renderer.CreateMaterial (shader, texture)
 
-            let didAdd = renderer.TryAdd (material, mesh, f em evt.Entity renderer, 0)
+            let didAdd = renderer.TryAdd (material, mesh, f em evt.Entity renderer, comp.LayerIndex)
 
             if didAdd then
                 em.Add (evt.Entity, RenderComponent (mesh, material))
@@ -131,7 +131,7 @@ let handleCamera (renderer: Renderer) =
     Behavior.handleEvent (fun (evt: Events.ComponentAdded<CameraComponent>) ((time, deltaTime): float32 * float32) em ->
         em.TryGet<CameraComponent> (evt.Entity)
         |> Option.iter (fun cameraComp ->
-            match renderer.TryCreateRenderCamera Matrix4x4.Identity cameraComp.Projection 0 0 with
+            match renderer.TryCreateRenderCamera Matrix4x4.Identity cameraComp.Projection cameraComp.LayerIndex 0 with
             | Some renderCamera ->
                 cameraComp.RenderCamera <- renderCamera
             | _ -> ()

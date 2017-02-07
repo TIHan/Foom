@@ -129,9 +129,72 @@ let exportSpriteTextures (wad: Wad) =
     )
 
 let globalBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray * Color ResizeArray * bool> ()
+let globalSkyBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray * Color ResizeArray * bool> ()
 
 let runGlobalBatch (em: EntityManager) =
     globalBatch
+    |> Seq.iter (fun pair ->
+        let texturePath = pair.Key
+        let vertices, uv, color, isSprite = pair.Value
+
+        let ent = em.Spawn ()
+
+        let meshInfo : RendererSystem.MeshInfo =
+            {
+                Position = vertices |> Seq.toArray
+                Uv = uv |> Seq.toArray
+                Color = color |> Seq.toArray
+            }
+
+        let materialInfo : RendererSystem.MaterialInfo =
+            {
+                ShaderName = if isSprite then "Sprite" else "TextureMesh"
+                TextureInfo =
+                    {
+                        TexturePath = texturePath
+                    }
+            }
+
+        let renderInfo : RendererSystem.RenderInfo =
+            {
+                MeshInfo = meshInfo
+                MaterialInfo = materialInfo
+            }
+
+        em.Add (ent, RendererSystem.RenderInfoComponent (renderInfo, 0))
+
+        if isSprite then
+            let center =
+                if not isSprite then Array.zeroCreate vertices.Count
+                else
+                    vertices
+                    |> Seq.chunkBySize 6
+                    |> Seq.map (fun quadVerts ->
+                        let min = 
+                            quadVerts
+                            |> Array.sortBy (fun x -> x.X)
+                            |> Array.sortBy (fun x -> x.Z)
+                            |> Array.head
+                        let max =
+                            quadVerts
+                            |> Array.sortByDescending (fun x -> x.X)
+                            |> Array.sortByDescending (fun x -> x.Z)
+                            |> Array.head
+                        let mid = min + ((max - min) / 2.f)
+                        Array.init quadVerts.Length (fun _ -> mid)
+                    )
+                    |> Seq.reduce Array.append
+
+            let spriteInfoComp : RendererSystem.SpriteInfoComponent =
+                {
+                    Center = center
+                }
+
+            em.Add (ent, spriteInfoComp)
+    )
+
+let runGlobalSkyBatch (em: EntityManager) =
+    globalSkyBatch
     |> Seq.iter (fun pair ->
         let texturePath = pair.Key
         let vertices, uv, color, isSprite = pair.Value
@@ -205,6 +268,17 @@ let spawnMesh (vertices: IEnumerable<Vector3>) uv texturePath lightLevel (em: En
     | _ ->
         globalBatch.Add (texturePath, (ResizeArray vertices, ResizeArray uv, ResizeArray color, false))
 
+let spawnSkyMesh (vertices: IEnumerable<Vector3>) uv texturePath lightLevel (em: EntityManager) =
+    let color = Array.init (vertices.Count ()) (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
+
+    match globalSkyBatch.TryGetValue(texturePath) with
+    | true, (gVertices, gUv, gColor, gIsSprite) ->
+        gVertices.AddRange(vertices)
+        gUv.AddRange(uv)
+        gColor.AddRange(color)
+    | _ ->
+        globalSkyBatch.Add (texturePath, (ResizeArray vertices, ResizeArray uv, ResizeArray color, false))
+
 let spawnSprite (vertices: IEnumerable<Vector3>) uv texturePath lightLevel (em: EntityManager) =
     let color = Array.init (vertices.Count ()) (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
 
@@ -244,7 +318,7 @@ let spawnWallPartMesh (part: WallPart) (vertices: Vector3 []) lightLevel wad em 
         else
             let texturePath = "F_SKY1" + "_flat.bmp"
             let t = new Bitmap(texturePath)
-            spawnMesh vertices (WallPart.createUV vertices t.Width t.Height part) texturePath lightLevel em
+            spawnSkyMesh vertices (WallPart.createUV vertices t.Width t.Height part) texturePath lightLevel em
 
 let spawnWallSideMesh (part: WallPart option) vertices lightLevel wad em isSky =
     part
@@ -413,6 +487,7 @@ let updates (clientWorld: ClientWorld) =
             )
 
             runGlobalBatch em
+            runGlobalSkyBatch em
             em.Add (clientWorld.Entity, physicsEngineComp)
 
             level
@@ -426,7 +501,7 @@ let updates (clientWorld: ClientWorld) =
                     let position = Vector3 (single doomThing.X, single doomThing.Y, single sector.FloorHeight + 28.f)
 
                     let cameraEnt = em.Spawn ()
-                    em.Add (cameraEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f)))
+                    em.Add (cameraEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), 0))
                     em.Add (cameraEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
                     em.Add (cameraEnt, CharacterControllerComponent (position, 15.f, 56.f))
                     em.Add (cameraEnt, PlayerComponent ())

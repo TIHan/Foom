@@ -7,9 +7,11 @@ open Foom.Ecs
 open Foom.Geometry
 
 [<Sealed>]
-type CameraComponent (projection) =
+type CameraComponent (projection, layerIndex) =
 
     let mutable angle = Vector3 (0.f, 0.f, 0.f)
+
+    member val LayerIndex : int = layerIndex
 
     member val RenderCamera : RenderCamera = Unchecked.defaultof<RenderCamera> with get, set
 
