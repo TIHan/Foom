@@ -160,7 +160,7 @@ let runGlobalBatch (em: EntityManager) =
                 MaterialInfo = materialInfo
             }
 
-        em.Add (ent, RendererSystem.RenderInfoComponent (renderInfo))
+        em.Add (ent, RendererSystem.RenderInfoComponent (renderInfo, 1))
 
         if isSprite then
             let center =

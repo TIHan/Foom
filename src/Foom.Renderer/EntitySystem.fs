@@ -10,13 +10,11 @@ open Foom.Ecs
 open Foom.Math
 open Foom.Common.Components
 
-type RenderComponent (mesh, material, textureMeshId) =
+type RenderComponent (mesh, material) =
 
     member val Mesh : Mesh = mesh
 
     member val Material : Material = material
-
-    member val TextureMeshId : TextureMeshId = textureMeshId
 
     interface IComponent
 
@@ -50,9 +48,11 @@ type RenderBatchInfo =
         MeshInfos: MeshInfo ResizeArray
     }
 
-type RenderInfoComponent (renderInfo) =
+type RenderInfoComponent (renderInfo, renderLayerIndex) =
 
     member val RenderInfo = renderInfo
+
+    member val LayerIndex = renderLayerIndex
 
     interface IComponent
 
@@ -120,10 +120,10 @@ let handleSomething (functionCache: FunctionCache) (shaderCache: ShaderCache) (t
                 
             let material = renderer.CreateMaterial (shader, texture)
 
-            renderer.TryAdd (material, mesh, f em evt.Entity renderer)
-            |> Option.iter (fun render ->
-                em.Add (evt.Entity, RenderComponent (mesh, material, render))
-            )
+            let didAdd = renderer.TryAdd (material, mesh, f em evt.Entity renderer, 0)
+
+            if didAdd then
+                em.Add (evt.Entity, RenderComponent (mesh, material))
         )
     )
 
@@ -131,7 +131,7 @@ let handleCamera (renderer: Renderer) =
     Behavior.handleEvent (fun (evt: Events.ComponentAdded<CameraComponent>) ((time, deltaTime): float32 * float32) em ->
         em.TryGet<CameraComponent> (evt.Entity)
         |> Option.iter (fun cameraComp ->
-            match renderer.TryCreateRenderCamera Matrix4x4.Identity cameraComp.Projection 1 100 with
+            match renderer.TryCreateRenderCamera Matrix4x4.Identity cameraComp.Projection 0 0 with
             | Some renderCamera ->
                 cameraComp.RenderCamera <- renderCamera
             | _ -> ()
@@ -183,9 +183,12 @@ let create (shaders: (string * (EntityManager -> Entity -> Renderer -> obj) * (S
 
                         let invertedTransform = invertedTransform
 
-                        renderer.Draw time projection invertedTransform
+                        cameraComp.RenderCamera.view <- invertedTransform
+                        cameraComp.RenderCamera.projection <- projection
                     )
                 )
+
+                renderer.Draw time
 
                 Backend.draw app
 
