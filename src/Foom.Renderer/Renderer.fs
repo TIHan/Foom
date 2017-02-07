@@ -459,7 +459,7 @@ type Renderer =
 
                 renderCamera.renderTexture.TryBufferData () |> ignore
 
-                //renderCamera.renderTexture.BindFramebuffer ()
+                renderCamera.renderTexture.Bind ()
 
                 Backend.clear ()
 
@@ -479,25 +479,31 @@ type Renderer =
                         let texture, bucket = pair.Value
                         f renderCamera.view renderCamera.projection texture bucket
                     )
+
+                    Backend.useProgram 0
                 )
 
                 Backend.disableDepth ()
+
+                renderCamera.renderTexture.Unbind ()
 
         match this.mainRenderCameraId with
         | Some renderCameraId ->
 
             let renderCamera = this.cameraManager.FindById renderCameraId.id
 
-            renderCamera.renderTexture.Render ()
+            Backend.clear ()
 
-            //Backend.clear ()
+            Backend.useProgram this.finalShaderProgram.programId
 
 
-            //this.finalPosition.Set this.finalPositionBuffer
-            //this.finalTexture.Set renderCamera.renderTexture
-            //this.finalTime.Set time
+            this.finalPosition.Set this.finalPositionBuffer
+            this.finalTexture.Set renderCamera.renderTexture
+            this.finalTime.Set time
 
-            //this.finalShaderProgram.Run ()
+            this.finalShaderProgram.Run ()
+
+            Backend.useProgram 0
 
         | _ -> ()
 

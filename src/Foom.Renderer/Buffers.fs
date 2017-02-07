@@ -180,17 +180,16 @@ type RenderTexture (width, height) =
 
     member this.Height = height
 
-    member this.BindFramebuffer () =
+    member this.Bind () =
         if framebufferId <> 0 then
-           Backend.framebufferRender width height framebufferId
+           Backend.bindFramebuffer framebufferId
+
+    member this.Unbind () =
+        Backend.bindFramebuffer 0
 
     member this.BindTexture () =
         if textureId <> 0 then
             Backend.bindTexture textureId // this does activetexture0, change this eventually    
-
-    member this.Render () =
-        if framebufferId <> 0 then
-            Backend.framebufferRender width height 0
 
     member this.TryBufferData () =
         
