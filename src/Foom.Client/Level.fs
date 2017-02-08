@@ -318,7 +318,7 @@ let spawnWallPartMesh (part: WallPart) (vertices: Vector3 []) lightLevel wad em 
         else
             let texturePath = "F_SKY1" + "_flat.bmp"
             let t = new Bitmap(texturePath)
-            spawnSkyMesh vertices (WallPart.createUV vertices t.Width t.Height part) texturePath lightLevel em
+            spawnMesh vertices (WallPart.createUV vertices t.Width t.Height part) texturePath lightLevel em
 
 let spawnWallSideMesh (part: WallPart option) vertices lightLevel wad em isSky =
     part
@@ -502,16 +502,60 @@ let updates (clientWorld: ClientWorld) =
 
                     let transformComp = TransformComponent (Matrix4x4.CreateTranslation (position))
 
+                    let skyEnt = em.Spawn ()
+                    em.Add (skyEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), 1, 0))
+                    em.Add (skyEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
+                    em.Add (skyEnt, SkyComponent ())
+
+                    let vertices =
+                        [|
+                            Vector3 (-1.f,-1.f, 0.f)
+                            Vector3 (1.f, -1.f, 0.f)
+                            Vector3 (1.f, 1.f, 0.f)
+                            Vector3 (1.f, 1.f, 0.f)
+                            Vector3 (-1.f,  1.f, 0.f)
+                            Vector3 (-1.f, -1.f, 0.f)
+                        |]
+
+                    let uv =
+                        [|
+                            Vector2 (0.f, 0.f)
+                            Vector2 (1.f, 0.f)
+                            Vector2 (1.f, -1.f)
+                            Vector2 (1.f, -1.f)
+                            Vector2 (0.f, -1.f)
+                            Vector2 (0.f, 0.f)
+                        |]
+
+                    let meshInfo : RendererSystem.MeshInfo =
+                        {
+                            Position = vertices
+                            Uv = uv
+                            Color = [||]
+                        }
+
+                    let materialInfo : RendererSystem.MaterialInfo =
+                        {
+                            ShaderName = "Sky"
+                            TextureInfo =
+                                {
+                                    TexturePath = "Sky1.bmp"
+                                }
+                        }
+
+                    let renderInfo : RendererSystem.RenderInfo =
+                        {
+                            MeshInfo = meshInfo
+                            MaterialInfo = materialInfo
+                        }
+
+                    em.Add (skyEnt, RendererSystem.RenderInfoComponent (renderInfo, 1))
+
                     let cameraEnt = em.Spawn ()
                     em.Add (cameraEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), 0, 15))
                     em.Add (cameraEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
                     em.Add (cameraEnt, CharacterControllerComponent (position, 15.f, 56.f))
                     em.Add (cameraEnt, PlayerComponent ())
-
-                    let skyEnt = em.Spawn ()
-                    em.Add (skyEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), 1, 0))
-                    em.Add (skyEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
-                    em.Add (skyEnt, SkyComponent ())
 
                 | _ -> ()
             )
