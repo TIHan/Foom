@@ -10,7 +10,7 @@ type TransformComponent (value: Matrix4x4) =
 
     let mutable transform = value
 
-    member __.Transform 
+    member __.Transform
         with get () = transform
 
         and set value =

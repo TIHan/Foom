@@ -131,7 +131,7 @@ let handleCamera (renderer: Renderer) =
     Behavior.handleEvent (fun (evt: Events.ComponentAdded<CameraComponent>) ((time, deltaTime): float32 * float32) em ->
         em.TryGet<CameraComponent> (evt.Entity)
         |> Option.iter (fun cameraComp ->
-            match renderer.TryCreateRenderCamera Matrix4x4.Identity cameraComp.Projection cameraComp.LayerIndex 0 with
+            match renderer.TryCreateRenderCamera Matrix4x4.Identity cameraComp.Projection cameraComp.LayerIndex cameraComp.Depth with
             | Some renderCamera ->
                 cameraComp.RenderCamera <- renderCamera
             | _ -> ()

@@ -27,6 +27,10 @@ type PlayerComponent () =
 
     interface IComponent
 
+type SkyComponent () =
+
+    interface IComponent
+
 [<RequireQualifiedAccess>]
 module Camera =
 
@@ -116,6 +120,12 @@ module Camera =
                                 playerComp.Pitch * 0.25f,
                                 0.f
                             )
+
+                        em.TryFind<SkyComponent, TransformComponent> (fun _ _ _ -> true)
+                        |> Option.iter (fun (ent, skyComp, skyTransformComp) ->
+                            skyTransformComp.Transform <- transformComp.Transform
+                            skyTransformComp.TransformLerp <- transformComp.TransformLerp
+                        )
                     )
                 )
             ]

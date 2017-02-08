@@ -9,5 +9,5 @@ uniform float time;
 
 void main ()
 {
-    color = texture(uni_texture, uv + 0.005*vec2( sin(time+1280.0*uv.x),cos(time+720.0*uv.y)) );
+    color = texture(uni_texture, uv); //+ 0.005*vec2( sin(time+1280.0*uv.x),cos(time+720.0*uv.y)) );
 }
