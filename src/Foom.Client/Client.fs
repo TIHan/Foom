@@ -22,7 +22,6 @@ let init (world: World) =
 
                         fun o run ->
                             match o with
-                            | null -> ()
                             | :? RendererSystem.SpriteComponent as spriteComp -> in_center.Set spriteComp.Center
                             | _ -> ()
 
