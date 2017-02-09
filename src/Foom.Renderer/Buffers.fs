@@ -40,6 +40,13 @@ type Vector2Buffer (data) =
 
     member this.Id = id
 
+    member this.Release () =
+        if id <> 0 then
+            Backend.deleteBuffer (id)
+            id <- 0
+            length <- 0
+            queuedData <- None
+
 type Vector3Buffer (data) =
 
     let mutable id = 0
@@ -68,6 +75,13 @@ type Vector3Buffer (data) =
         | _ -> false
 
     member this.Id = id
+
+    member this.Release () =
+        if id <> 0 then
+            Backend.deleteBuffer (id)
+            id <- 0
+            length <- 0
+            queuedData <- None
 
 type Vector4Buffer (data) =
 
@@ -98,6 +112,13 @@ type Vector4Buffer (data) =
 
     member this.Id = id
 
+    member this.Release () =
+        if id <> 0 then
+            Backend.deleteBuffer (id)
+            id <- 0
+            length <- 0
+            queuedData <- None
+
 type Matrix4x4Buffer (data) =
 
     let mutable id = 0
@@ -126,6 +147,13 @@ type Matrix4x4Buffer (data) =
         | _ -> false
 
     member this.Id = id
+
+    member this.Release () =
+        if id <> 0 then
+            Backend.deleteBuffer (id)
+            id <- 0
+            length <- 0
+            queuedData <- None
 
 type Texture2DBuffer () =
 
@@ -168,10 +196,19 @@ type Texture2DBuffer () =
             true
         | _ -> false
 
+    member this.Release () =
+        if id <> 0 then
+            Backend.deleteTexture (id)
+            id <- 0
+            width <- 0
+            height <- 0
+            queuedData <- None
+
 type RenderTexture (width, height) =
 
     let mutable framebufferId = 0
     let mutable depthBufferId = 0
+    let mutable stencilBufferId = 0
     let mutable textureId = 0
     let mutable width = width
     let mutable height = height
@@ -211,3 +248,7 @@ type RenderTexture (width, height) =
             false
 
     member this.TextureId = textureId
+
+    member this.Release () =
+        ()
+        // TODO:

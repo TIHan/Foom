@@ -535,7 +535,8 @@ module Backend =
         glBindTexture(GL_TEXTURE_2D, textureID);
          
         // Give the image to OpenGL
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        //glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH32F_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_FLOAT_32_UNSIGNED_INT_24_8_REV, data);
+        glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
          
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -551,8 +552,8 @@ module Backend =
         GLuint depthrenderbuffer;
         glGenRenderbuffers(1, &depthrenderbuffer);
         glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH32F_STENCIL8, width, height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
         glBindRenderbuffer (GL_RENDERBUFFER, 0);
         return depthrenderbuffer;
         """
@@ -591,4 +592,16 @@ module Backend =
     let clearDepth () : unit =
         C """
         glClear(GL_DEPTH_BUFFER_BIT);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let deleteBuffer (id: int) : unit =
+        C """
+        glDeleteBuffers (1, &id);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let deleteTexture (id: int) : unit =
+        C """
+        glDeleteTextures (1, &id);
         """
