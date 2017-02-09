@@ -12,32 +12,8 @@ let init (world: World) =
             [
                 ("Sprite",
                     (fun em ent renderer ->
-                        match em.TryGet<RendererSystem.SpriteComponent> (ent), em.TryGet<RendererSystem.MeshRenderComponent> (ent) with
-                        | Some spriteComp, Some meshRenderComp ->
-                            let vertices = meshRenderComp.RenderInfo.MeshInfo.Position
-
-                            let center =
-                                vertices
-                                |> Seq.chunkBySize 6
-                                |> Seq.map (fun quadVerts ->
-                                    let min = 
-                                        quadVerts
-                                        |> Array.sortBy (fun x -> x.X)
-                                        |> Array.sortBy (fun x -> x.Z)
-                                        |> Array.head
-                                    let max =
-                                        quadVerts
-                                        |> Array.sortByDescending (fun x -> x.X)
-                                        |> Array.sortByDescending (fun x -> x.Z)
-                                        |> Array.head
-                                    let mid = min + ((max - min) / 2.f)
-                                    Array.init quadVerts.Length (fun _ -> mid)
-                                )
-                                |> Seq.reduce Array.append
-
-                            em.Add (ent, RendererSystem.SpriteComponent (center))
-
-                            spriteComp :> obj
+                        match em.TryGet<RendererSystem.SpriteComponent> (ent) with
+                        | Some spriteComp -> spriteComp :> obj
                         | _ -> null
                     ),
                     (fun shaderProgram ->
