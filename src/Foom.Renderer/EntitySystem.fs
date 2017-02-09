@@ -10,14 +10,6 @@ open Foom.Ecs
 open Foom.Math
 open Foom.Common.Components
 
-type RenderComponent (mesh, material) =
-
-    member val Mesh : Mesh = mesh
-
-    member val Material : Material = material
-
-    interface IComponent
-
 type MeshInfo =
     {
         Position: Vector3 []
@@ -40,54 +32,54 @@ type RenderInfo =
     {
         MeshInfo: MeshInfo
         MaterialInfo: MaterialInfo
+        RenderLayerIndex: int
     }
 
-type RenderBatchInfo =
-    {
-        MaterialInfo: MaterialInfo
-        MeshInfos: MeshInfo ResizeArray
-    }
-
-type RenderInfoComponent (renderInfo, renderLayerIndex) =
+type MeshRenderComponent (renderInfo) =
 
     member val RenderInfo = renderInfo
 
-    member val LayerIndex = renderLayerIndex
+    member val Mesh : Mesh =
+        let color =
+            renderInfo.MeshInfo.Color
+            |> Array.map (fun c ->
+                Vector4 (
+                    single c.R / 255.f,
+                    single c.G / 255.f,
+                    single c.B / 255.f,
+                    single c.A / 255.f)
+            )
+        {
+            Position = Vector3Buffer (renderInfo.MeshInfo.Position)
+            Uv = Vector2Buffer (renderInfo.MeshInfo.Uv)
+            Color = Vector4Buffer (color) 
+        }
 
     interface IComponent
 
-type SpriteComponent =
-    {
-        Center: Vector3Buffer
-    }
+type SpriteComponent (center) =
+
+    member val Center = Vector3Buffer (center)
 
     interface IComponent
 
-type SpriteInfoComponent =
-    {
-        Center: Vector3 []
-    }
-
-    interface IComponent
-
-type FunctionCache = Dictionary<string, (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> unit)>
-type ShaderCache = Dictionary<string, Shader>
+type FunctionCache = Dictionary<string, (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> (RenderPass -> unit) -> unit)>
+type ShaderCache = Dictionary<string, ShaderId>
 type TextureCache = Dictionary<string, Texture>
 
 let handleSomething (functionCache: FunctionCache) (shaderCache: ShaderCache) (textureCache: TextureCache) (renderer: Renderer) =
-    Behavior.handleEvent (fun (evt: Events.ComponentAdded<RenderInfoComponent>) ((time, deltaTime): float32 * float32) em ->
-        em.TryGet<RenderInfoComponent> (evt.Entity)
+    Behavior.handleEvent (fun (evt: Events.ComponentAdded<MeshRenderComponent>) _ em ->
+        em.TryGet<MeshRenderComponent> (evt.Entity)
         |> Option.iter (fun comp ->
-            let info = comp.RenderInfo
 
-            let mesh = renderer.CreateMesh (info.MeshInfo.Position, info.MeshInfo.Uv, info.MeshInfo.Color)
+            let info = comp.RenderInfo
             let shaderName = info.MaterialInfo.ShaderName
 
             let vertexShaderFile = shaderName + ".vert"
 
             let fragmentShaderFile = shaderName + ".frag"
 
-            let shader, f =
+            let shaderId, f =
                 match shaderCache.TryGetValue (shaderName) with
                 | true, shader -> shader, (fun _ _ _ -> null)
                 | _ -> 
@@ -98,7 +90,7 @@ let handleSomething (functionCache: FunctionCache) (shaderCache: ShaderCache) (t
                     let f, g =
                         match functionCache.TryGetValue(shaderName) with
                         | true, (f, g) -> f, g
-                        | _ -> (fun _ _ _ -> null), (fun _ _ -> ())
+                        | _ -> (fun _ _ _ -> null), (fun _ _ run -> run RenderPass.Depth)
 
                     let shader = renderer.CreateTextureMeshShader (vertexBytes, fragmentBytes, g)
 
@@ -112,18 +104,20 @@ let handleSomething (functionCache: FunctionCache) (shaderCache: ShaderCache) (t
                 | _ ->
 
                     let bmp = new Bitmap(info.MaterialInfo.TextureInfo.TexturePath)
-                    let texture = renderer.CreateTexture (bmp)
+
+                    let buffer = Texture2DBuffer ()
+                    buffer.Set bmp
+
+                    let texture =
+                        {
+                            Buffer = buffer
+                        }
 
                     textureCache.Add(info.MaterialInfo.TextureInfo.TexturePath, texture)
 
                     texture
-                
-            let material = renderer.CreateMaterial (shader, texture)
 
-            let didAdd = renderer.TryAdd (material, mesh, f em evt.Entity renderer, comp.LayerIndex)
-
-            if didAdd then
-                em.Add (evt.Entity, RenderComponent (mesh, material))
+            renderer.TryAdd (shaderId, texture, comp.Mesh, f em evt.Entity renderer, info.RenderLayerIndex) |> ignore
         )
     )
 
@@ -138,14 +132,14 @@ let handleCamera (renderer: Renderer) =
         )
     )
 
-let create (shaders: (string * (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> unit)) list) (app: Application) : Behavior<float32 * float32> =
+let create (shaders: (string * (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> (RenderPass -> unit) -> unit)) list) (app: Application) : Behavior<float32 * float32> =
 
     // This should probably be on the camera itself :)
     let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
 
     let renderer = Renderer.Create ()
-    let functionCache = Dictionary<string, (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> unit)> ()
-    let shaderCache = Dictionary<string, Shader> ()
+    let functionCache = Dictionary<string, (EntityManager -> Entity -> Renderer -> obj) * (ShaderProgram -> obj -> (RenderPass -> unit) -> unit)> ()
+    let shaderCache = Dictionary<string, ShaderId> ()
     let textureCache = Dictionary<string, Texture> ()
 
     shaders

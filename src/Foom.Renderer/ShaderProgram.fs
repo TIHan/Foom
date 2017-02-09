@@ -26,6 +26,9 @@ type VertexAttribute<'T> =
 
     member this.Set value = this.value <- value
 
+type RenderPass =
+    | Depth
+
 type ShaderProgram =
     {
         programId: int
@@ -219,7 +222,7 @@ type ShaderProgram =
     member this.CreateVertexAttributeVector4 (name) =
         this.CreateVertexAttribute<Vector4Buffer> (name)
 
-    member this.Run () =
+    member this.Run (renderPass: RenderPass) =
 
         if this.programId > 0 then
 
@@ -235,9 +238,15 @@ type ShaderProgram =
                 let f = this.binds.[i]
                 f ()
 
+            match renderPass with
+            | Depth -> Backend.enableDepth ()
+
             if this.length > 0 then
                 // TODO: this will change
                 Backend.drawTriangles 0 this.length
+
+            match renderPass with
+            | Depth -> Backend.disableDepth ()
 
             for i = 0 to this.unbinds.Count - 1 do
                 let f = this.unbinds.[i]

@@ -6,6 +6,8 @@ open System.Numerics
 open System.Collections.Generic
 open System.IO
 
+open Foom.Collections
+
 // *****************************************
 // *****************************************
 // Renderer
@@ -35,143 +37,6 @@ type Bucket =
 
 type ShaderId = int
 type TextureId = int
-
-type Shader =
-    {
-        Id: int
-    }
-
-type Material =
-    {
-        Shader: Shader
-        Texture: Texture
-    }
-
-type CompactId =
-
-    val Index : int
-
-    val Version : uint32
-
-    new (index, version) = { Index = index; Version = version }
-
-type CompactManager<'T> =
-    {
-        mutable nextIndex: int
-
-        maxSize: int
-        versions: uint32 []
-        nextIndexQueue: Queue<int>
-        dataIndexLookup: int []
-
-        dataIds: CompactId ResizeArray
-        data: 'T ResizeArray
-    }
-
-    static member Create (maxSize) =
-        {
-            nextIndex = 0
-            maxSize = maxSize
-            versions = Array.init maxSize (fun _ -> 1u)
-            nextIndexQueue = Queue ()
-            dataIndexLookup = Array.init maxSize (fun _ -> -1)
-            dataIds = ResizeArray ()
-            data = ResizeArray ()
-        }
-
-    member this.Count =
-        this.data.Count
-
-    member this.Add datum =
-        if this.nextIndex >= this.maxSize then
-            printfn "Unable to add datum. Reached max size, %i." this.maxSize
-            CompactId (0, 0u)
-        else
-
-        let id =
-            if this.nextIndexQueue.Count > 0 then
-                let index = this.nextIndexQueue.Dequeue ()
-                let version = this.versions.[index] + 1u
-                CompactId (index, version)
-            else
-                let index = this.nextIndex
-                this.nextIndex <- this.nextIndex + 1
-                CompactId (index, 1u)
-
-        let index = this.dataIds.Count
-
-        this.dataIds.Add id
-        this.data.Add datum
-
-        this.dataIndexLookup.[id.Index] <- index
-        this.versions.[id.Index] <- id.Version
-
-        id
-
-    member this.RemoveById (id: CompactId) =
-        if this.IsValid id then
-
-            this.nextIndexQueue.Enqueue id.Index
-
-            let index = this.dataIndexLookup.[id.Index]
-
-            let lastIndex = this.data.Count - 1
-            let lastId = this.dataIds.[lastIndex]
-
-            this.dataIds.[index] <- this.dataIds.[lastIndex]
-            this.data.[index] <- this.data.[lastIndex]
-
-            this.dataIds.RemoveAt (lastIndex)
-            this.data.RemoveAt (lastIndex)
-
-            this.dataIndexLookup.[id.Index] <- -1
-            this.dataIndexLookup.[lastId.Index] <- index 
-
-        else
-            failwithf "Not a valid id, %A." id
-
-    member this.IsValid (id: CompactId) =
-
-        if id.Index < this.dataIndexLookup.Length && id.Version = this.versions.[id.Index] then
-
-            let index = this.dataIndexLookup.[id.Index]
-
-            index <> -1
-
-        else
-            false    
-
-    member this.FindById (id: CompactId) =
-
-        if this.IsValid id then
-
-            let index = this.dataIndexLookup.[id.Index]
-
-            if index <> -1 then
-                this.data.[index]
-            else
-                failwithf "Unable to find datum with id, %A." id
-
-        else
-            failwithf "Not a valid id, %A." id
-
-    member this.TryFindById (id: CompactId) =
-
-        if this.IsValid id then
-            let index = this.dataIndexLookup.[id.Index]
-
-            if index <> -1 then
-                Some this.data.[index]
-            else
-                None
-        else
-            None
-
-    member this.ForEach f =
-
-        for i = 0 to this.data.Count - 1 do
-            
-            f this.dataIds.[i] this.data.[i]
 
 type RenderCamera =
     {
@@ -261,20 +126,6 @@ type Renderer =
             mainRenderCameraId = None
         }
 
-    member this.CreateVector2Buffer (data) =
-        Vector2Buffer (data)
-
-    member this.CreateVector3Buffer (data) =
-        Vector3Buffer (data)
-
-    member this.CreateVector4Buffer (data) =
-        Vector4Buffer (data)
-
-    member this.CreateTexture2DBuffer (bmp) =
-        let buffer = Texture2DBuffer ()
-        buffer.Set bmp
-        buffer
-
     member this.TryCreateRenderCamera view projection renderLayerIndex depth =
         if this.layerManager.IsValid (CompactId (renderLayerIndex, 1u)) && depth < this.renderCameraDepths.Length then
 
@@ -301,35 +152,6 @@ type Renderer =
         else
             None
 
-    member this.CreateTexture (bmp) =
-        let buffer = Texture2DBuffer ()
-        buffer.Set bmp
-        {
-            Buffer = buffer
-        }
-
-    member this.CreateMaterial (shader, texture) =
-        {
-            Shader = shader
-            Texture = texture
-        }
-
-    member this.CreateMesh (position, uv, color: Color []) =
-        {
-            Position = Vector3Buffer (position)
-            Uv = Vector2Buffer (uv)
-            Color =
-                color
-                |> Array.map (fun c ->
-                    Vector4 (
-                        single c.R / 255.f,
-                        single c.G / 255.f,
-                        single c.B / 255.f,
-                        single c.A / 255.f)
-                )
-                |> Vector4Buffer
-        }
-
     member this.CreateShader (vertexShader, fragmentShader, f: ShaderId -> ShaderProgram -> (Matrix4x4 -> Matrix4x4 -> Texture -> Bucket -> unit)) =
         let shaderProgram =
             Backend.loadShaders vertexShader fragmentShader
@@ -340,9 +162,7 @@ type Renderer =
         this.nextShaderId <- this.nextShaderId + 1
         this.shaders.[shaderId] <- (shaderProgram, (f shaderId shaderProgram))
 
-        {
-            Id = shaderId
-        }
+        shaderId
 
     member this.CreateTextureMeshShader (vertexShader, fragmentShader, f) =
         this.CreateShader (vertexShader, fragmentShader,
@@ -369,6 +189,8 @@ type Renderer =
 
                 let update = f shaderProgram
 
+                let run renderPass = shaderProgram.Run renderPass
+
                 fun view projection texture bucket ->
                     let count = bucket.meshes.Count
 
@@ -383,8 +205,6 @@ type Renderer =
                         in_position.Set     mesh.Position
                         in_uv.Set           mesh.Uv
 
-                        if isNull o |> not then update o
-
                         let color = mesh.Color
 
                         let programId = shaderProgram.programId
@@ -394,11 +214,11 @@ type Renderer =
                         color.Bind ()
                         Backend.bindColor programId
 
-                        shaderProgram.Run ()
+                        update o run
 
         )
 
-    member this.TryAdd (material: Material, mesh: Mesh, data: obj, renderLayerIndex: int) =
+    member this.TryAdd (shaderId: ShaderId, texture: Texture, mesh: Mesh, data: obj, renderLayerIndex: int) =
 
         let addTexture (bucketLookup: Dictionary<TextureId, Texture * Bucket>) texture = 
             // Need to do this to make sure we get an id.
@@ -417,29 +237,26 @@ type Renderer =
                     bucket
             bucket
 
-        let add shader =
-            match this.layerManager.TryFindById (CompactId (renderLayerIndex, 1u)) with
-            | Some renderLayer ->
+        match this.layerManager.TryFindById (CompactId (renderLayerIndex, 1u)) with
+        | Some renderLayer ->
 
-                let bucketLookup =
-                    match renderLayer.textureMeshes.TryGetValue (shader.Id) with
-                    | true, (bucketLookup) -> bucketLookup
-                    | _, _ ->
-                        let bucketLookup = Dictionary ()
-                        renderLayer.textureMeshes.Add (shader.Id, bucketLookup)
-                        bucketLookup
+            let bucketLookup =
+                match renderLayer.textureMeshes.TryGetValue (shaderId) with
+                | true, (bucketLookup) -> bucketLookup
+                | _, _ ->
+                    let bucketLookup = Dictionary ()
+                    renderLayer.textureMeshes.Add (shaderId, bucketLookup)
+                    bucketLookup
 
-                let bucket = addTexture bucketLookup material.Texture
+            let bucket = addTexture bucketLookup texture
 
-                bucket.Add (mesh, data)
+            bucket.Add (mesh, data)
 
-                // TODO: Need to handle mesh ids.
+            // TODO: Need to handle mesh ids.
 
-                true
+            true
 
-            | _ -> false
-
-        add material.Shader
+        | _ -> false
 
     member this.Draw (time: float32) =
 
@@ -463,8 +280,6 @@ type Renderer =
 
                 Backend.clear ()
 
-                Backend.enableDepth ()
-
                 renderLayer.textureMeshes
                 |> Seq.iter (fun pair ->
                     let shaderId = pair.Key
@@ -483,8 +298,6 @@ type Renderer =
                     Backend.useProgram 0
                 )
 
-                Backend.disableDepth ()
-
                 renderCamera.renderTexture.Unbind ()
 
         match this.mainRenderCameraId with
@@ -501,7 +314,7 @@ type Renderer =
             this.finalTexture.Set renderCamera.renderTexture
             this.finalTime.Set time
 
-            this.finalShaderProgram.Run ()
+            this.finalShaderProgram.Run RenderPass.Depth
 
             Backend.useProgram 0
 

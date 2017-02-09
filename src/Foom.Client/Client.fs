@@ -4,25 +4,6 @@ module Foom.Client.Client
 open Foom.Ecs
 open Foom.Renderer
 
-(*
-type ShaderAction =
-    | Depth of unit -> Shader list
-    | Blend of unit -> Shader list 
-
-type RenderAction =
-    | CaptureRender of ShaderAction list * (RenderTexture -> ShaderAction list)
-[
-    CaptureRender (
-        [
-            textureMeshShader
-            spriteShader
-        ],
-        fun renderTexture ->
-            fullscreenShader renderTexture
-    )
-]
-*)
-
 let init (world: World) =
     let app = Backend.init ()
     let renderSystem = 
@@ -31,9 +12,9 @@ let init (world: World) =
             [
                 ("Sprite",
                     (fun em ent renderer ->
-                        match em.TryGet<RendererSystem.SpriteInfoComponent> (ent), em.TryGet<RendererSystem.RenderInfoComponent> (ent) with
-                        | Some spriteInfoComp, Some renderInfoComp ->
-                            let vertices = renderInfoComp.RenderInfo.MeshInfo.Position
+                        match em.TryGet<RendererSystem.SpriteComponent> (ent), em.TryGet<RendererSystem.MeshRenderComponent> (ent) with
+                        | Some spriteComp, Some meshRenderComp ->
+                            let vertices = meshRenderComp.RenderInfo.MeshInfo.Position
 
                             let center =
                                 vertices
@@ -54,12 +35,7 @@ let init (world: World) =
                                 )
                                 |> Seq.reduce Array.append
 
-                            let spriteComp : RendererSystem.SpriteComponent =
-                                {
-                                    Center = renderer.CreateVector3Buffer(center)
-                                }
-
-                            em.Add (ent, spriteComp)
+                            em.Add (ent, RendererSystem.SpriteComponent (center))
 
                             spriteComp :> obj
                         | _ -> null
@@ -68,9 +44,13 @@ let init (world: World) =
 
                         let in_center = shaderProgram.CreateVertexAttributeVector3 ("in_center")
 
-                        function
-                        | :? RendererSystem.SpriteComponent as spriteComp -> in_center.Set spriteComp.Center
-                        | _ -> ()
+                        fun o run ->
+                            match o with
+                            | null -> ()
+                            | :? RendererSystem.SpriteComponent as spriteComp -> in_center.Set spriteComp.Center
+                            | _ -> ()
+
+                            run RenderPass.Depth
                     )
                 )
             ]
