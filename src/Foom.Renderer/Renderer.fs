@@ -99,7 +99,7 @@ type Renderer =
                 Vector3 (-1.f, -1.f, 0.f)
             |]
 
-        let positionBuffer = Vector3Buffer (vertices)
+        let positionBuffer = Buffer.createVector3 vertices
 
         let position = shaderProgram.CreateVertexAttributeVector3 ("position")
         let tex = shaderProgram.CreateUniformRenderTexture ("uni_texture")

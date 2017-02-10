@@ -11,13 +11,14 @@ open System.Collections.Generic
 // *****************************************
 // *****************************************
 
-type Vector2Buffer (data) =
+[<Sealed>]
+type Buffer<'T when 'T : struct> (data: 'T [], bufferData: 'T [] -> int -> unit) =
 
     let mutable id = 0
     let mutable length = 0
     let mutable queuedData = Some data
 
-    member this.Set (data: Vector2 []) =
+    member this.Set (data: 'T []) =
         queuedData <- Some data
 
     member this.Length = length
@@ -32,7 +33,7 @@ type Vector2Buffer (data) =
             if id = 0 then
                 id <- Backend.makeVbo ()
             
-            Backend.bufferVbo data (sizeof<Vector2> * data.Length) id
+            bufferData data id
             length <- data.Length
             queuedData <- None
             true
@@ -47,113 +48,20 @@ type Vector2Buffer (data) =
             length <- 0
             queuedData <- None
 
-type Vector3Buffer (data) =
+type Vector2Buffer = Buffer<Vector2>
+type Vector3Buffer = Buffer<Vector3>
+type Vector4Buffer = Buffer<Vector4>
 
-    let mutable id = 0
-    let mutable length = 0
-    let mutable queuedData = Some data
+module Buffer =
 
-    member this.Set (data: Vector3 []) =
-        queuedData <- Some data
+    let createVector2 data =
+        Vector2Buffer (data, fun data id -> Backend.bufferVbo data (sizeof<Vector2> * data.Length) id)
 
-    member this.Length = length
+    let createVector3 data =
+        Vector3Buffer (data, fun data id -> Backend.bufferVboVector3 data (sizeof<Vector3> * data.Length) id)
 
-    member this.Bind () =
-        if id <> 0 then
-            Backend.bindVbo id
-
-    member this.TryBufferData () =
-        match queuedData with
-        | Some data ->
-            if id = 0 then
-                id <- Backend.makeVbo ()
-            
-            Backend.bufferVboVector3 data (sizeof<Vector3> * data.Length) id
-            length <- data.Length
-            queuedData <- None
-            true
-        | _ -> false
-
-    member this.Id = id
-
-    member this.Release () =
-        if id <> 0 then
-            Backend.deleteBuffer (id)
-            id <- 0
-            length <- 0
-            queuedData <- None
-
-type Vector4Buffer (data) =
-
-    let mutable id = 0
-    let mutable length = 0
-    let mutable queuedData = Some data
-
-    member this.Set (data: Vector4 []) =
-        queuedData <- Some data
-
-    member this.Length = length
-
-    member this.Bind () =
-        if id <> 0 then
-            Backend.bindVbo id
-
-    member this.TryBufferData () =
-        match queuedData with
-        | Some data ->
-            if id = 0 then
-                id <- Backend.makeVbo ()
-            
-            Backend.bufferVboVector4 data (sizeof<Vector4> * data.Length) id
-            length <- data.Length
-            queuedData <- None
-            true
-        | _ -> false
-
-    member this.Id = id
-
-    member this.Release () =
-        if id <> 0 then
-            Backend.deleteBuffer (id)
-            id <- 0
-            length <- 0
-            queuedData <- None
-
-type Matrix4x4Buffer (data) =
-
-    let mutable id = 0
-    let mutable length = 0
-    let mutable queuedData = Some data
-
-    member this.Set (data: Matrix4x4 []) =
-        queuedData <- Some data
-
-    member this.Length = length
-
-    member this.Bind () =
-        if id <> 0 then
-            Backend.bindVbo id
-
-    member this.TryBufferData () =
-        match queuedData with
-        | Some data ->
-            if id = 0 then
-                id <- Backend.makeVbo ()
-            
-            Backend.bufferVboMatrix4x4 data (sizeof<Matrix4x4> * data.Length) id
-            length <- data.Length
-            queuedData <- None
-            true
-        | _ -> false
-
-    member this.Id = id
-
-    member this.Release () =
-        if id <> 0 then
-            Backend.deleteBuffer (id)
-            id <- 0
-            length <- 0
-            queuedData <- None
+    let createVector4 data =
+        Vector4Buffer (data, fun data id -> Backend.bufferVboVector4 data (sizeof<Vector4> * data.Length) id)
 
 type Texture2DBuffer () =
 

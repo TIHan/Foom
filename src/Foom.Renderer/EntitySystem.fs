@@ -50,16 +50,16 @@ type MeshRenderComponent (renderInfo) =
                     single c.A / 255.f)
             )
         {
-            Position = Vector3Buffer (renderInfo.MeshInfo.Position)
-            Uv = Vector2Buffer (renderInfo.MeshInfo.Uv)
-            Color = Vector4Buffer (color) 
+            Position = Buffer.createVector3 (renderInfo.MeshInfo.Position)
+            Uv = Buffer.createVector2 (renderInfo.MeshInfo.Uv)
+            Color = Buffer.createVector4 (color) 
         }
 
     interface IComponent
 
 type SpriteComponent (center) =
 
-    member val Center = Vector3Buffer (center)
+    member val Center = Buffer.createVector3 (center)
 
     interface IComponent
 
