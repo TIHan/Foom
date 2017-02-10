@@ -24,7 +24,3 @@ module PhysicsEngine =
     val addTriangle : Triangle2D -> obj -> PhysicsEngine -> unit
 
     val findWithPoint : Vector2 -> PhysicsEngine -> obj
-
-    val iterWithPoint : Vector2 -> (Triangle2D -> unit) -> (LineSegment2D -> unit) -> PhysicsEngine -> unit
-
-    val debugFindSpacesByRigidBody : RigidBody -> PhysicsEngine -> AABB2D seq

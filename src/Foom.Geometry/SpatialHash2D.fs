@@ -113,7 +113,7 @@ type SpatialHash2D<'T> =
 
         match this.Buckets.TryGetValue hash with
         | true, bucket ->
-            if obj.ReferenceEquals (result, null) |> not then
+            if obj.ReferenceEquals (result, null) then
                 result <- this.findByPoint bucket.Data p
         | _ -> ()
 
