@@ -32,6 +32,7 @@ type RenderPass =
 type ShaderProgram =
     {
         programId: int
+        mutable isUnbinded: bool
         mutable isInitialized: bool
         mutable length: int
         mutable inits: ResizeArray<unit -> unit>
@@ -42,6 +43,7 @@ type ShaderProgram =
     static member Create programId =
         {
             programId = programId
+            isUnbinded = true
             isInitialized = false
             length = 0
             inits = ResizeArray ()
@@ -222,10 +224,19 @@ type ShaderProgram =
     member this.CreateVertexAttributeVector4 (name) =
         this.CreateVertexAttribute<Vector4Buffer> (name)
 
+    member this.Unbind () =
+        if not this.isUnbinded then
+            for i = 0 to this.unbinds.Count - 1 do
+                let f = this.unbinds.[i]
+                f ()
+
+            this.length <- 0
+            this.isUnbinded <- true
+
     member this.Run (renderPass: RenderPass) =
 
         if this.programId > 0 then
-
+            this.isUnbinded <- false
             if not this.isInitialized then
 
                 for i = 0 to this.inits.Count - 1 do
@@ -248,8 +259,4 @@ type ShaderProgram =
             match renderPass with
             | Depth -> Backend.disableDepth ()
 
-            for i = 0 to this.unbinds.Count - 1 do
-                let f = this.unbinds.[i]
-                f ()
-
-            this.length <- 0
+            this.Unbind ()

@@ -293,6 +293,7 @@ type Renderer =
                     |> Seq.iter (fun pair ->
                         let texture, bucket = pair.Value
                         f renderCamera.view renderCamera.projection texture bucket
+                        shader.Unbind ()
                     )
 
                     Backend.useProgram 0
@@ -315,6 +316,7 @@ type Renderer =
             this.finalTime.Set time
 
             this.finalShaderProgram.Run RenderPass.Depth
+            this.finalShaderProgram.Unbind ()
 
             Backend.useProgram 0
 
