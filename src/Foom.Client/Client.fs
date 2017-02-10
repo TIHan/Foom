@@ -31,7 +31,7 @@ let init (world: World) =
             ]
 
     let renderSystemUpdate = world.AddBehavior (Behavior.merge [ renderSystem ])
-    let inputUpdate = world.AddBehavior (Camera.playerUpdate app)
+    let inputUpdate = world.AddBehavior (Player.preUpdate app)
 
     let clientSubworld = world.CreateSubworld ()
     let clientWorld = ClientWorld.Create (clientSubworld, world.SpawnEntity ())

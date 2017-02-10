@@ -125,8 +125,7 @@ let create (app: Application) (clientWorld: ClientWorld) =
             Level.updates clientWorld
             @
             [
-               // Camera.update (app)
-               Camera.playerFixedUpdate ()
+               Player.fixedUpdate
 
                addRigidBodyBehavior clientWorld
                physicsUpdateBehavior clientWorld
