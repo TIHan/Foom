@@ -4,6 +4,8 @@ open System
 open System.Drawing
 open System.Numerics
 open System.Collections.Generic
+open System.Runtime.InteropServices
+
 
 // *****************************************
 // *****************************************
@@ -63,12 +65,18 @@ module Buffer =
     let createVector4 data =
         Vector4Buffer (data, fun data id -> Backend.bufferVboVector4 data (sizeof<Vector4> * data.Length) id)
 
-type Texture2DBuffer () =
+
+type Texture2DBufferQueueItem =
+    | Empty
+    | Data of byte [] * width: int * height: int
+    | Bitmap of Bitmap
+
+type Texture2DBuffer (data, width, height) =
 
     let mutable id = 0
     let mutable width = 0
     let mutable height = 0
-    let mutable queuedData = None
+    let mutable queuedData = Data (data, width, height)
     let mutable isTransparent = false
 
     member this.Id = id
@@ -80,7 +88,7 @@ type Texture2DBuffer () =
     member this.IsTransparent = isTransparent
 
     member this.Set (data: Bitmap) =
-        queuedData <- Some data
+        queuedData <- Bitmap data
 
     member this.Bind () =
         if id <> 0 then
@@ -88,7 +96,24 @@ type Texture2DBuffer () =
 
     member this.TryBufferData () =
         match queuedData with
-        | Some bmp ->
+        | Data (data, w, h) ->
+            width <- w
+            height <- h
+
+            if data.Length = 0 then
+                id <- Backend.createTexture width height (nativeint 0)
+            else
+                let handle = GCHandle.Alloc (data, GCHandleType.Pinned)
+                let addr = handle.AddrOfPinnedObject ()
+
+                id <- Backend.createTexture width height addr
+
+                handle.Free ()
+
+            queuedData <- Empty
+            true
+
+        | Bitmap bmp ->
             width <- bmp.Width
             height <- bmp.Height
 
@@ -100,7 +125,7 @@ type Texture2DBuffer () =
 
             bmp.UnlockBits (bmpData)
             bmp.Dispose ()
-            queuedData <- None
+            queuedData <- Empty
             true
         | _ -> false
 
@@ -110,7 +135,7 @@ type Texture2DBuffer () =
             id <- 0
             width <- 0
             height <- 0
-            queuedData <- None
+            queuedData <- Empty
 
 type RenderTexture (width, height) =
 

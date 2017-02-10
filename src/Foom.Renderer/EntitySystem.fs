@@ -105,7 +105,7 @@ let handleSomething (functionCache: FunctionCache) (shaderCache: ShaderCache) (t
 
                     let bmp = new Bitmap(info.MaterialInfo.TextureInfo.TexturePath)
 
-                    let buffer = Texture2DBuffer ()
+                    let buffer = Texture2DBuffer ([||], 0, 0)
                     buffer.Set bmp
 
                     let texture =
