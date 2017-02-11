@@ -159,40 +159,33 @@ let create (shaders: (string * (EntityManager -> Entity -> Renderer -> obj) * (S
             handleCamera renderer
             handleSomething functionCache shaderCache textureCache renderer
 
-            Behavior.update (fun ((time, deltaTime): float32 * float32) entityManager eventManager ->
+            Behavior.update (fun ((time, deltaTime): float32 * float32) em _ ->
 
-                entityManager.TryFind<CameraComponent> (fun _ _ -> true)
-                |> Option.iter (fun (ent, cameraComp) ->
+                em.ForEach<CameraComponent, TransformComponent> (fun ent cameraComp transformComp ->
+                    let heightOffset = Mathf.lerp cameraComp.HeightOffsetLerp cameraComp.HeightOffset deltaTime
 
-                    entityManager.TryGet<TransformComponent> (ent)
-                    |> Option.iter (fun transformComp ->
+                    let projection = cameraComp.Projection
+                    let mutable transform = Matrix4x4.Lerp (transformComp.TransformLerp, transformComp.Transform, deltaTime)
 
-                        let heightOffset = Mathf.lerp cameraComp.HeightOffsetLerp cameraComp.HeightOffset deltaTime
+                    let mutable v = transform.Translation
 
-                        let projection = cameraComp.Projection
-                        let mutable transform = Matrix4x4.Lerp (transformComp.TransformLerp, transformComp.Transform, deltaTime)
+                    v.Z <- zEasing.Update (transformComp.Position.Z, time)
 
-                        let mutable v = transform.Translation
+                    transform.Translation <- v + Vector3(0.f,0.f,heightOffset)
 
-                        v.Z <- zEasing.Update (transformComp.Position.Z, time)
+                    let mutable invertedTransform = Matrix4x4.Identity
 
-                        transform.Translation <- v + Vector3(0.f,0.f,heightOffset)
+                    Matrix4x4.Invert(transform, &invertedTransform) |> ignore
 
-                        let mutable invertedTransform = Matrix4x4.Identity
+                    let invertedTransform = invertedTransform
 
-                        Matrix4x4.Invert(transform, &invertedTransform) |> ignore
-
-                        let invertedTransform = invertedTransform
-
-                        cameraComp.RenderCamera.view <- invertedTransform
-                        cameraComp.RenderCamera.projection <- projection
-                    )
+                    cameraComp.RenderCamera.view <- invertedTransform
+                    cameraComp.RenderCamera.projection <- projection
                 )
 
                 renderer.Draw time
 
                 Backend.draw app
-
             )
 
         ]

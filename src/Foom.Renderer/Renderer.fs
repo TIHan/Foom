@@ -353,8 +353,6 @@ type Renderer =
 
         Backend.clear ()
 
-        Backend.enableDepth ()
-
         Backend.useProgram this.finalShaderProgram.programId
 
 
