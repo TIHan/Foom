@@ -30,13 +30,8 @@ type VertexAttribute<'T> =
 type RenderPass =
     | NoDepth
     | Depth
-    | StoreDepth 
-    | Stencil
     | Stencil1
     | Stencil2
-    | DepthStencil2
-    | DepthStencil1
-    | DepthStencil
 
 type ShaderProgram =
     {
@@ -305,19 +300,6 @@ type ShaderProgram =
                 this.Draw ()
                 Backend.depthMaskTrue ()
 
-            //| Depth -> 
-            //    Backend.enableDepth ()
-            //    this.Draw ()
-            //    Backend.disableDepth ()
-
-            //| StoreDepth ->
-            //    Backend.depthStore (Backend.DepthStoreDelegate (fun () -> this.Draw ()))
-
-            //| Stencil ->
-            //    Backend.enableStencilTest ()
-            //    this.Draw ()
-            //    Backend.disableStencilTest ()
-
             | Stencil1 ->
                 Backend.enableStencilTest ()
                 Backend.colorMaskFalse ()
@@ -333,27 +315,5 @@ type ShaderProgram =
                 Backend.stencil2 ()
                 this.Draw ()
                 Backend.disableStencilTest ()
-
-            //| DepthStencil1 ->
-            //    Backend.enableDepth ()
-            //    Backend.enableStencilTest ()
-            //    Backend.stencil2 ()
-            //    this.Draw ()
-            //    Backend.disableStencilTest ()
-            //    Backend.enableDepth ()
-
-            //| DepthStencil2 ->
-            //    Backend.enableDepth ()
-            //    Backend.enableStencilTest ()
-            //    Backend.stencil2 ()
-            //    this.Draw ()
-            //    Backend.disableStencilTest ()
-            //    Backend.enableDepth ()
-
-            //| DepthStencil ->
-            //    Backend.enableStencilTest ()
-            //    this.Draw ()
-            //    Backend.disableStencilTest ()
-            //    Backend.enableDepth ()
 
             | _ -> this.Draw ()

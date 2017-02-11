@@ -43,7 +43,7 @@ let init (world: World) =
                 ("TextureMesh",
                     (fun em ent renderer ->
                         match em.TryGet<RendererSystem.MeshRenderComponent> (ent) with
-                        | Some c -> c.RenderInfo.MaterialInfo.TextureInfo.TexturePath.Contains("F_SKY1") |> IsSky :> obj
+                        | Some c -> c.RenderInfo.MaterialInfo.TextureInfo.TexturePath.ToUpper().Contains("F_SKY1") |> IsSky :> obj
                         | _ -> null
                     ),
                     (fun shaderProgram ->
