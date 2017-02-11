@@ -218,7 +218,6 @@ let spawnCeilingMesh (flat: Flat) lightLevel wad em =
     |> Option.iter (fun textureName ->
         let texturePath = textureName + "_flat.bmp"
         let t = new Bitmap(texturePath)
-        ()
         spawnMesh flat.Ceiling.Vertices (FlatPart.createUV t.Width t.Height flat.Ceiling) texturePath lightLevel em
     )
 
@@ -426,7 +425,7 @@ let updates (clientWorld: ClientWorld) =
                     let transformComp = TransformComponent (Matrix4x4.CreateTranslation (position))
 
                     let cameraEnt = em.Spawn ()
-                    em.Add (cameraEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), LayerMask.None, ClearFlags.None, 15))
+                    em.Add (cameraEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), LayerMask.None, ClearFlags.All, 15))
                     em.Add (cameraEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
                     em.Add (cameraEnt, CharacterControllerComponent (position, 15.f, 56.f))
                     em.Add (cameraEnt, PlayerComponent ())

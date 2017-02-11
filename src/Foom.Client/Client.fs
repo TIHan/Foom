@@ -34,8 +34,7 @@ let init (world: World) =
                             | :? (EntityManager * RendererSystem.SpriteComponent) as o ->
                                 let (_, spriteComp) = o
                                 in_center.Set spriteComp.Center
-                                ()
-                                //run RenderPass.Stencil1
+                                run RenderPass.Depth
                             | _ -> ()
 
                     )

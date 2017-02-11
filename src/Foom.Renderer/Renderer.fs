@@ -55,6 +55,7 @@ type ClearFlags =
     | Depth =   0b0000001
     | Color =   0b0000010
     | Stencil = 0b0000100
+    | All =     0b0000111
 
 type RenderCamera =
     {
@@ -290,8 +291,6 @@ type Renderer =
 
         this.finalRenderTexture.TryBufferData () |> ignore
         this.finalRenderTexture.Bind ()
-
-        Backend.clear ()
 
         for i = 0 to this.renderCameraDepths.Length - 1 do
 
