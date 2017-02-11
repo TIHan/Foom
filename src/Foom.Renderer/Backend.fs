@@ -637,43 +637,15 @@ module Backend =
         """
 
     [<Import; MI (MIO.NoInlining)>]
-    let enableStencil () : unit =
+    let colorMaskFalse () : unit =
         C """
         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-        glDepthMask(GL_FALSE);
-        glStencilFunc(GL_NEVER, 0, 0xFF);
-        glStencilOp(GL_INCR, GL_KEEP, GL_KEEP);  // draw 1s on test fail (always)
-        // draw stencil pattern
-        glClear(GL_STENCIL_BUFFER_BIT);  // needs mask=0xFF
         """
 
     [<Import; MI (MIO.NoInlining)>]
-    let disableStencil () : unit =
+    let colorMaskTrue () : unit =
         C """
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glDepthMask(GL_TRUE);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-        /* Fill 1 or more */
-        glStencilFunc(GL_LEQUAL, 1, 0xFF);
-        """
-
-    [<UnmanagedFunctionPointer (CallingConvention.Cdecl)>]
-    type DepthStoreDelegate = delegate of unit -> unit
-
-    [<Import; MI (MIO.NoInlining)>]
-    let depthStore (f: DepthStoreDelegate) : unit =
-        C """
-        GLboolean save_color_mask[4];
-        GLboolean save_depth_mask;
-        glGetBooleanv(GL_COLOR_WRITEMASK, save_color_mask);
-        glGetBooleanv(GL_DEPTH_WRITEMASK, &save_depth_mask);
-        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-        glDepthMask(GL_TRUE);
-
-        f ();
-
-        glColorMask(save_color_mask[0], save_color_mask[1], save_color_mask[2], save_color_mask[3]);
-        glDepthMask(save_depth_mask);
         """
 
     [<Import; MI (MIO.NoInlining)>]

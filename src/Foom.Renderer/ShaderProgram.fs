@@ -320,16 +320,18 @@ type ShaderProgram =
 
             | Stencil1 ->
                 Backend.enableStencilTest ()
+                Backend.colorMaskFalse ()
+                Backend.depthMaskFalse ()
                 Backend.stencil1 ()
                 this.Draw ()
+                Backend.depthMaskTrue ()
+                Backend.colorMaskTrue ()
                 Backend.disableStencilTest ()
 
             | Stencil2 ->
                 Backend.enableStencilTest ()
                 Backend.stencil2 ()
-                Backend.depthMaskFalse ()
                 this.Draw ()
-                Backend.depthMaskTrue ()
                 Backend.disableStencilTest ()
 
             //| DepthStencil1 ->

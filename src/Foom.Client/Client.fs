@@ -4,6 +4,8 @@ module Foom.Client.Client
 open Foom.Ecs
 open Foom.Renderer
 
+type IsSky = IsSky of bool
+
 let init (world: World) =
     let app = Backend.init ()
     let renderSystem = 
@@ -32,8 +34,33 @@ let init (world: World) =
                             | :? (EntityManager * RendererSystem.SpriteComponent) as o ->
                                 let (_, spriteComp) = o
                                 in_center.Set spriteComp.Center
-                                run RenderPass.Stencil1
+                                ()
+                                //run RenderPass.Stencil1
                             | _ -> ()
+
+                    )
+                )
+                ("TextureMesh",
+                    (fun em ent renderer ->
+                        match em.TryGet<RendererSystem.MeshRenderComponent> (ent) with
+                        | Some c -> c.RenderInfo.MaterialInfo.TextureInfo.TexturePath.Contains("F_SKY1") |> IsSky :> obj
+                        | _ -> null
+                    ),
+                    (fun shaderProgram ->
+
+                        let in_center = shaderProgram.CreateVertexAttributeVector3 ("in_center")
+                        let in_texture = shaderProgram.CreateUniformRenderTexture ("uni_texture")
+
+                        fun o run ->
+                            match o with
+                            | :? IsSky as o -> 
+                                let (IsSky (isSky)) = o
+                                if isSky then
+                                    ()
+                                    run RenderPass.Stencil1
+                                else
+                                    run RenderPass.Depth
+                            | _ -> run RenderPass.Depth
 
                     )
                 )

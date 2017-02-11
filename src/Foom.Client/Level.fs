@@ -129,11 +129,11 @@ let exportSpriteTextures (wad: Wad) =
     )
 
 let globalBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray * Color ResizeArray * bool> ()
-let globalSkyBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray * Color ResizeArray * bool> ()
 
 let runGlobalBatch (em: EntityManager) =
     globalBatch
     |> Seq.iter (fun pair ->
+        let isSky = pair.Key.Contains("F_SKY1")
         let texturePath = pair.Key
         let vertices, uv, color, isSprite = pair.Value
 
@@ -159,7 +159,7 @@ let runGlobalBatch (em: EntityManager) =
             {
                 MeshInfo = meshInfo
                 MaterialInfo = materialInfo
-                LayerIndex = if isSprite then 0 else 2
+                LayerIndex = if isSprite || isSky then 1 else 0
             }
 
         em.Add (ent, RendererSystem.MeshRenderComponent (renderInfo))
@@ -201,17 +201,6 @@ let spawnMesh (vertices: IEnumerable<Vector3>) uv texturePath lightLevel (em: En
         gColor.AddRange(color)
     | _ ->
         globalBatch.Add (texturePath, (ResizeArray vertices, ResizeArray uv, ResizeArray color, false))
-
-let spawnSkyMesh (vertices: IEnumerable<Vector3>) uv texturePath lightLevel (em: EntityManager) =
-    let color = Array.init (vertices.Count ()) (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
-
-    match globalSkyBatch.TryGetValue(texturePath) with
-    | true, (gVertices, gUv, gColor, gIsSprite) ->
-        gVertices.AddRange(vertices)
-        gUv.AddRange(uv)
-        gColor.AddRange(color)
-    | _ ->
-        globalSkyBatch.Add (texturePath, (ResizeArray vertices, ResizeArray uv, ResizeArray color, false))
 
 let spawnSprite (vertices: IEnumerable<Vector3>) uv texturePath lightLevel (em: EntityManager) =
     let color = Array.init (vertices.Count ()) (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
@@ -478,7 +467,7 @@ let updates (clientWorld: ClientWorld) =
                             ShaderName = "Sky"
                             TextureInfo =
                                 {
-                                    TexturePath = "SKULLRED.bmp"
+                                    TexturePath = "Sky1.bmp"
                                 }
                         }
 
@@ -486,7 +475,7 @@ let updates (clientWorld: ClientWorld) =
                         {
                             MeshInfo = meshInfo
                             MaterialInfo = materialInfo
-                            LayerIndex = 1
+                            LayerIndex = 2
                         }
 
                     em.Add (skyEnt, RendererSystem.MeshRenderComponent (renderInfo))
