@@ -98,7 +98,6 @@ type Renderer =
         layerManager: CompactManager<RenderLayer>
         cameraManager: CompactManager<RenderCamera>
         renderCameraDepths: RenderCameraId ResizeArray []
-        mutable mainRenderCameraId: RenderCameraId option
     }
 
     static member Create () =
@@ -145,7 +144,6 @@ type Renderer =
             layerManager = layerManager
             cameraManager = CompactManager<RenderCamera>.Create maxRenderCameras
             renderCameraDepths = Array.init maxRenderCameraDepth (fun _ -> ResizeArray ())
-            mainRenderCameraId = None
         }
 
     member this.TryCreateRenderCamera view projection layerMask clearFlags depth =
@@ -167,9 +165,6 @@ type Renderer =
                 }
 
             this.renderCameraDepths.[depth].Add renderCameraId
-
-            if this.mainRenderCameraId.IsNone then
-                this.mainRenderCameraId <- Some renderCameraId
 
             Some renderCamera
         else
@@ -353,31 +348,24 @@ type Renderer =
                 //renderCamera.renderTexture.Unbind ()
 
         //Backend.disableStencilTest ()
-        Backend.disableDepth ()
         this.finalRenderTexture.Unbind ()
 
-        match this.mainRenderCameraId with
-        | Some renderCameraId ->
 
-            let renderCamera = this.cameraManager.FindById renderCameraId.id
+        Backend.clear ()
 
-            Backend.clear ()
+        Backend.enableDepth ()
 
-            Backend.enableDepth ()
-
-            Backend.useProgram this.finalShaderProgram.programId
+        Backend.useProgram this.finalShaderProgram.programId
 
 
-            this.finalPosition.Set this.finalPositionBuffer
-            this.finalTexture.Set this.finalRenderTexture
-            this.finalTime.Set time
+        this.finalPosition.Set this.finalPositionBuffer
+        this.finalTexture.Set this.finalRenderTexture
+        this.finalTime.Set time
 
-            this.finalShaderProgram.Run RenderPass.Depth
-            this.finalShaderProgram.Unbind ()
+        this.finalShaderProgram.Run RenderPass.Depth
+        this.finalShaderProgram.Unbind ()
 
-            Backend.useProgram 0
-
-        | _ -> ()
+        Backend.useProgram 0
 
         Backend.disableDepth ()
 

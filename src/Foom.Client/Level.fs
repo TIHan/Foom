@@ -425,14 +425,14 @@ let updates (clientWorld: ClientWorld) =
                     let transformComp = TransformComponent (Matrix4x4.CreateTranslation (position))
 
                     let cameraEnt = em.Spawn ()
-                    em.Add (cameraEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), LayerMask.None, ClearFlags.All, 15))
+                    em.Add (cameraEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), LayerMask.None, ClearFlags.All, 0))
                     em.Add (cameraEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
                     em.Add (cameraEnt, CharacterControllerComponent (position, 15.f, 56.f))
                     em.Add (cameraEnt, PlayerComponent ())
 
                     let skyEnt = em.Spawn ()
-                    //em.Add (skyEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), LayerMask.Layer0 ||| LayerMask.Layer1, ClearFlags.None, 0))
-                    //em.Add (skyEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
+                  //  em.Add (skyEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), LayerMask.None, ClearFlags.All, 1))
+                  //  em.Add (skyEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
                     em.Add (skyEnt, SkyComponent ())
 
                     let vertices =
