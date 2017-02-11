@@ -14,9 +14,9 @@ type WallSide =
     {
         SectorId: int
 
-        Upper: WallPart option
-        Middle: WallPart option
-        Lower: WallPart option
+        Upper: WallPart
+        Middle: WallPart
+        Lower: WallPart
     }
 
 type Wall =

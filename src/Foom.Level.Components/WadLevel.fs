@@ -17,7 +17,7 @@ module WadLevel =
         | Middle
         | Lower
 
-    let mapToWallPart (level: Foom.Wad.Level) (linedef: Linedef) (sidedef: Sidedef) (isFrontSide: bool) (section: WallSection) (texName: string option) : WallPart option =
+    let mapToWallPart (level: Foom.Wad.Level) (linedef: Linedef) (sidedef: Sidedef) (isFrontSide: bool) (section: WallSection) (texName: string option) : WallPart =
         let isLowerUnpegged = linedef.Flags.HasFlag(LinedefFlags.LowerTextureUnpegged)
         let isUpperUnpegged = linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged)
 
@@ -55,7 +55,7 @@ module WadLevel =
                             LowerUnpegged
                     else
                         UpperUnpegged 0
-        }  |> Some
+        }
 
     let mapToWallSide level (linedef: Linedef) isFrontSide (sidedef: Sidedef) : WallSide option =
         {

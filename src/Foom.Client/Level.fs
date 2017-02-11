@@ -243,12 +243,6 @@ let spawnWallPartMesh (part: WallPart) (vertices: Vector3 []) lightLevel wad em 
             let t = new Bitmap(texturePath)
             spawnMesh vertices (WallPart.createUV vertices t.Width t.Height part) texturePath lightLevel em
 
-let spawnWallSideMesh (part: WallPart option) vertices lightLevel wad em isSky =
-    part
-    |> Option.iter (fun part ->
-        spawnWallPartMesh part vertices lightLevel wad em isSky
-    )
-
 let spawnWallMesh (wall: Wall) level wad em =
     let (
         (upperFront, middleFront, lowerFront),
@@ -265,9 +259,9 @@ let spawnWallMesh (wall: Wall) level wad em =
             | _ -> false
         
         let lightLevel = Foom.Level.Level.lightLevelBySectorId frontSide.SectorId level
-        spawnWallSideMesh frontSide.Upper upperFront lightLevel wad em isSky
-        spawnWallSideMesh frontSide.Middle middleFront lightLevel wad em false
-        spawnWallSideMesh frontSide.Lower lowerFront lightLevel wad em false
+        spawnWallPartMesh frontSide.Upper upperFront lightLevel wad em isSky
+        spawnWallPartMesh frontSide.Middle middleFront lightLevel wad em false
+        spawnWallPartMesh frontSide.Lower lowerFront lightLevel wad em false
 
     | _ -> ()
 
@@ -282,9 +276,9 @@ let spawnWallMesh (wall: Wall) level wad em =
             | _ -> false
 
         let lightLevel = Foom.Level.Level.lightLevelBySectorId backSide.SectorId level
-        spawnWallSideMesh backSide.Upper upperBack lightLevel wad em isSky
-        spawnWallSideMesh backSide.Middle middleBack lightLevel wad em false
-        spawnWallSideMesh backSide.Lower lowerBack lightLevel wad em false
+        spawnWallPartMesh backSide.Upper upperBack lightLevel wad em isSky
+        spawnWallPartMesh backSide.Middle middleBack lightLevel wad em false
+        spawnWallPartMesh backSide.Lower lowerBack lightLevel wad em false
 
     | _ -> ()
 
