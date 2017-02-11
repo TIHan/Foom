@@ -38,13 +38,32 @@ type Bucket =
 type ShaderId = int
 type TextureId = int
 
+[<Flags>]
+type LayerMask =
+    | None =    0b0000000
+    | Layer0 =  0b0000001
+    | Layer1 =  0b0000010
+    | Layer2 =  0b0000100
+    | Layer3 =  0b0001000
+    | Layer4 =  0b0010000
+    | Layer5 =  0b0100000
+    | Layer6 =  0b1000000
+
+[<Flags>]
+type ClearFlags =
+    | None =    0b0000000
+    | Depth =   0b0000001
+    | Color =   0b0000010
+    | Stencil = 0b0000100
+
 type RenderCamera =
     {
         mutable view: Matrix4x4
         mutable projection: Matrix4x4
         depth: int
         renderTexture: RenderTexture
-        renderLayerIndex: int
+        layerMask: LayerMask
+        clearFlags: ClearFlags
     }
 
 type RenderCameraId =
@@ -65,10 +84,11 @@ type RenderLayer =
 type Renderer =
     {
         mutable nextShaderId: int
-        shaders: Dictionary<ShaderId, ShaderProgram * (Matrix4x4 -> Matrix4x4 -> Texture -> Bucket -> unit)>
+        shaders: Dictionary<ShaderId, ShaderProgram * (float32 -> Matrix4x4 -> Matrix4x4 -> Texture -> Bucket -> unit)>
 
         finalShaderProgram: ShaderProgram
         finalPositionBuffer: Vector3Buffer
+        finalRenderTexture: RenderTexture
         finalPosition: VertexAttribute<Vector3Buffer>
         finalTexture: Uniform<RenderTexture>
         finalTime: Uniform<float32>
@@ -83,7 +103,7 @@ type Renderer =
     static member Create () =
         let maxRenderCameraDepth = 16
         let maxRenderCameras = 16
-        let maxRenderLayers = 16
+        let maxRenderLayers = 7
 
         let vertexBytes = File.ReadAllText ("Fullscreen.vert") |> System.Text.Encoding.UTF8.GetBytes
         let fragmentBytes = File.ReadAllText ("Fullscreen.frag") |> System.Text.Encoding.UTF8.GetBytes
@@ -108,13 +128,14 @@ type Renderer =
 
         let layerManager = CompactManager<RenderLayer>.Create maxRenderLayers
 
-        for i = 1 to 16 do
+        for i = 1 to maxRenderLayers do
             layerManager.Add (RenderLayer.Create ()) |> ignore
 
         {
             nextShaderId = 0
             shaders = Dictionary ()
             finalShaderProgram = shaderProgram
+            finalRenderTexture = RenderTexture (1280, 720)
             finalPositionBuffer = positionBuffer
             finalPosition = position
             finalTexture = tex
@@ -126,8 +147,8 @@ type Renderer =
             mainRenderCameraId = None
         }
 
-    member this.TryCreateRenderCamera view projection renderLayerIndex depth =
-        if this.layerManager.IsValid (CompactId (renderLayerIndex, 1u)) && depth < this.renderCameraDepths.Length then
+    member this.TryCreateRenderCamera view projection layerMask clearFlags depth =
+        if depth < this.renderCameraDepths.Length then
 
             let renderCamera =
                 {
@@ -135,7 +156,8 @@ type Renderer =
                     projection = projection
                     depth = depth
                     renderTexture = RenderTexture (1280, 720)
-                    renderLayerIndex = renderLayerIndex
+                    layerMask = layerMask
+                    clearFlags = clearFlags
                 }
 
             let renderCameraId =
@@ -152,7 +174,7 @@ type Renderer =
         else
             None
 
-    member this.CreateShader (vertexShader, fragmentShader, f: ShaderId -> ShaderProgram -> (Matrix4x4 -> Matrix4x4 -> Texture -> Bucket -> unit)) =
+    member this.CreateShader (vertexShader, fragmentShader, f: ShaderId -> ShaderProgram -> (float32 -> Matrix4x4 -> Matrix4x4 -> Texture -> Bucket -> unit)) =
         let shaderProgram =
             Backend.loadShaders vertexShader fragmentShader
             |> ShaderProgram.Create
@@ -181,29 +203,33 @@ type Renderer =
                             ....
                     }
                 *)
-                let in_position = shaderProgram.CreateVertexAttributeVector3 ("position")
-                let in_uv = shaderProgram.CreateVertexAttributeVector2 ("in_uv")
-                let in_texture = shaderProgram.CreateUniformTexture2D ("uni_texture")
-                let uni_view = shaderProgram.CreateUniformMatrix4x4 ("uni_view")
-                let uni_projection = shaderProgram.CreateUniformMatrix4x4 ("uni_projection")
+                let iPosition = shaderProgram.CreateVertexAttributeVector3 ("position")
+                let iUv = shaderProgram.CreateVertexAttributeVector2 ("in_uv")
+                let uTexture = shaderProgram.CreateUniformTexture2D ("uni_texture")
+                let uTextureResolution = shaderProgram.CreateUniformVector2("uTextureResolution")
+                let uView = shaderProgram.CreateUniformMatrix4x4 ("uni_view")
+                let uProjection = shaderProgram.CreateUniformMatrix4x4 ("uni_projection")
+                let uTime = shaderProgram.CreateUniformFloat ("uTime")
 
                 let update = f shaderProgram
 
                 let run renderPass = shaderProgram.Run renderPass
 
-                fun view projection texture bucket ->
+                fun time view projection texture bucket ->
                     let count = bucket.meshes.Count
 
-                    in_texture.Set      texture.Buffer
-                    uni_view.Set        view
-                    uni_projection.Set  projection
+                    uTexture.Set texture.Buffer
+                    uTextureResolution.Set (Vector2 (single texture.Buffer.Width, single texture.Buffer.Height))
+                    uView.Set view
+                    uProjection.Set projection
+                    uTime.Set time
 
                     for i = 0 to count - 1 do
 
                         let mesh, o = bucket.meshes.[i]
 
-                        in_position.Set     mesh.Position
-                        in_uv.Set           mesh.Uv
+                        iPosition.Set mesh.Position
+                        iUv.Set mesh.Uv
 
                         let color = mesh.Color
 
@@ -260,6 +286,13 @@ type Renderer =
 
     member this.Draw (time: float32) =
 
+        Backend.enableDepth ()
+
+        this.finalRenderTexture.TryBufferData () |> ignore
+        this.finalRenderTexture.Bind ()
+
+        Backend.clear ()
+
         for i = 0 to this.renderCameraDepths.Length - 1 do
 
             let renderCameraIds = this.renderCameraDepths.[i]
@@ -267,39 +300,62 @@ type Renderer =
             for i = 0 to renderCameraIds.Count - 1 do
 
                 let renderCameraId = renderCameraIds.[i]
-
                 let renderCamera = this.cameraManager.FindById renderCameraId.id
 
-                let renderLayer = this.layerManager.FindById (CompactId (renderCamera.renderLayerIndex, 1u))
+                //renderCamera.renderTexture.TryBufferData () |> ignore
 
-                let renderCamera = this.cameraManager.FindById renderCameraId.id
+                //renderCamera.renderTexture.Bind ()
 
-                renderCamera.renderTexture.TryBufferData () |> ignore
+                if renderCamera.clearFlags.HasFlag (ClearFlags.Depth) then
+                    Backend.clearDepth ()
 
-                renderCamera.renderTexture.Bind ()
+                if renderCamera.clearFlags.HasFlag (ClearFlags.Color) then
+                    Backend.clearColor ()
 
-                Backend.clear ()
+                if renderCamera.clearFlags.HasFlag (ClearFlags.Stencil) then
+                    Backend.clearStencil ()
 
-                renderLayer.textureMeshes
-                |> Seq.iter (fun pair ->
-                    let shaderId = pair.Key
-                    let textureLookup = pair.Value
+                for i = 0 to this.layerManager.Count - 1 do
+                    let mask =
+                        match i with
+                        | 0 -> LayerMask.Layer0
+                        | 1 -> LayerMask.Layer1
+                        | 2 -> LayerMask.Layer2
+                        | 3 -> LayerMask.Layer3
+                        | 4 -> LayerMask.Layer4
+                        | 5 -> LayerMask.Layer5
+                        | 6 -> LayerMask.Layer6
+                        | _ -> LayerMask.None
 
-                    let shader, f = this.shaders.[shaderId]
+                    if renderCamera.layerMask.HasFlag (mask) |> not then
+                        this.layerManager.TryFindById (CompactId (i, 1u))
+                        |> Option.iter (fun renderLayer ->
 
-                    Backend.useProgram shader.programId
+                            renderLayer.textureMeshes
+                            |> Seq.iter (fun pair ->
+                                let shaderId = pair.Key
+                                let textureLookup = pair.Value
 
-                    textureLookup
-                    |> Seq.iter (fun pair ->
-                        let texture, bucket = pair.Value
-                        f renderCamera.view renderCamera.projection texture bucket
-                        shader.Unbind ()
-                    )
+                                let shader, f = this.shaders.[shaderId]
 
-                    Backend.useProgram 0
-                )
+                                Backend.useProgram shader.programId
 
-                renderCamera.renderTexture.Unbind ()
+                                textureLookup
+                                |> Seq.iter (fun pair ->
+                                    let texture, bucket = pair.Value
+                                    f time renderCamera.view renderCamera.projection texture bucket
+                                    shader.Unbind ()
+                                )
+
+                                Backend.useProgram 0
+                            )
+                        )
+
+                //renderCamera.renderTexture.Unbind ()
+
+        //Backend.disableStencilTest ()
+        Backend.disableDepth ()
+        this.finalRenderTexture.Unbind ()
 
         match this.mainRenderCameraId with
         | Some renderCameraId ->
@@ -308,11 +364,13 @@ type Renderer =
 
             Backend.clear ()
 
+            Backend.enableDepth ()
+
             Backend.useProgram this.finalShaderProgram.programId
 
 
             this.finalPosition.Set this.finalPositionBuffer
-            this.finalTexture.Set renderCamera.renderTexture
+            this.finalTexture.Set this.finalRenderTexture
             this.finalTime.Set time
 
             this.finalShaderProgram.Run RenderPass.Depth
@@ -321,6 +379,8 @@ type Renderer =
             Backend.useProgram 0
 
         | _ -> ()
+
+        Backend.disableDepth ()
 
 // *****************************************
 // *****************************************

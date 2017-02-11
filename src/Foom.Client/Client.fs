@@ -10,22 +10,31 @@ let init (world: World) =
         app
         |> RendererSystem.create
             [
+                ("Sky",
+                    (fun _ _ _ -> null),
+                    (fun shaderProgram ->
+                        fun o run -> 
+                            run RenderPass.Stencil2)
+                )
                 ("Sprite",
                     (fun em ent renderer ->
                         match em.TryGet<RendererSystem.SpriteComponent> (ent) with
-                        | Some spriteComp -> spriteComp :> obj
+                        | Some spriteComp -> (em, spriteComp) :> obj
                         | _ -> null
                     ),
                     (fun shaderProgram ->
 
                         let in_center = shaderProgram.CreateVertexAttributeVector3 ("in_center")
+                        let in_texture = shaderProgram.CreateUniformRenderTexture ("uni_texture")
 
                         fun o run ->
                             match o with
-                            | :? RendererSystem.SpriteComponent as spriteComp -> in_center.Set spriteComp.Center
+                            | :? (EntityManager * RendererSystem.SpriteComponent) as o ->
+                                let (_, spriteComp) = o
+                                in_center.Set spriteComp.Center
+                                run RenderPass.Stencil1
                             | _ -> ()
 
-                            run RenderPass.Depth
                     )
                 )
             ]

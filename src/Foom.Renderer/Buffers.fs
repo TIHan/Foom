@@ -68,15 +68,15 @@ module Buffer =
 
 type Texture2DBufferQueueItem =
     | Empty
-    | Data of byte [] * width: int * height: int
+    | Data of byte []
     | Bitmap of Bitmap
 
 type Texture2DBuffer (data, width, height) =
 
     let mutable id = 0
-    let mutable width = 0
-    let mutable height = 0
-    let mutable queuedData = Data (data, width, height)
+    let mutable width = width
+    let mutable height = height
+    let mutable queuedData = Data (data)
     let mutable isTransparent = false
 
     member this.Id = id
@@ -87,8 +87,10 @@ type Texture2DBuffer (data, width, height) =
 
     member this.IsTransparent = isTransparent
 
-    member this.Set (data: Bitmap) =
-        queuedData <- Bitmap data
+    member this.Set (bmp: Bitmap) =
+        width <- bmp.Width
+        height <- bmp.Height
+        queuedData <- Bitmap bmp
 
     member this.Bind () =
         if id <> 0 then
@@ -96,10 +98,7 @@ type Texture2DBuffer (data, width, height) =
 
     member this.TryBufferData () =
         match queuedData with
-        | Data (data, w, h) ->
-            width <- w
-            height <- h
-
+        | Data (data) ->
             if data.Length = 0 then
                 id <- Backend.createTexture width height (nativeint 0)
             else
@@ -114,9 +113,6 @@ type Texture2DBuffer (data, width, height) =
             true
 
         | Bitmap bmp ->
-            width <- bmp.Width
-            height <- bmp.Height
-
             isTransparent <- bmp.PixelFormat = System.Drawing.Imaging.PixelFormat.Format32bppArgb
 
             let bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb)

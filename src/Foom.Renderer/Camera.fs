@@ -7,11 +7,13 @@ open Foom.Ecs
 open Foom.Geometry
 
 [<Sealed>]
-type CameraComponent (projection, layerIndex, depth) =
+type CameraComponent (projection, layerMask, clearFlags, depth) =
 
     let mutable angle = Vector3 (0.f, 0.f, 0.f)
 
-    member val LayerIndex : int = layerIndex
+    member val LayerMask : LayerMask = layerMask
+
+    member val ClearFlags : ClearFlags = clearFlags
 
     member val Depth : int = depth
 
@@ -22,6 +24,10 @@ type CameraComponent (projection, layerIndex, depth) =
     member val HeightOffset : single = 0.f with get, set
 
     member val HeightOffsetLerp : single = 0.f with get, set
+
+    member this.SetUniformRenderTexture (uni: Uniform<RenderTexture>) =
+        if obj.ReferenceEquals (this.RenderCamera, null) |> not then
+            uni.Set this.RenderCamera.renderTexture
 
     member this.Angle
         with get () = angle

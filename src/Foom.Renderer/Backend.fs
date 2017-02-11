@@ -107,7 +107,7 @@ module Backend =
         """
     
     [<Import; MI (MIO.NoInlining)>]
-    let clear () : unit = C """ glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); """
+    let clear () : unit = C """ glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); """
 
     [<Import; MI (MIO.NoInlining)>]
     let draw (app: Application) : unit = C """ SDL_GL_SwapWindow ((SDL_Window*)app.Window); """
@@ -343,6 +343,12 @@ module Backend =
         """
 
     [<Import; MI (MIO.NoInlining)>]
+    let bindUniformVector2 (id: int) (value: Vector2) : unit =
+        C """
+        glUniform2f (id, value.X, value.Y);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
     let bindTexture2D (textureId: int) (textureNumber: int) : unit =
         C """
         glActiveTexture(GL_TEXTURE0);
@@ -498,6 +504,18 @@ module Backend =
         """
 
     [<Import; MI (MIO.NoInlining)>]
+    let enableStencilTest () : unit =
+        C """
+        glEnable(GL_STENCIL_TEST);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let disableStencilTest () : unit =
+        C """
+        glDisable(GL_STENCIL_TEST);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
     let enableBlend () : unit =
         C """
         glEnable (GL_BLEND);
@@ -595,6 +613,18 @@ module Backend =
         """
 
     [<Import; MI (MIO.NoInlining)>]
+    let clearColor () : unit =
+        C """
+        glClear(GL_COLOR_BUFFER_BIT);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let clearStencil () : unit =
+        C """
+        glClear(GL_STENCIL_BUFFER_BIT);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
     let deleteBuffer (id: int) : unit =
         C """
         glDeleteBuffers (1, &id);
@@ -604,4 +634,72 @@ module Backend =
     let deleteTexture (id: int) : unit =
         C """
         glDeleteTextures (1, &id);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let enableStencil () : unit =
+        C """
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        glDepthMask(GL_FALSE);
+        glStencilFunc(GL_NEVER, 0, 0xFF);
+        glStencilOp(GL_INCR, GL_KEEP, GL_KEEP);  // draw 1s on test fail (always)
+        // draw stencil pattern
+        glClear(GL_STENCIL_BUFFER_BIT);  // needs mask=0xFF
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let disableStencil () : unit =
+        C """
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        glDepthMask(GL_TRUE);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+        /* Fill 1 or more */
+        glStencilFunc(GL_LEQUAL, 1, 0xFF);
+        """
+
+    [<UnmanagedFunctionPointer (CallingConvention.Cdecl)>]
+    type DepthStoreDelegate = delegate of unit -> unit
+
+    [<Import; MI (MIO.NoInlining)>]
+    let depthStore (f: DepthStoreDelegate) : unit =
+        C """
+        GLboolean save_color_mask[4];
+        GLboolean save_depth_mask;
+        glGetBooleanv(GL_COLOR_WRITEMASK, save_color_mask);
+        glGetBooleanv(GL_DEPTH_WRITEMASK, &save_depth_mask);
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        glDepthMask(GL_TRUE);
+
+        f ();
+
+        glColorMask(save_color_mask[0], save_color_mask[1], save_color_mask[2], save_color_mask[3]);
+        glDepthMask(save_depth_mask);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let stencil1 () : unit =
+        C """
+        glStencilFunc(GL_ALWAYS, 1, 0xFF); // Set any stencil to 1
+        glStencilOp(GL_KEEP, GL_ZERO, GL_REPLACE);
+        glStencilMask(0xFF); // Write to stencil buffer
+        glClear(GL_STENCIL_BUFFER_BIT); // Clear stencil buffer (0 by default)
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let stencil2 () : unit =
+        C """
+        glStencilFunc(GL_EQUAL, 1, 0xFF); // Pass test if stencil value is 1
+        glStencilMask(0x00); // Don't write anything to stencil buffer
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let depthMaskFalse () : unit =
+        C """
+        glDepthMask(GL_FALSE);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let depthMaskTrue () : unit =
+        C """
+        glDepthMask(GL_TRUE);
         """

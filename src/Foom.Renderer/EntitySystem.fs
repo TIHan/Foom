@@ -32,7 +32,7 @@ type RenderInfo =
     {
         MeshInfo: MeshInfo
         MaterialInfo: MaterialInfo
-        RenderLayerIndex: int
+        LayerIndex: int
     }
 
 type MeshRenderComponent (renderInfo) =
@@ -117,7 +117,7 @@ let handleSomething (functionCache: FunctionCache) (shaderCache: ShaderCache) (t
 
                     texture
 
-            renderer.TryAdd (shaderId, texture, comp.Mesh, f em evt.Entity renderer, info.RenderLayerIndex) |> ignore
+            renderer.TryAdd (shaderId, texture, comp.Mesh, f em evt.Entity renderer, info.LayerIndex) |> ignore
         )
     )
 
@@ -125,7 +125,7 @@ let handleCamera (renderer: Renderer) =
     Behavior.handleEvent (fun (evt: Events.ComponentAdded<CameraComponent>) ((time, deltaTime): float32 * float32) em ->
         em.TryGet<CameraComponent> (evt.Entity)
         |> Option.iter (fun cameraComp ->
-            match renderer.TryCreateRenderCamera Matrix4x4.Identity cameraComp.Projection cameraComp.LayerIndex cameraComp.Depth with
+            match renderer.TryCreateRenderCamera Matrix4x4.Identity cameraComp.Projection cameraComp.LayerMask cameraComp.ClearFlags cameraComp.Depth with
             | Some renderCamera ->
                 cameraComp.RenderCamera <- renderCamera
             | _ -> ()
