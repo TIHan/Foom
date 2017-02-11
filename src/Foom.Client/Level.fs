@@ -191,7 +191,7 @@ let runGlobalBatch (em: EntityManager) =
 
 open System.Linq
 
-let spawnMesh (vertices: IEnumerable<Vector3>) uv texturePath lightLevel (em: EntityManager) =
+let spawnMesh (vertices: IEnumerable<Vector3>) uv (texturePath: string) lightLevel (em: EntityManager) =
     let color = Array.init (vertices.Count ()) (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
 
     match globalBatch.TryGetValue(texturePath) with
@@ -218,6 +218,7 @@ let spawnCeilingMesh (flat: Flat) lightLevel wad em =
     |> Option.iter (fun textureName ->
         let texturePath = textureName + "_flat.bmp"
         let t = new Bitmap(texturePath)
+        ()
         spawnMesh flat.Ceiling.Vertices (FlatPart.createUV t.Width t.Height flat.Ceiling) texturePath lightLevel em
     )
 

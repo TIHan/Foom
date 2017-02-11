@@ -43,13 +43,16 @@ let init (world: World) =
                 ("TextureMesh",
                     (fun em ent renderer ->
                         match em.TryGet<RendererSystem.MeshRenderComponent> (ent) with
-                        | Some c -> c.RenderInfo.MaterialInfo.TextureInfo.TexturePath.ToUpper().Contains("F_SKY1") |> IsSky :> obj
+                        | Some c -> 
+                            let isSky = c.RenderInfo.MaterialInfo.TextureInfo.TexturePath.ToUpper().Contains("F_SKY1")
+                            printfn "%s" c.RenderInfo.MaterialInfo.TextureInfo.TexturePath
+                            if isSky then
+                                IsSky (true) :> obj
+                            else
+                                null
                         | _ -> null
                     ),
                     (fun shaderProgram ->
-
-                        let in_center = shaderProgram.CreateVertexAttributeVector3 ("in_center")
-                        let in_texture = shaderProgram.CreateUniformRenderTexture ("uni_texture")
 
                         fun o run ->
                             match o with

@@ -73,7 +73,7 @@ let handleSomething (functionCache: FunctionCache) (shaderCache: ShaderCache) (t
         |> Option.iter (fun comp ->
 
             let info = comp.RenderInfo
-            let shaderName = info.MaterialInfo.ShaderName
+            let shaderName = info.MaterialInfo.ShaderName.ToUpper ()
 
             let vertexShaderFile = shaderName + ".vert"
 
@@ -81,7 +81,14 @@ let handleSomething (functionCache: FunctionCache) (shaderCache: ShaderCache) (t
 
             let shaderId, f =
                 match shaderCache.TryGetValue (shaderName) with
-                | true, shader -> shader, (fun _ _ _ -> null)
+                | true, shader ->
+
+                    let f, _ =
+                        match functionCache.TryGetValue(shaderName) with
+                        | true, (f, g) -> f, g
+                        | _ -> (fun _ _ _ -> null), (fun _ _ run -> run RenderPass.Depth)
+
+                    shader, f
                 | _ -> 
 
                     let vertexBytes = File.ReadAllText (vertexShaderFile) |> System.Text.Encoding.UTF8.GetBytes
@@ -144,7 +151,7 @@ let create (shaders: (string * (EntityManager -> Entity -> Renderer -> obj) * (S
 
     shaders
     |> List.iter (fun (key, f, g) ->
-        functionCache.[key] <- (f, g)
+        functionCache.[key.ToUpper()] <- (f, g)
     )
 
     Behavior.merge
