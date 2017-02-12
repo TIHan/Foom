@@ -101,8 +101,8 @@ type Renderer =
     }
 
     static member Create () =
-        let maxRenderCameraDepth = 16
-        let maxRenderCameras = 16
+        let maxRenderCameraDepth = 100
+        let maxRenderCameras = 100
         let maxRenderLayers = 7
 
         let vertexBytes = File.ReadAllText ("Fullscreen.vert") |> System.Text.Encoding.UTF8.GetBytes
@@ -147,7 +147,7 @@ type Renderer =
         }
 
     member this.TryCreateRenderCamera view projection layerMask clearFlags depth =
-        if depth < this.renderCameraDepths.Length then
+        if depth < this.renderCameraDepths.Length && not this.cameraManager.IsFull then
 
             let renderCamera =
                 {

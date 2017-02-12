@@ -128,3 +128,6 @@ type CompactManager<'T> =
             
             f this.dataIds.[i] this.data.[i]
 
+    member this.IsFull =
+        this.data.Count = this.maxSize
+
