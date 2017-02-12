@@ -2,6 +2,7 @@
 
 open System.Collections.Generic
 
+[<Struct>]
 type CompactId =
 
     val Index : int
@@ -9,6 +10,8 @@ type CompactId =
     val Version : uint32
 
     new (index, version) = { Index = index; Version = version }
+
+    static member Zero = CompactId (0, 0u)
 
 type CompactManager<'T> =
     {

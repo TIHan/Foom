@@ -132,10 +132,17 @@ let handleCamera (renderer: Renderer) =
     Behavior.handleEvent (fun (evt: Events.ComponentAdded<CameraComponent>) ((time, deltaTime): float32 * float32) em ->
         em.TryGet<CameraComponent> (evt.Entity)
         |> Option.iter (fun cameraComp ->
-            match renderer.TryCreateRenderCamera Matrix4x4.Identity cameraComp.Projection cameraComp.LayerMask cameraComp.ClearFlags cameraComp.Depth with
-            | Some renderCamera ->
-                cameraComp.RenderCamera <- renderCamera
-            | _ -> ()
+
+            let settings =
+                {
+                    projection = cameraComp.Projection
+                    depth = cameraComp.Depth
+                    layerFlags = cameraComp.LayerFlags
+                    clearFlags = cameraComp.ClearFlags
+                }
+
+            renderer.TryCreateRenderCamera settings
+            |> Option.iter (fun camera -> cameraComp.Camera <- camera)
         )
     )
 
@@ -179,8 +186,8 @@ let create (shaders: (string * (EntityManager -> Entity -> Renderer -> obj) * (S
 
                     let invertedTransform = invertedTransform
 
-                    cameraComp.RenderCamera.view <- invertedTransform
-                    cameraComp.RenderCamera.projection <- projection
+                    cameraComp.Camera.view <- invertedTransform
+                    cameraComp.Camera.projection <- projection
                 )
 
                 renderer.Draw time

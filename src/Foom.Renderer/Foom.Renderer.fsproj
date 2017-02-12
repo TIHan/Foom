@@ -58,7 +58,7 @@
     <Compile Include="Buffers.fs" />
     <Compile Include="ShaderProgram.fs" />
     <Compile Include="Renderer.fs" />
-    <Compile Include="Camera.fs" />
+    <Compile Include="CameraComponent.fs" />
     <Compile Include="EntitySystem.fs" />
     <Content Include="packages.config" />
     <None Include="Sprite.vert">

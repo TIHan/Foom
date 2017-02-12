@@ -39,8 +39,18 @@ type ShaderId = int
 type TextureId = int
 
 [<Flags>]
-type LayerMask =
+type CameraLayerFlags =
     | None =    0b0000000
+    | Layer0 =  0b0000001
+    | Layer1 =  0b0000010
+    | Layer2 =  0b0000100
+    | Layer3 =  0b0001000
+    | Layer4 =  0b0010000
+    | Layer5 =  0b0100000
+    | Layer6 =  0b1000000
+    | All =     0b1111111
+
+type CameraLayerIndex =
     | Layer0 =  0b0000001
     | Layer1 =  0b0000010
     | Layer2 =  0b0000100
@@ -50,29 +60,32 @@ type LayerMask =
     | Layer6 =  0b1000000
 
 [<Flags>]
-type ClearFlags =
+type CameraClearFlags =
     | None =    0b0000000
     | Depth =   0b0000001
     | Color =   0b0000010
     | Stencil = 0b0000100
     | All =     0b0000111
 
-type RenderCamera =
+type Camera =
     {
+        mutable id: CompactId
         mutable view: Matrix4x4
         mutable projection: Matrix4x4
         depth: int
-        renderTexture: RenderTexture
-        layerMask: LayerMask
-        clearFlags: ClearFlags
+        layerFlags: CameraLayerFlags
+        clearFlags: CameraClearFlags
     }
 
-type RenderCameraId =
+type CameraSettings =
     {
-        id: CompactId
+        projection: Matrix4x4
+        depth: int
+        layerFlags: CameraLayerFlags
+        clearFlags: CameraClearFlags
     }
 
-type RenderLayer =
+type CameraLayer =
     {
         textureMeshes: Dictionary<ShaderId, Dictionary<TextureId, Texture * Bucket>> 
     }
@@ -95,15 +108,15 @@ type Renderer =
         finalTime: Uniform<float32>
 
 
-        layerManager: CompactManager<RenderLayer>
-        cameraManager: CompactManager<RenderCamera>
-        renderCameraDepths: RenderCameraId ResizeArray []
+        layerManager: CompactManager<CameraLayer>
+        cameraManager: CompactManager<Camera>
+        cameraDepths: Camera ResizeArray []
     }
 
     static member Create () =
-        let maxRenderCameraDepth = 100
-        let maxRenderCameras = 100
-        let maxRenderLayers = 7
+        let maxCameraDepth = 100
+        let maxCameras = 100
+        let maxCameraLayers = 7
 
         let vertexBytes = File.ReadAllText ("Fullscreen.vert") |> System.Text.Encoding.UTF8.GetBytes
         let fragmentBytes = File.ReadAllText ("Fullscreen.frag") |> System.Text.Encoding.UTF8.GetBytes
@@ -126,10 +139,10 @@ type Renderer =
         let time = shaderProgram.CreateUniformFloat ("time")
 
 
-        let layerManager = CompactManager<RenderLayer>.Create maxRenderLayers
+        let layerManager = CompactManager<CameraLayer>.Create maxCameraLayers
 
-        for i = 1 to maxRenderLayers do
-            layerManager.Add (RenderLayer.Create ()) |> ignore
+        for i = 1 to maxCameraLayers do
+            layerManager.Add (CameraLayer.Create ()) |> ignore
 
         {
             nextShaderId = 0
@@ -142,31 +155,29 @@ type Renderer =
             finalTime = time
 
             layerManager = layerManager
-            cameraManager = CompactManager<RenderCamera>.Create maxRenderCameras
-            renderCameraDepths = Array.init maxRenderCameraDepth (fun _ -> ResizeArray ())
+            cameraManager = CompactManager<Camera>.Create maxCameras
+            cameraDepths = Array.init maxCameraDepth (fun _ -> ResizeArray ())
         }
 
-    member this.TryCreateRenderCamera view projection layerMask clearFlags depth =
-        if depth < this.renderCameraDepths.Length && not this.cameraManager.IsFull then
+    member this.TryCreateRenderCamera settings =
+        if settings.depth < this.cameraDepths.Length && not this.cameraManager.IsFull then
 
-            let renderCamera =
+            let camera =
                 {
-                    view = view
-                    projection = projection
-                    depth = depth
-                    renderTexture = RenderTexture (1280, 720)
-                    layerMask = layerMask
-                    clearFlags = clearFlags
+                    id = CompactId.Zero
+                    view = Matrix4x4.Identity
+                    projection = settings.projection
+                    depth = settings.depth
+                    layerFlags = settings.layerFlags
+                    clearFlags = settings.clearFlags
                 }
 
-            let renderCameraId =
-                {
-                    RenderCameraId.id = this.cameraManager.Add renderCamera
-                }
+            camera.id <- this.cameraManager.Add camera
 
-            this.renderCameraDepths.[depth].Add renderCameraId
+            // TODO: How do we handle removal here?
+            this.cameraDepths.[settings.depth].Add camera
 
-            Some renderCamera
+            Some camera
         else
             None
 
@@ -287,41 +298,40 @@ type Renderer =
         this.finalRenderTexture.TryBufferData () |> ignore
         this.finalRenderTexture.Bind ()
 
-        for i = 0 to this.renderCameraDepths.Length - 1 do
+        for i = 0 to this.cameraDepths.Length - 1 do
 
-            let renderCameraIds = this.renderCameraDepths.[i]
+            let cameras = this.cameraDepths.[i]
 
-            for i = 0 to renderCameraIds.Count - 1 do
+            for i = 0 to cameras.Count - 1 do
 
-                let renderCameraId = renderCameraIds.[i]
-                let renderCamera = this.cameraManager.FindById renderCameraId.id
+                let camera = cameras.[i]
 
                 //renderCamera.renderTexture.TryBufferData () |> ignore
 
                 //renderCamera.renderTexture.Bind ()
 
-                if renderCamera.clearFlags.HasFlag (ClearFlags.Depth) then
+                if camera.clearFlags.HasFlag (CameraClearFlags.Depth) then
                     Backend.clearDepth ()
 
-                if renderCamera.clearFlags.HasFlag (ClearFlags.Color) then
+                if camera.clearFlags.HasFlag (CameraClearFlags.Color) then
                     Backend.clearColor ()
 
-                if renderCamera.clearFlags.HasFlag (ClearFlags.Stencil) then
+                if camera.clearFlags.HasFlag (CameraClearFlags.Stencil) then
                     Backend.clearStencil ()
 
                 for i = 0 to this.layerManager.Count - 1 do
                     let mask =
                         match i with
-                        | 0 -> LayerMask.Layer0
-                        | 1 -> LayerMask.Layer1
-                        | 2 -> LayerMask.Layer2
-                        | 3 -> LayerMask.Layer3
-                        | 4 -> LayerMask.Layer4
-                        | 5 -> LayerMask.Layer5
-                        | 6 -> LayerMask.Layer6
-                        | _ -> LayerMask.None
+                        | 0 -> CameraLayerFlags.Layer0
+                        | 1 -> CameraLayerFlags.Layer1
+                        | 2 -> CameraLayerFlags.Layer2
+                        | 3 -> CameraLayerFlags.Layer3
+                        | 4 -> CameraLayerFlags.Layer4
+                        | 5 -> CameraLayerFlags.Layer5
+                        | 6 -> CameraLayerFlags.Layer6
+                        | _ -> CameraLayerFlags.None
 
-                    if renderCamera.layerMask.HasFlag (mask) |> not then
+                    if camera.layerFlags.HasFlag (mask) then
                         this.layerManager.TryFindById (CompactId (i, 1u))
                         |> Option.iter (fun renderLayer ->
 
@@ -337,7 +347,7 @@ type Renderer =
                                 textureLookup
                                 |> Seq.iter (fun pair ->
                                     let texture, bucket = pair.Value
-                                    f time renderCamera.view renderCamera.projection texture bucket
+                                    f time camera.view camera.projection texture bucket
                                     shader.Unbind ()
                                 )
 
