@@ -222,8 +222,6 @@ module Wad =
 
                 let patchNames = runUnpickle (uPatchNames pnamesLump) wad.stream
 
-                let mutable previousOffsetX = 0
-                let mutable previousOffsetY = 0
                 info.Patches
                 |> Array.iter (fun patch ->
                     let patchName = patchNames.[patch.PatchNumber]
@@ -247,7 +245,6 @@ module Wad =
 
                                 if i < info.Width && j < info.Height && i >= 0 && j >= 0 && pixel <> Pixel.Cyan then
                                     tex.[i, j] <- pixel
-                                   
                             )
 
                     | _ -> ()
