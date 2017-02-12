@@ -331,19 +331,19 @@ module UnpickleWad =
 
                                     stream |> LiteReadStream.skip (int64 columnArray.[i])
 
-                                    let mutable rowStart = 0
+                                    let mutable rowStart = 0uy
 
-                                    while rowStart <> 255 do
-                                        rowStart <- stream |> LiteReadStream.readByte |> int
+                                    while rowStart <> 255uy do
+                                        rowStart <- stream |> LiteReadStream.readByte
 
-                                        if rowStart < 255 then
+                                        if rowStart <> 255uy then
 
                                             let count = stream |> LiteReadStream.readByte |> int
                                             stream |> LiteReadStream.readByte |> ignore
 
                                             for j = 0 to count - 1 do
                                                 let p = stream |> LiteReadStream.readByte
-                                                let j = j + rowStart
+                                                let j = j + int rowStart
                                                 if i < texture.Width && j < texture.Height then
                                                     data.[i,j] <- palette.Pixels.[int p]
                                             

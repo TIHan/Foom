@@ -214,7 +214,7 @@ module Wad =
             | false, _ -> None
             | true, info ->
 
-                let tex = Array2D.init info.Width info.Height (fun _ _ -> Pixel.Cyan)
+                let mutable tex = Array2D.init info.Width info.Height (fun _ _ -> Pixel.Cyan)
 
                 let pnamesLump =
                     wad.wadData.LumpHeaders
@@ -226,7 +226,8 @@ module Wad =
                 let mutable previousOffsetY = 0
                 info.Patches
                 |> Array.iter (fun patch ->
-                    match tryFindPatch patchNames.[patch.PatchNumber] wad with
+                    let patchName = patchNames.[patch.PatchNumber]
+                    match tryFindPatch patchName wad with
                     | Some ptex ->
 
                         let data =
@@ -234,15 +235,20 @@ module Wad =
                             | PatchTexture.DoomPicture pic -> pic.Data
                             | PatchTexture.Flat tex -> tex.Data
 
-                        data
-                        |> Array2D.iteri (fun i j pixel ->
-                            let i = i + patch.OriginX
-                            let j = j + patch.OriginY
+                        // If the patchName is equal to the name of the texture we are trying to find and patch count is one,
+                        //     then just use the data retrieved directly instead of going through the patching process.
+                        if patchName = name && info.Patches.Length = 1 then
+                            tex <- data
+                        else
+                            data
+                            |> Array2D.iteri (fun i j pixel ->
+                                let i = i + patch.OriginX
+                                let j = j + patch.OriginY
 
-                            if i < info.Width && j < info.Height && i >= 0 && j >= 0 && pixel <> Pixel.Cyan then
-                                tex.[i, j] <- pixel
+                                if i < info.Width && j < info.Height && i >= 0 && j >= 0 && pixel <> Pixel.Cyan then
+                                    tex.[i, j] <- pixel
                                    
-                        )
+                            )
 
                     | _ -> ()
                 )
