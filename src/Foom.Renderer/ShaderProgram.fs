@@ -18,14 +18,25 @@ type Uniform<'T> =
         this.isDirty <- true
 
 // TODO: Vertex attrib needs a isDirty.
-type VertexAttribute<'T> =
-    {
-        name: string
-        mutable location: int
-        mutable value: 'T
-    }
+[<Sealed>]
+type VertexAttribute<'T> (name, divisor) =
 
-    member this.Set value = this.value <- value
+    member val Name : string = name
+
+    member val Location = -1 with get, set
+
+    member val Value = Unchecked.defaultof<'T> with get, set
+
+    member val Divisor = divisor
+
+    member this.Set value = this.Value <- value
+
+[<Sealed>]
+type InstanceAttribute<'T> (name) =
+
+    member val VertexAttribute = VertexAttribute<'T> (name, 1)
+
+    member this.Set value = this.VertexAttribute.Set value
 
 type RenderPass =
     | NoDepth
@@ -42,6 +53,7 @@ type ShaderProgram =
         mutable inits: ResizeArray<unit -> unit>
         mutable binds: ResizeArray<unit -> unit>
         mutable unbinds: ResizeArray<unit -> unit>
+        mutable instanceCount: int
     }
 
     static member Create programId =
@@ -53,6 +65,7 @@ type ShaderProgram =
             inits = ResizeArray ()
             binds = ResizeArray ()
             unbinds = ResizeArray ()
+            instanceCount = -1
         }
 
     member this.CreateUniform<'T> (name) =
@@ -135,33 +148,41 @@ type ShaderProgram =
     member this.CreateVertexAttribute<'T> (name) =
         if this.isInitialized then failwithf "Cannot create vertex attribute, %s. Shader already initialized." name
 
-        let attrib =
-            {
-                name = name
-                value = Unchecked.defaultof<'T>
-                location = -1
-            }
+        let attrib = VertexAttribute<'T> (name, 0)
+
+        this.AddVertexAttribute attrib
+        attrib
+
+    member this.CreateInstanceAttribute<'T> (name) =
+        if this.isInitialized then failwithf "Cannot create instance attribute, %s. Shader already initialized." name
+
+        let attrib = InstanceAttribute<'T> (name)
+
+        this.AddVertexAttribute attrib.VertexAttribute
+        attrib
+
+    member this.AddVertexAttribute<'T> (attrib: VertexAttribute<'T>) =
 
         let initAttrib =
             fun () ->
-                attrib.location <- Backend.getAttributeLocation this.programId attrib.name
+                attrib.Location <- Backend.getAttributeLocation this.programId attrib.Name
 
         let bufferData =
             match attrib :> obj with
             | :? VertexAttribute<Vector2Buffer> as attrib -> 
                 fun () -> 
-                    if obj.ReferenceEquals (attrib.value, null) |> not then
-                        attrib.value.TryBufferData () |> ignore
+                    if obj.ReferenceEquals (attrib.Value, null) |> not then
+                        attrib.Value.TryBufferData () |> ignore
 
             | :? VertexAttribute<Vector3Buffer> as attrib -> 
                 fun () -> 
-                    if obj.ReferenceEquals (attrib.value, null) |> not then
-                        attrib.value.TryBufferData () |> ignore
+                    if obj.ReferenceEquals (attrib.Value, null) |> not then
+                        attrib.Value.TryBufferData () |> ignore
 
             | :? VertexAttribute<Vector4Buffer> as attrib ->
                 fun () -> 
-                    if obj.ReferenceEquals (attrib.value, null) |> not then
-                        attrib.value.TryBufferData () |> ignore
+                    if obj.ReferenceEquals (attrib.Value, null) |> not then
+                        attrib.Value.TryBufferData () |> ignore
 
             | _ -> failwith "Should not happen."
 
@@ -169,18 +190,18 @@ type ShaderProgram =
             match attrib :> obj with
             | :? VertexAttribute<Vector2Buffer> as attrib -> 
                 fun () -> 
-                    if obj.ReferenceEquals (attrib.value, null) |> not then
-                        attrib.value.Bind ()
+                    if obj.ReferenceEquals (attrib.Value, null) |> not then
+                        attrib.Value.Bind ()
 
             | :? VertexAttribute<Vector3Buffer> as attrib ->
                 fun () -> 
-                    if obj.ReferenceEquals (attrib.value, null) |> not then
-                        attrib.value.Bind ()
+                    if obj.ReferenceEquals (attrib.Value, null) |> not then
+                        attrib.Value.Bind ()
 
             | :? VertexAttribute<Vector4Buffer> as attrib ->
                 fun () -> 
-                    if obj.ReferenceEquals (attrib.value, null) |> not then
-                        attrib.value.Bind ()
+                    if obj.ReferenceEquals (attrib.Value, null) |> not then
+                        attrib.Value.Bind ()
 
             | _ -> failwith "Should not happen."
 
@@ -193,46 +214,52 @@ type ShaderProgram =
 
         let getLength =
             match attrib :> obj with
-            | :? VertexAttribute<Vector2Buffer> as attrib -> fun () -> attrib.value.Length
-            | :? VertexAttribute<Vector3Buffer> as attrib -> fun () -> attrib.value.Length
-            | :? VertexAttribute<Vector4Buffer> as attrib -> fun () -> attrib.value.Length
+            | :? VertexAttribute<Vector2Buffer> as attrib -> fun () -> attrib.Value.Length
+            | :? VertexAttribute<Vector3Buffer> as attrib -> fun () -> attrib.Value.Length
+            | :? VertexAttribute<Vector4Buffer> as attrib -> fun () -> attrib.Value.Length
             | _ -> failwith "Should not happen."
 
         let bind =
             fun () ->
-                if attrib.location > -1 then
-                    if not (obj.ReferenceEquals (attrib.value, null)) then
+                if attrib.Location > -1 then
+                    if not (obj.ReferenceEquals (attrib.Value, null)) then
                         bufferData ()
-
-                        this.length <-
-                            let length = getLength ()
-
-                            if this.length = -1 then
-                                length
-                            elif length < this.length then
-                                length
-                            else
-                                this.length
-
                         bindBuffer ()
 
                         // TODO: this will change
-                        Backend.bindVertexAttributePointer_Float attrib.location size
-                        Backend.enableVertexAttribute attrib.location
+                        Backend.bindVertexAttributePointer_Float attrib.Location size
+                        Backend.enableVertexAttribute attrib.Location
+                        Backend.glVertexAttribDivisor attrib.Location attrib.Divisor
+
+                        let length = getLength ()
+                        if attrib.Divisor > 0 then
+                            this.instanceCount <-
+                                if this.instanceCount = -1 then
+                                    length
+                                elif length < this.instanceCount then
+                                    length
+                                else
+                                    this.instanceCount
+                        else
+                            this.length <-
+                                if this.length = -1 then
+                                    length
+                                elif length < this.length then
+                                    length
+                                else
+                                    this.length
                     else
                         this.length <- 0
 
         let unbind =
             fun () ->
-                attrib.value <- Unchecked.defaultof<'T>
+                attrib.Value <- Unchecked.defaultof<'T>
 
         this.inits.Add initAttrib
         this.inits.Add bufferData
 
         this.binds.Add bind
         this.unbinds.Add unbind
-
-        attrib
 
     member this.CreateUniformInt (name) =
         this.CreateUniform<int> (name)
@@ -264,6 +291,15 @@ type ShaderProgram =
     member this.CreateVertexAttributeVector4 (name) =
         this.CreateVertexAttribute<Vector4Buffer> (name)
 
+    member this.CreateInstanceAttributeVector2 (name) =
+        this.CreateInstanceAttribute<Vector2Buffer> (name)
+
+    member this.CreateInstanceAttributeVector3 (name) =
+        this.CreateInstanceAttribute<Vector3Buffer> (name)
+
+    member this.CreateInstanceAttributeVector4 (name) =
+        this.CreateInstanceAttribute<Vector4Buffer> (name)
+
     member this.Unbind () =
         if not this.isUnbinded then
             for i = 0 to this.unbinds.Count - 1 do
@@ -271,10 +307,15 @@ type ShaderProgram =
                 f ()
 
             this.length <- -1
+            this.instanceCount <- -1
             this.isUnbinded <- true
 
     member this.Draw () =
-        if this.length > 0 then
+
+        if this.instanceCount > 0 && this.length > 0 then
+            Backend.drawTrianglesInstanced this.length this.instanceCount
+
+        elif this.instanceCount = -1 && this.length > 0 then
             // TODO: this will change
             Backend.drawTriangles 0 this.length
 

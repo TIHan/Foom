@@ -4,6 +4,33 @@ module Foom.Client.Client
 open Foom.Ecs
 open Foom.Renderer
 
+(*
+    [
+        Shader<Portal> ("TextureMesh", fun _ ->
+            let uni_view = shaderProgram.CreateUniformMatrix4x4("uni_view")
+            fun portal run ->
+                run (Pass.CaptureStencil Stencil.Increment)
+                run (Pass.SubShaders (
+                    [
+                        Sub
+                    ]
+                )
+
+        )
+
+        Shader<Sprite> ("Sprite", fun shaderProgram ->
+            let in_center = shaderProgram.CreateVertexAttributeVector3 ("in_center")
+
+            fun sprite run -> 
+                in_center.Set sprite.Center
+                run ()
+        )
+
+        Shader<unit> ("TextureMesh", fun _ _ run -> run ())
+
+    ]
+*)
+
 type IsSky = IsSky of bool
 
 let init (world: World) =

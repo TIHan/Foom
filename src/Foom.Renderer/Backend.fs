@@ -355,28 +355,6 @@ module Backend =
         glBindTexture(GL_TEXTURE_2D, textureId);
         """
 
-    ///
-
-    [<Import; MI (MIO.NoInlining)>]
-    let bindPosition (programID: int) : unit =
-        C """
-        GLint posAttrib = glGetAttribLocation (programID, "position");
-
-        glVertexAttribPointer (posAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-        glEnableVertexAttribArray (posAttrib);
-        """
-
-    [<Import; MI (MIO.NoInlining)>]
-    let bindUv (programID: int) : unit =
-        C """
-        GLint posAttrib = glGetAttribLocation (programID, "in_uv");
-
-        glVertexAttribPointer (posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-        glEnableVertexAttribArray (posAttrib);
-        """
-
     [<Import; MI (MIO.NoInlining)>]
     let bindColor (programID: int) : unit =
         C """
@@ -385,45 +363,6 @@ module Backend =
         glVertexAttribPointer (posAttrib, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
         glEnableVertexAttribArray (posAttrib);
-        """
-
-    [<Import; MI (MIO.NoInlining)>]
-    let bindCenter (programID: int) : unit =
-        C """
-        GLint posAttrib = glGetAttribLocation (programID, "in_center");
-
-        glVertexAttribPointer (posAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-        glEnableVertexAttribArray (posAttrib);
-        """
-
-    [<Import; MI (MIO.NoInlining)>]
-    let bindModel (programID: int) : unit =
-        C """
-        GLint pos = glGetAttribLocation (programID, "in_model");
-
-        int pos1 = pos + 0; 
-        int pos2 = pos + 1; 
-        int pos3 = pos + 2; 
-        int pos4 = pos + 3; 
-        glEnableVertexAttribArray(pos1);
-        glEnableVertexAttribArray(pos2);
-        glEnableVertexAttribArray(pos3);
-        glEnableVertexAttribArray(pos4);
-        glVertexAttribPointer(pos1, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(0));
-        glVertexAttribPointer(pos2, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(sizeof(float) * 4));
-        glVertexAttribPointer(pos3, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(sizeof(float) * 8));
-        glVertexAttribPointer(pos4, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(sizeof(float) * 12));
-        glVertexAttribDivisor(pos1, 1);
-        glVertexAttribDivisor(pos2, 1);
-        glVertexAttribDivisor(pos3, 1);
-        glVertexAttribDivisor(pos4, 1);
-        """
-
-    [<Import; MI (MIO.NoInlining)>]
-    let getUniformProjection (program: int) : int =
-        C """
-        return glGetUniformLocation (program, "uni_projection");
         """
 
     [<Import; MI (MIO.NoInlining)>]
@@ -678,4 +617,16 @@ module Backend =
     let depthMaskTrue () : unit =
         C """
         glDepthMask(GL_TRUE);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let glVertexAttribDivisor (location: int) (divisor: int) : unit =
+        C """
+        glVertexAttribDivisor (location, divisor);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let drawTrianglesInstanced (count: int) (primcount: int) : unit =
+        C """
+        glDrawArraysInstanced (GL_TRIANGLES, 0, count, primcount);
         """
