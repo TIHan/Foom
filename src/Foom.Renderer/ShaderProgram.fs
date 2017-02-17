@@ -4,6 +4,7 @@ open System
 open System.Drawing
 open System.Numerics
 open System.Collections.Generic
+open System.IO
 
 type Uniform<'T> =
     {
@@ -50,6 +51,7 @@ type RenderPass =
 
 type ShaderProgram =
     {
+        name: string
         programId: int
         drawOperation: DrawOperation
         mutable isUnbinded: bool
@@ -61,8 +63,12 @@ type ShaderProgram =
         mutable instanceCount: int
     }
 
-    static member Create (programId, drawOperation) =
+    static member Load (name, drawOperation) =
+        let vertexBytes = File.ReadAllText (name + ".vert") |> System.Text.Encoding.UTF8.GetBytes
+        let fragmentBytes = File.ReadAllText (name + ".frag") |> System.Text.Encoding.UTF8.GetBytes
+        let programId = Backend.loadShaders vertexBytes fragmentBytes
         {
+            name = name
             programId = programId
             drawOperation = drawOperation
             isUnbinded = true

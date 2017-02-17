@@ -75,10 +75,6 @@ let handleSomething (functionCache: FunctionCache) (shaderCache: ShaderCache) (t
             let info = comp.RenderInfo
             let shaderName = info.MaterialInfo.ShaderName.ToUpper ()
 
-            let vertexShaderFile = shaderName + ".vert"
-
-            let fragmentShaderFile = shaderName + ".frag"
-
             let shaderId, f =
                 match shaderCache.TryGetValue (shaderName) with
                 | true, shader ->
@@ -91,15 +87,12 @@ let handleSomething (functionCache: FunctionCache) (shaderCache: ShaderCache) (t
                     shader, f
                 | _ -> 
 
-                    let vertexBytes = File.ReadAllText (vertexShaderFile) |> System.Text.Encoding.UTF8.GetBytes
-                    let fragmentBytes = File.ReadAllText (fragmentShaderFile) |> System.Text.Encoding.UTF8.GetBytes
-
                     let f, g =
                         match functionCache.TryGetValue(shaderName) with
                         | true, (f, g) -> f, g
                         | _ -> (fun _ _ _ -> null), (fun _ _ run -> run RenderPass.Depth)
 
-                    let shader = renderer.CreateTextureMeshShader (vertexBytes, fragmentBytes, DrawOperation.Triangles, g)
+                    let shader = renderer.CreateTextureMeshShader (shaderName, DrawOperation.Triangles, g)
 
                     shaderCache.Add (shaderName, shader)
 

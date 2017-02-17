@@ -95,6 +95,21 @@ type CameraLayer =
             textureMeshes = Dictionary ()
         }
 
+type ShaderCache () =
+
+    let mutable nextShaderId = 0
+    let cache = Dictionary<ShaderId, ShaderProgram * (float32 -> Matrix4x4 -> Matrix4x4 -> Texture -> unit)> ()
+
+    member this.CreateShader (name, drawOperation, f) =
+        let shaderProgram = ShaderProgram.Load (name, drawOperation)
+
+        let shaderId = nextShaderId
+
+        nextShaderId <- nextShaderId + 1
+        cache.[shaderId] <- (shaderProgram, (f shaderId shaderProgram))
+
+        shaderId
+
 type Renderer =
     {
         mutable nextShaderId: int
@@ -118,9 +133,7 @@ type Renderer =
         let maxCameras = 100
         let maxCameraLayers = 7
 
-        let vertexBytes = File.ReadAllText ("Fullscreen.vert") |> System.Text.Encoding.UTF8.GetBytes
-        let fragmentBytes = File.ReadAllText ("Fullscreen.frag") |> System.Text.Encoding.UTF8.GetBytes
-        let shaderProgram = ShaderProgram.Create (Backend.loadShaders vertexBytes fragmentBytes, DrawOperation.Triangles)
+        let shaderProgram = ShaderProgram.Load("Fullscreen", DrawOperation.Triangles)
 
         let vertices =
             [|
@@ -181,10 +194,8 @@ type Renderer =
         else
             None
 
-    member this.CreateShader (vertexShader, fragmentShader, drawOperation, f: ShaderId -> ShaderProgram -> (float32 -> Matrix4x4 -> Matrix4x4 -> Texture -> Bucket -> unit)) =
-        let shaderProgram =
-            (Backend.loadShaders vertexShader fragmentShader, drawOperation)
-            |> ShaderProgram.Create
+    member this.CreateShader (name, drawOperation, f: ShaderId -> ShaderProgram -> (float32 -> Matrix4x4 -> Matrix4x4 -> Texture -> Bucket -> unit)) =
+        let shaderProgram = ShaderProgram.Load (name, drawOperation)
 
         let shaderId = this.nextShaderId
 
@@ -193,8 +204,8 @@ type Renderer =
 
         shaderId
 
-    member this.CreateTextureMeshShader (vertexShader, fragmentShader, drawOperation, f) =
-        this.CreateShader (vertexShader, fragmentShader, drawOperation,
+    member this.CreateTextureMeshShader (name, drawOperation, f) =
+        this.CreateShader (name, drawOperation,
 
             fun shaderId shaderProgram ->
                 (*
