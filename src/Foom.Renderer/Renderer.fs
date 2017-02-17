@@ -10,6 +10,39 @@ open Foom.Collections
 
 // *****************************************
 // *****************************************
+// Shader
+// *****************************************
+// *****************************************
+
+type Shader =
+    {
+        Program: ShaderProgram
+    }
+
+    member this.Draw () = this.Program.Draw ()
+
+type ShaderCache () =
+    let cache = Dictionary<string, Shader> ()
+
+    member this.GetOrCreateShader (name, drawOperation, f) =
+        match cache.TryGetValue (name) with
+        | true, shader -> shader
+        | _ ->
+            let shaderProgram = ShaderProgram.Load (name, drawOperation)
+            let shader =
+                {
+                    Program = shaderProgram
+                }
+
+            cache.[name] <- shader
+
+            shader
+
+    member this.Remove (name) =
+        cache.Remove (name)
+
+// *****************************************
+// *****************************************
 // Renderer
 // *****************************************
 // *****************************************
@@ -94,21 +127,6 @@ type CameraLayer =
         {
             textureMeshes = Dictionary ()
         }
-
-type ShaderCache () =
-
-    let mutable nextShaderId = 0
-    let cache = Dictionary<ShaderId, ShaderProgram * (float32 -> Matrix4x4 -> Matrix4x4 -> Texture -> unit)> ()
-
-    member this.CreateShader (name, drawOperation, f) =
-        let shaderProgram = ShaderProgram.Load (name, drawOperation)
-
-        let shaderId = nextShaderId
-
-        nextShaderId <- nextShaderId + 1
-        cache.[shaderId] <- (shaderProgram, (f shaderId shaderProgram))
-
-        shaderId
 
 type Renderer =
     {
