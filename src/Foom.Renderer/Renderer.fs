@@ -16,41 +16,68 @@ open Foom.Collections
 
 type Shader =
     {
-        Program: ShaderProgram
+        name: string
+        program: ShaderProgram
     }
 
-    member this.Draw () = this.Program.Draw ()
+    member this.Draw () = this.program.Draw ()
 
 type ShaderCache () =
     let cache = Dictionary<string, Shader> ()
 
-    member this.GetOrCreateShader (name, drawOperation, f) =
+    member this.GetOrCreateShader (name: string, drawOperation) =
+        let name = name.ToUpper()
+
         match cache.TryGetValue (name) with
         | true, shader -> shader
         | _ ->
             let shaderProgram = ShaderProgram.Load (name, drawOperation)
             let shader =
                 {
-                    Program = shaderProgram
+                    name = name
+                    program = shaderProgram
                 }
 
             cache.[name] <- shader
 
             shader
 
-    member this.Remove (name) =
-        cache.Remove (name)
+    member this.Remove (shader) =
+        cache.Remove (shader.name)
+
+type Texture =
+    {
+        Buffer: Texture2DBuffer
+    }
+
+type TextureCache () =
+    let cache = Dictionary<string, Texture> ()
+
+    member this.GetOrCreateShader (fileName: string) =
+        let fileName = fileName.ToUpper ()
+
+        match cache.TryGetValue (fileName) with
+        | true, texture -> texture
+        | _ ->
+            let bmp = new Bitmap(fileName)
+
+            let buffer = Texture2DBuffer ([||], 0, 0)
+
+            // TODO: we should extract the bmp logic from Texture2DBuffer and put it here.
+            buffer.Set bmp
+
+            buffer.TryBufferData () |> ignore
+
+            {
+                Buffer = buffer
+            }
+
 
 // *****************************************
 // *****************************************
 // Renderer
 // *****************************************
 // *****************************************
-
-type Texture =
-    {
-        Buffer: Texture2DBuffer
-    }
 
 type Mesh =
     {
