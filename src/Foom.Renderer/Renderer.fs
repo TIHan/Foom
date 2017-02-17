@@ -120,7 +120,7 @@ type Renderer =
 
         let vertexBytes = File.ReadAllText ("Fullscreen.vert") |> System.Text.Encoding.UTF8.GetBytes
         let fragmentBytes = File.ReadAllText ("Fullscreen.frag") |> System.Text.Encoding.UTF8.GetBytes
-        let shaderProgram = ShaderProgram.Create (Backend.loadShaders vertexBytes fragmentBytes)
+        let shaderProgram = ShaderProgram.Create (Backend.loadShaders vertexBytes fragmentBytes, DrawOperation.Triangles)
 
         let vertices =
             [|
@@ -181,9 +181,9 @@ type Renderer =
         else
             None
 
-    member this.CreateShader (vertexShader, fragmentShader, f: ShaderId -> ShaderProgram -> (float32 -> Matrix4x4 -> Matrix4x4 -> Texture -> Bucket -> unit)) =
+    member this.CreateShader (vertexShader, fragmentShader, drawOperation, f: ShaderId -> ShaderProgram -> (float32 -> Matrix4x4 -> Matrix4x4 -> Texture -> Bucket -> unit)) =
         let shaderProgram =
-            Backend.loadShaders vertexShader fragmentShader
+            (Backend.loadShaders vertexShader fragmentShader, drawOperation)
             |> ShaderProgram.Create
 
         let shaderId = this.nextShaderId
@@ -193,8 +193,8 @@ type Renderer =
 
         shaderId
 
-    member this.CreateTextureMeshShader (vertexShader, fragmentShader, f) =
-        this.CreateShader (vertexShader, fragmentShader,
+    member this.CreateTextureMeshShader (vertexShader, fragmentShader, drawOperation, f) =
+        this.CreateShader (vertexShader, fragmentShader, drawOperation,
 
             fun shaderId shaderProgram ->
                 (*

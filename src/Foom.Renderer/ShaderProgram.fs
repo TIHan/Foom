@@ -38,6 +38,10 @@ type InstanceAttribute<'T> (name) =
 
     member this.Set value = this.VertexAttribute.Set value
 
+type DrawOperation =
+    | Triangles
+    | InstancedTriangles
+
 type RenderPass =
     | NoDepth
     | Depth
@@ -47,6 +51,7 @@ type RenderPass =
 type ShaderProgram =
     {
         programId: int
+        drawOperation: DrawOperation
         mutable isUnbinded: bool
         mutable isInitialized: bool
         mutable length: int
@@ -56,9 +61,10 @@ type ShaderProgram =
         mutable instanceCount: int
     }
 
-    static member Create programId =
+    static member Create (programId, drawOperation) =
         {
             programId = programId
+            drawOperation = drawOperation
             isUnbinded = true
             isInitialized = false
             length = -1
@@ -312,12 +318,13 @@ type ShaderProgram =
 
     member this.Draw () =
 
-        if this.instanceCount > 0 && this.length > 0 then
-            Backend.drawTrianglesInstanced this.length this.instanceCount
-
-        elif this.instanceCount = -1 && this.length > 0 then
-            // TODO: this will change
-            Backend.drawTriangles 0 this.length
+        if this.length > 0 then
+            match this.drawOperation with
+            | Triangles ->
+                Backend.drawTriangles 0 this.length
+            | InstancedTriangles ->
+                if this.instanceCount > 0 then
+                    Backend.drawTrianglesInstanced this.length this.instanceCount
 
     member this.Run (renderPass: RenderPass) =
 
