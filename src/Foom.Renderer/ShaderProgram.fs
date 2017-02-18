@@ -6,17 +6,20 @@ open System.Numerics
 open System.Collections.Generic
 open System.IO
 
-type Uniform<'T> =
-    {
-        name: string
-        mutable location: int
-        mutable value: 'T
-        mutable isDirty: bool
-    }
+[<Sealed>]
+type Uniform<'T> (name) =
 
-    member this.Set value = 
-        this.value <- value
-        this.isDirty <- true
+    member val Name = name
+
+    member val Location = -1 with get, set
+
+    member val Value = Unchecked.defaultof<'T> with get, set
+
+    member val IsDirty = false with get, set
+
+    member this.Set value =
+        this.Value <- value
+        this.IsDirty <- true
 
 // TODO: Vertex attrib needs a isDirty.
 [<Sealed>]
@@ -83,71 +86,65 @@ type ShaderProgram =
     member this.CreateUniform<'T> (name) =
         if this.isInitialized then failwithf "Cannot create uniform, %s. Shader already initialized." name
 
-        let uni =
-            {
-                name = name
-                location = -1
-                value = Unchecked.defaultof<'T>
-                isDirty = false
-            }
+        let uni = Uniform<'T> (name)
             
         let initUni =
             fun () ->
-                uni.location <- Backend.getUniformLocation this.programId uni.name
+                uni.Location <- Backend.getUniformLocation this.programId uni.Name
 
         let setValue =
             match uni :> obj with
             | :? Uniform<int> as uni ->              
                 fun () -> 
-                    if uni.isDirty && uni.location > -1 then 
-                        Backend.bindUniformInt uni.location uni.value
-                        uni.isDirty <- false
+                    if uni.IsDirty && uni.Location > -1 then 
+                        Backend.bindUniformInt uni.Location uni.Value
+                        uni.IsDirty <- false
 
             | :? Uniform<float32> as uni ->              
                 fun () -> 
-                    if uni.isDirty && uni.location > -1 then 
-                        Backend.bindUniform_float uni.location uni.value
-                        uni.isDirty <- false
+                    if uni.IsDirty && uni.Location > -1 then 
+                        Backend.bindUniform_float uni.Location uni.Value
+                        uni.IsDirty <- false
 
             | :? Uniform<Vector2> as uni ->         
                 fun () -> 
-                    if uni.isDirty && uni.location > -1 then 
-                        Backend.bindUniformVector2 uni.location uni.value
-                        uni.isDirty <- false
+                    if uni.IsDirty && uni.Location > -1 then 
+                        Backend.bindUniformVector2 uni.Location uni.Value
+                        uni.IsDirty <- false
 
             | :? Uniform<Vector4> as uni ->         
                 fun () -> 
-                    if uni.isDirty && uni.location > -1 then 
-                        Backend.bindUniformVector4 uni.location uni.value
-                        uni.isDirty <- false
+                    if uni.IsDirty && uni.Location > -1 then 
+                        Backend.bindUniformVector4 uni.Location uni.Value
+                        uni.IsDirty <- false
 
             | :? Uniform<Matrix4x4> as uni ->        
                 fun () -> 
-                    if uni.isDirty && uni.location > -1 then 
-                        Backend.bindUniformMatrix4x4 uni.location uni.value
-                        uni.isDirty <- false
+                    if uni.IsDirty && uni.Location > -1 then 
+                        Backend.bindUniformMatrix4x4 uni.Location uni.Value
+                        uni.IsDirty <- false
 
             | :? Uniform<Texture2DBuffer> as uni ->
                 fun () ->
-                    if uni.isDirty && not (obj.ReferenceEquals (uni.value, null)) && uni.location > -1 then 
-                        uni.value.TryBufferData () |> ignore
-                        Backend.bindUniformInt uni.location 0
-                        uni.value.Bind ()
-                        uni.isDirty <- false
+                    if uni.IsDirty && not (obj.ReferenceEquals (uni.Value, null)) && uni.Location > -1 then 
+                        uni.Value.TryBufferData () |> ignore
+                        Backend.bindUniformInt uni.Location 0
+                        uni.Value.Bind ()
+                        uni.IsDirty <- false
 
             | :? Uniform<RenderTexture> as uni ->
                 fun () ->
-                    if uni.isDirty && not (obj.ReferenceEquals (uni.value, null)) && uni.location > -1 then 
-                        Backend.bindUniformInt uni.location 0
-                        uni.value.BindTexture ()
-                        uni.isDirty <- false
+                    if uni.IsDirty && not (obj.ReferenceEquals (uni.Value, null)) && uni.Location > -1 then 
+                        Backend.bindUniformInt uni.Location 0
+                        uni.Value.BindTexture ()
+                        uni.IsDirty <- false
 
             | _ -> failwith "This should not happen."
 
         let bind = setValue
 
         let unbind =
-            fun () -> uni.value <- Unchecked.defaultof<'T>
+            fun () -> uni.Set Unchecked.defaultof<'T>
 
         this.inits.Add initUni
         this.inits.Add setValue
