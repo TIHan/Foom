@@ -43,8 +43,8 @@ type InstanceAttribute<'T> (name) =
     member this.Set value = this.VertexAttribute.Set value
 
 type DrawOperation =
-    | Triangles
-    | InstancedTriangles
+    | Normal
+    | Instanced
 
 type RenderPass =
     | NoDepth
@@ -323,9 +323,9 @@ type ShaderProgram =
 
         if this.length > 0 then
             match this.drawOperation with
-            | Triangles ->
+            | Normal ->
                 Backend.drawTriangles 0 this.length
-            | InstancedTriangles ->
+            | Instanced ->
                 if this.instanceCount > 0 then
                     Backend.drawTrianglesInstanced this.length this.instanceCount
 

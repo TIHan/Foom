@@ -178,7 +178,7 @@ type Renderer =
         let maxCameras = 100
         let maxCameraLayers = 7
 
-        let shaderProgram = ShaderProgram.Load("Fullscreen", DrawOperation.Triangles)
+        let shaderProgram = ShaderProgram.Load("Fullscreen", DrawOperation.Normal)
 
         let vertices =
             [|

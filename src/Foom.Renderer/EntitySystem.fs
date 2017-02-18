@@ -92,7 +92,7 @@ let handleSomething (functionCache: FunctionCache) (shaderCache: ShaderCache) (t
                         | true, (f, g) -> f, g
                         | _ -> (fun _ _ _ -> null), (fun _ _ run -> run RenderPass.Depth)
 
-                    let shader = renderer.CreateTextureMeshShader (shaderName, DrawOperation.Triangles, g)
+                    let shader = renderer.CreateTextureMeshShader (shaderName, DrawOperation.Normal, g)
 
                     shaderCache.Add (shaderName, shader)
 
