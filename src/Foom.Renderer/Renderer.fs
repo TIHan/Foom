@@ -103,10 +103,10 @@ type PipelineBuilder () =
                 | Pipeline g -> g context
         )
 
-    member this.Bind (Pipeline x : Pipeline<Lazy<'a>>, f: 'a -> Pipeline<'b>) : Pipeline<'b> = 
+    member this.Bind (Pipeline x : Pipeline<List<'a>>, f: List<'a> -> Pipeline<'b>) : Pipeline<'b> = 
         Pipeline (
             fun context ->
-                let result = (x context).Force()
+                let result = (x context)
                 match f result with
                 | Pipeline g -> g context
         )
@@ -233,6 +233,33 @@ type Mesh (position, uv, color) =
     member val Uv = Buffer.createVector2 uv
 
     member val Color = Buffer.createVector4 color
+
+//                let iPosition = shaderProgram.CreateVertexAttributeVector3 ("position")
+//                let iUv = shaderProgram.CreateVertexAttributeVector2 ("in_uv")
+//                let uTexture = shaderProgram.CreateUniformTexture2D ("uni_texture")
+//                let uTextureResolution = shaderProgram.CreateUniformVector2("uTextureResolution")
+//                let uView = shaderProgram.CreateUniformMatrix4x4 ("uni_view")
+//                let uProjection = shaderProgram.CreateUniformMatrix4x4 ("uni_projection")
+//                let uTime = shaderProgram.CreateUniformFloat ("uTime")
+
+[<Sealed>]
+type MeshInput (shaderProgram: ShaderProgram) =
+    
+    member val Position = shaderProgram.CreateVertexAttributeVector3 ("position")
+
+    member val Uv = shaderProgram.CreateInstanceAttributeVector2 ("in_uv")
+
+    member val Color = shaderProgram.CreateVertexAttributeVector4 ("in_color")
+
+    member val Texture = shaderProgram.CreateUniformTexture2D ("uni_texture")
+
+    member val View = shaderProgram.CreateUniformMatrix4x4 ("uni_view")
+
+    member val Projection = shaderProgram.CreateUniformMatrix4x4 ("uni_projection")
+
+    member val Time = shaderProgram.CreateUniformFloat ("uTime")
+
+    member val TextureResolution = shaderProgram.CreateUniformVector2 ("uTextureResolution")
 
 // *****************************************
 // *****************************************
