@@ -87,6 +87,11 @@ type PipelineContext (shaderProgramCache: ShaderProgramCache) =
     member this.AddAction action =
         actions.Add action
 
+    member this.Run () =
+        for i = 0 to actions.Count - 1 do
+            let f = actions.[i]
+            f ()
+
 type Pipeline<'a> = private Pipeline of (PipelineContext -> 'a)
 
 type PipelineBuilder () =
@@ -124,7 +129,10 @@ type Shader<'Input, 'Output> with
             Pipeline (
                 fun context ->
                     context.AddAction (fun () ->
-                        f input program.Draw
+                        Backend.useProgram program.programId
+                        f input (fun () -> program.Run RenderPass.Depth)
+                        program.Unbind ()
+                        Backend.useProgram 0
                     )
                     output
             )
@@ -153,7 +161,6 @@ module Pipeline =
                 context.AddAction (fun () ->
                     renderTexture.TryBufferData () |> ignore
                     renderTexture.Bind ()
-                    Backend.clear ()
                 )            
                 
                 match p with
@@ -161,6 +168,7 @@ module Pipeline =
 
                 context.AddAction (fun () ->
                     renderTexture.Unbind ()
+                    Backend.clear ()
                 )
 
                 renderTexture
@@ -305,18 +313,16 @@ type Renderer =
     {
         mutable nextShaderId: int
         shaders: Dictionary<ShaderId, ShaderProgram * (float32 -> Matrix4x4 -> Matrix4x4 -> Texture -> Bucket -> unit)>
+        shaderProgramCache: ShaderProgramCache
 
-        finalShaderProgram: ShaderProgram
+        finalPipeline: PipelineContext
         finalPositionBuffer: Vector3Buffer
-        finalRenderTexture: RenderTexture
-        finalPosition: VertexAttribute<Vector3Buffer>
-        finalTexture: Uniform<RenderTexture>
-        finalTime: Uniform<float32>
 
 
         layerManager: CompactManager<CameraLayer>
         cameraManager: CompactManager<Camera>
         cameraDepths: Camera ResizeArray []
+        mutable time: float32
     }
 
     static member Create () =
@@ -324,7 +330,7 @@ type Renderer =
         let maxCameras = 100
         let maxCameraLayers = 7
 
-        let shaderProgram = ShaderProgram.Load("Fullscreen")
+        let shaderProgramCache = ShaderProgramCache ()
 
         let vertices =
             [|
@@ -338,30 +344,31 @@ type Renderer =
 
         let positionBuffer = Buffer.createVector3 vertices
 
-        let position = shaderProgram.CreateVertexAttributeVector3 ("position")
-        let tex = shaderProgram.CreateUniformRenderTexture ("uni_texture")
-        let time = shaderProgram.CreateUniformFloat ("time")
-
-
         let layerManager = CompactManager<CameraLayer>.Create maxCameraLayers
 
         for i = 1 to maxCameraLayers do
             layerManager.Add (CameraLayer.Create ()) |> ignore
 
-        {
-            nextShaderId = 0
-            shaders = Dictionary ()
-            finalShaderProgram = shaderProgram
-            finalRenderTexture = RenderTexture (1280, 720)
-            finalPositionBuffer = positionBuffer
-            finalPosition = position
-            finalTexture = tex
-            finalTime = time
+        let finalPipelineContext = PipelineContext (shaderProgramCache)
 
-            layerManager = layerManager
-            cameraManager = CompactManager<Camera>.Create maxCameras
-            cameraDepths = Array.init maxCameraDepth (fun _ -> ResizeArray ())
-        }
+        let renderer =
+            {
+                nextShaderId = 0
+                shaders = Dictionary ()
+                shaderProgramCache = shaderProgramCache
+                finalPipeline = finalPipelineContext
+                finalPositionBuffer = positionBuffer
+
+                layerManager = layerManager
+                cameraManager = CompactManager<Camera>.Create maxCameras
+                cameraDepths = Array.init maxCameraDepth (fun _ -> ResizeArray ())
+                time = 0.f
+            }
+
+        Final.finalPipeline renderer.WorldPipeline (fun () -> renderer.time) (fun () -> renderer.finalPositionBuffer)
+        |> run finalPipelineContext
+
+        renderer
 
     member this.TryCreateRenderCamera settings =
         if settings.depth < this.cameraDepths.Length && not this.cameraManager.IsFull then
@@ -493,89 +500,70 @@ type Renderer =
 
         | _ -> false
 
+    member this.WorldPipeline =
+        Pipeline (fun context ->
+            context.AddAction (fun () ->
+                for i = 0 to this.cameraDepths.Length - 1 do
+
+                    let cameras = this.cameraDepths.[i]
+
+                    for i = 0 to cameras.Count - 1 do
+
+                        let camera = cameras.[i]
+
+                        if camera.clearFlags.HasFlag (CameraClearFlags.Depth) then
+                            Backend.clearDepth ()
+
+                        if camera.clearFlags.HasFlag (CameraClearFlags.Color) then
+                            Backend.clearColor ()
+
+                        if camera.clearFlags.HasFlag (CameraClearFlags.Stencil) then
+                            Backend.clearStencil ()
+
+                        for i = 0 to this.layerManager.Count - 1 do
+                            let mask =
+                                match i with
+                                | 0 -> CameraLayerFlags.Layer0
+                                | 1 -> CameraLayerFlags.Layer1
+                                | 2 -> CameraLayerFlags.Layer2
+                                | 3 -> CameraLayerFlags.Layer3
+                                | 4 -> CameraLayerFlags.Layer4
+                                | 5 -> CameraLayerFlags.Layer5
+                                | 6 -> CameraLayerFlags.Layer6
+                                | _ -> CameraLayerFlags.None
+
+                            if camera.layerFlags.HasFlag (mask) then
+                                this.layerManager.TryFindById (CompactId (i, 1u))
+                                |> Option.iter (fun renderLayer ->
+
+                                    renderLayer.textureMeshes
+                                    |> Seq.iter (fun pair ->
+                                        let shaderId = pair.Key
+                                        let textureLookup = pair.Value
+
+                                        let shader, f = this.shaders.[shaderId]
+
+                                        Backend.useProgram shader.programId
+
+                                        textureLookup
+                                        |> Seq.iter (fun pair ->
+                                            let texture, bucket = pair.Value
+                                            f this.time camera.view camera.projection texture bucket
+                                            shader.Unbind ()
+                                        )
+
+                                        Backend.useProgram 0
+                                    )
+                                )
+            )
+        )
+
     member this.Draw (time: float32) =
+        this.time <- time
 
         Backend.enableDepth ()
 
-        this.finalRenderTexture.TryBufferData () |> ignore
-        this.finalRenderTexture.Bind ()
-
-        for i = 0 to this.cameraDepths.Length - 1 do
-
-            let cameras = this.cameraDepths.[i]
-
-            for i = 0 to cameras.Count - 1 do
-
-                let camera = cameras.[i]
-
-                //renderCamera.renderTexture.TryBufferData () |> ignore
-
-                //renderCamera.renderTexture.Bind ()
-
-                if camera.clearFlags.HasFlag (CameraClearFlags.Depth) then
-                    Backend.clearDepth ()
-
-                if camera.clearFlags.HasFlag (CameraClearFlags.Color) then
-                    Backend.clearColor ()
-
-                if camera.clearFlags.HasFlag (CameraClearFlags.Stencil) then
-                    Backend.clearStencil ()
-
-                for i = 0 to this.layerManager.Count - 1 do
-                    let mask =
-                        match i with
-                        | 0 -> CameraLayerFlags.Layer0
-                        | 1 -> CameraLayerFlags.Layer1
-                        | 2 -> CameraLayerFlags.Layer2
-                        | 3 -> CameraLayerFlags.Layer3
-                        | 4 -> CameraLayerFlags.Layer4
-                        | 5 -> CameraLayerFlags.Layer5
-                        | 6 -> CameraLayerFlags.Layer6
-                        | _ -> CameraLayerFlags.None
-
-                    if camera.layerFlags.HasFlag (mask) then
-                        this.layerManager.TryFindById (CompactId (i, 1u))
-                        |> Option.iter (fun renderLayer ->
-
-                            renderLayer.textureMeshes
-                            |> Seq.iter (fun pair ->
-                                let shaderId = pair.Key
-                                let textureLookup = pair.Value
-
-                                let shader, f = this.shaders.[shaderId]
-
-                                Backend.useProgram shader.programId
-
-                                textureLookup
-                                |> Seq.iter (fun pair ->
-                                    let texture, bucket = pair.Value
-                                    f time camera.view camera.projection texture bucket
-                                    shader.Unbind ()
-                                )
-
-                                Backend.useProgram 0
-                            )
-                        )
-
-                //renderCamera.renderTexture.Unbind ()
-
-        //Backend.disableStencilTest ()
-        this.finalRenderTexture.Unbind ()
-
-
-        Backend.clear ()
-
-        Backend.useProgram this.finalShaderProgram.programId
-
-
-        this.finalPosition.Set this.finalPositionBuffer
-        this.finalTexture.Set this.finalRenderTexture
-        this.finalTime.Set time
-
-        this.finalShaderProgram.Run RenderPass.Depth
-        this.finalShaderProgram.Unbind ()
-
-        Backend.useProgram 0
+        this.finalPipeline.Run ()
 
         Backend.disableDepth ()
 
