@@ -79,6 +79,8 @@ type PipelineContext (shaderProgramCache: ShaderProgramCache) =
     let releases = ResizeArray<unit -> unit> ()
     let actions = ResizeArray<unit -> unit> ()
 
+    member val ShaderProgramCache = shaderProgramCache
+
     member this.AddRelease release =
         releases.Add release
 
@@ -93,6 +95,14 @@ type PipelineBuilder () =
         Pipeline (
             fun context ->
                 match f (x context) with
+                | Pipeline g -> g context
+        )
+
+    member this.Bind (Pipeline x : Pipeline<Lazy<'a>>, f: 'a -> Pipeline<'b>) : Pipeline<'b> = 
+        Pipeline (
+            fun context ->
+                let result = (x context).Force()
+                match f result with
                 | Pipeline g -> g context
         )
 
@@ -132,20 +142,44 @@ module Pipeline =
         )
 
     let captureFrame p =
-        let renderTexture (context: PipelineContext) =
-            lazy
-                let renderTexture = RenderTexture (1280, 720)
-                context.AddRelease renderTexture.Release
-                renderTexture
 
+        let mutable renderTextureOpt = None
         Pipeline (
             fun context ->
-                let renderTexture = (renderTexture context).Force()
+                let renderTexture =
+                    match renderTextureOpt with
+                    | None ->
+                        let renderTexture = RenderTexture (1280, 720)
+                        context.AddRelease renderTexture.Release
+                        renderTextureOpt <- Some renderTexture
+                        renderTexture
+
+                    | Some renderTexture -> renderTexture                  
                 
                 match p with
                 | Pipeline f -> f context
 
                 renderTexture
+        )
+
+    let getShader name createInput createOutput =
+        
+        let mutable shaderOpt = None
+        Pipeline (
+            fun context ->
+                let shader =
+                    match shaderOpt with
+                    | None ->
+                        let shaderProgram = context.ShaderProgramCache.GetOrCreateShader (name)
+                        let input = createInput shaderProgram
+                        let output = createOutput shaderProgram
+                        let shader = Shader (input, output, shaderProgram)
+                        shaderOpt <- Some shader
+                        shader
+
+                    | Some shader -> shader
+
+                shader
         )
 
 open Pipeline
@@ -169,7 +203,7 @@ module Final =
 
     let finalPipeline worldPipeline (getTime: unit -> float32) (getPosition: unit -> Vector3Buffer) =
         pipeline {
-            let finalShader = Unchecked.defaultof<Shader<FinalInput, unit>>
+            let! finalShader = getShader "Fullscreen" FinalInput (fun _ -> ())
 
             let! renderTexture = captureFrame worldPipeline
 
