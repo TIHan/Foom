@@ -10,49 +10,6 @@ open Foom.Collections
 
 // *****************************************
 // *****************************************
-// Shader
-// *****************************************
-// *****************************************
-
-type Shader<'Input, 'Output> = Shader of 'Input * 'Output * ShaderProgram
-
-type Pipeline<'a> = private Pipeline of (unit -> 'a)
-
-type PipelineBuilder () =
-
-    member this.Bind (Pipeline x : Pipeline<'a>, f: 'a -> Pipeline<'b>) : Pipeline<'b> = 
-        f (x ())
-
-    member this.Delay (f: unit -> Pipeline<'a>) : Pipeline<'a> = 
-        Pipeline (fun _ -> match f () with | Pipeline x -> x ())
-
-    member this.Return (x: 'a) : Pipeline<'a> =
-        Pipeline (fun _ -> x)
-
-    member this.Zero () : Pipeline<unit> =
-        Pipeline (fun _ -> ())
-
-type Shader<'Input, 'Output> with
-
-    member this.Run f =
-        match this with
-        | Shader (input, output, program) ->
-
-            Pipeline (
-                fun () ->
-                    f input
-                    program.Draw ()
-                    output
-            )
-
-module Pipeline =
-
-    let pipeline = PipelineBuilder ()
-
-open Pipeline
-
-// *****************************************
-// *****************************************
 // Texture
 // *****************************************
 // *****************************************
@@ -68,7 +25,7 @@ type Texture =
 // *****************************************
 // *****************************************
 
-type ShaderCache () =
+type ShaderProgramCache () =
     let cache = Dictionary<string, ShaderProgram> ()
 
     member this.GetOrCreateShader (name: string) =
@@ -107,6 +64,123 @@ type TextureCache () =
             {
                 Buffer = buffer
             }
+
+// *****************************************
+// *****************************************
+// Shader
+// *****************************************
+// *****************************************
+
+type Shader<'Input, 'Output> = Shader of 'Input * 'Output * ShaderProgram
+
+[<Sealed>]
+type PipelineContext (shaderProgramCache: ShaderProgramCache) =
+    
+    let releases = ResizeArray<unit -> unit> ()
+    let actions = ResizeArray<unit -> unit> ()
+
+    member this.AddRelease release =
+        releases.Add release
+
+    member this.AddAction action =
+        actions.Add action
+
+type Pipeline<'a> = private Pipeline of (PipelineContext -> 'a)
+
+type PipelineBuilder () =
+
+    member this.Bind (Pipeline x : Pipeline<'a>, f: 'a -> Pipeline<'b>) : Pipeline<'b> = 
+        Pipeline (
+            fun context ->
+                match f (x context) with
+                | Pipeline g -> g context
+        )
+
+    member this.Delay (f: unit -> Pipeline<'a>) : Pipeline<'a> = 
+        Pipeline (fun context -> match f () with | Pipeline x -> x context)
+
+    member this.Return (x: 'a) : Pipeline<'a> =
+        Pipeline (fun _ -> x)
+
+    member this.Zero () : Pipeline<unit> =
+        Pipeline (fun _ -> ())
+
+type Shader<'Input, 'Output> with
+
+    member this.Run f =
+        match this with
+        | Shader (input, output, program) ->
+
+            Pipeline (
+                fun _ ->
+                    f input program.Draw
+                    output
+            )
+
+module Pipeline =
+
+    let pipeline = PipelineBuilder ()
+
+    let run context p =
+        match p with
+        | Pipeline f -> f context
+
+    let clear =
+        Pipeline (
+            fun _ ->
+                Backend.clear ()
+        )
+
+    let captureFrame p =
+        let renderTexture (context: PipelineContext) =
+            lazy
+                let renderTexture = RenderTexture (1280, 720)
+                context.AddRelease renderTexture.Release
+                renderTexture
+
+        Pipeline (
+            fun context ->
+                let renderTexture = (renderTexture context).Force()
+                
+                match p with
+                | Pipeline f -> f context
+
+                renderTexture
+        )
+
+open Pipeline
+
+// *****************************************
+// *****************************************
+// Final Output Program
+// *****************************************
+// *****************************************
+
+module Final =
+
+    [<Sealed>]
+    type FinalInput (shaderProgram: ShaderProgram) =
+
+        member val Time = shaderProgram.CreateUniformFloat ("time")
+
+        member val RenderTexture = shaderProgram.CreateUniformRenderTexture ("uni_texture")
+
+        member val Position = shaderProgram.CreateVertexAttributeVector3 ("position")
+
+    let finalPipeline worldPipeline (getTime: unit -> float32) (getPosition: unit -> Vector3Buffer) =
+        pipeline {
+            let finalShader = Unchecked.defaultof<Shader<FinalInput, unit>>
+
+            let! renderTexture = captureFrame worldPipeline
+
+            do! finalShader.Run (fun input draw ->
+                input.Time.Set (getTime ())
+                input.Position.Set (getPosition ())
+                input.RenderTexture.Set renderTexture
+
+                draw ()
+            )
+        }
 
 // *****************************************
 // *****************************************
