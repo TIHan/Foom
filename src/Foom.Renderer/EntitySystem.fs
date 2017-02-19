@@ -49,11 +49,8 @@ type MeshRenderComponent (renderInfo) =
                     single c.B / 255.f,
                     single c.A / 255.f)
             )
-        {
-            Position = Buffer.createVector3 (renderInfo.MeshInfo.Position)
-            Uv = Buffer.createVector2 (renderInfo.MeshInfo.Uv)
-            Color = Buffer.createVector4 (color) 
-        }
+
+        Mesh (renderInfo.MeshInfo.Position, renderInfo.MeshInfo.Uv, color)
 
     interface IComponent
 

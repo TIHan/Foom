@@ -14,46 +14,82 @@ open Foom.Collections
 // *****************************************
 // *****************************************
 
-type Shader =
-    {
-        name: string
-        program: ShaderProgram
-    }
+type Shader<'Input, 'Output> = Shader of 'Input * 'Output * ShaderProgram
 
-    member this.Draw () = this.program.Draw ()
+type Pipeline<'a> = private Pipeline of (unit -> 'a)
 
-type ShaderCache () =
-    let cache = Dictionary<string, Shader> ()
+type PipelineBuilder () =
 
-    member this.GetOrCreateShader (name: string, drawOperation) =
-        let name = name.ToUpper()
+    member this.Bind (Pipeline x : Pipeline<'a>, f: 'a -> Pipeline<'b>) : Pipeline<'b> = 
+        f (x ())
 
-        match cache.TryGetValue (name) with
-        | true, shader -> shader
-        | _ ->
-            let shaderProgram = ShaderProgram.Load (name, drawOperation)
-            let shader =
-                {
-                    name = name
-                    program = shaderProgram
-                }
+    member this.Delay (f: unit -> Pipeline<'a>) : Pipeline<'a> = 
+        Pipeline (fun _ -> match f () with | Pipeline x -> x ())
 
-            cache.[name] <- shader
+    member this.Return (x: 'a) : Pipeline<'a> =
+        Pipeline (fun _ -> x)
 
-            shader
+    member this.Zero () : Pipeline<unit> =
+        Pipeline (fun _ -> ())
 
-    member this.Remove (shader) =
-        cache.Remove (shader.name)
+type Shader<'Input, 'Output> with
+
+    member this.Run f =
+        match this with
+        | Shader (input, output, program) ->
+
+            Pipeline (
+                fun () ->
+                    f input
+                    program.Draw ()
+                    output
+            )
+
+module Pipeline =
+
+    let pipeline = PipelineBuilder ()
+
+open Pipeline
+
+// *****************************************
+// *****************************************
+// Texture
+// *****************************************
+// *****************************************
 
 type Texture =
     {
         Buffer: Texture2DBuffer
     }
 
+// *****************************************
+// *****************************************
+// Cache
+// *****************************************
+// *****************************************
+
+type ShaderCache () =
+    let cache = Dictionary<string, ShaderProgram> ()
+
+    member this.GetOrCreateShader (name: string) =
+        let name = name.ToUpper()
+
+        match cache.TryGetValue (name) with
+        | true, shader -> shader
+        | _ ->
+            let shaderProgram = ShaderProgram.Load (name)
+
+            cache.[name] <- shaderProgram
+
+            shaderProgram
+
+    member this.Remove (shader) =
+        cache.Remove (shader.name)
+
 type TextureCache () =
     let cache = Dictionary<string, Texture> ()
 
-    member this.GetOrCreateShader (fileName: string) =
+    member this.GetOrCreateTexture (fileName: string) =
         let fileName = fileName.ToUpper ()
 
         match cache.TryGetValue (fileName) with
@@ -72,19 +108,26 @@ type TextureCache () =
                 Buffer = buffer
             }
 
+// *****************************************
+// *****************************************
+// Mesh
+// *****************************************
+// *****************************************
+
+[<Sealed>]
+type Mesh (position, uv, color) =
+
+    member val Position = Buffer.createVector3 position
+
+    member val Uv = Buffer.createVector2 uv
+
+    member val Color = Buffer.createVector4 color
 
 // *****************************************
 // *****************************************
 // Renderer
 // *****************************************
 // *****************************************
-
-type Mesh =
-    {
-        Position: Vector3Buffer
-        Uv: Vector2Buffer
-        Color: Vector4Buffer
-    }
 
 [<ReferenceEquality>]
 type Bucket =
@@ -178,7 +221,7 @@ type Renderer =
         let maxCameras = 100
         let maxCameraLayers = 7
 
-        let shaderProgram = ShaderProgram.Load("Fullscreen", DrawOperation.Normal)
+        let shaderProgram = ShaderProgram.Load("Fullscreen")
 
         let vertices =
             [|
@@ -240,7 +283,7 @@ type Renderer =
             None
 
     member this.CreateShader (name, drawOperation, f: ShaderId -> ShaderProgram -> (float32 -> Matrix4x4 -> Matrix4x4 -> Texture -> Bucket -> unit)) =
-        let shaderProgram = ShaderProgram.Load (name, drawOperation)
+        let shaderProgram = ShaderProgram.Load (name)
 
         let shaderId = this.nextShaderId
 

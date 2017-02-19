@@ -66,14 +66,14 @@ type ShaderProgram =
         mutable instanceCount: int
     }
 
-    static member Load (name, drawOperation) =
+    static member Load (name) =
         let vertexBytes = File.ReadAllText (name + ".vert") |> System.Text.Encoding.UTF8.GetBytes
         let fragmentBytes = File.ReadAllText (name + ".frag") |> System.Text.Encoding.UTF8.GetBytes
         let programId = Backend.loadShaders vertexBytes fragmentBytes
         {
             name = name
             programId = programId
-            drawOperation = drawOperation
+            drawOperation = DrawOperation.Normal
             isUnbinded = true
             isInitialized = false
             length = -1
