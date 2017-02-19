@@ -122,8 +122,10 @@ type Shader<'Input, 'Output> with
         | Shader (input, output, program) ->
 
             Pipeline (
-                fun _ ->
-                    f input program.Draw
+                fun context ->
+                    context.AddAction (fun () ->
+                        f input program.Draw
+                    )
                     output
             )
 
@@ -137,47 +139,40 @@ module Pipeline =
 
     let clear =
         Pipeline (
-            fun _ ->
-                Backend.clear ()
+            fun context ->
+                context.AddAction Backend.clear
         )
 
-    let captureFrame p =
-
-        let mutable renderTextureOpt = None
+    let captureFrame width height p =
         Pipeline (
             fun context ->
-                let renderTexture =
-                    match renderTextureOpt with
-                    | None ->
-                        let renderTexture = RenderTexture (1280, 720)
-                        context.AddRelease renderTexture.Release
-                        renderTextureOpt <- Some renderTexture
-                        renderTexture
+                let renderTexture = RenderTexture (width, height)
 
-                    | Some renderTexture -> renderTexture                  
+                context.AddRelease renderTexture.Release
+                
+                context.AddAction (fun () ->
+                    renderTexture.TryBufferData () |> ignore
+                    renderTexture.Bind ()
+                    Backend.clear ()
+                )            
                 
                 match p with
                 | Pipeline f -> f context
+
+                context.AddAction (fun () ->
+                    renderTexture.Unbind ()
+                )
 
                 renderTexture
         )
 
     let getShader name createInput createOutput =
-        
-        let mutable shaderOpt = None
         Pipeline (
             fun context ->
-                let shader =
-                    match shaderOpt with
-                    | None ->
-                        let shaderProgram = context.ShaderProgramCache.GetOrCreateShader (name)
-                        let input = createInput shaderProgram
-                        let output = createOutput shaderProgram
-                        let shader = Shader (input, output, shaderProgram)
-                        shaderOpt <- Some shader
-                        shader
-
-                    | Some shader -> shader
+                let shaderProgram = context.ShaderProgramCache.GetOrCreateShader (name)
+                let input = createInput shaderProgram
+                let output = createOutput shaderProgram
+                let shader = Shader (input, output, shaderProgram)
 
                 shader
         )
@@ -205,7 +200,7 @@ module Final =
         pipeline {
             let! finalShader = getShader "Fullscreen" FinalInput (fun _ -> ())
 
-            let! renderTexture = captureFrame worldPipeline
+            let! renderTexture = captureFrame 1280 720 worldPipeline
 
             do! finalShader.Run (fun input draw ->
                 input.Time.Set (getTime ())
