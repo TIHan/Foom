@@ -4,6 +4,60 @@ module Foom.Client.Client
 open Foom.Ecs
 open Foom.Renderer
 
+(*
+
+let skyWall =
+    pipeline {
+        do! runMesh<unit> "TextureMesh" TextureMeshInput noOutput (fun () input draw ->
+            draw ()
+        )
+    }
+
+let sky =
+    pipeline {
+        do! runMesh<Sky> "Sky" TextureMeshInput noOutput (fun sky input draw ->
+            draw ()
+        )
+    }
+
+let skyPipeline =
+    pipeline {
+        do! captureStencil skyWall (fun () -> 1)
+        do! useStencil sky (fun () -> 1)
+    }
+
+let worldPipeline =
+    pipeline {
+        do! runMesh<unit> "TextureMesh" MeshInput (fun _ -> ()) (fun () input draw ->
+            draw ()
+        )
+
+        do! runMesh<Sprite> "Sprite" SpriteInput (fun _ -> ()) (fun sprite input draw ->
+            input.Center.Set sprite.Center
+            draw ()
+        )
+    }
+
+let renderPipeline =
+    pipeline {
+
+        runPipeline "World" worldPipeline
+        runPipeline "Sky" skyPipeline
+
+    }
+
+let meshInfoExample =
+    {
+        Texture = "Test.bmp"
+        Pipeline = "World"
+        Extra =
+            {
+                Center = [||]
+            }
+
+    }
+*)
+
 type IsSky = IsSky of bool
 
 let init (world: World) =
