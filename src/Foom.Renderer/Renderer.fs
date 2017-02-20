@@ -25,23 +25,28 @@ type Texture =
 // *****************************************
 // *****************************************
 
-type ShaderProgramCache () =
-    let cache = Dictionary<string, ShaderProgram> ()
+type ProgramCache () =
+    let cache = Dictionary<string, int> ()
 
-    member this.GetOrCreateShader (name: string) =
+    member this.CreateShaderProgram (name: string) =
         let name = name.ToUpper()
 
-        match cache.TryGetValue (name) with
-        | true, shader -> shader
-        | _ ->
-            let shaderProgram = ShaderProgram.Load (name)
+        let programId =
+            match cache.TryGetValue (name) with
+            | true, programId -> programId
+            | _ ->
+                let vertexBytes = File.ReadAllText (name + ".vert") |> System.Text.Encoding.UTF8.GetBytes
+                let fragmentBytes = File.ReadAllText (name + ".frag") |> System.Text.Encoding.UTF8.GetBytes
+                let programId = Backend.loadShaders vertexBytes fragmentBytes
 
-            cache.[name] <- shaderProgram
+                cache.[name] <- programId
 
-            shaderProgram
+                programId
 
-    member this.Remove (shader) =
-        cache.Remove (shader.name)
+        ShaderProgram.Create programId
+
+    member this.Remove (name: string) =
+        cache.Remove (name.ToUpper ())
 
 type TextureCache () =
     let cache = Dictionary<string, Texture> ()
@@ -74,12 +79,12 @@ type TextureCache () =
 type Shader<'Input, 'Output> = Shader of 'Input * 'Output * ShaderProgram
 
 [<Sealed>]
-type PipelineContext (shaderProgramCache: ShaderProgramCache) =
+type PipelineContext (programCache: ProgramCache) =
     
     let releases = ResizeArray<unit -> unit> ()
     let actions = ResizeArray<unit -> unit> ()
 
-    member val ShaderProgramCache = shaderProgramCache
+    member val ProgramCache = programCache
 
     member this.AddRelease release =
         releases.Add release
@@ -182,7 +187,7 @@ module Pipeline =
     let getShader name createInput createOutput =
         Pipeline (
             fun context ->
-                let shaderProgram = context.ShaderProgramCache.GetOrCreateShader (name)
+                let shaderProgram = context.ProgramCache.CreateShaderProgram (name)
                 let input = createInput shaderProgram
                 let output = createOutput shaderProgram
                 let shader = Shader (input, output, shaderProgram)
@@ -341,7 +346,7 @@ type Renderer =
     {
         mutable nextShaderId: int
         shaders: Dictionary<ShaderId, ShaderProgram * (float32 -> Matrix4x4 -> Matrix4x4 -> Texture -> Bucket -> unit)>
-        shaderProgramCache: ShaderProgramCache
+        programCache: ProgramCache
 
         finalPipeline: PipelineContext
         finalPositionBuffer: Vector3Buffer
@@ -358,7 +363,7 @@ type Renderer =
         let maxCameras = 100
         let maxCameraLayers = 7
 
-        let shaderProgramCache = ShaderProgramCache ()
+        let programCache = ProgramCache ()
 
         let vertices =
             [|
@@ -377,13 +382,13 @@ type Renderer =
         for i = 1 to maxCameraLayers do
             layerManager.Add (CameraLayer.Create ()) |> ignore
 
-        let finalPipelineContext = PipelineContext (shaderProgramCache)
+        let finalPipelineContext = PipelineContext (programCache)
 
         let renderer =
             {
                 nextShaderId = 0
                 shaders = Dictionary ()
-                shaderProgramCache = shaderProgramCache
+                programCache = programCache
                 finalPipeline = finalPipelineContext
                 finalPositionBuffer = positionBuffer
 
@@ -421,7 +426,7 @@ type Renderer =
             None
 
     member this.CreateShader (name, drawOperation, f: ShaderId -> ShaderProgram -> (float32 -> Matrix4x4 -> Matrix4x4 -> Texture -> Bucket -> unit)) =
-        let shaderProgram = ShaderProgram.Load (name)
+        let shaderProgram = this.programCache.CreateShaderProgram (name)
 
         let shaderId = this.nextShaderId
 

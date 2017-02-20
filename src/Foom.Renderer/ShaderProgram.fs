@@ -54,7 +54,6 @@ type RenderPass =
 
 type ShaderProgram =
     {
-        name: string
         programId: int
         drawOperation: DrawOperation
         mutable isUnbinded: bool
@@ -66,12 +65,8 @@ type ShaderProgram =
         mutable instanceCount: int
     }
 
-    static member Load (name) =
-        let vertexBytes = File.ReadAllText (name + ".vert") |> System.Text.Encoding.UTF8.GetBytes
-        let fragmentBytes = File.ReadAllText (name + ".frag") |> System.Text.Encoding.UTF8.GetBytes
-        let programId = Backend.loadShaders vertexBytes fragmentBytes
+    static member Create (programId) =
         {
-            name = name
             programId = programId
             drawOperation = DrawOperation.Normal
             isUnbinded = true
