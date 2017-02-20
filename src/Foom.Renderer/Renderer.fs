@@ -114,6 +114,9 @@ type PipelineBuilder () =
     member this.Delay (f: unit -> Pipeline<'a>) : Pipeline<'a> = 
         Pipeline (fun context -> match f () with | Pipeline x -> x context)
 
+    member this.ReturnFrom (Pipeline x : Pipeline<'a>) : Pipeline<'a> =
+        Pipeline x
+
     member this.Return (x: 'a) : Pipeline<'a> =
         Pipeline (fun _ -> x)
 
@@ -140,6 +143,8 @@ type Shader<'Input, 'Output> with
 module Pipeline =
 
     let pipeline = PipelineBuilder ()
+
+    let noOutput x = ()
 
     let run context p =
         match p with
@@ -185,6 +190,12 @@ module Pipeline =
                 shader
         )
 
+    let runShader name createInput createOutput f =
+        pipeline {
+            let! shader = getShader name createInput createOutput
+            return! shader.Run f
+        }
+
 open Pipeline
 
 // *****************************************
@@ -206,11 +217,9 @@ module Final =
 
     let finalPipeline worldPipeline (getTime: unit -> float32) (getPosition: unit -> Vector3Buffer) =
         pipeline {
-            let! finalShader = getShader "Fullscreen" FinalInput (fun _ -> ())
-
             let! renderTexture = captureFrame 1280 720 worldPipeline
 
-            do! finalShader.Run (fun input draw ->
+            do! runShader "Fullscreen" FinalInput noOutput (fun input draw ->
                 input.Time.Set (getTime ())
                 input.Position.Set (getPosition ())
                 input.RenderTexture.Set renderTexture
@@ -233,14 +242,6 @@ type Mesh (position, uv, color) =
     member val Uv = Buffer.createVector2 uv
 
     member val Color = Buffer.createVector4 color
-
-//                let iPosition = shaderProgram.CreateVertexAttributeVector3 ("position")
-//                let iUv = shaderProgram.CreateVertexAttributeVector2 ("in_uv")
-//                let uTexture = shaderProgram.CreateUniformTexture2D ("uni_texture")
-//                let uTextureResolution = shaderProgram.CreateUniformVector2("uTextureResolution")
-//                let uView = shaderProgram.CreateUniformMatrix4x4 ("uni_view")
-//                let uProjection = shaderProgram.CreateUniformMatrix4x4 ("uni_projection")
-//                let uTime = shaderProgram.CreateUniformFloat ("uTime")
 
 [<Sealed>]
 type MeshInput (shaderProgram: ShaderProgram) =
