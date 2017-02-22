@@ -21,6 +21,39 @@ type Texture =
 
 // *****************************************
 // *****************************************
+// Mesh
+// *****************************************
+// *****************************************
+
+[<Sealed>]
+type Mesh (position, uv, color) =
+
+    member val Position = Buffer.createVector3 position
+
+    member val Uv = Buffer.createVector2 uv
+
+    member val Color = Buffer.createVector4 color
+
+type MeshInput (shaderProgram: ShaderProgram) =
+    
+    member val Position = shaderProgram.CreateVertexAttributeVector3 ("position")
+
+    member val Uv = shaderProgram.CreateInstanceAttributeVector2 ("in_uv")
+
+    member val Color = shaderProgram.CreateVertexAttributeVector4 ("in_color")
+
+    member val Texture = shaderProgram.CreateUniformTexture2D ("uni_texture")
+
+    member val View = shaderProgram.CreateUniformMatrix4x4 ("uni_view")
+
+    member val Projection = shaderProgram.CreateUniformMatrix4x4 ("uni_projection")
+
+    member val Time = shaderProgram.CreateUniformFloat ("uTime")
+
+    member val TextureResolution = shaderProgram.CreateUniformVector2 ("uTextureResolution")
+
+// *****************************************
+// *****************************************
 // Cache
 // *****************************************
 // *****************************************
@@ -76,15 +109,78 @@ type TextureCache () =
 // *****************************************
 // *****************************************
 
+[<Struct>]
+type TextureMeshId =
+
+    val MeshId : CompactId
+
+    val TextureId : int
+
+    val Type : Type
+
+    new (meshId, textureId, typ) = { MeshId = meshId; TextureId = textureId; Type = typ }
+
 type Shader<'Input, 'Output> = Shader of 'Input * 'Output * ShaderProgram
 
 [<Sealed>]
-type PipelineContext (programCache: ProgramCache) =
+type SubPipeline (context: PipelineContext, pipeline: Pipeline<unit>) =
+
+    let releases = ResizeArray<unit -> unit> ()
+    let lookup = Dictionary<Type, Dictionary<int, Texture * CompactManager<Mesh * obj>>> ()
+
+    member this.Pipeline = pipeline
+
+    member this.AddTextureMesh<'T> (texture: Texture, mesh: Mesh, extra: 'T) =
+        let (_, m) =
+            match lookup.TryGetValue (typeof<'T>) with
+            | true, t -> t.[texture.Buffer.Id]
+            | _ ->
+                let m = CompactManager<Mesh * obj>.Create (65536)
+                let textureLookup = Dictionary ()
+                textureLookup.[texture.Buffer.Id] <- (texture, m)
+                lookup.[typeof<'T>] <- textureLookup
+                (texture, m)
+
+        let meshId = m.Add (mesh, extra :> obj)
+        let textureId = texture.Buffer.Id
+
+        TextureMeshId (meshId, textureId, typeof<'T>)
+                              
+    member this.RemoveTextureMeshById (textureMeshId: TextureMeshId) = 
+        let (_, m) = lookup.[textureMeshId.Type].[textureMeshId.TextureId]
+        m.RemoveById (textureMeshId.MeshId)
+
+    member this.TryGetLookup<'T> () =
+        match lookup.TryGetValue (typeof<'T>) with
+        | true, lookup -> Some lookup
+        | _ -> None
+
+and [<Sealed>] PipelineContext (programCache: ProgramCache) =
     
     let releases = ResizeArray<unit -> unit> ()
     let actions = ResizeArray<unit -> unit> ()
+    let subPipelines = Dictionary<string, SubPipeline> ()
+
+    let subPipelineStack = Stack<SubPipeline> ()
 
     member val ProgramCache = programCache
+
+    member this.CurrentSubPipeline =
+        if subPipelineStack.Count = 0 then None
+        else Some (subPipelineStack.Peek ())
+
+    member this.UseSubPipeline (name) =
+        match subPipelines.TryGetValue (name) with
+        | true, subPipeline ->
+
+            subPipelineStack.Push (subPipeline)
+
+            match subPipeline.Pipeline with
+            | Pipeline f -> f this
+
+            subPipelineStack.Pop () |> ignore
+
+        | _ -> ()
 
     member this.AddRelease release =
         releases.Add release
@@ -97,7 +193,15 @@ type PipelineContext (programCache: ProgramCache) =
             let f = actions.[i]
             f ()
 
-type Pipeline<'a> = private Pipeline of (PipelineContext -> 'a)
+    member val Time = 0.f with get, set
+
+    member val View = Matrix4x4.Identity with get, set
+
+    member val Projection = Matrix4x4.Identity with get, set
+
+
+
+and Pipeline<'a> = private Pipeline of (PipelineContext -> 'a)
 
 type PipelineBuilder () =
 
@@ -184,7 +288,7 @@ module Pipeline =
                 renderTexture
         )
 
-    let getShader name createInput createOutput =
+    let getProgram name createInput createOutput =
         Pipeline (
             fun context ->
                 let shaderProgram = context.ProgramCache.CreateShaderProgram (name)
@@ -195,11 +299,70 @@ module Pipeline =
                 shader
         )
 
-    let runShader name createInput createOutput f =
+    let runProgram name createInput createOutput f =
         pipeline {
-            let! shader = getShader name createInput createOutput
+            let! shader = getProgram name createInput createOutput
             return! shader.Run f
         }
+
+    let runSubPipeline name =
+        Pipeline (
+            fun context ->
+                context.UseSubPipeline (name)
+        )
+
+    let runProgramWithMesh<'T, 'Input when 'Input :> MeshInput> name createInput createOutput init f =
+        Pipeline (
+            fun context ->
+                let program = context.ProgramCache.CreateShaderProgram (name)
+                let input : 'Input = createInput program
+                let output = createOutput program
+
+                let draw = (fun () -> program.Run RenderPass.Depth)
+
+                context.CurrentSubPipeline
+                |> Option.iter (fun subPipeline ->
+
+                    subPipeline.TryGetLookup<'T> ()
+                    |> Option.iter (fun lookup ->
+
+                        context.AddAction (fun () ->
+                            Backend.useProgram program.programId
+
+                            input.Time.Set context.Time
+                            input.View.Set context.View
+                            input.Projection.Set context.Projection
+
+                            init input
+
+                            lookup
+                            |> Seq.iter (fun pair ->
+                                let key = pair.Key
+                                let (texture, meshManager) = pair.Value
+
+                                input.Texture.Set texture.Buffer
+
+                                meshManager.ForEach (fun id (mesh, o) ->
+                                    let o = 
+                                        if o = null then Unchecked.defaultof<'T>
+                                        else o :?> 'T
+
+                                    input.Position.Set mesh.Position
+                                    input.Uv.Set mesh.Uv
+                                    input.Color.Set mesh.Color
+
+                                    f o input draw
+                                )
+                            )
+
+                            program.Unbind ()
+                            Backend.useProgram 0
+                        )
+                    )
+                )
+
+                output 
+        )
 
 open Pipeline
 
@@ -224,7 +387,7 @@ module Final =
         pipeline {
             let! renderTexture = captureFrame 1280 720 worldPipeline
 
-            do! runShader "Fullscreen" FinalInput noOutput (fun input draw ->
+            do! runProgram "Fullscreen" FinalInput noOutput (fun input draw ->
                 input.Time.Set (getTime ())
                 input.Position.Set (getPosition ())
                 input.RenderTexture.Set renderTexture
@@ -233,39 +396,17 @@ module Final =
             )
         }
 
-// *****************************************
-// *****************************************
-// Mesh
-// *****************************************
-// *****************************************
+    let standardMesh =
+        pipeline {
+            do! runProgramWithMesh "TextureMesh" MeshInput noOutput (fun _ -> ()) (fun (o: obj) input draw ->
+                draw ()
+            )
+        }
 
-[<Sealed>]
-type Mesh (position, uv, color) =
-
-    member val Position = Buffer.createVector3 position
-
-    member val Uv = Buffer.createVector2 uv
-
-    member val Color = Buffer.createVector4 color
-
-[<Sealed>]
-type MeshInput (shaderProgram: ShaderProgram) =
-    
-    member val Position = shaderProgram.CreateVertexAttributeVector3 ("position")
-
-    member val Uv = shaderProgram.CreateInstanceAttributeVector2 ("in_uv")
-
-    member val Color = shaderProgram.CreateVertexAttributeVector4 ("in_color")
-
-    member val Texture = shaderProgram.CreateUniformTexture2D ("uni_texture")
-
-    member val View = shaderProgram.CreateUniformMatrix4x4 ("uni_view")
-
-    member val Projection = shaderProgram.CreateUniformMatrix4x4 ("uni_projection")
-
-    member val Time = shaderProgram.CreateUniformFloat ("uTime")
-
-    member val TextureResolution = shaderProgram.CreateUniformVector2 ("uTextureResolution")
+    let standard =
+        pipeline {
+            do! runSubPipeline "World"
+        }
 
 // *****************************************
 // *****************************************
