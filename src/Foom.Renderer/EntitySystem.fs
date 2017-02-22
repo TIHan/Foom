@@ -35,6 +35,52 @@ type RenderInfo =
         LayerIndex: int
     }
 
+[<AbstractClass>]
+type BaseMeshRendererComponent<'ExtraInfo, 'Extra> (meshInfo: MeshInfo, extraInfo: 'ExtraInfo) =
+
+    member val MeshInfo = meshInfo
+
+    member val ExtraInfo = extraInfo
+
+    member val Mesh : Mesh =
+        let color =
+            meshInfo.Color
+            |> Array.map (fun c ->
+                Vector4 (
+                    single c.R / 255.f,
+                    single c.G / 255.f,
+                    single c.B / 255.f,
+                    single c.A / 255.f)
+            )
+
+        Mesh (meshInfo.Position, meshInfo.Uv, color)
+
+    abstract member Extra : 'Extra
+
+[<Sealed>]
+type MeshRendererComponent (meshInfo) =
+    inherit BaseMeshRendererComponent<obj, obj> (meshInfo, null)
+
+    override val Extra = null
+
+type SpriteInfo =
+    {
+        Center: Vector3 []
+    }
+
+type Sprite =
+    {
+        Center: Vector3Buffer
+    }
+
+type SpriteRendererComponent (meshInfo, spriteInfo) =
+    inherit BaseMeshRendererComponent<SpriteInfo, Sprite> (meshInfo, spriteInfo)
+
+    override val Extra = 
+        {
+            Center = Buffer.createVector3 (spriteInfo.Center)
+        }
+
 type MeshRenderComponent (renderInfo) =
 
     member val RenderInfo = renderInfo
