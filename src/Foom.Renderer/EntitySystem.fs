@@ -73,6 +73,11 @@ type Sprite =
         Center: Vector3Buffer
     }
 
+type SpriteInput (shaderProgram) =
+    inherit MeshInput (shaderProgram)
+
+    member val Center = shaderProgram.CreateVertexAttributeVector3 ("in_center")
+
 type SpriteRendererComponent (meshInfo, spriteInfo) =
     inherit BaseMeshRendererComponent<SpriteInfo, Sprite> (meshInfo, spriteInfo)
 
@@ -80,6 +85,15 @@ type SpriteRendererComponent (meshInfo, spriteInfo) =
         {
             Center = Buffer.createVector3 (spriteInfo.Center)
         }
+
+type SkyInfo = SkyInfo of unit
+
+type Sky = Sky of unit
+
+type SkyRendererComponent (meshInfo) =
+    inherit BaseMeshRendererComponent<SkyInfo, Sky> (meshInfo, SkyInfo ())
+
+    override val Extra = Sky ()
 
 type MeshRenderComponent (renderInfo) =
 

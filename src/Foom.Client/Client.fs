@@ -4,59 +4,61 @@ module Foom.Client.Client
 open Foom.Ecs
 open Foom.Renderer
 
-(*
 
-let skyWall =
-    pipeline {
-        do! runMesh<unit> "TextureMesh" TextureMeshInput noOutput (fun () input draw ->
-            draw ()
-        )
-    }
+module Pipelines =
+    open Pipeline
 
-let sky =
-    pipeline {
-        do! runMesh<Sky> "Sky" TextureMeshInput noOutput (fun sky input draw ->
-            draw ()
-        )
-    }
+    let skyWall =
+        pipeline {
+            do! runProgramWithMesh "TextureMesh" MeshInput noOutput (fun _ -> ()) (fun () input draw ->
+                draw ()
+            )
+        }
 
-let skyPipeline =
-    pipeline {
-        do! captureStencil skyWall (fun () -> 1)
-        do! useStencil sky (fun () -> 1)
-    }
+    let sky =
+        pipeline {
+            do! runProgramWithMesh "Sky" MeshInput noOutput (fun _ -> ()) (fun (_: RendererSystem.Sky) input draw ->
+                draw ()
+            )
+        }
 
-let worldPipeline =
-    pipeline {
-        do! runMesh<unit> "TextureMesh" MeshInput (fun _ -> ()) (fun () input draw ->
-            draw ()
-        )
+    let skyPipeline =
+        pipeline {
+            do! setStencil skyWall 1
+            do! useStencil sky 1
+        }
 
-        do! runMesh<Sprite> "Sprite" SpriteInput (fun _ -> ()) (fun sprite input draw ->
-            input.Center.Set sprite.Center
-            draw ()
-        )
-    }
+    let worldPipeline =
+        pipeline {
+            do! runProgramWithMesh "TextureMesh" MeshInput (fun _ -> ()) (fun _ -> ()) (fun () input draw ->
+                draw ()
+            )
 
-let renderPipeline =
-    pipeline {
+            do! runProgramWithMesh "Sprite" RendererSystem.SpriteInput noOutput noOutput (fun (sprite: RendererSystem.Sprite) input draw ->
+                input.Center.Set sprite.Center
+                draw ()
+            )
+        }
 
-        runPipeline "World" worldPipeline
-        runPipeline "Sky" skyPipeline
+    let renderPipeline =
+        pipeline {
 
-    }
+            do! runSubPipeline "World"
+            do! runSubPipeline "Sky"
 
-let meshInfoExample =
-    {
-        Texture = "Test.bmp"
-        Pipeline = "World"
-        Extra =
-            {
-                Center = [||]
-            }
+        }
 
-    }
-*)
+//let meshInfoExample =
+//    {
+//        Texture = "Test.bmp"
+//        Pipeline = "World"
+//        Extra =
+//            {
+//                Center = [||]
+//            }
+
+//    }
+//*)
 
 type IsSky = IsSky of bool
 

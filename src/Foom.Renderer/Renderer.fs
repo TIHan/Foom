@@ -364,6 +364,40 @@ module Pipeline =
                 output 
         )
 
+    let setStencil p (value: int) =
+        Pipeline (
+            fun context ->
+                context.AddAction (fun () ->
+                    Backend.enableStencilTest ()
+                    Backend.colorMaskFalse ()
+                    Backend.depthMaskFalse ()
+                    Backend.stencil1 ()
+                )
+
+                run context p
+
+                context.AddAction (fun () ->
+                    Backend.depthMaskTrue ()
+                    Backend.colorMaskTrue ()
+                    Backend.disableStencilTest ()
+                )
+        )
+
+    let useStencil p (value: int) =
+        Pipeline (
+            fun context ->
+                context.AddAction (fun () ->
+                    Backend.enableStencilTest ()
+                    Backend.stencil2 ()
+                )
+
+                run context p
+
+                context.AddAction (fun () ->
+                    Backend.disableStencilTest ()
+                )
+        )
+
 open Pipeline
 
 // *****************************************
