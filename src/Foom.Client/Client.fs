@@ -34,10 +34,10 @@ module Pipelines =
                 draw ()
             )
 
-            do! runProgramWithMesh "Sprite" RendererSystem.SpriteInput noOutput (fun (sprite: RendererSystem.Sprite) input draw ->
-                input.Center.Set sprite.Center
-                draw ()
-            )
+            //do! runProgramWithMesh "Sprite" RendererSystem.SpriteInput noOutput (fun (sprite: RendererSystem.Sprite) input draw ->
+            //    input.Center.Set sprite.Center
+            //    draw ()
+            //)
         }
 
     let renderPipeline =
@@ -48,18 +48,6 @@ module Pipelines =
            // do! runSubPipeline "Sky"
 
         }
-
-//let meshInfoExample =
-//    {
-//        Texture = "Test.bmp"
-//        Pipeline = "World"
-//        Extra =
-//            {
-//                Center = [||]
-//            }
-
-//    }
-//*)
 
 type IsSky = IsSky of bool
 

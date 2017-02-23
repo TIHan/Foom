@@ -148,6 +148,7 @@ let runGlobalBatch (em: EntityManager) =
                 SubRenderer = "World"
             }
 
+        em.Add (ent, RendererSystem.MeshRendererComponent (meshInfo))
         if isSprite then
             let center =
                 if not isSprite then Array.zeroCreate vertices.Count
@@ -170,9 +171,11 @@ let runGlobalBatch (em: EntityManager) =
                     )
                     |> Seq.reduce Array.append
 
-            em.Add (ent, RendererSystem.SpriteRendererComponent (meshInfo, { Center = center }))
+            ()
+            //em.Add (ent, RendererSystem.SpriteRendererComponent (meshInfo, { Center = center }))
         else
-            em.Add (ent, RendererSystem.MeshRendererComponent (meshInfo))
+            ()
+            //em.Add (ent, RendererSystem.MeshRendererComponent (meshInfo))
     )
 
 open System.Linq
@@ -444,7 +447,7 @@ let updates (clientWorld: ClientWorld) =
                             SubRenderer = "Sky"
                         }
 
-                    em.Add (skyEnt, RendererSystem.SkyRendererComponent (meshInfo))
+                    em.Add (skyEnt, RendererSystem.MeshRendererComponent (meshInfo))
 
 
                 | _ -> ()

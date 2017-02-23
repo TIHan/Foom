@@ -170,6 +170,8 @@ type ShaderProgram =
         let initAttrib =
             fun () ->
                 attrib.Location <- Backend.getAttributeLocation this.programId attrib.Name
+                if (attrib.Location = -1) then
+                    System.Diagnostics.Debug.WriteLine("Could not find attribute, " + attrib.Name + ".")
 
         let bufferData =
             match attrib :> obj with

@@ -133,7 +133,13 @@ type SubPipeline (context: PipelineContext, pipeline: Pipeline<unit>) =
     member this.AddTextureMesh<'T> (texture: Texture, mesh: Mesh, extra: 'T) =
         let (_, m) =
             match lookup.TryGetValue (typeof<'T>) with
-            | true, t -> t.[texture.Buffer.Id]
+            | true, t -> 
+                match t.TryGetValue (texture.Buffer.Id) with
+                | true, x -> x
+                | _ ->
+                    let m = CompactManager<Mesh * obj>.Create (65536)
+                    t.[texture.Buffer.Id] <- (texture, m)
+                    (texture, m)
             | _ ->
                 let m = CompactManager<Mesh * obj>.Create (65536)
                 let textureLookup = Dictionary ()
@@ -150,10 +156,13 @@ type SubPipeline (context: PipelineContext, pipeline: Pipeline<unit>) =
         let (_, m) = lookup.[textureMeshId.Type].[textureMeshId.TextureId]
         m.RemoveById (textureMeshId.MeshId)
 
-    member this.TryGetLookup<'T> () =
+    member this.GetLookup<'T> () =
         match lookup.TryGetValue (typeof<'T>) with
-        | true, lookup -> Some lookup
-        | _ -> None
+        | true, dict -> dict
+        | _ ->
+            let dict = Dictionary ()
+            lookup.[typeof<'T>] <- dict
+            dict
 
 and [<Sealed>] PipelineContext (programCache: ProgramCache, subPipelines: (string * Pipeline<unit>) list) as this =
     
@@ -192,6 +201,13 @@ and [<Sealed>] PipelineContext (programCache: ProgramCache, subPipelines: (strin
 
     member this.AddAction action =
         actions.Add action
+
+    member this.TryAddMesh (texture, mesh, subRenderer) =
+        match subPipelines.TryGetValue (subRenderer) with
+        | true, subPipeline ->
+            subPipeline.AddTextureMesh (texture, mesh, ())
+            |> Some
+        | _ -> None
 
     member this.Run () =
         for i = 0 to actions.Count - 1 do
@@ -327,11 +343,18 @@ module Pipeline =
                 context.CurrentSubPipeline
                 |> Option.iter (fun subPipeline ->
 
-                    subPipeline.TryGetLookup<'T> ()
-                    |> Option.iter (fun lookup ->
+                    let lookup = subPipeline.GetLookup<'T> ()
 
-                        context.AddAction (fun () ->
-                            Backend.useProgram program.programId
+                    context.AddAction (fun () ->
+                        Backend.useProgram program.programId
+                       
+
+                        lookup
+                        |> Seq.iter (fun pair ->
+                            let key = pair.Key
+                            let (texture, meshManager) = pair.Value
+
+                            input.Texture.Set texture.Buffer
 
                             input.Time.Set context.Time
                             input.View.Set context.View
@@ -339,29 +362,22 @@ module Pipeline =
 
                             init input
 
-                            lookup
-                            |> Seq.iter (fun pair ->
-                                let key = pair.Key
-                                let (texture, meshManager) = pair.Value
+                            meshManager.ForEach (fun id (mesh, o) ->
+                                let o = 
+                                    if o = null then Unchecked.defaultof<'T>
+                                    else o :?> 'T
 
-                                input.Texture.Set texture.Buffer
+                                input.Position.Set mesh.Position
+                                input.Uv.Set mesh.Uv
+                                input.Color.Set mesh.Color
 
-                                meshManager.ForEach (fun id (mesh, o) ->
-                                    let o = 
-                                        if o = null then Unchecked.defaultof<'T>
-                                        else o :?> 'T
+                                f o input draw
 
-                                    input.Position.Set mesh.Position
-                                    input.Uv.Set mesh.Uv
-                                    input.Color.Set mesh.Color
-
-                                    f o input draw
-                                )
                             )
-
                             program.Unbind ()
-                            Backend.useProgram 0
                         )
+
+                        Backend.useProgram 0
                     )
                 )
         )
@@ -441,6 +457,7 @@ module Final =
 type Renderer =
     {
         programCache: ProgramCache
+        textureCache: TextureCache
 
         finalPipeline: PipelineContext
         finalPositionBuffer: Vector3Buffer
@@ -469,6 +486,7 @@ type Renderer =
         let renderer =
             {
                 programCache = programCache
+                textureCache = TextureCache ()
                 finalPipeline = finalPipelineContext
                 finalPositionBuffer = positionBuffer
                 time = 0.f
@@ -478,6 +496,9 @@ type Renderer =
         |> run finalPipelineContext
 
         renderer
+
+    member this.TryAddMesh (texture, mesh, subRenderer) =
+        this.finalPipeline.TryAddMesh (this.textureCache.GetOrCreateTexture (texture), mesh, subRenderer)
 
     member this.Draw (time: float32) view projection =
         this.time <- time

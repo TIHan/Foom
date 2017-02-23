@@ -73,18 +73,6 @@ type MeshRendererComponent (meshInfo: MeshInfo) =
 //        }
 
 
-let handleAddMesh (renderer: Renderer) =
-    Behavior.handleEvent (fun (evt: Foom.Ecs.Events.ComponentAdded<MeshRendererComponent>) _ em ->
-        match em.TryGet<MeshRendererComponent> (evt.Entity) with
-        | Some meshRendererComp ->
-            let mesh = meshRendererComp.Mesh
-            let texture = meshRendererComp.MeshInfo.Texture
-            let subRenderer = meshRendererComp.MeshInfo.SubRenderer
-            renderer.TryAddMesh (texture, mesh, subRenderer) |> ignore
-        | _ -> ()
-    )
-
-
 let create worldPipeline subPipelines (app: Application) : Behavior<float32 * float32> =
 
     // This should probably be on the camera itself :)
@@ -94,8 +82,6 @@ let create worldPipeline subPipelines (app: Application) : Behavior<float32 * fl
 
     Behavior.merge
         [
-            handleAddMesh renderer
-
             Behavior.update (fun ((time, deltaTime): float32 * float32) em _ ->
 
                 let mutable g_view = Matrix4x4.Identity
