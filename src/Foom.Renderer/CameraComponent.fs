@@ -7,17 +7,9 @@ open Foom.Ecs
 open Foom.Geometry
 
 [<Sealed>]
-type CameraComponent (projection, layerFlags, clearFlags, depth) =
+type CameraComponent (projection) =
 
     let mutable angle = Vector3 (0.f, 0.f, 0.f)
-
-    member val LayerFlags : CameraLayerFlags = layerFlags
-
-    member val ClearFlags : CameraClearFlags = clearFlags
-
-    member val Depth : int = depth
-
-    member val Camera : Camera = Unchecked.defaultof<Camera> with get, set
 
     member val Projection : Matrix4x4 = projection with get, set
 

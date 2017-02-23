@@ -144,25 +144,9 @@ let runGlobalBatch (em: EntityManager) =
                 Position = vertices |> Seq.toArray
                 Uv = uv |> Seq.toArray
                 Color = color |> Seq.toArray
+                Texture = texturePath
+                SubRenderer = "World"
             }
-
-        let materialInfo : RendererSystem.MaterialInfo =
-            {
-                ShaderName = if isSprite then "Sprite" else "TextureMesh"
-                TextureInfo =
-                    {
-                        TexturePath = texturePath
-                    }
-            }
-
-        let renderInfo : RendererSystem.RenderInfo =
-            {
-                MeshInfo = meshInfo
-                MaterialInfo = materialInfo
-                LayerIndex = if isSprite || isSky then 1 else 0
-            }
-
-        em.Add (ent, RendererSystem.MeshRenderComponent (renderInfo))
 
         if isSprite then
             let center =
@@ -186,7 +170,9 @@ let runGlobalBatch (em: EntityManager) =
                     )
                     |> Seq.reduce Array.append
 
-            em.Add (ent, RendererSystem.SpriteComponent (center))
+            em.Add (ent, RendererSystem.SpriteRendererComponent (meshInfo, { Center = center }))
+        else
+            em.Add (ent, RendererSystem.MeshRendererComponent (meshInfo))
     )
 
 open System.Linq
@@ -419,7 +405,7 @@ let updates (clientWorld: ClientWorld) =
                     let transformComp = TransformComponent (Matrix4x4.CreateTranslation (position))
 
                     let cameraEnt = em.Spawn ()
-                    em.Add (cameraEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), CameraLayerFlags.All, CameraClearFlags.All, 0))
+                    em.Add (cameraEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f)))
                     em.Add (cameraEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
                     em.Add (cameraEnt, CharacterControllerComponent (position, 15.f, 56.f))
                     em.Add (cameraEnt, PlayerComponent ())
@@ -454,25 +440,11 @@ let updates (clientWorld: ClientWorld) =
                             Position = vertices
                             Uv = uv
                             Color = [||]
+                            Texture = "Sky1.bmp"
+                            SubRenderer = "Sky"
                         }
 
-                    let materialInfo : RendererSystem.MaterialInfo =
-                        {
-                            ShaderName = "Sky"
-                            TextureInfo =
-                                {
-                                    TexturePath = "Sky1.bmp"
-                                }
-                        }
-
-                    let renderInfo : RendererSystem.RenderInfo =
-                        {
-                            MeshInfo = meshInfo
-                            MaterialInfo = materialInfo
-                            LayerIndex = 2
-                        }
-
-                    em.Add (skyEnt, RendererSystem.MeshRenderComponent (renderInfo))
+                    em.Add (skyEnt, RendererSystem.SkyRendererComponent (meshInfo))
 
 
                 | _ -> ()
