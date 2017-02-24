@@ -38,7 +38,7 @@ type MeshInput (shaderProgram: ShaderProgram) =
     
     member val Position = shaderProgram.CreateVertexAttributeVector3 ("position")
 
-    member val Uv = shaderProgram.CreateInstanceAttributeVector2 ("in_uv")
+    member val Uv = shaderProgram.CreateVertexAttributeVector2 ("in_uv")
 
     member val Color = shaderProgram.CreateVertexAttributeVector4 ("in_color")
 

@@ -245,8 +245,8 @@ type EntityManager =
 
                         Active = Array.zeroCreate<bool> this.MaxEntityAmount
                         IndexLookup = Array.init this.MaxEntityAmount (fun _ -> -1) // -1 means that no component exists for that entity
-                        Entities = UnsafeResizeArray.Create 1
-                        Components = UnsafeResizeArray.Create 1
+                        Entities = UnsafeResizeArray.Create this.MaxEntityAmount
+                        Components = UnsafeResizeArray.Create this.MaxEntityAmount
                     }
 
                 data :> IEntityLookupData
