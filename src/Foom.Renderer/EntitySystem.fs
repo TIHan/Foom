@@ -32,22 +32,13 @@ type MeshInfo =
             )
         Mesh (this.Position, this.Uv, color)
 
-type SpriteInfo =
-    {
-        Center: Vector3 []
-    }
-
-type Sprite =
-    {
-        Center: Vector3Buffer
-    }
-
 type SkyInfo = SkyInfo of unit
 
 type Sky = Sky of unit
 
 [<AbstractClass>]
 type BaseRenderComponent (subRenderer: string, texture: string, mesh: Mesh, extraResource: GpuResource) =
+    inherit Component ()
 
     member val SubRenderer = subRenderer
 
@@ -57,8 +48,6 @@ type BaseRenderComponent (subRenderer: string, texture: string, mesh: Mesh, extr
 
     member val ExtraResource = extraResource
 
-    interface IComponent
-
 [<AbstractClass>]
 type RenderComponent<'T when 'T :> GpuResource> (subRenderer, texture, mesh, extra: 'T) =
     inherit BaseRenderComponent (subRenderer, texture, mesh, extra)
@@ -66,8 +55,8 @@ type RenderComponent<'T when 'T :> GpuResource> (subRenderer, texture, mesh, ext
     member val Extra = extra
 
 [<Sealed>]
-type MeshRenderComponent (subRenderer: string, texture: string, mesh: Mesh) =
-    inherit RenderComponent<UnitResource> (subRenderer, texture, mesh, UnitResource ())
+type MeshRenderComponent (meshInfo: MeshInfo) =
+    inherit RenderComponent<UnitResource> (meshInfo.SubRenderer, meshInfo.Texture, meshInfo.ToMesh (), UnitResource ())
 
 let handleMeshRender (renderer: Renderer) =
     Behavior.handleEvent (fun (evt: Foom.Ecs.Events.AnyComponentAdded) _ em ->

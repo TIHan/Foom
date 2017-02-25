@@ -11,7 +11,9 @@ open Foom.Client
 open Foom.Common.Components
 open Foom.Renderer
 
+[<Sealed>]
 type PlayerComponent () =
+    inherit Component ()
 
     member val IsMovingForward = false with get, set
 
@@ -25,11 +27,9 @@ type PlayerComponent () =
 
     member val Pitch = 0.f with get, set
 
-    interface IComponent
-
+[<Sealed>]
 type SkyComponent () =
-
-    interface IComponent
+    inherit Component ()
 
 [<RequireQualifiedAccess>]
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]

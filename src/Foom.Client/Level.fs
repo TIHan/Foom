@@ -148,7 +148,7 @@ let runGlobalBatch (em: EntityManager) =
                 SubRenderer = "World"
             }
 
-        em.Add (ent, RendererSystem.MeshRenderComponent ("World", texturePath, meshInfo.ToMesh()))
+        em.Add (ent, RendererSystem.MeshRenderComponent (meshInfo))
         if isSprite then
             let center =
                 if not isSprite then Array.zeroCreate vertices.Count
@@ -282,7 +282,7 @@ let updates (clientWorld: ClientWorld) =
             )
 
         Behavior.levelLoading (fun wad level em ->
-            let physicsEngineComp = PhysicsEngineComponent.Create 128
+            let physicsEngineComp = PhysicsEngineComponent (128)
 
             let lvl = WadLevel.toLevel level
 
@@ -447,7 +447,7 @@ let updates (clientWorld: ClientWorld) =
                             SubRenderer = "Sky"
                         }
 
-                    em.Add (skyEnt, RendererSystem.MeshRenderComponent ("Sky", "Sky1.bmp", meshInfo.ToMesh()))
+                    em.Add (skyEnt, RendererSystem.MeshRenderComponent (meshInfo))
 
 
                 | _ -> ()

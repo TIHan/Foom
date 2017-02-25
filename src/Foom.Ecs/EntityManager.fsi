@@ -26,14 +26,17 @@ type Entity =
     member IsZero : bool
 
 /// A marker for component data.
-type IComponent = interface end
+[<AbstractClass>]
+type Component =
+    
+    new : unit -> Component
 
 /// Common events published by the Entity Manager.
 module Events = 
 
     /// Published when a component was added to an existing entity.
     [<Sealed>]
-    type ComponentAdded<'T when 'T :> IComponent and 'T : not struct> =
+    type ComponentAdded<'T when 'T :> Component> =
 
         /// The entity the component was added to.
         member Entity : Entity
@@ -42,7 +45,7 @@ module Events =
 
     /// Published when a component was removed from an exsting entity.
     [<Sealed>]
-    type ComponentRemoved<'T when 'T :> IComponent and 'T : not struct> = 
+    type ComponentRemoved<'T when 'T :> Component> = 
 
         /// The entity the component was removed from.
         member Entity : Entity
@@ -100,41 +103,41 @@ type EntityManager =
     //************************************************************************************************************************
 
     /// Attempts to find a component of type 'T based on the specified Entity.
-    member TryGet<'T when 'T :> IComponent and 'T : not struct> : Entity -> 'T option
+    member TryGet<'T when 'T :> Component> : Entity -> 'T option
 
-    member TryGet : Entity * Type -> IComponent option
+    member TryGet : Entity * Type -> Component option
 
     /// Checks to see if the Entity is valid.
     member IsValid : Entity -> bool
 
     /// Checks to see if the Entity is valid and has a component of type 'T.
-    member Has<'T when 'T :> IComponent and 'T : not struct> : Entity -> bool
+    member Has<'T when 'T :> Component> : Entity -> bool
 
     //************************************************************************************************************************
 
     /// Iterate entities that have a component of type 'T.
-    member ForEach<'T when 'T :> IComponent and 'T : not struct> : (Entity -> 'T -> unit) -> unit
+    member ForEach<'T when 'T :> Component> : (Entity -> 'T -> unit) -> unit
 
     /// Iterate entities that have components of type 'T1 and 'T2.
-    member ForEach<'T1, 'T2 when 'T1 :> IComponent and 'T2 :> IComponent and 'T1 : not struct and 'T2 : not struct> : (Entity -> 'T1 -> 'T2 -> unit) -> unit
+    member ForEach<'T1, 'T2 when 'T1 :> Component and 'T2 :> Component> : (Entity -> 'T1 -> 'T2 -> unit) -> unit
 
     /// Iterate entities that have components of type 'T1, 'T2, and 'T3.
-    member ForEach<'T1, 'T2, 'T3 when 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T1 : not struct and 'T2 : not struct and 'T3 : not struct> : (Entity -> 'T1 -> 'T2 -> 'T3 -> unit) -> unit
+    member ForEach<'T1, 'T2, 'T3 when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component> : (Entity -> 'T1 -> 'T2 -> 'T3 -> unit) -> unit
 
     /// Iterate entities that have components of type 'T1, 'T2, 'T3, and 'T4.
-    member ForEach<'T1, 'T2, 'T3, 'T4 when 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T4 :> IComponent and 'T1 : not struct and 'T2 : not struct and 'T3 : not struct and 'T4 : not struct> : (Entity -> 'T1 -> 'T2 -> 'T3 -> 'T4 -> unit) -> unit
+    member ForEach<'T1, 'T2, 'T3, 'T4 when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component and 'T4 :> Component> : (Entity -> 'T1 -> 'T2 -> 'T3 -> 'T4 -> unit) -> unit
 
     /// Attempts to find a component of type 'T and its corresponding Entity based on the criteria.
-    member TryFind<'T when 'T :> IComponent and 'T : not struct> : predicate: (Entity -> 'T -> bool) -> (Entity * 'T) option
+    member TryFind<'T when 'T :> Component> : predicate: (Entity -> 'T -> bool) -> (Entity * 'T) option
 
     /// Attempts to find a component of type 'T1 and 'T2 and its corresponding Entity based on the criteria.
-    member TryFind<'T1, 'T2 when 'T1 :> IComponent and 'T2 :> IComponent and 'T1 : not struct and 'T2 : not struct> : predicate: (Entity -> 'T1 -> 'T2 -> bool) -> (Entity * 'T1 * 'T2) option
+    member TryFind<'T1, 'T2 when 'T1 :> Component and 'T2 :> Component> : predicate: (Entity -> 'T1 -> 'T2 -> bool) -> (Entity * 'T1 * 'T2) option
 
     // Components
 
-    member Add<'T when 'T :> IComponent and 'T : not struct> : Entity * 'T -> unit
+    member Add<'T when 'T :> Component> : Entity * 'T -> unit
 
-    member Remove<'T when 'T :> IComponent and 'T : not struct> : Entity -> unit
+    member Remove<'T when 'T :> Component> : Entity -> unit
 
     // Entites
 

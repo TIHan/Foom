@@ -7,6 +7,7 @@ open Foom.Ecs
 
 [<Sealed>]
 type TransformComponent (value: Matrix4x4) =
+    inherit Component ()
 
     let mutable transform = value
 
@@ -54,6 +55,4 @@ type TransformComponent (value: Matrix4x4) =
             let mutable m = Matrix4x4.CreateFromQuaternion (value)
             m.Translation <- transform.Translation
             transform <- m
-
-    interface IComponent
     

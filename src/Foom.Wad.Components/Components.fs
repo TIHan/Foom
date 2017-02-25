@@ -16,10 +16,9 @@ type LevelState =
   
 [<Sealed>]
 type LevelComponent (levelName: string) =
+    inherit Component ()
 
     member val State = LevelState.ReadyToLoad levelName with get, set
-
-    interface IComponent
 
 [<RequireQualifiedAccess>]
 type WadState =
@@ -28,10 +27,9 @@ type WadState =
 
 [<Sealed>]
 type WadComponent (wadName: string) =
+    inherit Component ()
 
     member val State = WadState.ReadyToLoad wadName with get, set
-
-    interface IComponent
 
 module Behavior =
 

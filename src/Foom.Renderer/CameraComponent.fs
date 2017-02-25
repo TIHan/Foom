@@ -8,6 +8,7 @@ open Foom.Geometry
 
 [<Sealed>]
 type CameraComponent (projection) =
+    inherit Component ()
 
     let mutable angle = Vector3 (0.f, 0.f, 0.f)
 
@@ -34,5 +35,3 @@ type CameraComponent (projection) =
     member this.AngleZ 
         with get () = angle.Z
         and set value = angle.Z <- value
-
-    interface IComponent

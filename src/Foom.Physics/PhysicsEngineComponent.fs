@@ -8,6 +8,7 @@ open Foom.Ecs
 open Foom.Geometry
 
 type CharacterControllerComponent (position: Vector3, radius: float32, height: float32) =
+    inherit Component ()
 
     let aabb = AABB2D.ofCenterAndExtents Vector2.Zero (Vector2 (radius, radius))
     let dynamicAABB = { AABB = aabb; Height = height }
@@ -16,16 +17,7 @@ type CharacterControllerComponent (position: Vector3, radius: float32, height: f
 
     member this.RigidBody = rigidBody
 
-    interface IComponent
+type PhysicsEngineComponent (cellSize) =
+    inherit Component ()
 
-type PhysicsEngineComponent =
-    {
-        PhysicsEngine: PhysicsEngine
-    }
-
-    static member Create (cellSize) =
-        {
-            PhysicsEngine = PhysicsEngine.create cellSize
-        }
-
-    interface IComponent
+    member val PhysicsEngine = PhysicsEngine.create cellSize

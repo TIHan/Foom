@@ -10,17 +10,15 @@ open Foom.Wad.Level
   
 [<Sealed>]
 type LevelComponent =
+    inherit Component
 
     new : levelName: string -> LevelComponent
 
-    interface IComponent
-
 [<Sealed>]
 type WadComponent =
+    inherit Component
 
     new : wadName: string -> WadComponent
-
-    interface IComponent
 
 module Behavior =
 
