@@ -18,6 +18,8 @@ module Behavior =
 
     val handleLatestEvent : (#IEvent -> 'Update -> EntityManager -> unit) -> Behavior<'Update>
 
+    val handleComponentAdded : (Entity -> #Component -> 'Update -> EntityManager -> unit) -> Behavior<'Update>
+
     val update : ('Update -> EntityManager -> EventAggregator -> unit) -> Behavior<'Update>
 
     val merge : Behavior<'Update>  list -> Behavior<'Update>

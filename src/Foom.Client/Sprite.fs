@@ -87,6 +87,23 @@ let handleSprite () =
     let textureLookup = Dictionary<string, int * int> ()
     Behavior.merge
         [
+            Behavior.handleComponentAdded (fun ent (comp: SpriteRenderComponent) _ em ->
+                let width, height =
+                    match textureLookup.TryGetValue (comp.Texture.ToUpper ()) with
+                    | true, x -> x
+                    | _ ->
+                        use bmp = new Bitmap(comp.Texture)
+                        let x = (bmp.Width, bmp.Height)
+                        textureLookup.[comp.Texture.ToUpper()] <- x
+                        x
+
+                let vertices = createSpriteVertices width height
+                let center = createSpriteCenter vertices
+
+                comp.Mesh.Position.Set vertices
+                comp.Extra.Center.Set center
+
+            )
             Behavior.handleEvent (fun (evt: Events.ComponentAdded<SpriteRenderComponent>) _ em ->
                 match em.TryGet<SpriteRenderComponent> (evt.Entity) with
                 | Some comp -> 

@@ -42,6 +42,13 @@ module Behavior =
             |> context.Actions.Add
         )
 
+    let handleComponentAdded<'T, 'Update when 'T :> Component> (f: Entity -> 'T -> 'Update -> EntityManager -> unit) =
+        handleEvent (fun (evt: Events.ComponentAdded<'T>) update em ->
+            match em.TryGet<'T> (evt.Entity) with
+            | Some c -> f evt.Entity c update em
+            | _ -> ()
+        )
+
     let update (f: 'Update -> EntityManager -> EventAggregator -> unit) = 
         Behavior (fun context ->
             (fun updateData ->
