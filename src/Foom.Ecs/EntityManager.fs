@@ -137,6 +137,10 @@ type IEntityLookupData =
 
     abstract Entities : Entity UnsafeResizeArray with get
 
+    abstract GetIndex : int -> int
+
+    abstract GetComponent : int -> IComponent
+
 [<ReferenceEquality>]
 type EntityLookupData<'T when 'T :> IComponent and 'T : not struct> =
     {
@@ -154,6 +158,10 @@ type EntityLookupData<'T when 'T :> IComponent and 'T : not struct> =
     interface IEntityLookupData with
 
         member this.Entities = this.Entities
+
+        member this.GetIndex id = this.IndexLookup.[id]
+
+        member this.GetComponent index = this.Components.Buffer.[index] :> IComponent
 
 [<ReferenceEquality>]
 type EntityManager =
@@ -442,6 +450,20 @@ type EntityManager =
                 let index = data.IndexLookup.[entity.Index]
                 if index >= 0 then
                     Some data.Components.Buffer.[index]
+                else
+                    None
+            else
+                None
+        else
+            None
+
+    member this.TryGet (entity: Entity, typ: Type) : IComponent option =
+        let mutable data = Unchecked.defaultof<IEntityLookupData>
+        if this.Lookup.TryGetValue (typ, &data) then
+            if this.IsValidEntity entity then
+                let index = data.GetIndex (entity.Index)
+                if index >= 0 then
+                    Some (data.GetComponent index)
                 else
                     None
             else

@@ -20,6 +20,18 @@ type MeshInfo =
         SubRenderer: string
     }
 
+    member this.ToMesh () =
+        let color =
+            this.Color
+            |> Array.map (fun c ->
+                Vector4 (
+                    single c.R / 255.f,
+                    single c.G / 255.f,
+                    single c.B / 255.f,
+                    single c.A / 255.f)
+            )
+        Mesh (this.Position, this.Uv, color)
+
 type SpriteInfo =
     {
         Center: Vector3 []
@@ -34,56 +46,41 @@ type SkyInfo = SkyInfo of unit
 
 type Sky = Sky of unit
 
-[<Sealed>]
-type MeshRendererComponent (meshInfo: MeshInfo) =
+[<AbstractClass>]
+type BaseRenderComponent (subRenderer: string, texture: string, mesh: Mesh, extraResource: GpuResource) =
 
-    member val MeshInfo = meshInfo
+    member val SubRenderer = subRenderer
 
-    member val Mesh : Mesh =
-        let color =
-            meshInfo.Color
-            |> Array.map (fun c ->
-                Vector4 (
-                    single c.R / 255.f,
-                    single c.G / 255.f,
-                    single c.B / 255.f,
-                    single c.A / 255.f)
-            )
+    member val Texture = texture
 
-        Mesh (meshInfo.Position, meshInfo.Uv, color)
+    member val Mesh = mesh
+
+    member val ExtraResource = extraResource
 
     interface IComponent
 
-//[<Sealed>]
-//type ExtraRendererComponent<'ExtraInfo, 'Extra> (extraInfo: 'ExtraInfo) =
+[<AbstractClass>]
+type RenderComponent<'T when 'T :> GpuResource> (subRenderer, texture, mesh, extra: 'T) =
+    inherit BaseRenderComponent (subRenderer, texture, mesh, extra)
 
-//    member val ExtraInfo = extraInfo
+    member val Extra = extra
 
-//type SpriteInput (shaderProgram) =
-//    inherit MeshInput (shaderProgram)
+[<Sealed>]
+type MeshRenderComponent (subRenderer: string, texture: string, mesh: Mesh) =
+    inherit RenderComponent<UnitResource> (subRenderer, texture, mesh, UnitResource ())
 
-//    member val Center = shaderProgram.CreateVertexAttributeVector3 ("in_center")
-
-//type SpriteRendererComponent (meshInfo, spriteInfo) =
-//    inherit BaseMeshRendererComponent<SpriteInfo, Sprite> (meshInfo, spriteInfo)
-
-//    override val Extra = 
-//        {
-//            Center = Buffer.createVector3 (spriteInfo.Center)
-//        }
-
-
-let handleAddMesh (renderer: Renderer) =
-    Behavior.handleEvent (fun (evt: Foom.Ecs.Events.ComponentAdded<MeshRendererComponent>) _ em ->
-        match em.TryGet<MeshRendererComponent> (evt.Entity) with
-        | Some meshRendererComp ->
-            let mesh = meshRendererComp.Mesh
-            let texture = meshRendererComp.MeshInfo.Texture
-            let subRenderer = meshRendererComp.MeshInfo.SubRenderer
-            renderer.TryAddMesh (texture, mesh, subRenderer) |> ignore
-        | _ -> ()
+let handleMeshRender (renderer: Renderer) =
+    Behavior.handleEvent (fun (evt: Foom.Ecs.Events.AnyComponentAdded) _ em ->
+        if typeof<BaseRenderComponent>.IsAssignableFrom(evt.ComponentType) then
+            match em.TryGet (evt.Entity, evt.ComponentType) with
+            | Some comp ->
+                let meshRendererComp = comp :?> BaseRenderComponent
+                let mesh = meshRendererComp.Mesh
+                let texture = meshRendererComp.Texture
+                let subRenderer = meshRendererComp.SubRenderer
+                renderer.TryAddMesh (texture, mesh, subRenderer) |> ignore
+            | _ -> ()
     )
-
 
 let create worldPipeline subPipelines (app: Application) : Behavior<float32 * float32> =
 
@@ -94,7 +91,7 @@ let create worldPipeline subPipelines (app: Application) : Behavior<float32 * fl
 
     Behavior.merge
         [
-            handleAddMesh renderer
+            handleMeshRender renderer
 
             Behavior.update (fun ((time, deltaTime): float32 * float32) em _ ->
 

@@ -102,6 +102,8 @@ type EntityManager =
     /// Attempts to find a component of type 'T based on the specified Entity.
     member TryGet<'T when 'T :> IComponent and 'T : not struct> : Entity -> 'T option
 
+    member TryGet : Entity * Type -> IComponent option
+
     /// Checks to see if the Entity is valid.
     member IsValid : Entity -> bool
 

@@ -148,7 +148,7 @@ let runGlobalBatch (em: EntityManager) =
                 SubRenderer = "World"
             }
 
-        em.Add (ent, RendererSystem.MeshRendererComponent (meshInfo))
+        em.Add (ent, RendererSystem.MeshRenderComponent ("World", texturePath, meshInfo.ToMesh()))
         if isSprite then
             let center =
                 if not isSprite then Array.zeroCreate vertices.Count
@@ -447,7 +447,7 @@ let updates (clientWorld: ClientWorld) =
                             SubRenderer = "Sky"
                         }
 
-                    em.Add (skyEnt, RendererSystem.MeshRendererComponent (meshInfo))
+                    em.Add (skyEnt, RendererSystem.MeshRenderComponent ("Sky", "Sky1.bmp", meshInfo.ToMesh()))
 
 
                 | _ -> ()

@@ -25,8 +25,18 @@ type Texture =
 // *****************************************
 // *****************************************
 
+[<AbstractClass>]
+type GpuResource () =
+
+    member val OwnerCount = 0 with get, set
+
+[<Sealed>]
+type UnitResource () =
+    inherit GpuResource ()
+
 [<Sealed>]
 type Mesh (position, uv, color) =
+    inherit GpuResource ()
 
     member val Position = Buffer.createVector3 position
 
