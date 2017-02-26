@@ -13,14 +13,18 @@ type Sprite =
 
     member Positions : Vector3Buffer
 
+    member LightLevels : Vector4Buffer
+
 [<Sealed; Class>]
 type SpriteComponent =
     inherit Component
 
-    new : subRenderer: string * texture: string -> SpriteComponent
+    new : subRenderer: string * texture: string * lightLevel: int -> SpriteComponent
 
     member SubRenderer : string
 
     member Texture : string
+
+    member LightLevel : int with get, set
 
 val handleSprite : unit -> Behavior<_>

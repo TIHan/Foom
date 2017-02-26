@@ -12,12 +12,14 @@ open Foom.Collections
 open Foom.Renderer.RendererSystem
 
 [<Sealed>]
-type Sprite (center, positions) =
+type Sprite (center, positions, lightLevels) =
     inherit GpuResource ()
 
     member val Center = Buffer.createVector3 center
 
     member val Positions = Buffer.createVector3 positions
+
+    member val LightLevels = Buffer.createVector4 lightLevels
 
 let createSpriteVertices width height =
     let halfWidth = single width / 2.f
@@ -72,21 +74,25 @@ let uv =
     |]
 
 type SpriteRendererComponent (subRenderer, texture, lightLevel) =
-    inherit RenderComponent<Sprite> (subRenderer, texture, Mesh ([||], uv, createSpriteColor lightLevel), Sprite ([||], [||]))
+    inherit RenderComponent<Sprite> (subRenderer, texture, Mesh ([||], uv, createSpriteColor lightLevel), Sprite ([||], [||], [||]))
 
     member val SpriteCount = 0 with get, set
 
     member val Positions : Vector3 [] = Array.zeroCreate 10000
 
+    member val LightLevels : Vector4 [] = Array.zeroCreate 10000
+
 [<Sealed>]
-type SpriteComponent (subRenderer: string, texture: string) =
+type SpriteComponent (subRenderer: string, texture: string, lightLevel: int) =
     inherit Component ()
 
     member val SubRenderer = subRenderer
 
     member val Texture = texture
 
-    member val SetPosition : Vector3 -> unit = fun pos -> () with get, set
+    member val LightLevel = lightLevel with get, set
+
+    member val SetData : Vector3 -> unit = fun pos -> () with get, set
 
 let handleSprite () =
     let lookup = Dictionary<string * string, Entity * SpriteRendererComponent> ()
@@ -109,9 +115,11 @@ let handleSprite () =
 
                         rendererEnt, rendererComp
                     
-                comp.SetPosition <- fun pos ->
+                comp.SetData <- fun pos ->
                     if rendererComp.SpriteCount < rendererComp.Positions.Length then
+                        let c = single comp.LightLevel / 255.f
                         rendererComp.Positions.[rendererComp.SpriteCount] <- pos
+                        rendererComp.LightLevels.[rendererComp.SpriteCount] <- Vector4 (c, c, c, 1.f)
                         rendererComp.SpriteCount <- rendererComp.SpriteCount + 1
                     
             )
@@ -135,13 +143,14 @@ let handleSprite () =
 
             Behavior.update (fun _ em ea ->
                 em.ForEach<TransformComponent, SpriteComponent> (fun _ transformComp spriteComp ->
-                    spriteComp.SetPosition transformComp.Position
+                    spriteComp.SetData transformComp.Position
                 )
             )
 
             Behavior.update (fun _ em ea ->
                 em.ForEach<SpriteRendererComponent> (fun _ rendererComp ->
                     rendererComp.Extra.Positions.Set (rendererComp.Positions, rendererComp.SpriteCount)
+                    rendererComp.Extra.LightLevels.Set (rendererComp.LightLevels, rendererComp.SpriteCount)
                     rendererComp.SpriteCount <- 0
                 )
             )

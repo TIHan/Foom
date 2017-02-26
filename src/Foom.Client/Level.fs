@@ -335,7 +335,13 @@ let updates (clientWorld: ClientWorld) =
 
                         let ent = em.Spawn ()
                         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(pos)))
-                        em.Add (ent, SpriteComponent ("World", "BAR1A0.bmp"))
+                        em.Add (ent, SpriteComponent ("World", "BAR1A0.bmp", sector.LightLevel))
+
+                    elif thing.Type = ThingType.Player1Start then
+
+                        let ent = em.Spawn ()
+                        em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(pos)))
+                        em.Add (ent, SpriteComponent ("World", "PLAYA1.bmp", sector.LightLevel))
                 | _ -> ()
             )
 

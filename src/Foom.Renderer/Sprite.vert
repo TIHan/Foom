@@ -6,12 +6,14 @@ in vec4 in_color;
 in vec3 in_center;
 
 in vec3 instance_position;
+in vec4 instance_lightLevel;
 
 uniform mat4x4 uni_projection;
 uniform mat4x4 uni_view;
 
 out vec2 uv;
 out vec4 color;
+out vec4 lightLevel;
 
 void main ()
 {
@@ -43,4 +45,5 @@ void main ()
 
     uv = in_uv;
 	color = in_color;
+	lightLevel = instance_lightLevel;
 }
