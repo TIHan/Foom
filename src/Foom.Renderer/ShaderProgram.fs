@@ -55,7 +55,7 @@ type RenderPass =
 type ShaderProgram =
     {
         programId: int
-        drawOperation: DrawOperation
+        mutable drawOperation: DrawOperation
         mutable isUnbinded: bool
         mutable isInitialized: bool
         mutable length: int
@@ -162,6 +162,7 @@ type ShaderProgram =
 
         let attrib = InstanceAttribute<'T> (name)
 
+        this.drawOperation <- DrawOperation.Instanced
         this.AddVertexAttribute attrib.VertexAttribute
         attrib
 

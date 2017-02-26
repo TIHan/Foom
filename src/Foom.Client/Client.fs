@@ -4,6 +4,14 @@ module Foom.Client.Client
 open Foom.Ecs
 open Foom.Renderer
 
+open Foom.Client.Sprite
+
+type SpriteInput (program: ShaderProgram) =
+    inherit MeshInput (program)
+
+    member val Center = program.CreateVertexAttributeVector3 ("in_center")
+
+    member val Positions = program.CreateInstanceAttributeVector3 ("instance_position")
 
 module Pipelines =
     open Pipeline
@@ -34,10 +42,10 @@ module Pipelines =
                 draw ()
             )
 
-            //do! runProgramWithMesh "Sprite" RendererSystem.SpriteInput noOutput (fun (sprite: RendererSystem.Sprite) input draw ->
-            //    input.Center.Set sprite.Center
-            //    draw ()
-            //)
+            do! runProgramWithMesh "Sprite" SpriteInput noOutput (fun (sprite: Sprite) input draw ->
+                input.Center.Set sprite.Center
+                draw ()
+            )
         }
 
     let renderPipeline =

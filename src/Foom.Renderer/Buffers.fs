@@ -39,7 +39,7 @@ type Buffer<'T when 'T : struct> (data: 'T [], bufferData: 'T [] -> int -> int -
                 id <- Backend.makeVbo ()
             
             bufferData data size id
-            length <- data.Length
+            length <- size
             queuedData <- None
             true
         | _ -> false

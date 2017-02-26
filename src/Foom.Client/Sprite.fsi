@@ -12,3 +12,13 @@ type Sprite =
     member Center : Vector3Buffer
 
     member Positions : Vector3Buffer
+
+[<Sealed; Class>]
+type SpriteComponent =
+    inherit Component
+
+    new : subRenderer: string * texture: string -> SpriteComponent
+
+    member SubRenderer : string
+
+    member Texture : string

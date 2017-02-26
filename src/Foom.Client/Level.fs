@@ -16,6 +16,7 @@ open Foom.Level
 open Foom.Wad
 open Foom.Common.Components
 open Foom.Wad.Components
+open Foom.Client.Sprite
 
 let exportFlatTextures (wad: Wad) =
     wad
@@ -359,36 +360,8 @@ let updates (clientWorld: ClientWorld) =
                 match thing with
                 | Thing.Doom thing ->
                     if thing.Type = ThingType.Barrel then
-                        let bitmap = new Bitmap("BAR1A0.bmp")
-                        let halfWidth = single bitmap.Width / 2.f
-
-                        
-                        let pos = Vector2 (single thing.X, single thing.Y)
-                        let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos :?> Sector
-                        let pos = Vector3 (pos, single sector.FloorHeight)
-                        let vertices =
-                            [|
-                                Vector3 (-halfWidth, 0.f, 0.f) + pos
-                                Vector3 (halfWidth, 0.f, 0.f) + pos
-                                Vector3 (halfWidth, 0.f, single bitmap.Height) + pos
-                                Vector3 (halfWidth, 0.f, single bitmap.Height) + pos
-                                Vector3 (-halfWidth, 0.f, single bitmap.Height) + pos
-                                Vector3 (-halfWidth, 0.f, 0.f) + pos
-                            |]
-
-                        let uv =
-                            [|
-                                Vector2 (0.f, 0.f * -1.f)
-                                Vector2 (1.f, 0.f * -1.f)
-                                Vector2 (1.f, 1.f * -1.f)
-                                Vector2 (1.f, 1.f * -1.f)
-                                Vector2 (0.f, 1.f * -1.f)
-                                Vector2 (0.f, 0.f * -1.f)
-                            |]
-
-                        let lightLevel = Level.lightLevelBySectorId sector.Id level
-                        spawnSprite vertices uv "BAR1A0.bmp" lightLevel em
-                        ()
+                        let ent = em.Spawn ()
+                        em.Add (ent, SpriteComponent ("Sprite", "BAR1A0.bmp"))
                 | _ -> ()
             )
 

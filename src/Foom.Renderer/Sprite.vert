@@ -5,6 +5,8 @@ in vec2 in_uv;
 in vec4 in_color;
 in vec3 in_center;
 
+in vec3 instance_position;
+
 uniform mat4x4 uni_projection;
 uniform mat4x4 uni_view;
 
@@ -16,8 +18,8 @@ void main ()
 	vec3 CameraRight_worldspace = vec3 (uni_view[0][0], uni_view[1][0], uni_view[2][0]);
 	vec3 CameraUp_worldspace = vec3 (uni_view[0][1], uni_view[1][1], uni_view[2][1]);
 
-	vec3 c = vec3 (in_center.x, in_center.y, position.z);
-	vec3 pos = position - c;
+	vec3 c = vec3 (in_center.x, in_center.y, position.z) + instance_position;
+	vec3 pos = position - c + instance_position;
 	vec3 vertexPosition_worldspace =
 		c
 		+ CameraRight_worldspace * pos.x + CameraUp_worldspace * pos.z;
