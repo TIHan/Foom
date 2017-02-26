@@ -27,10 +27,6 @@ type PlayerComponent () =
 
     member val Pitch = 0.f with get, set
 
-[<Sealed>]
-type SkyComponent () =
-    inherit Component ()
-
 [<RequireQualifiedAccess>]
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Player =
@@ -121,12 +117,6 @@ module Player =
                                 playerComp.Pitch * 0.25f,
                                 0.f
                             )
-
-                        em.TryFind<SkyComponent, TransformComponent> (fun _ _ _ -> true)
-                        |> Option.iter (fun (ent, skyComp, skyTransformComp) ->
-                            skyTransformComp.Transform <- transformComp.Transform
-                            skyTransformComp.TransformLerp <- transformComp.TransformLerp
-                        )
                     )
                 )
             ]

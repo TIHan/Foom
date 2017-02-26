@@ -597,7 +597,7 @@ module Backend =
         glStencilFunc(GL_ALWAYS, 1, 0xFF); // Set any stencil to 1
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         glStencilMask(0xFF); // Write to stencil buffer
-        //glClear(GL_STENCIL_BUFFER_BIT); // Clear stencil buffer (0 by default)
+        glClear(GL_STENCIL_BUFFER_BIT); // Clear stencil buffer (0 by default)
         """
 
     [<Import; MI (MIO.NoInlining)>]

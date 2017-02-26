@@ -32,10 +32,6 @@ type MeshInfo =
             )
         Mesh (this.Position, this.Uv, color)
 
-type SkyInfo = SkyInfo of unit
-
-type Sky = Sky of unit
-
 [<AbstractClass>]
 type BaseRenderComponent (subRenderer: string, texture: string, mesh: Mesh, extraResource: GpuResource) =
     inherit Component ()

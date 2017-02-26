@@ -143,9 +143,6 @@ type SubPipeline (context: PipelineContext, pipeline: Pipeline<unit>) =
     member this.TryAddTextureMesh (texture: Texture, mesh: Mesh, extra: GpuResource) =
         let typ = extra.GetType()
 
-        if typ.Name.ToLower().Contains("sprite") then
-            printfn "yo"
-
         match lookup.TryGetValue (typ) with
         | true, t -> 
             let m =

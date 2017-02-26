@@ -129,14 +129,14 @@ let exportSpriteTextures (wad: Wad) =
         )
     )
 
-let globalBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray * Color ResizeArray * bool> ()
+let globalBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray * Color ResizeArray> ()
 
 let runGlobalBatch (em: EntityManager) =
     globalBatch
     |> Seq.iter (fun pair ->
         let isSky = pair.Key.Contains("F_SKY1")
         let texturePath = pair.Key
-        let vertices, uv, color, isSprite = pair.Value
+        let vertices, uv, color = pair.Value
 
         let ent = em.Spawn ()
 
@@ -146,7 +146,7 @@ let runGlobalBatch (em: EntityManager) =
                 Uv = uv |> Seq.toArray
                 Color = color |> Seq.toArray
                 Texture = texturePath
-                SubRenderer = "World"
+                SubRenderer = if isSky then "Sky" else "World"
             }
 
         em.Add (ent, RendererSystem.MeshRenderComponent (meshInfo))
@@ -158,12 +158,12 @@ let spawnMesh (vertices: IEnumerable<Vector3>) uv (texturePath: string) lightLev
     let color = Array.init (vertices.Count ()) (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
 
     match globalBatch.TryGetValue(texturePath) with
-    | true, (gVertices, gUv, gColor, gIsSprite) ->
+    | true, (gVertices, gUv, gColor) ->
         gVertices.AddRange(vertices)
         gUv.AddRange(uv)
         gColor.AddRange(color)
     | _ ->
-        globalBatch.Add (texturePath, (ResizeArray vertices, ResizeArray uv, ResizeArray color, false))
+        globalBatch.Add (texturePath, (ResizeArray vertices, ResizeArray uv, ResizeArray color))
 
 let spawnCeilingMesh (flat: Flat) lightLevel wad em =
     flat.Ceiling.TextureName
@@ -233,6 +233,12 @@ let spawnWallMesh (wall: Wall) level wad em =
         spawnWallPartMesh backSide.Lower lowerBack lightLevel wad em false
 
     | _ -> ()
+
+type Sky () =
+    inherit GpuResource ()
+
+type SkyComponent (subRenderer, texture, mesh) =
+    inherit RendererSystem.RenderComponent<Sky> (subRenderer, texture, mesh, Sky ())
 
 let updates (clientWorld: ClientWorld) =
     [
@@ -321,10 +327,11 @@ let updates (clientWorld: ClientWorld) =
             |> Level.iterThing (fun thing ->
                 match thing with
                 | Thing.Doom thing ->
+                    let pos = Vector2 (single thing.X, single thing.Y)
+                    let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos :?> Sector
+                    let pos = Vector3 (pos, single sector.FloorHeight)
+
                     if thing.Type = ThingType.Barrel then
-                        let pos = Vector2 (single thing.X, single thing.Y)
-                        let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos :?> Sector
-                        let pos = Vector3 (pos, single sector.FloorHeight)
 
                         let ent = em.Spawn ()
                         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(pos)))
@@ -356,7 +363,6 @@ let updates (clientWorld: ClientWorld) =
                     let skyEnt = em.Spawn ()
                    // em.Add (skyEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), LayerMask.Layer0, ClearFlags.None, 1))
                    // em.Add (skyEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
-                    em.Add (skyEnt, SkyComponent ())
 
                     let vertices =
                         [|
@@ -386,6 +392,8 @@ let updates (clientWorld: ClientWorld) =
                             Texture = "Sky1.bmp"
                             SubRenderer = "Sky"
                         }
+
+                    em.Add (skyEnt, SkyComponent (meshInfo.SubRenderer, meshInfo.Texture, meshInfo.ToMesh ()))
 
                     em.Add (skyEnt, RendererSystem.MeshRenderComponent (meshInfo))
 

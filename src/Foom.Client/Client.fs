@@ -18,14 +18,14 @@ module Pipelines =
 
     let skyWall =
         pipeline {
-            do! runProgramWithMesh "TextureMesh" MeshInput (fun _ -> ()) (fun () input draw ->
+            do! runProgramWithMesh "TextureMesh" MeshInput noOutput (fun () input draw ->
                 draw ()
             )
         }
 
     let sky =
         pipeline {
-            do! runProgramWithMesh "Sky" MeshInput (fun _ -> ()) (fun (_: RendererSystem.Sky) input draw ->
+            do! runProgramWithMesh "Sky" MeshInput noOutput (fun (_: Level.Sky) input draw ->
                 draw ()
             )
         }
@@ -54,7 +54,7 @@ module Pipelines =
 
             do! clear
             do! runSubPipeline "World"
-           // do! runSubPipeline "Sky"
+            do! runSubPipeline "Sky"
 
         }
 
@@ -68,6 +68,7 @@ let init (world: World) =
             Pipelines.renderPipeline
             [
                 ("World", Pipelines.worldPipeline)
+                ("Sky", Pipelines.skyPipeline)
             ]
 
     let renderSystemUpdate = world.AddBehavior (Behavior.merge [ renderSystem ])
