@@ -150,33 +150,6 @@ let runGlobalBatch (em: EntityManager) =
             }
 
         em.Add (ent, RendererSystem.MeshRenderComponent (meshInfo))
-        if isSprite then
-            let center =
-                if not isSprite then Array.zeroCreate vertices.Count
-                else
-                    vertices
-                    |> Seq.chunkBySize 6
-                    |> Seq.map (fun quadVerts ->
-                        let min = 
-                            quadVerts
-                            |> Array.sortBy (fun x -> x.X)
-                            |> Array.sortBy (fun x -> x.Z)
-                            |> Array.head
-                        let max =
-                            quadVerts
-                            |> Array.sortByDescending (fun x -> x.X)
-                            |> Array.sortByDescending (fun x -> x.Z)
-                            |> Array.head
-                        let mid = min + ((max - min) / 2.f)
-                        Array.init quadVerts.Length (fun _ -> mid)
-                    )
-                    |> Seq.reduce Array.append
-
-            ()
-            //em.Add (ent, RendererSystem.SpriteRendererComponent (meshInfo, { Center = center }))
-        else
-            ()
-            //em.Add (ent, RendererSystem.MeshRendererComponent (meshInfo))
     )
 
 open System.Linq
@@ -191,17 +164,6 @@ let spawnMesh (vertices: IEnumerable<Vector3>) uv (texturePath: string) lightLev
         gColor.AddRange(color)
     | _ ->
         globalBatch.Add (texturePath, (ResizeArray vertices, ResizeArray uv, ResizeArray color, false))
-
-let spawnSprite (vertices: IEnumerable<Vector3>) uv texturePath lightLevel (em: EntityManager) =
-    let color = Array.init (vertices.Count ()) (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
-
-    match globalBatch.TryGetValue(texturePath) with
-    | true, (gVertices, gUv, gColor, gIsSprite) ->
-        gVertices.AddRange(vertices)
-        gUv.AddRange(uv)
-        gColor.AddRange(color)
-    | _ ->
-        globalBatch.Add (texturePath, (ResizeArray vertices, ResizeArray uv, ResizeArray color, true))
 
 let spawnCeilingMesh (flat: Flat) lightLevel wad em =
     flat.Ceiling.TextureName
@@ -360,7 +322,12 @@ let updates (clientWorld: ClientWorld) =
                 match thing with
                 | Thing.Doom thing ->
                     if thing.Type = ThingType.Barrel then
+                        let pos = Vector2 (single thing.X, single thing.Y)
+                        let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos :?> Sector
+                        let pos = Vector3 (pos, single sector.FloorHeight)
+
                         let ent = em.Spawn ()
+                        em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(pos)))
                         em.Add (ent, SpriteComponent ("Sprite", "BAR1A0.bmp"))
                 | _ -> ()
             )

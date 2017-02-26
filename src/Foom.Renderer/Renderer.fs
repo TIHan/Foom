@@ -140,38 +140,40 @@ type SubPipeline (context: PipelineContext, pipeline: Pipeline<unit>) =
 
     member this.Pipeline = pipeline
 
-    member this.AddTextureMesh<'T> (texture: Texture, mesh: Mesh, extra: 'T) =
+    member this.AddTextureMesh (texture: Texture, mesh: Mesh, extra: GpuResource) =
+        let typ = extra.GetType()
+
         let (_, m) =
-            match lookup.TryGetValue (typeof<'T>) with
+            match lookup.TryGetValue (typ) with
             | true, t -> 
                 match t.TryGetValue (texture.Buffer.Id) with
                 | true, x -> x
                 | _ ->
-                    let m = CompactManager<Mesh * obj>.Create (65536)
+                    let m = CompactManager<Mesh * obj>.Create (10000)
                     t.[texture.Buffer.Id] <- (texture, m)
                     (texture, m)
             | _ ->
-                let m = CompactManager<Mesh * obj>.Create (65536)
+                let m = CompactManager<Mesh * obj>.Create (10000)
                 let textureLookup = Dictionary ()
                 textureLookup.[texture.Buffer.Id] <- (texture, m)
-                lookup.[typeof<'T>] <- textureLookup
+                lookup.[typ] <- textureLookup
                 (texture, m)
 
         let meshId = m.Add (mesh, extra :> obj)
         let textureId = texture.Buffer.Id
 
-        TextureMeshId (meshId, textureId, typeof<'T>)
+        TextureMeshId (meshId, textureId, typ)
                               
     member this.RemoveTextureMeshById (textureMeshId: TextureMeshId) = 
         let (_, m) = lookup.[textureMeshId.Type].[textureMeshId.TextureId]
         m.RemoveById (textureMeshId.MeshId)
 
-    member this.GetLookup<'T> () =
-        match lookup.TryGetValue (typeof<'T>) with
+    member this.GetLookup (typ) =
+        match lookup.TryGetValue (typ) with
         | true, dict -> dict
         | _ ->
             let dict = Dictionary ()
-            lookup.[typeof<'T>] <- dict
+            lookup.[typ] <- dict
             dict
 
 and [<Sealed>] PipelineContext (programCache: ProgramCache, subPipelines: (string * Pipeline<unit>) list) as this =
@@ -212,10 +214,10 @@ and [<Sealed>] PipelineContext (programCache: ProgramCache, subPipelines: (strin
     member this.AddAction action =
         actions.Add action
 
-    member this.TryAddMesh (texture, mesh, subRenderer) =
+    member this.TryAddMesh (subRenderer, texture, mesh, extra: GpuResource) =
         match subPipelines.TryGetValue (subRenderer) with
         | true, subPipeline ->
-            subPipeline.AddTextureMesh (texture, mesh, ())
+            subPipeline.AddTextureMesh (texture, mesh, extra)
             |> Some
         | _ -> None
 
@@ -343,6 +345,21 @@ module Pipeline =
         )
 
     let runProgramWithMesh<'T, 'Input when 'Input :> MeshInput> name createInput init f =
+
+        let t =
+            if typeof<'T> = typeof<unit> then
+                typeof<UnitResource>
+            else
+                typeof<'T>
+
+        let getO =
+            if typeof<'T> = typeof<unit> then
+                fun (o: obj) -> Unchecked.defaultof<'T>
+            else
+                fun (o: obj) ->
+                    if o = null then Unchecked.defaultof<'T>
+                    else o :?> 'T
+
         Pipeline (
             fun context ->
                 let program = context.ProgramCache.CreateShaderProgram (name)
@@ -353,11 +370,10 @@ module Pipeline =
                 context.CurrentSubPipeline
                 |> Option.iter (fun subPipeline ->
 
-                    let lookup = subPipeline.GetLookup<'T> ()
+                    let lookup = subPipeline.GetLookup (t)
 
                     context.AddAction (fun () ->
                         Backend.useProgram program.programId
-                       
 
                         lookup
                         |> Seq.iter (fun pair ->
@@ -373,9 +389,7 @@ module Pipeline =
                             init input
 
                             meshManager.ForEach (fun id (mesh, o) ->
-                                let o = 
-                                    if o = null then Unchecked.defaultof<'T>
-                                    else o :?> 'T
+                                let o = getO o
 
                                 input.Position.Set mesh.Position
                                 input.Uv.Set mesh.Uv
@@ -507,8 +521,8 @@ type Renderer =
 
         renderer
 
-    member this.TryAddMesh (texture, mesh, subRenderer) =
-        this.finalPipeline.TryAddMesh (this.textureCache.GetOrCreateTexture (texture), mesh, subRenderer)
+    member this.TryAddMesh (subRenderer, texture, mesh, extra: 'T) =
+        this.finalPipeline.TryAddMesh (subRenderer, this.textureCache.GetOrCreateTexture (texture), mesh, extra)
 
     member this.Draw (time: float32) view projection =
         this.time <- time

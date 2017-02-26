@@ -67,7 +67,7 @@ let handleMeshRender (renderer: Renderer) =
                 let mesh = meshRendererComp.Mesh
                 let texture = meshRendererComp.Texture
                 let subRenderer = meshRendererComp.SubRenderer
-                renderer.TryAddMesh (texture, mesh, subRenderer) |> ignore
+                renderer.TryAddMesh (subRenderer, texture, mesh, meshRendererComp.ExtraResource) |> ignore
             | _ -> ()
     )
 
