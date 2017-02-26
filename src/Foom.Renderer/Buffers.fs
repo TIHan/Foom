@@ -6,6 +6,40 @@ open System.Numerics
 open System.Collections.Generic
 open System.Runtime.InteropServices
 
+type IGLRenderer =
+
+    abstract BindBuffer : int -> unit
+
+    abstract CreateBuffer : unit -> int
+
+    abstract DeleteBuffer : int -> unit
+
+    abstract BufferData : Vector2 [] -> unit
+
+    abstract BufferData : Vector3 [] -> unit
+
+    abstract BufferData : Vector4 [] -> unit
+
+
+    abstract BindTexture : int -> unit
+
+    abstract CreateTexture : width: int -> height: int -> data: nativeint -> int
+
+    abstract DeleteTexture : int -> unit
+
+
+    abstract BindFramebuffer : int -> unit
+
+    abstract CreateFramebuffer : unit -> unit
+
+    abstract CreateFramebufferTexture : width: int -> height: int -> data: nativeint -> int
+
+    abstract SetFramebufferTexture : int -> unit
+
+    abstract CreateRenderBuffer : width: int -> height: int -> int
+
+
+    abstract Clear : unit -> unit
 
 // *****************************************
 // *****************************************
