@@ -327,21 +327,32 @@ let updates (clientWorld: ClientWorld) =
             |> Level.iterThing (fun thing ->
                 match thing with
                 | Thing.Doom thing ->
-                    let pos = Vector2 (single thing.X, single thing.Y)
-                    let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos :?> Sector
-                    let pos = Vector3 (pos, single sector.FloorHeight)
 
-                    if thing.Type = ThingType.Barrel then
+                    let mutable image = None
+
+                    match thing.Type with
+                    | ThingType.HealthBonus -> image <- Some "BON1A0.bmp"
+                    | ThingType.DeadPlayer -> image <- Some "PLAYN0.bmp"
+                    | ThingType.GreenArmor -> image <- Some "ARM1A0.bmp"
+                    | ThingType.Stimpack -> image <- Some "STIMA0.bmp"
+                    | ThingType.Medkit -> image <- Some "MEDIA0.bmp"
+                    | ThingType.Barrel -> image <- Some "BAR1A0.bmp"
+                    | ThingType.TallTechnoPillar -> image <- Some "ELECA0.bmp"
+                    | ThingType.Player1Start -> image <- Some "PLAYA1.bmp"
+                    | ThingType.AmmoClip -> image <- Some "CLIPA0.bmp"
+                    | _ -> ()
+
+                    match image with
+                    | Some image ->
+                        let pos = Vector2 (single thing.X, single thing.Y)
+                        let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos :?> Sector
+                        let pos = Vector3 (pos, single sector.FloorHeight)
 
                         let ent = em.Spawn ()
                         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(pos)))
-                        em.Add (ent, SpriteComponent ("World", "BAR1A0.bmp", sector.LightLevel))
+                        em.Add (ent, SpriteComponent ("World", image, sector.LightLevel))
+                    | _ -> ()
 
-                    elif thing.Type = ThingType.Player1Start then
-
-                        let ent = em.Spawn ()
-                        em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(pos)))
-                        em.Add (ent, SpriteComponent ("World", "PLAYA1.bmp", sector.LightLevel))
                 | _ -> ()
             )
 
