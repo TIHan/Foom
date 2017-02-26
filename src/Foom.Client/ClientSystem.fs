@@ -126,6 +126,7 @@ let create (app: Application) (clientWorld: ClientWorld) =
             @
             [
                Player.fixedUpdate
+               Sprite.handleSprite ()
 
                addRigidBodyBehavior clientWorld
                physicsUpdateBehavior clientWorld

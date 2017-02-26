@@ -96,13 +96,16 @@ let handleSprite () =
 
             Behavior.handleComponentAdded (fun ent (comp: SpriteComponent) _ em ->
                 let _, rendererComp = 
-                    match lookup.TryGetValue ((comp.SubRenderer, comp.Texture)) with
+                    let key = (comp.SubRenderer.ToUpper (), comp.Texture.ToUpper ())
+                    match lookup.TryGetValue (key) with
                     | true, x -> x
                     | _ ->
                         let rendererComp = new SpriteRendererComponent(comp.SubRenderer, comp.Texture, 255)
 
                         let rendererEnt = em.Spawn ()
                         em.Add (rendererEnt, rendererComp)
+
+                        lookup.[key] <- (rendererEnt, rendererComp)
 
                         rendererEnt, rendererComp
                     

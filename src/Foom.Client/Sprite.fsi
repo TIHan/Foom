@@ -22,3 +22,5 @@ type SpriteComponent =
     member SubRenderer : string
 
     member Texture : string
+
+val handleSprite : unit -> Behavior<_>
