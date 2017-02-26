@@ -81,6 +81,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Foom.Collections\Foom.Collections.fsproj">
+      <Name>Foom.Collections</Name>
+      <Project>{c18c5ab4-4c69-4ea0-ae74-fefbbd945c05}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\Foom.Wad\Foom.Wad.fsproj">
       <Project>{13CAB67A-5A00-401D-8CE2-032FFEA5FECE}</Project>
       <Name>Foom.Wad</Name>

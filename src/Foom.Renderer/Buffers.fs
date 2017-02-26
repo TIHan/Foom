@@ -14,14 +14,17 @@ open System.Runtime.InteropServices
 // *****************************************
 
 [<Sealed>]
-type Buffer<'T when 'T : struct> (data: 'T [], bufferData: 'T [] -> int -> unit) =
+type Buffer<'T when 'T : struct> (data: 'T [], bufferData: 'T [] -> int -> int -> unit) =
 
     let mutable id = 0
     let mutable length = 0
-    let mutable queuedData = Some data
+    let mutable queuedData = Some (data, data.Length)
 
     member this.Set (data: 'T []) =
-        queuedData <- Some data
+        queuedData <- Some (data, data.Length)
+
+    member this.Set (data: 'T [], size) =
+        queuedData <- Some (data, size)
 
     member this.Length = length
 
@@ -31,11 +34,11 @@ type Buffer<'T when 'T : struct> (data: 'T [], bufferData: 'T [] -> int -> unit)
 
     member this.TryBufferData () =
         match queuedData with
-        | Some data ->
+        | Some (data, size) ->
             if id = 0 then
                 id <- Backend.makeVbo ()
             
-            bufferData data id
+            bufferData data size id
             length <- data.Length
             queuedData <- None
             true
@@ -57,13 +60,13 @@ type Vector4Buffer = Buffer<Vector4>
 module Buffer =
 
     let createVector2 data =
-        Vector2Buffer (data, fun data id -> Backend.bufferVbo data (sizeof<Vector2> * data.Length) id)
+        Vector2Buffer (data, fun data size id -> Backend.bufferVbo data (sizeof<Vector2> * size) id)
 
     let createVector3 data =
-        Vector3Buffer (data, fun data id -> Backend.bufferVboVector3 data (sizeof<Vector3> * data.Length) id)
+        Vector3Buffer (data, fun data size id -> Backend.bufferVboVector3 data (sizeof<Vector3> * size) id)
 
     let createVector4 data =
-        Vector4Buffer (data, fun data id -> Backend.bufferVboVector4 data (sizeof<Vector4> * data.Length) id)
+        Vector4Buffer (data, fun data size id -> Backend.bufferVboVector4 data (sizeof<Vector4> * size) id)
 
 
 type Texture2DBufferQueueItem =

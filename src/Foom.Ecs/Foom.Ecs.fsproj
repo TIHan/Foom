@@ -51,5 +51,12 @@
     <Compile Include="World.fsi" />
     <Compile Include="World.fs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Foom.Collections\Foom.Collections.fsproj">
+      <Name>Foom.Collections</Name>
+      <Project>{c18c5ab4-4c69-4ea0-ae74-fefbbd945c05}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
 </Project>

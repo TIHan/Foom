@@ -8,12 +8,16 @@ open System.Collections.Generic
 open Foom.Common.Components
 open Foom.Ecs
 open Foom.Renderer
+open Foom.Collections
 open Foom.Renderer.RendererSystem
 
-type Sprite (center) =
+[<Sealed>]
+type Sprite (center, positions) =
     inherit GpuResource ()
 
     member val Center = Buffer.createVector3 center
+
+    member val Positions = Buffer.createVector3 positions
 
 let createSpriteVertices width height =
     let halfWidth = single width / 2.f
@@ -67,27 +71,49 @@ let uv =
         Vector2 (0.f, 0.f * -1.f)
     |]
 
-type SpriteRenderComponent (subRenderer, texture, lightLevel) =
-    inherit RenderComponent<Sprite> (subRenderer, texture, Mesh ([||], uv, createSpriteColor lightLevel), Sprite ([||]))
+type SpriteRendererComponent (subRenderer, texture, lightLevel) =
+    inherit RenderComponent<Sprite> (subRenderer, texture, Mesh ([||], uv, createSpriteColor lightLevel), Sprite ([||], [||]))
+
+    member val SpriteCount = 0 with get, set
+
+    member val Positions : Vector3 [] = Array.zeroCreate 10000
 
 [<Sealed>]
 type SpriteComponent (subRenderer: string, texture: string) =
     inherit Component ()
-    
-    member val IndexRef = ref -1 with get, set
 
     member val SubRenderer = subRenderer
 
     member val Texture = texture
 
-    member this.SetPosition : Vector3 -> unit = fun pos -> ()
+    member val SetPosition : Vector3 -> unit = fun pos -> () with get, set
 
 let handleSprite () =
-    let lookup = Dictionary<string * string, SpriteRenderComponent> ()
+    let lookup = Dictionary<string * string, Entity * SpriteRendererComponent> ()
     let textureLookup = Dictionary<string, int * int> ()
     Behavior.merge
         [
-            Behavior.handleComponentAdded (fun ent (comp: SpriteRenderComponent) _ em ->
+
+            Behavior.handleComponentAdded (fun ent (comp: SpriteComponent) _ em ->
+                let _, rendererComp = 
+                    match lookup.TryGetValue ((comp.SubRenderer, comp.Texture)) with
+                    | true, x -> x
+                    | _ ->
+                        let rendererComp = new SpriteRendererComponent(comp.SubRenderer, comp.Texture, 255)
+
+                        let rendererEnt = em.Spawn ()
+                        em.Add (rendererEnt, rendererComp)
+
+                        rendererEnt, rendererComp
+                    
+                comp.SetPosition <- fun pos ->
+                    if rendererComp.SpriteCount < rendererComp.Positions.Length then
+                        rendererComp.Positions.[rendererComp.SpriteCount] <- pos
+                        rendererComp.SpriteCount <- rendererComp.SpriteCount + 1
+                    
+            )
+
+            Behavior.handleComponentAdded (fun ent (comp: SpriteRendererComponent) _ em ->
                 let width, height =
                     match textureLookup.TryGetValue (comp.Texture.ToUpper ()) with
                     | true, x -> x
@@ -102,21 +128,18 @@ let handleSprite () =
 
                 comp.Mesh.Position.Set vertices
                 comp.Extra.Center.Set center
-
-            )
-            Behavior.handleEvent (fun (evt: Events.ComponentAdded<SpriteRenderComponent>) _ em ->
-                match em.TryGet<SpriteRenderComponent> (evt.Entity) with
-                | Some comp -> 
-                    ()
-                    // check to see if SpriteRenderComponent exists
-                    // if not, then spawn one
-                    // add sprite's vector3 position and get index for it
-                | _ -> ()
             )
 
             Behavior.update (fun _ em ea ->
                 em.ForEach<TransformComponent, SpriteComponent> (fun _ transformComp spriteComp ->
                     spriteComp.SetPosition transformComp.Position
+                )
+            )
+
+            Behavior.update (fun _ em ea ->
+                em.ForEach<SpriteRendererComponent> (fun _ rendererComp ->
+                    rendererComp.Extra.Positions.Set (rendererComp.Positions, rendererComp.SpriteCount)
+                    rendererComp.SpriteCount <- 0
                 )
             )
         ]

@@ -5,7 +5,10 @@ open System.Numerics
 open Foom.Ecs
 open Foom.Renderer
 
+[<Sealed; Class>]
 type Sprite =
     inherit GpuResource
 
-    new : Vector3 [] -> Sprite
+    member Center : Vector3Buffer
+
+    member Positions : Vector3Buffer
