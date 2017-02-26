@@ -140,29 +140,29 @@ type SubPipeline (context: PipelineContext, pipeline: Pipeline<unit>) =
 
     member this.Pipeline = pipeline
 
-    member this.AddTextureMesh (texture: Texture, mesh: Mesh, extra: GpuResource) =
+    member this.TryAddTextureMesh (texture: Texture, mesh: Mesh, extra: GpuResource) =
         let typ = extra.GetType()
 
-        let (_, m) =
-            match lookup.TryGetValue (typ) with
-            | true, t -> 
+        if typ.Name.ToLower().Contains("sprite") then
+            printfn "yo"
+
+        match lookup.TryGetValue (typ) with
+        | true, t -> 
+            let m =
                 match t.TryGetValue (texture.Buffer.Id) with
-                | true, x -> x
+                | true, (_, m) -> m
                 | _ ->
                     let m = CompactManager<Mesh * obj>.Create (10000)
                     t.[texture.Buffer.Id] <- (texture, m)
-                    (texture, m)
-            | _ ->
-                let m = CompactManager<Mesh * obj>.Create (10000)
-                let textureLookup = Dictionary ()
-                textureLookup.[texture.Buffer.Id] <- (texture, m)
-                lookup.[typ] <- textureLookup
-                (texture, m)
+                    m
+            let meshId = m.Add (mesh, extra :> obj)
+            let textureId = texture.Buffer.Id
 
-        let meshId = m.Add (mesh, extra :> obj)
-        let textureId = texture.Buffer.Id
+            TextureMeshId (meshId, textureId, typ)
+            |> Some
+        | _ ->
+            None
 
-        TextureMeshId (meshId, textureId, typ)
                               
     member this.RemoveTextureMeshById (textureMeshId: TextureMeshId) = 
         let (_, m) = lookup.[textureMeshId.Type].[textureMeshId.TextureId]
@@ -217,8 +217,7 @@ and [<Sealed>] PipelineContext (programCache: ProgramCache, subPipelines: (strin
     member this.TryAddMesh (subRenderer, texture, mesh, extra: GpuResource) =
         match subPipelines.TryGetValue (subRenderer) with
         | true, subPipeline ->
-            subPipeline.AddTextureMesh (texture, mesh, extra)
-            |> Some
+            subPipeline.TryAddTextureMesh (texture, mesh, extra)
         | _ -> None
 
     member this.Run () =

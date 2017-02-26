@@ -328,7 +328,7 @@ let updates (clientWorld: ClientWorld) =
 
                         let ent = em.Spawn ()
                         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(pos)))
-                        em.Add (ent, SpriteComponent ("Sprite", "BAR1A0.bmp"))
+                        em.Add (ent, SpriteComponent ("World", "BAR1A0.bmp"))
                 | _ -> ()
             )
 
