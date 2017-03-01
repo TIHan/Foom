@@ -72,6 +72,21 @@ module Player =
                         //cameraComp.HeightOffset <- sin(8.f * time) * (v1 - v2).Length()
                     )
                 )
+
+
+                Behavior.update (fun _ em ea ->
+                    em.ForEach<CameraComponent, TransformComponent, PlayerComponent> (fun ent cameraComp transformComp playerComp ->
+
+                        transformComp.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+
+                        transformComp.Rotation <- transformComp.Rotation *
+                            Quaternion.CreateFromYawPitchRoll (
+                                playerComp.Yaw * 0.25f,
+                                playerComp.Pitch * 0.25f,
+                                0.f
+                            )
+                    )
+                )
             ]
 
     let preUpdate (app: Application) =
