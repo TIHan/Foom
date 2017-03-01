@@ -173,7 +173,7 @@ type SubPipeline (context: PipelineContext, pipeline: Pipeline<unit>) =
             lookup.[typ] <- dict
             dict
 
-and [<Sealed>] PipelineContext (programCache: ProgramCache, subPipelines: (string * Pipeline<unit>) list) as this =
+and [<Sealed>] PipelineContext (gl: IGL, programCache: ProgramCache, subPipelines: (string * Pipeline<unit>) list) as this =
     
     let releases = ResizeArray<unit -> unit> ()
     let actions = ResizeArray<unit -> unit> ()
@@ -227,6 +227,8 @@ and [<Sealed>] PipelineContext (programCache: ProgramCache, subPipelines: (strin
     member val View = Matrix4x4.Identity with get, set
 
     member val Projection = Matrix4x4.Identity with get, set
+
+    member val GL = gl
 
 
 
@@ -302,8 +304,8 @@ module Pipeline =
                 context.AddRelease renderTexture.Release
                 
                 context.AddAction (fun () ->
-                    renderTexture.TryBufferData () |> ignore
-                    renderTexture.Bind ()
+                    renderTexture.TryBufferData context.GL |> ignore
+                    renderTexture.Bind context.GL
                 )            
                 
                 match p with
@@ -501,7 +503,7 @@ type Renderer =
 
         let positionBuffer = Buffer.createVector3 vertices
 
-        let finalPipelineContext = PipelineContext (programCache, subPipelines)
+        let finalPipelineContext = PipelineContext (gl, programCache, subPipelines)
 
         let renderer =
             {

@@ -143,13 +143,13 @@ type Vector4Buffer = Buffer<Vector4>
 module Buffer =
 
     let createVector2 data =
-        Vector2Buffer (data, fun gl data size id -> gl.BufferData (data, (sizeof<Vector2> * size), id)) //Backend.bufferVbo data (sizeof<Vector2> * size) id)
+        Vector2Buffer (data, fun gl data size id -> gl.BufferData (data, (sizeof<Vector2> * size), id))
 
     let createVector3 data =
-        Vector3Buffer (data, fun gl data size id -> gl.BufferData (data, (sizeof<Vector3> * size), id))//Backend.bufferVboVector3 data (sizeof<Vector3> * size) id)
+        Vector3Buffer (data, fun gl data size id -> gl.BufferData (data, (sizeof<Vector3> * size), id))
 
     let createVector4 data =
-        Vector4Buffer (data, fun gl data size id -> gl.BufferData (data, (sizeof<Vector4> * size), id))//Backend.bufferVboVector4 data (sizeof<Vector4> * size) id)
+        Vector4Buffer (data, fun gl data size id -> gl.BufferData (data, (sizeof<Vector4> * size), id))
 
 
 type Texture2DBufferQueueItem =
@@ -180,19 +180,18 @@ type Texture2DBuffer (data, width, height) =
 
     member this.Bind (gl: IGL) =
         if id <> 0 then
-            gl.BindTexture id
-            //Backend.bindTexture id // this does activetexture0, change this eventually
+            gl.BindTexture id // this does activetexture0, change this eventually  
 
     member this.TryBufferData (gl: IGL) =
         match queuedData with
         | Data (data) ->
             if data.Length = 0 then
-                id <- gl.CreateTexture (width, height, nativeint 0)//Backend.createTexture width height (nativeint 0)
+                id <- gl.CreateTexture (width, height, nativeint 0)
             else
                 let handle = GCHandle.Alloc (data, GCHandleType.Pinned)
                 let addr = handle.AddrOfPinnedObject ()
 
-                id <- gl.CreateTexture (width, height, addr)//Backend.createTexture width height addr
+                id <- gl.CreateTexture (width, height, addr)
 
                 handle.Free ()
 
@@ -204,7 +203,7 @@ type Texture2DBuffer (data, width, height) =
 
             let bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
 
-            id <- gl.CreateTexture (bmp.Width, bmp.Height, bmpData.Scan0)//Backend.createTexture bmp.Width bmp.Height bmpData.Scan0
+            id <- gl.CreateTexture (bmp.Width, bmp.Height, bmpData.Scan0)
 
             bmp.UnlockBits (bmpData)
             bmp.Dispose ()
@@ -215,7 +214,6 @@ type Texture2DBuffer (data, width, height) =
     member this.Release (gl: IGL) =
         if id <> 0 then
             gl.DeleteTexture id
-            //Backend.deleteTexture (id)
             id <- 0
             width <- 0
             height <- 0
@@ -234,32 +232,31 @@ type RenderTexture (width, height) =
 
     member this.Height = height
 
-    member this.Bind () =
+    member this.Bind (gl: IGL) =
         if framebufferId <> 0 then
-           Backend.bindFramebuffer framebufferId
+            gl.BindFramebuffer framebufferId
 
     member this.Unbind () =
         Backend.bindFramebuffer 0
 
     member this.BindTexture () =
         if textureId <> 0 then
-            Backend.bindTexture textureId // this does activetexture0, change this eventually    
+            Backend.bindTexture textureId
 
-    member this.TryBufferData () =
+    member this.TryBufferData (gl: IGL) =
         
         if framebufferId = 0 then
-            textureId <- Backend.createFramebufferTexture width height (nativeint 0)
-            framebufferId <- Backend.createFramebuffer ()
+            textureId <- gl.CreateFramebufferTexture (width, height, nativeint 0)//Backend.createFramebufferTexture width height (nativeint 0)
+            framebufferId <- gl.CreateFramebuffer ()//Backend.createFramebuffer ()
 
-            Backend.bindFramebuffer framebufferId
-            depthBufferId <- Backend.createRenderbuffer width height
-            Backend.bindFramebuffer 0
+            gl.BindFramebuffer framebufferId
+            depthBufferId <- gl.CreateRenderBuffer (width, height)
+            gl.BindFramebuffer framebufferId
 
-            Backend.bindFramebuffer framebufferId
-            Backend.bindTexture textureId
-            Backend.setFramebufferTexture textureId
-            Backend.bindTexture 0
-            Backend.bindFramebuffer 0
+            gl.BindFramebuffer framebufferId
+            gl.BindTexture textureId
+            gl.SetFramebufferTexture textureId
+            gl.BindFramebuffer 0
             true
         else
             false
