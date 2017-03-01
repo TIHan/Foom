@@ -44,14 +44,11 @@
     <Compile Include="PhysicsEngine.fsi" />
     <Compile Include="PhysicsEngine.fs" />
     <Compile Include="PhysicsEngineComponent.fs" />
-    <None Include="packages.config" />
+    <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Core">
       <HintPath>$(MSBuildExtensionsPath32)\..\Reference Assemblies\Microsoft\FSharp\.NETCore\$(TargetFSharpCoreVersion)\FSharp.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Numerics.Vectors">
-      <HintPath>..\..\packages\System.Numerics.Vectors.4.1.1\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
     </Reference>
     <ProjectReference Include="..\Foom.Geometry\Foom.Geometry.fsproj">
       <Project>{34AA5257-2F5B-4097-8250-1FD4956D1130}</Project>
@@ -65,5 +62,9 @@
       <Project>{B94F520E-B150-45A7-ADA1-E2945BE9A743}</Project>
       <Name>Foom.Math</Name>
     </ProjectReference>
+    <Reference Include="System.Numerics.Vectors">
+      <HintPath>..\..\packages\System.Numerics.Vectors.4.3.0\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
 </Project>

@@ -1,18 +1,20 @@
-﻿<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{3811DFB5-545F-4FAD-B3DA-4C245AE85DAC}</ProjectGuid>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>ed30b5eb-571d-4815-be37-ddf7ed6198cc</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Foom.Renderer</RootNamespace>
     <AssemblyName>Foom.Renderer</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
+    <TargetProfile>netcore</TargetProfile>
+    <TargetFSharpCoreVersion>3.7.4.0</TargetFSharpCoreVersion>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Name>Foom.Renderer</Name>
-    <NuGetPackageImportStamp>e481a362</NuGetPackageImportStamp>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
-    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -20,114 +22,68 @@
     <Optimize>false</Optimize>
     <Tailcalls>false</Tailcalls>
     <OutputPath>..\..\build\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;__64BIT__</DefineConstants>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>..\..\build\Foom.Renderer.XML</DocumentationFile>
-    <PlatformTarget>x64</PlatformTarget>
+    <DocumentationFile>bin\Debug\Foom.Renderer.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <Tailcalls>true</Tailcalls>
     <OutputPath>..\..\build\</OutputPath>
-    <DefineConstants>TRACE;__64BIT__</DefineConstants>
+    <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>..\..\build\Foom.Renderer.XML</DocumentationFile>
-    <PlatformTarget>x64</PlatformTarget>
+    <DocumentationFile>bin\Release\Foom.Renderer.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
-    <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
+    <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">12</MinimumVisualStudioVersion>
   </PropertyGroup>
-  <Choose>
-    <When Condition="'$(VisualStudioVersion)' == '11.0'">
-      <PropertyGroup Condition="Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')">
-        <FSharpTargetsPath>$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets</FSharpTargetsPath>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets')">
-        <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
-  <Import Project="$(FSharpTargetsPath)" />
-  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
-  <Import Project="..\..\packages\Ferop.1.0.0-beta90001\build\Ferop.targets" Condition="Exists('..\..\packages\Ferop.1.0.0-beta90001\build\Ferop.targets')" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
   <ItemGroup>
-    <Compile Include="Backend.fs" />
-    <Compile Include="Buffers.fs" />
-    <Compile Include="ShaderProgram.fs" />
-    <Compile Include="Renderer.fs" />
-    <Compile Include="CameraComponent.fs" />
-    <Compile Include="EntitySystem.fs" />
+    <Compile Include="IGL.fs" />
     <Content Include="packages.config" />
-    <None Include="Sprite.vert">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Sprite.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Wireframe.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Wireframe.vert">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="TextureMesh.vert">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="TextureMesh.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Fullscreen.vert">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Fullscreen.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Sky.vert">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Sky.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <Reference Include="FSharp.Core">
+      <Name>FSharp.Core</Name>
+      <AssemblyName>FSharp.Core.dll</AssemblyName>
+      <HintPath>$(MSBuildExtensionsPath32)\..\Reference Assemblies\Microsoft\FSharp\.NETCore\$(TargetFSharpCoreVersion)\FSharp.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>..\..\packages\System.Collections.Immutable.1.3.1\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Numerics.Vectors">
-      <HintPath>..\..\packages\System.Numerics.Vectors.4.1.1\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
+    <Reference Include="System.Drawing.Primitives">
+      <HintPath>..\..\packages\System.Drawing.Primitives.4.3.0\lib\netstandard1.1\System.Drawing.Primitives.dll</HintPath>
+      <Private>True</Private>
     </Reference>
-    <Reference Include="Ferop">
-      <HintPath>..\..\packages\Ferop.1.0.0-beta90001\lib\portable-net45+monoandroid10+monotouch10+xamarinios10\Ferop.dll</HintPath>
+    <Reference Include="System.Numerics.Vectors">
+      <HintPath>..\..\packages\System.Numerics.Vectors.4.3.0\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
+      <Private>True</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Foom.Ecs\Foom.Ecs.fsproj">
-      <Project>{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}</Project>
-      <Name>Foom.Ecs</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Foom.Common.Components\Foom.Common.Components.fsproj">
-      <Project>{FB77CA41-3C2E-4D41-826D-5FCF9EF10C88}</Project>
-      <Name>Foom.Common.Components</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Foom.Math\Foom.Math.fsproj">
-      <Project>{B94F520E-B150-45A7-ADA1-E2945BE9A743}</Project>
-      <Name>Foom.Math</Name>
+    <ProjectReference Include="..\Foom.Collections\Foom.Collections.fsproj">
+      <Name>Foom.Collections</Name>
+      <Project>{c18c5ab4-4c69-4ea0-ae74-fefbbd945c05}</Project>
+      <Private>True</Private>
     </ProjectReference>
     <ProjectReference Include="..\Foom.Geometry\Foom.Geometry.fsproj">
-      <Project>{34AA5257-2F5B-4097-8250-1FD4956D1130}</Project>
       <Name>Foom.Geometry</Name>
+      <Project>{34aa5257-2f5b-4097-8250-1fd4956d1130}</Project>
+      <Private>True</Private>
     </ProjectReference>
-    <ProjectReference Include="..\Foom.Collections\Foom.Collections.fsproj">
-      <Project>{C18C5AB4-4C69-4EA0-AE74-FEFBBD945C05}</Project>
-      <Name>Foom.Collections</Name>
+    <ProjectReference Include="..\Foom.Math\Foom.Math.fsproj">
+      <Name>Foom.Math</Name>
+      <Project>{b94f520e-b150-45a7-ada1-e2945be9a743}</Project>
+      <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
 </Project>

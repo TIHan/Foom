@@ -67,6 +67,10 @@
   <ItemGroup>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>..\..\packages\System.Collections.Immutable.1.3.1\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
     <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
@@ -74,10 +78,8 @@
     </Reference>
     <Reference Include="System.Drawing" />
     <Reference Include="System.Numerics.Vectors">
-      <HintPath>..\..\packages\System.Numerics.Vectors.4.1.1\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Collections.Immutable">
-      <HintPath>..\..\packages\System.Collections.Immutable.1.2.0\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+      <HintPath>..\..\packages\System.Numerics.Vectors.4.3.0\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
+      <Private>True</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -86,13 +88,19 @@
       <Project>{c18c5ab4-4c69-4ea0-ae74-fefbbd945c05}</Project>
       <Private>True</Private>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Renderer.Desktop\Foom.Renderer.Desktop.fsproj">
+      <Name>Foom.Renderer.Desktop</Name>
+      <Project>{3811dfb5-545f-4fad-b3da-4c245ae85dac}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Renderer\Foom.Renderer.fsproj">
+      <Name>Foom.Renderer</Name>
+      <Project>{ed30b5eb-571d-4815-be37-ddf7ed6198cc}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\Foom.Wad\Foom.Wad.fsproj">
       <Project>{13CAB67A-5A00-401D-8CE2-032FFEA5FECE}</Project>
       <Name>Foom.Wad</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Foom.Renderer\Foom.Renderer.fsproj">
-      <Project>{3811DFB5-545F-4FAD-B3DA-4C245AE85DAC}</Project>
-      <Name>Foom.Renderer</Name>
     </ProjectReference>
     <ProjectReference Include="..\Foom.Ecs\Foom.Ecs.fsproj">
       <Project>{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}</Project>
