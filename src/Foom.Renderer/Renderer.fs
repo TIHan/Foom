@@ -68,7 +68,7 @@ type MeshInput (shaderProgram: ShaderProgram) =
 // *****************************************
 // *****************************************
 
-type ProgramCache () =
+type ProgramCache (gl) =
     let cache = Dictionary<string, int> ()
 
     member this.CreateShaderProgram (name: string) =
@@ -86,12 +86,12 @@ type ProgramCache () =
 
                 programId
 
-        ShaderProgram.Create programId
+        ShaderProgram.Create (gl, programId)
 
     member this.Remove (name: string) =
         cache.Remove (name.ToUpper ())
 
-type TextureCache () =
+type TextureCache (gl) =
     let cache = Dictionary<string, Texture> ()
 
     member this.GetOrCreateTexture (fileName: string) =
@@ -107,7 +107,7 @@ type TextureCache () =
             // TODO: we should extract the bmp logic from Texture2DBuffer and put it here.
             buffer.Set bmp
 
-            buffer.TryBufferData () |> ignore
+            buffer.TryBufferData gl |> ignore
 
             {
                 Buffer = buffer
@@ -485,9 +485,9 @@ type Renderer =
         mutable time: float32
     }
 
-    static member Create (subPipelines, worldPipeline) =
+    static member Create (gl, subPipelines, worldPipeline) =
 
-        let programCache = ProgramCache ()
+        let programCache = ProgramCache gl
 
         let vertices =
             [|
@@ -506,7 +506,7 @@ type Renderer =
         let renderer =
             {
                 programCache = programCache
-                textureCache = TextureCache ()
+                textureCache = TextureCache gl
                 finalPipeline = finalPipelineContext
                 finalPositionBuffer = positionBuffer
                 time = 0.f

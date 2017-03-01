@@ -71,8 +71,9 @@ let create worldPipeline subPipelines (app: Application) : Behavior<float32 * fl
 
     // This should probably be on the camera itself :)
     let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
+    let desktopGL = DesktopGL ()
 
-    let renderer = Renderer.Create (subPipelines, worldPipeline)
+    let renderer = Renderer.Create (desktopGL, subPipelines, worldPipeline)
 
     Behavior.merge
         [

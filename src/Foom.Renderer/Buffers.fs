@@ -6,7 +6,7 @@ open System.Numerics
 open System.Collections.Generic
 open System.Runtime.InteropServices
 
-type IGLRenderer =
+type IGL =
 
     abstract BindBuffer : int -> unit
 
@@ -14,32 +14,81 @@ type IGLRenderer =
 
     abstract DeleteBuffer : int -> unit
 
-    abstract BufferData : Vector2 [] -> unit
+    abstract BufferData : Vector2 [] * count: int * bufferId: int -> unit
 
-    abstract BufferData : Vector3 [] -> unit
+    abstract BufferData : Vector3 [] * count: int * bufferId: int -> unit
 
-    abstract BufferData : Vector4 [] -> unit
+    abstract BufferData : Vector4 [] * count: int * bufferId: int -> unit
 
 
     abstract BindTexture : int -> unit
 
-    abstract CreateTexture : width: int -> height: int -> data: nativeint -> int
+    abstract CreateTexture : width: int * height: int * data: nativeint -> int
 
     abstract DeleteTexture : int -> unit
 
 
     abstract BindFramebuffer : int -> unit
 
-    abstract CreateFramebuffer : unit -> unit
+    abstract CreateFramebuffer : unit -> int
 
-    abstract CreateFramebufferTexture : width: int -> height: int -> data: nativeint -> int
+    abstract CreateFramebufferTexture : width: int * height: int * data: nativeint -> int
 
     abstract SetFramebufferTexture : int -> unit
 
-    abstract CreateRenderBuffer : width: int -> height: int -> int
+    abstract CreateRenderBuffer : width: int * height: int -> int
 
 
     abstract Clear : unit -> unit
+
+type DesktopGL () =
+
+    interface IGL with
+
+        member this.BindBuffer id =
+            Backend.bindVbo id
+
+        member this.CreateBuffer () =
+            Backend.makeVbo ()
+
+        member this.DeleteBuffer id =
+            Backend.deleteBuffer id
+
+        member this.BufferData (data, count, id) =
+            Backend.bufferVbo data count id
+
+        member this.BufferData (data, count, id) =
+            Backend.bufferVboVector3 data count id
+
+        member this.BufferData (data, count, id) =
+            Backend.bufferVboVector4 data count id
+
+        member this.BindTexture id =
+            Backend.bindTexture id
+
+        member this.CreateTexture (width, height, data) =
+            Backend.createTexture width height data
+
+        member this.DeleteTexture id =
+            Backend.deleteTexture id
+
+        member this.BindFramebuffer id =
+            Backend.bindFramebuffer id
+
+        member this.CreateFramebuffer () =
+            Backend.createFramebuffer ()
+
+        member this.CreateFramebufferTexture (width, height, data) =
+            Backend.createFramebufferTexture width height data
+
+        member this.SetFramebufferTexture id =
+            Backend.setFramebufferTexture id
+
+        member this.CreateRenderBuffer (width, height) =
+            Backend.createRenderbuffer width height
+
+        member this.Clear () =
+            Backend.clear ()
 
 // *****************************************
 // *****************************************
@@ -48,7 +97,7 @@ type IGLRenderer =
 // *****************************************
 
 [<Sealed>]
-type Buffer<'T when 'T : struct> (data: 'T [], bufferData: 'T [] -> int -> int -> unit) =
+type Buffer<'T when 'T : struct> (data: 'T [], bufferData: IGL -> 'T [] -> int -> int -> unit) =
 
     let mutable id = 0
     let mutable length = 0
@@ -62,17 +111,17 @@ type Buffer<'T when 'T : struct> (data: 'T [], bufferData: 'T [] -> int -> int -
 
     member this.Length = length
 
-    member this.Bind () =
+    member this.Bind (gl: IGL) =
         if id <> 0 then
-            Backend.bindVbo id
+            gl.BindBuffer id
 
-    member this.TryBufferData () =
+    member this.TryBufferData (gl: IGL) =
         match queuedData with
         | Some (data, size) ->
             if id = 0 then
-                id <- Backend.makeVbo ()
+                id <- gl.CreateBuffer ()
             
-            bufferData data size id
+            bufferData gl data size id
             length <- size
             queuedData <- None
             true
@@ -80,9 +129,9 @@ type Buffer<'T when 'T : struct> (data: 'T [], bufferData: 'T [] -> int -> int -
 
     member this.Id = id
 
-    member this.Release () =
+    member this.Release (gl: IGL) =
         if id <> 0 then
-            Backend.deleteBuffer (id)
+            gl.DeleteBuffer id
             id <- 0
             length <- 0
             queuedData <- None
@@ -94,13 +143,13 @@ type Vector4Buffer = Buffer<Vector4>
 module Buffer =
 
     let createVector2 data =
-        Vector2Buffer (data, fun data size id -> Backend.bufferVbo data (sizeof<Vector2> * size) id)
+        Vector2Buffer (data, fun gl data size id -> gl.BufferData (data, (sizeof<Vector2> * size), id)) //Backend.bufferVbo data (sizeof<Vector2> * size) id)
 
     let createVector3 data =
-        Vector3Buffer (data, fun data size id -> Backend.bufferVboVector3 data (sizeof<Vector3> * size) id)
+        Vector3Buffer (data, fun gl data size id -> gl.BufferData (data, (sizeof<Vector3> * size), id))//Backend.bufferVboVector3 data (sizeof<Vector3> * size) id)
 
     let createVector4 data =
-        Vector4Buffer (data, fun data size id -> Backend.bufferVboVector4 data (sizeof<Vector4> * size) id)
+        Vector4Buffer (data, fun gl data size id -> gl.BufferData (data, (sizeof<Vector4> * size), id))//Backend.bufferVboVector4 data (sizeof<Vector4> * size) id)
 
 
 type Texture2DBufferQueueItem =
@@ -129,20 +178,21 @@ type Texture2DBuffer (data, width, height) =
         height <- bmp.Height
         queuedData <- Bitmap bmp
 
-    member this.Bind () =
+    member this.Bind (gl: IGL) =
         if id <> 0 then
-            Backend.bindTexture id // this does activetexture0, change this eventually
+            gl.BindTexture id
+            //Backend.bindTexture id // this does activetexture0, change this eventually
 
-    member this.TryBufferData () =
+    member this.TryBufferData (gl: IGL) =
         match queuedData with
         | Data (data) ->
             if data.Length = 0 then
-                id <- Backend.createTexture width height (nativeint 0)
+                id <- gl.CreateTexture (width, height, nativeint 0)//Backend.createTexture width height (nativeint 0)
             else
                 let handle = GCHandle.Alloc (data, GCHandleType.Pinned)
                 let addr = handle.AddrOfPinnedObject ()
 
-                id <- Backend.createTexture width height addr
+                id <- gl.CreateTexture (width, height, addr)//Backend.createTexture width height addr
 
                 handle.Free ()
 
@@ -154,7 +204,7 @@ type Texture2DBuffer (data, width, height) =
 
             let bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
 
-            id <- Backend.createTexture bmp.Width bmp.Height bmpData.Scan0
+            id <- gl.CreateTexture (bmp.Width, bmp.Height, bmpData.Scan0)//Backend.createTexture bmp.Width bmp.Height bmpData.Scan0
 
             bmp.UnlockBits (bmpData)
             bmp.Dispose ()
@@ -162,9 +212,10 @@ type Texture2DBuffer (data, width, height) =
             true
         | _ -> false
 
-    member this.Release () =
+    member this.Release (gl: IGL) =
         if id <> 0 then
-            Backend.deleteTexture (id)
+            gl.DeleteTexture id
+            //Backend.deleteTexture (id)
             id <- 0
             width <- 0
             height <- 0

@@ -54,6 +54,7 @@ type RenderPass =
 
 type ShaderProgram =
     {
+        gl: IGL
         programId: int
         mutable drawOperation: DrawOperation
         mutable isUnbinded: bool
@@ -65,8 +66,9 @@ type ShaderProgram =
         mutable instanceCount: int
     }
 
-    static member Create (programId) =
+    static member Create (gl, programId) =
         {
+            gl = gl
             programId = programId
             drawOperation = DrawOperation.Normal
             isUnbinded = true
@@ -122,9 +124,9 @@ type ShaderProgram =
             | :? Uniform<Texture2DBuffer> as uni ->
                 fun () ->
                     if uni.IsDirty && not (obj.ReferenceEquals (uni.Value, null)) && uni.Location > -1 then 
-                        uni.Value.TryBufferData () |> ignore
+                        uni.Value.TryBufferData this.gl |> ignore
                         Backend.bindUniformInt uni.Location 0
-                        uni.Value.Bind ()
+                        uni.Value.Bind this.gl
                         uni.IsDirty <- false
 
             | :? Uniform<RenderTexture> as uni ->
@@ -179,17 +181,17 @@ type ShaderProgram =
             | :? VertexAttribute<Vector2Buffer> as attrib -> 
                 fun () -> 
                     if obj.ReferenceEquals (attrib.Value, null) |> not then
-                        attrib.Value.TryBufferData () |> ignore
+                        attrib.Value.TryBufferData this.gl |> ignore
 
             | :? VertexAttribute<Vector3Buffer> as attrib -> 
                 fun () -> 
                     if obj.ReferenceEquals (attrib.Value, null) |> not then
-                        attrib.Value.TryBufferData () |> ignore
+                        attrib.Value.TryBufferData this.gl |> ignore
 
             | :? VertexAttribute<Vector4Buffer> as attrib ->
                 fun () -> 
                     if obj.ReferenceEquals (attrib.Value, null) |> not then
-                        attrib.Value.TryBufferData () |> ignore
+                        attrib.Value.TryBufferData this.gl |> ignore
 
             | _ -> failwith "Should not happen."
 
@@ -198,17 +200,17 @@ type ShaderProgram =
             | :? VertexAttribute<Vector2Buffer> as attrib -> 
                 fun () -> 
                     if obj.ReferenceEquals (attrib.Value, null) |> not then
-                        attrib.Value.Bind ()
+                        attrib.Value.Bind this.gl
 
             | :? VertexAttribute<Vector3Buffer> as attrib ->
                 fun () -> 
                     if obj.ReferenceEquals (attrib.Value, null) |> not then
-                        attrib.Value.Bind ()
+                        attrib.Value.Bind this.gl
 
             | :? VertexAttribute<Vector4Buffer> as attrib ->
                 fun () -> 
                     if obj.ReferenceEquals (attrib.Value, null) |> not then
-                        attrib.Value.Bind ()
+                        attrib.Value.Bind this.gl
 
             | _ -> failwith "Should not happen."
 
