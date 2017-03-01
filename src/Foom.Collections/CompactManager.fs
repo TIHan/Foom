@@ -5,123 +5,71 @@ open System.Collections.Generic
 [<Struct>]
 type CompactId =
 
-    val Index : int
+    val Index : int ref
 
-    val Version : uint32
+    new (index) = { Index = index }
 
-    new (index, version) = { Index = index; Version = version }
-
-    static member Zero = CompactId (0, 0u)
+    static member Zero = CompactId (ref -1)
 
 type CompactManager<'T> =
     {
-        mutable nextIndex: int
-
-        maxSize: int
-        versions: uint32 []
-        nextIndexQueue: Queue<int>
-        dataIndexLookup: int []
-
         dataIds: CompactId ResizeArray
         data: 'T ResizeArray
     }
 
-    static member Create (maxSize) =
+    static member Create (capacity: int) =
         {
-            nextIndex = 0
-            maxSize = maxSize
-            versions = Array.init maxSize (fun _ -> 1u)
-            nextIndexQueue = Queue ()
-            dataIndexLookup = Array.init maxSize (fun _ -> -1)
-            dataIds = ResizeArray ()
-            data = ResizeArray ()
+            dataIds = ResizeArray (capacity)
+            data = ResizeArray (capacity)
         }
 
-    member this.Count =
-        this.data.Count
+    member this.Count = this.data.Count
 
-    member this.Add datum =
-        if this.nextIndex >= this.maxSize then
-            System.Diagnostics.Debug.WriteLine ("Unable to add datum. Reached max size, " + string this.maxSize + ".")
-            CompactId (0, 0u)
-        else
-
-        let id =
-            if this.nextIndexQueue.Count > 0 then
-                let index = this.nextIndexQueue.Dequeue ()
-                let version = this.versions.[index] + 1u
-                CompactId (index, version)
-            else
-                let index = this.nextIndex
-                this.nextIndex <- this.nextIndex + 1
-                CompactId (index, 1u)
-
+    member this.Add datum =     
         let index = this.dataIds.Count
+
+        let indexRef = ref index
+
+        let id = CompactId (indexRef)
 
         this.dataIds.Add id
         this.data.Add datum
-
-        this.dataIndexLookup.[id.Index] <- index
-        this.versions.[id.Index] <- id.Version
 
         id
 
     member this.RemoveById (id: CompactId) =
         if this.IsValid id then
+            let count = this.dataIds.Count
+            let lastIndex = count - 1
+            let index = !id.Index
 
-            this.nextIndexQueue.Enqueue id.Index
+            id.Index := -1
 
-            let index = this.dataIndexLookup.[id.Index]
-
-            let lastIndex = this.data.Count - 1
             let lastId = this.dataIds.[lastIndex]
+            let last = this.data.[lastIndex]
 
-            this.dataIds.[index] <- this.dataIds.[lastIndex]
-            this.data.[index] <- this.data.[lastIndex]
-
-            this.dataIds.RemoveAt (lastIndex)
-            this.data.RemoveAt (lastIndex)
-
-            this.dataIndexLookup.[id.Index] <- -1
-            this.dataIndexLookup.[lastId.Index] <- index 
-
+            this.dataIds.[index]
         else
             failwithf "Not a valid id, %A." id
 
     member this.IsValid (id: CompactId) =
 
-        if id.Index < this.dataIndexLookup.Length && id.Version = this.versions.[id.Index] then
-
-            let index = this.dataIndexLookup.[id.Index]
-
-            index <> -1
-
+        if !id.Index < this.dataIds.Count && !id.Index <> -1 then
+            true
         else
             false    
 
     member this.FindById (id: CompactId) =
 
         if this.IsValid id then
-
-            let index = this.dataIndexLookup.[id.Index]
-
-            if index <> -1 then
-                this.data.[index]
-            else
-                failwithf "Unable to find datum with id, %A." id
-
+            this.data.[!id.Index]
         else
-            failwithf "Not a valid id, %A." id
+            failwithf "Not a valid id, %A." id.Index
 
     member this.TryFindById (id: CompactId) =
 
         if this.IsValid id then
-            let index = this.dataIndexLookup.[id.Index]
-
-            if index <> -1 then
-                Some this.data.[index]
-            else
-                None
+            Some this.data.[!id.Index]
         else
             None
 
@@ -130,7 +78,3 @@ type CompactManager<'T> =
         for i = 0 to this.data.Count - 1 do
             
             f this.dataIds.[i] this.data.[i]
-
-    member this.IsFull =
-        this.data.Count = this.maxSize
-
