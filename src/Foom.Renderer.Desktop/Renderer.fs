@@ -100,12 +100,10 @@ type TextureCache (gl) =
         match cache.TryGetValue (fileName) with
         | true, texture -> texture
         | _ ->
-            let bmp = new Bitmap(fileName)
-
             let buffer = Texture2DBuffer ([||], 0, 0)
 
             // TODO: we should extract the bmp logic from Texture2DBuffer and put it here.
-            buffer.Set bmp
+            buffer.Set (new BitmapTextureFile (fileName))
 
             buffer.TryBufferData gl |> ignore
 
@@ -299,21 +297,23 @@ module Pipeline =
     let captureFrame width height p =
         Pipeline (
             fun context ->
+                let gl = context.GL
+
                 let renderTexture = RenderTexture (width, height)
 
                 context.AddRelease renderTexture.Release
                 
                 context.AddAction (fun () ->
-                    renderTexture.TryBufferData context.GL |> ignore
-                    renderTexture.Bind context.GL
+                    renderTexture.TryBufferData gl |> ignore
+                    renderTexture.Bind gl
                 )            
                 
                 match p with
                 | Pipeline f -> f context
 
                 context.AddAction (fun () ->
-                    renderTexture.Unbind ()
-                    Backend.clear ()
+                    renderTexture.Unbind gl
+                    gl.Clear ()
                 )
 
                 renderTexture

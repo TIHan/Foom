@@ -133,7 +133,7 @@ type ShaderProgram =
                 fun () ->
                     if uni.IsDirty && not (obj.ReferenceEquals (uni.Value, null)) && uni.Location > -1 then 
                         Backend.bindUniformInt uni.Location 0
-                        uni.Value.BindTexture ()
+                        uni.Value.BindTexture this.gl
                         uni.IsDirty <- false
 
             | _ -> failwith "This should not happen."

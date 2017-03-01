@@ -1,59 +1,9 @@
 ﻿namespace Foom.Renderer
 
 open System
-open System.Drawing
 open System.Numerics
 open System.Collections.Generic
 open System.Runtime.InteropServices
-
-type DesktopGL () =
-
-    interface IGL with
-
-        member this.BindBuffer id =
-            Backend.bindVbo id
-
-        member this.CreateBuffer () =
-            Backend.makeVbo ()
-
-        member this.DeleteBuffer id =
-            Backend.deleteBuffer id
-
-        member this.BufferData (data, count, id) =
-            Backend.bufferVbo data count id
-
-        member this.BufferData (data, count, id) =
-            Backend.bufferVboVector3 data count id
-
-        member this.BufferData (data, count, id) =
-            Backend.bufferVboVector4 data count id
-
-        member this.BindTexture id =
-            Backend.bindTexture id
-
-        member this.CreateTexture (width, height, data) =
-            Backend.createTexture width height data
-
-        member this.DeleteTexture id =
-            Backend.deleteTexture id
-
-        member this.BindFramebuffer id =
-            Backend.bindFramebuffer id
-
-        member this.CreateFramebuffer () =
-            Backend.createFramebuffer ()
-
-        member this.CreateFramebufferTexture (width, height, data) =
-            Backend.createFramebufferTexture width height data
-
-        member this.SetFramebufferTexture id =
-            Backend.setFramebufferTexture id
-
-        member this.CreateRenderBuffer (width, height) =
-            Backend.createRenderbuffer width height
-
-        member this.Clear () =
-            Backend.clear ()
 
 // *****************************************
 // *****************************************
@@ -120,7 +70,7 @@ module Buffer =
 type Texture2DBufferQueueItem =
     | Empty
     | Data of byte []
-    | Bitmap of Bitmap
+    | File of TextureFile
 
 type Texture2DBuffer (data, width, height) =
 
@@ -138,10 +88,10 @@ type Texture2DBuffer (data, width, height) =
 
     member this.IsTransparent = isTransparent
 
-    member this.Set (bmp: Bitmap) =
-        width <- bmp.Width
-        height <- bmp.Height
-        queuedData <- Bitmap bmp
+    member this.Set (file: TextureFile) =
+        width <- file.Width
+        height <- file.Height
+        queuedData <- File file
 
     member this.Bind (gl: IGL) =
         if id <> 0 then
@@ -163,15 +113,12 @@ type Texture2DBuffer (data, width, height) =
             queuedData <- Empty
             true
 
-        | Bitmap bmp ->
-            isTransparent <- bmp.PixelFormat = System.Drawing.Imaging.PixelFormat.Format32bppArgb
+        | File file ->
+            isTransparent <- file.IsTransparent
 
-            let bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
+            file.UseData (fun data -> id <- gl.CreateTexture (file.Width, file.Height, data))
 
-            id <- gl.CreateTexture (bmp.Width, bmp.Height, bmpData.Scan0)
-
-            bmp.UnlockBits (bmpData)
-            bmp.Dispose ()
+            file.Dispose ()
             queuedData <- Empty
             true
         | _ -> false
@@ -201,18 +148,18 @@ type RenderTexture (width, height) =
         if framebufferId <> 0 then
             gl.BindFramebuffer framebufferId
 
-    member this.Unbind () =
-        Backend.bindFramebuffer 0
+    member this.Unbind (gl: IGL) =
+        gl.BindFramebuffer 0
 
-    member this.BindTexture () =
+    member this.BindTexture (gl: IGL) =
         if textureId <> 0 then
-            Backend.bindTexture textureId
+            gl.BindTexture textureId
 
     member this.TryBufferData (gl: IGL) =
         
         if framebufferId = 0 then
-            textureId <- gl.CreateFramebufferTexture (width, height, nativeint 0)//Backend.createFramebufferTexture width height (nativeint 0)
-            framebufferId <- gl.CreateFramebuffer ()//Backend.createFramebuffer ()
+            textureId <- gl.CreateFramebufferTexture (width, height, nativeint 0)
+            framebufferId <- gl.CreateFramebuffer ()
 
             gl.BindFramebuffer framebufferId
             depthBufferId <- gl.CreateRenderBuffer (width, height)

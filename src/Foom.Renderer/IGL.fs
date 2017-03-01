@@ -1,7 +1,6 @@
 ﻿namespace Foom.Renderer
 
 open System
-open System.Drawing
 open System.Numerics
 open System.Collections.Generic
 open System.Runtime.InteropServices
@@ -25,6 +24,8 @@ type IGL =
 
     abstract CreateTexture : width: int * height: int * data: nativeint -> int
 
+    abstract CreateTextureFromFile : filePath: string -> int
+
     abstract DeleteTexture : int -> unit
 
 
@@ -40,3 +41,20 @@ type IGL =
 
 
     abstract Clear : unit -> unit
+
+[<AbstractClass>]
+type TextureFile () =
+    
+    abstract Width : int
+
+    abstract Height : int
+
+    abstract IsTransparent : bool
+
+    abstract UseData : System.Action<nativeint> -> unit
+
+    abstract Dispose : unit -> unit
+
+    interface IDisposable with
+
+        member this.Dispose () = this.Dispose ()
