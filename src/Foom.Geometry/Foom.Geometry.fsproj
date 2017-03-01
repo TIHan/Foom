@@ -58,6 +58,7 @@
   <ItemGroup>
     <Reference Include="FSharp.Core">
       <HintPath>$(MSBuildExtensionsPath32)\..\Reference Assemblies\Microsoft\FSharp\.NETCore\$(TargetFSharpCoreVersion)\FSharp.Core.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <ProjectReference Include="..\Foom.Math\Foom.Math.fsproj">
       <Project>{B94F520E-B150-45A7-ADA1-E2945BE9A743}</Project>

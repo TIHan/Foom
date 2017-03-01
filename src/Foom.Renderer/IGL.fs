@@ -51,7 +51,7 @@ type TextureFile () =
 
     abstract IsTransparent : bool
 
-    abstract UseData : System.Action<nativeint> -> unit
+    abstract UseData : Action<nativeint> -> unit
 
     abstract Dispose : unit -> unit
 

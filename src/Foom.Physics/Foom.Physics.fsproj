@@ -49,6 +49,7 @@
   <ItemGroup>
     <Reference Include="FSharp.Core">
       <HintPath>$(MSBuildExtensionsPath32)\..\Reference Assemblies\Microsoft\FSharp\.NETCore\$(TargetFSharpCoreVersion)\FSharp.Core.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <ProjectReference Include="..\Foom.Geometry\Foom.Geometry.fsproj">
       <Project>{34AA5257-2F5B-4097-8250-1FD4956D1130}</Project>

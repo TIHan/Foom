@@ -65,6 +65,7 @@
       <Name>FSharp.Core</Name>
       <AssemblyName>FSharp.Core.dll</AssemblyName>
       <HintPath>$(MSBuildExtensionsPath32)\..\Reference Assemblies\Microsoft\FSharp\.NETCore\$(TargetFSharpCoreVersion)\FSharp.Core.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <ProjectReference Include="..\Foom.Pickler\Foom.Pickler.fsproj">
       <Name>Foom.Pickler</Name>
