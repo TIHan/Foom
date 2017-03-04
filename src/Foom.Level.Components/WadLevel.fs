@@ -112,7 +112,7 @@ module WadLevel =
 
         Level.create walls sectors
 
-    let createFlats sectorId (level: Foom.Level.Level) = 
+    let createSectorGeometry sectorId (level: Foom.Level.Level) = 
         match level |> Foom.Level.Level.tryGetSector sectorId with
         | None -> Seq.empty
         | Some sector ->
@@ -143,7 +143,7 @@ module WadLevel =
                     |> Seq.map (fun triangles ->
                   
                         let ceiling =
-                            FlatPart.create
+                            SectorGeometry.create
                                 (
                                     triangles
                                     |> Seq.map (fun tri ->
@@ -159,7 +159,7 @@ module WadLevel =
                                 (Some sector.ceilingTextureName)
 
                         let floor =
-                            FlatPart.create
+                            SectorGeometry.create
                                 (
                                     triangles
                                     |> Seq.map (fun tri ->
@@ -174,11 +174,7 @@ module WadLevel =
                                 (float32 sector.floorHeight)
                                 (Some sector.floorTextureName)
 
-                        {
-                            SectorId = sectorId
-                            Ceiling = ceiling
-                            Floor = floor
-                        }
+                        (ceiling, floor)
                     )
 
                 with | _ ->

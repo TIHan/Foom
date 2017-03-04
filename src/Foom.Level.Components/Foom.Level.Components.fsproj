@@ -52,10 +52,8 @@
     <Compile Include="WallPart.fs" />
     <Compile Include="Wall.fsi" />
     <Compile Include="Wall.fs" />
-    <Compile Include="FlatPart.fsi" />
-    <Compile Include="FlatPart.fs" />
-    <Compile Include="Flat.fsi" />
-    <Compile Include="Flat.fs" />
+    <Compile Include="SectorGeometry.fsi" />
+    <Compile Include="SectorGeometry.fs" />
     <Compile Include="Sector.fs" />
     <Compile Include="Level.fs" />
     <Compile Include="LinedefTracer.fsi" />

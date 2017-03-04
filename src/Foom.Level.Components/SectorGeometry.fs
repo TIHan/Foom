@@ -2,7 +2,7 @@
 
 open System.Numerics
 
-type FlatPart =
+type SectorGeometry =
     {
         vertices: Vector3 []
 
@@ -11,7 +11,7 @@ type FlatPart =
     }
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
-module FlatPart =
+module SectorGeometry =
 
     let create vertices height textureName =
         {
@@ -25,7 +25,7 @@ module FlatPart =
         for i = 0 to flatPart.vertices.Length - 1 do
             flatPart.vertices.[i].Z <- height
 
-    let createUV width height (flatPart: FlatPart) =
+    let createUV width height (flatPart: SectorGeometry) =
         let vertices = flatPart.vertices
         let width = single width
         let height = single height * -1.f
@@ -46,7 +46,7 @@ module FlatPart =
 
         uv
 
-type FlatPart with
+type SectorGeometry with
 
     member this.Vertices = this.vertices
 

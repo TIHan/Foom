@@ -166,20 +166,12 @@ let spawnMesh sector (vertices: IEnumerable<Vector3>) uv (texturePath: string) =
     | _ ->
         globalBatch.Add (texturePath, (ResizeArray vertices, ResizeArray uv, ResizeArray color))
 
-let spawnCeilingMesh sector (flat: Flat) wad =
-    flat.Ceiling.TextureName
+let spawnSectorGeometryMesh sector (geo: SectorGeometry) wad =
+    geo.TextureName
     |> Option.iter (fun textureName ->
         let texturePath = textureName + "_flat.bmp"
         let t = new Bitmap(texturePath)
-        spawnMesh sector flat.Ceiling.Vertices (FlatPart.createUV t.Width t.Height flat.Ceiling) texturePath
-    )
-
-let spawnFloorMesh sector (flat: Flat) wad =
-    flat.Floor.TextureName
-    |> Option.iter (fun textureName ->
-        let texturePath = textureName + "_flat.bmp"
-        let t = new Bitmap(texturePath)
-        spawnMesh sector flat.Floor.Vertices (FlatPart.createUV t.Width t.Height flat.Floor) texturePath
+        spawnMesh sector geo.Vertices (SectorGeometry.createUV t.Width t.Height geo) texturePath
     )
 
 let spawnWallPartMesh sector (part: WallPart) (vertices: Vector3 []) wad isSky =
@@ -298,16 +290,16 @@ let updates (clientWorld: ClientWorld) =
                         |> PhysicsEngine.addRigidBody rBody                        
                 )
 
-                WadLevel.createFlats i lvl
-                |> Seq.iter (fun flat ->
-                    spawnCeilingMesh sector flat wad
-                    spawnFloorMesh sector flat wad
+                WadLevel.createSectorGeometry i lvl
+                |> Seq.iter (fun (ceiling, floor) ->
+                    spawnSectorGeometryMesh sector ceiling wad
+                    spawnSectorGeometryMesh sector floor wad
 
                     let mutable j = 0
-                    while j < flat.Floor.Vertices.Length do
-                        let v0 = flat.Floor.Vertices.[j]
-                        let v1 = flat.Floor.Vertices.[j + 1]
-                        let v2 = flat.Floor.Vertices.[j + 2]
+                    while j < floor.Vertices.Length do
+                        let v0 = floor.Vertices.[j]
+                        let v1 = floor.Vertices.[j + 1]
+                        let v2 = floor.Vertices.[j + 2]
 
                         physicsEngineComp.PhysicsEngine
                         |> PhysicsEngine.addTriangle
