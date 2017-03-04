@@ -154,7 +154,8 @@ let runGlobalBatch (em: EntityManager) =
 
 open System.Linq
 
-let spawnMesh (vertices: IEnumerable<Vector3>) uv (texturePath: string) lightLevel (em: EntityManager) =
+let spawnMesh sector (vertices: IEnumerable<Vector3>) uv (texturePath: string) =
+    let lightLevel = sector.lightLevel
     let color = Array.init (vertices.Count ()) (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
 
     match globalBatch.TryGetValue(texturePath) with
@@ -165,37 +166,37 @@ let spawnMesh (vertices: IEnumerable<Vector3>) uv (texturePath: string) lightLev
     | _ ->
         globalBatch.Add (texturePath, (ResizeArray vertices, ResizeArray uv, ResizeArray color))
 
-let spawnCeilingMesh (flat: Flat) lightLevel wad em =
+let spawnCeilingMesh sector (flat: Flat) wad =
     flat.Ceiling.TextureName
     |> Option.iter (fun textureName ->
         let texturePath = textureName + "_flat.bmp"
         let t = new Bitmap(texturePath)
-        spawnMesh flat.Ceiling.Vertices (FlatPart.createUV t.Width t.Height flat.Ceiling) texturePath lightLevel em
+        spawnMesh sector flat.Ceiling.Vertices (FlatPart.createUV t.Width t.Height flat.Ceiling) texturePath
     )
 
-let spawnFloorMesh (flat: Flat) lightLevel wad em =
+let spawnFloorMesh sector (flat: Flat) wad =
     flat.Floor.TextureName
     |> Option.iter (fun textureName ->
         let texturePath = textureName + "_flat.bmp"
         let t = new Bitmap(texturePath)
-        spawnMesh flat.Floor.Vertices (FlatPart.createUV t.Width t.Height flat.Floor) texturePath lightLevel em
+        spawnMesh sector flat.Floor.Vertices (FlatPart.createUV t.Width t.Height flat.Floor) texturePath
     )
 
-let spawnWallPartMesh (part: WallPart) (vertices: Vector3 []) lightLevel wad em isSky =
+let spawnWallPartMesh sector (part: WallPart) (vertices: Vector3 []) wad isSky =
     if vertices.Length >= 3 then
         if not isSky then
             part.TextureName
             |> Option.iter (fun textureName ->
                 let texturePath = textureName + ".bmp"
                 let t = new Bitmap(texturePath)
-                spawnMesh vertices (WallPart.createUV vertices t.Width t.Height part) texturePath lightLevel em
+                spawnMesh sector vertices (WallPart.createUV vertices t.Width t.Height part) texturePath
             )
         else
             let texturePath = "F_SKY1" + "_flat.bmp"
             let t = new Bitmap(texturePath)
-            spawnMesh vertices (WallPart.createUV vertices t.Width t.Height part) texturePath lightLevel em
+            spawnMesh sector vertices (WallPart.createUV vertices t.Width t.Height part) texturePath
 
-let spawnWallMesh (wall: Wall) level wad em =
+let spawnWallMesh level (wall: Wall) wad =
     let (
         (upperFront, middleFront, lowerFront),
         (upperBack, middleBack, lowerBack)) = Foom.Level.Level.createWallGeometry wall level
@@ -210,10 +211,11 @@ let spawnWallMesh (wall: Wall) level wad em =
                 sector.ceilingTextureName.Equals("F_SKY1")
             | _ -> false
         
-        let lightLevel = Foom.Level.Level.lightLevelBySectorId frontSide.SectorId level
-        spawnWallPartMesh frontSide.Upper upperFront lightLevel wad em isSky
-        spawnWallPartMesh frontSide.Middle middleFront lightLevel wad em false
-        spawnWallPartMesh frontSide.Lower lowerFront lightLevel wad em false
+        let sector = Foom.Level.Level.getSector frontSide.SectorId level
+
+        spawnWallPartMesh sector frontSide.Upper upperFront wad isSky
+        spawnWallPartMesh sector frontSide.Middle middleFront wad false
+        spawnWallPartMesh sector frontSide.Lower lowerFront wad false
 
     | _ -> ()
 
@@ -227,10 +229,11 @@ let spawnWallMesh (wall: Wall) level wad em =
                 sector.ceilingTextureName.Equals("F_SKY1")
             | _ -> false
 
-        let lightLevel = Foom.Level.Level.lightLevelBySectorId backSide.SectorId level
-        spawnWallPartMesh backSide.Upper upperBack lightLevel wad em isSky
-        spawnWallPartMesh backSide.Middle middleBack lightLevel wad em false
-        spawnWallPartMesh backSide.Lower lowerBack lightLevel wad em false
+        let sector = Foom.Level.Level.getSector backSide.SectorId level
+
+        spawnWallPartMesh sector backSide.Upper upperBack wad isSky
+        spawnWallPartMesh sector backSide.Middle middleBack wad false
+        spawnWallPartMesh sector backSide.Lower lowerBack wad false
 
     | _ -> ()
 
@@ -255,10 +258,13 @@ let updates (clientWorld: ClientWorld) =
 
             let lvl = WadLevel.toLevel level
 
-            level
-            |> Level.iteriSector (fun i sector ->
+            let sectorCount = lvl |> Level.getSectorCount
 
-                let lightLevel = sector.LightLevel
+            let sectorWalls =
+                Array.init sectorCount (fun _ -> ResizeArray ())
+
+            lvl
+            |> Foom.Level.Level.iteriSector (fun i sector ->
 
                 (i, level)
                 ||> Level.iterLinedefBySectorId (fun linedef ->
@@ -294,9 +300,8 @@ let updates (clientWorld: ClientWorld) =
 
                 WadLevel.createFlats i level
                 |> Seq.iter (fun flat ->
-                    let lightLevel = Level.lightLevelBySectorId i level
-                    spawnCeilingMesh flat lightLevel wad em
-                    spawnFloorMesh flat lightLevel wad em
+                    spawnCeilingMesh sector flat wad
+                    spawnFloorMesh sector flat wad
 
                     let mutable j = 0
                     while j < flat.Floor.Vertices.Length do
@@ -320,7 +325,7 @@ let updates (clientWorld: ClientWorld) =
             
             lvl
             |> Level.iterWall (fun wall ->
-                spawnWallMesh wall lvl wad em
+                spawnWallMesh lvl wall wad
             )
 
             level
@@ -345,12 +350,12 @@ let updates (clientWorld: ClientWorld) =
                     match image with
                     | Some image ->
                         let pos = Vector2 (single thing.X, single thing.Y)
-                        let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos :?> Sector
-                        let pos = Vector3 (pos, single sector.FloorHeight)
+                        let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos :?> Foom.Level.Sector
+                        let pos = Vector3 (pos, single sector.floorHeight)
 
                         let ent = em.Spawn ()
                         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(pos)))
-                        em.Add (ent, SpriteComponent ("World", image, sector.LightLevel))
+                        em.Add (ent, SpriteComponent ("World", image, sector.lightLevel))
                     | _ -> ()
 
                 | _ -> ()
@@ -365,9 +370,9 @@ let updates (clientWorld: ClientWorld) =
                 | Doom doomThing ->
                     let sector =
                         physicsEngineComp.PhysicsEngine
-                        |> PhysicsEngine.findWithPoint (Vector2 (single doomThing.X, single doomThing.Y)) :?> Sector
+                        |> PhysicsEngine.findWithPoint (Vector2 (single doomThing.X, single doomThing.Y)) :?> Foom.Level.Sector
 
-                    let position = Vector3 (single doomThing.X, single doomThing.Y, single sector.FloorHeight + 28.f)
+                    let position = Vector3 (single doomThing.X, single doomThing.Y, single sector.floorHeight + 28.f)
 
                     let transformComp = TransformComponent (Matrix4x4.CreateTranslation (position))
 

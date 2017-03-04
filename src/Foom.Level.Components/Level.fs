@@ -78,6 +78,8 @@ module Level =
         level.sectors
         |> Seq.iteri f
 
+    let getSectorCount level = level.sectors.Count
+
     let tryFindPlayer1Start level =
         level.things
         |> Seq.tryFind (function

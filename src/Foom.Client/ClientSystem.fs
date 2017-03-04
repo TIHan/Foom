@@ -107,9 +107,9 @@ let physicsUpdateBehavior (clientWorld: ClientWorld) =
                 |> PhysicsEngine.findWithPoint rbody.WorldPosition
 
             if obj.ReferenceEquals (sector, null) |> not then
-                let sector = sector :?> Sector
+                let sector = sector :?> Foom.Level.Sector
 
-                transformComp.Position <- Vector3 (rbody.WorldPosition, single sector.FloorHeight + 50.f)
+                transformComp.Position <- Vector3 (rbody.WorldPosition, single sector.floorHeight + 50.f)
         } |> ignore
 
     )
