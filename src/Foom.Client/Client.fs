@@ -81,7 +81,7 @@ let init (world: World) =
     let clientWorld = ClientWorld.Create (clientSubworld, world.SpawnEntity ())
     let clientSystemUpdate = ClientSystem.create app clientWorld |> clientSubworld.AddBehavior
 
-    world.Publish (ClientSystem.LoadWadAndLevelRequested ("doom.wad", "e1m2"))
+    world.Publish (ClientSystem.LoadWadAndLevelRequested ("freedoom1.wad", "e1m1"))
    // world.Publish (ClientSystem.LoadWadAndLevelRequested ("doom2.wad", "map10"))
 
     {

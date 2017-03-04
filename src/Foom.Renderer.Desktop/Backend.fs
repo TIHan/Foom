@@ -81,7 +81,7 @@ module Backend =
         SDL_GL_SetAttribute (SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
         app.GLContext = SDL_GL_CreateContext ((SDL_Window*)app.Window);
-        SDL_GL_SetSwapInterval (0);
+        SDL_GL_SetSwapInterval (1);
 
         #if defined(__GNUC__)
         #else
@@ -123,28 +123,7 @@ module Backend =
         """
 
     [<Import; MI (MIO.NoInlining)>]
-    let bufferVbo (data: Vector2 []) (size: int) (vbo: int) : unit =
-        C """
-        glBindBuffer (GL_ARRAY_BUFFER, vbo);
-        glBufferData (GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
-        """
-
-    [<Import; MI (MIO.NoInlining)>]
-    let bufferVboVector3 (data: Vector3 []) (size: int) (vbo: int) : unit =
-        C """
-        glBindBuffer (GL_ARRAY_BUFFER, vbo);
-        glBufferData (GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
-        """
-
-    [<Import; MI (MIO.NoInlining)>]
-    let bufferVboVector4 (data: Vector4 []) (size: int) (vbo: int) : unit =
-        C """
-        glBindBuffer (GL_ARRAY_BUFFER, vbo);
-        glBufferData (GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
-        """
-
-    [<Import; MI (MIO.NoInlining)>]
-    let bufferVboMatrix4x4 (data: Matrix4x4 []) (size: int) (vbo: int) : unit =
+    let bufferData (data: nativeint) (size: int) (vbo: int) : unit =
         C """
         glBindBuffer (GL_ARRAY_BUFFER, vbo);
         glBufferData (GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
@@ -353,16 +332,6 @@ module Backend =
         C """
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textureId);
-        """
-
-    [<Import; MI (MIO.NoInlining)>]
-    let bindColor (programID: int) : unit =
-        C """
-        GLint posAttrib = glGetAttribLocation (programID, "in_color");
-
-        glVertexAttribPointer (posAttrib, 4, GL_FLOAT, GL_FALSE, 0, 0);
-
-        glEnableVertexAttribArray (posAttrib);
         """
 
     [<Import; MI (MIO.NoInlining)>]

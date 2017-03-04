@@ -162,7 +162,7 @@ type RenderTexture (width, height) =
             framebufferId <- gl.CreateFramebuffer ()
 
             gl.BindFramebuffer framebufferId
-            depthBufferId <- gl.CreateRenderBuffer (width, height)
+            depthBufferId <- gl.CreateRenderbuffer (width, height)
             gl.BindFramebuffer framebufferId
 
             gl.BindFramebuffer framebufferId

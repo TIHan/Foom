@@ -78,9 +78,9 @@ type SpriteRendererComponent (subRenderer, texture, lightLevel) =
 
     member val SpriteCount = 0 with get, set
 
-    member val Positions : Vector3 [] = Array.zeroCreate 10000
+    member val Positions : Vector3 [] = Array.zeroCreate 100000
 
-    member val LightLevels : Vector4 [] = Array.zeroCreate 10000
+    member val LightLevels : Vector4 [] = Array.zeroCreate 100000
 
 [<Sealed>]
 type SpriteComponent (subRenderer: string, texture: string, lightLevel: int) =
@@ -92,7 +92,7 @@ type SpriteComponent (subRenderer: string, texture: string, lightLevel: int) =
 
     member val LightLevel = lightLevel with get, set
 
-    member val SetData : Vector3 -> unit = fun pos -> () with get, set
+    member val RendererComponent : SpriteRendererComponent = Unchecked.defaultof<SpriteRendererComponent> with get, set
 
 let handleSprite () =
     let lookup = Dictionary<string * string, Entity * SpriteRendererComponent> ()
@@ -115,13 +115,7 @@ let handleSprite () =
 
                         rendererEnt, rendererComp
                     
-                comp.SetData <- fun pos ->
-                    if rendererComp.SpriteCount < rendererComp.Positions.Length then
-                        let c = single comp.LightLevel / 255.f
-                        rendererComp.Positions.[rendererComp.SpriteCount] <- pos
-                        rendererComp.LightLevels.[rendererComp.SpriteCount] <- Vector4 (c, c, c, 1.f)
-                        rendererComp.SpriteCount <- rendererComp.SpriteCount + 1
-                    
+                comp.RendererComponent <- rendererComp
             )
 
             Behavior.handleComponentAdded (fun ent (comp: SpriteRendererComponent) _ em ->
@@ -143,7 +137,12 @@ let handleSprite () =
 
             Behavior.update (fun _ em ea ->
                 em.ForEach<TransformComponent, SpriteComponent> (fun _ transformComp spriteComp ->
-                    spriteComp.SetData transformComp.Position
+                    let rendererComp = spriteComp.RendererComponent
+                    if rendererComp.SpriteCount < rendererComp.Positions.Length then
+                        let c = single spriteComp.LightLevel / 255.f
+                        rendererComp.Positions.[rendererComp.SpriteCount] <- transformComp.Position
+                        rendererComp.LightLevels.[rendererComp.SpriteCount] <- Vector4 (c, c, c, 1.f)
+                        rendererComp.SpriteCount <- rendererComp.SpriteCount + 1
                 )
             )
 

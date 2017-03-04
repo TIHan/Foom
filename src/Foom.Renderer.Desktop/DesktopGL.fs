@@ -19,14 +19,23 @@ type DesktopGL () =
         member this.DeleteBuffer id =
             Backend.deleteBuffer id
 
-        member this.BufferData (data, count, id) =
-            Backend.bufferVbo data count id
+        member this.BufferData (data: Vector2 [], count, id) =
+            let handle = GCHandle.Alloc (data, GCHandleType.Pinned)
+            let addr = handle.AddrOfPinnedObject ()
+            Backend.bufferData addr count id
+            handle.Free ()
 
-        member this.BufferData (data, count, id) =
-            Backend.bufferVboVector3 data count id
+        member this.BufferData (data: Vector3 [], count, id) =
+            let handle = GCHandle.Alloc (data, GCHandleType.Pinned)
+            let addr = handle.AddrOfPinnedObject ()
+            Backend.bufferData addr count id
+            handle.Free ()
 
-        member this.BufferData (data, count, id) =
-            Backend.bufferVboVector4 data count id
+        member this.BufferData (data: Vector4 [], count, id) =
+            let handle = GCHandle.Alloc (data, GCHandleType.Pinned)
+            let addr = handle.AddrOfPinnedObject ()
+            Backend.bufferData addr count id
+            handle.Free ()
 
         member this.BindTexture id =
             Backend.bindTexture id
@@ -51,7 +60,7 @@ type DesktopGL () =
         member this.SetFramebufferTexture id =
             Backend.setFramebufferTexture id
 
-        member this.CreateRenderBuffer (width, height) =
+        member this.CreateRenderbuffer (width, height) =
             Backend.createRenderbuffer width height
 
         member this.Clear () =

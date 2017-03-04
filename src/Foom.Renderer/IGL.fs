@@ -37,7 +37,7 @@ type IGL =
 
     abstract SetFramebufferTexture : int -> unit
 
-    abstract CreateRenderBuffer : width: int * height: int -> int
+    abstract CreateRenderbuffer : width: int * height: int -> int
 
 
     abstract Clear : unit -> unit
