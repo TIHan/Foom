@@ -31,7 +31,9 @@ type Entity =
     override this.ToString () = String.Format ("(Entity #{0}.{1})", this.Index, this.Version)
 
 [<AbstractClass>]
-type Component () = class end
+type Component () =
+
+    member val Entity = Entity (0, 0u) with get, set
 
 module Events =
 
@@ -308,16 +310,21 @@ type EntityManager =
                 if data.IndexLookup.[entity.Index] >= 0 then
                     Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, already added to {1}.", typeof<'T>.Name, entity))
                 else
-                    this.EntityRemovals.[entity.Index].Add (data.RemoveComponent)
+                    if not comp.Entity.IsZero then
+                        Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, has already been assigned to {1}.", typeof<'T>.Name, comp.Entity))
+                    else
+                        comp.Entity <- entity
 
-                    data.Active.[entity.Index] <- true
-                    data.IndexLookup.[entity.Index] <- data.Entities.Count
+                        this.EntityRemovals.[entity.Index].Add (data.RemoveComponent)
 
-                    data.Components.Add comp
-                    data.Entities.Add entity
+                        data.Active.[entity.Index] <- true
+                        data.IndexLookup.[entity.Index] <- data.Entities.Count
 
-                    this.AnyComponentAddedEvent.Trigger ({ entity = entity; componentType = typeof<'T> })
-                    data.ComponentAddedEvent.Trigger ({ entity = entity })
+                        data.Components.Add comp
+                        data.Entities.Add entity
+
+                        this.AnyComponentAddedEvent.Trigger ({ entity = entity; componentType = typeof<'T> })
+                        data.ComponentAddedEvent.Trigger ({ entity = entity })
             else
                 Debug.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot add component, {1}", entity, typeof<'T>.Name))
 
