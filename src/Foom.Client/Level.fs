@@ -298,7 +298,7 @@ let updates (clientWorld: ClientWorld) =
                         |> PhysicsEngine.addRigidBody rBody                        
                 )
 
-                WadLevel.createFlats i level
+                WadLevel.createFlats i lvl
                 |> Seq.iter (fun flat ->
                     spawnCeilingMesh sector flat wad
                     spawnFloorMesh sector flat wad

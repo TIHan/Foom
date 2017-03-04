@@ -112,8 +112,8 @@ module WadLevel =
 
         Level.create walls sectors
 
-    let createFlats sectorId level = 
-        match level |> Level.tryGetSector sectorId with
+    let createFlats sectorId (level: Foom.Level.Level) = 
+        match level |> Foom.Level.Level.tryGetSector sectorId with
         | None -> Seq.empty
         | Some sector ->
 
@@ -148,15 +148,15 @@ module WadLevel =
                                     triangles
                                     |> Seq.map (fun tri ->
                                         [|
-                                            Vector3 (tri.C.X, tri.C.Y, single sector.CeilingHeight)
-                                            Vector3 (tri.B.X, tri.B.Y, single sector.CeilingHeight)
-                                            Vector3 (tri.A.X, tri.A.Y, single sector.CeilingHeight)
+                                            Vector3 (tri.C.X, tri.C.Y, single sector.ceilingHeight)
+                                            Vector3 (tri.B.X, tri.B.Y, single sector.ceilingHeight)
+                                            Vector3 (tri.A.X, tri.A.Y, single sector.ceilingHeight)
                                         |]
                                     )
                                     |> Seq.reduce Array.append
                                 )
-                                (float32 sector.CeilingHeight)
-                                (Some sector.CeilingTextureName)
+                                (float32 sector.ceilingHeight)
+                                (Some sector.ceilingTextureName)
 
                         let floor =
                             FlatPart.create
@@ -164,15 +164,15 @@ module WadLevel =
                                     triangles
                                     |> Seq.map (fun tri ->
                                         [|
-                                            Vector3 (tri.A.X, tri.A.Y, single sector.FloorHeight)
-                                            Vector3 (tri.B.X, tri.B.Y, single sector.FloorHeight)
-                                            Vector3 (tri.C.X, tri.C.Y, single sector.FloorHeight)
+                                            Vector3 (tri.A.X, tri.A.Y, single sector.floorHeight)
+                                            Vector3 (tri.B.X, tri.B.Y, single sector.floorHeight)
+                                            Vector3 (tri.C.X, tri.C.Y, single sector.floorHeight)
                                         |]
                                     )
                                     |> Seq.reduce Array.append
                                 )
-                                (float32 sector.FloorHeight)
-                                (Some sector.FloorTextureName)
+                                (float32 sector.floorHeight)
+                                (Some sector.floorTextureName)
 
                         {
                             SectorId = sectorId
