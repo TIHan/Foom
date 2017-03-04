@@ -33,7 +33,7 @@ type Entity =
 [<AbstractClass>]
 type Component () =
 
-    member val Entity = Entity (0, 0u) with get, set
+    member val Owner = Entity (0, 0u) with get, set
 
 module Events =
 
@@ -310,10 +310,10 @@ type EntityManager =
                 if data.IndexLookup.[entity.Index] >= 0 then
                     Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, already added to {1}.", typeof<'T>.Name, entity))
                 else
-                    if not comp.Entity.IsZero then
-                        Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, has already been assigned to {1}.", typeof<'T>.Name, comp.Entity))
+                    if not comp.Owner.IsZero then
+                        Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, has already been assigned to {1}.", typeof<'T>.Name, comp.Owner))
                     else
-                        comp.Entity <- entity
+                        comp.Owner <- entity
 
                         this.EntityRemovals.[entity.Index].Add (data.RemoveComponent)
 
