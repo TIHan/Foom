@@ -75,7 +75,6 @@ let init (world: World) =
             ]
 
     let renderSystemUpdate = world.AddBehavior (Behavior.merge [ renderSystem ])
-    let inputUpdate = world.AddBehavior (Player.preUpdate app)
 
     let clientSubworld = world.CreateSubworld ()
     let clientWorld = ClientWorld.Create (clientSubworld, world.SpawnEntity ())
@@ -84,10 +83,15 @@ let init (world: World) =
     world.Publish (ClientSystem.LoadWadAndLevelRequested ("freedoom1.wad", "e1m1"))
    // world.Publish (ClientSystem.LoadWadAndLevelRequested ("doom2.wad", "map10"))
 
+    let willQuit = ref false
+    let inputUpdate = world.AddBehavior (Player.preUpdate willQuit app)
+
     {
         Window = app.Window
         AlwaysUpdate = fun () -> inputUpdate ()
-        Update = clientSystemUpdate
+        Update = fun x ->
+            clientSystemUpdate x
+            !willQuit
         RenderUpdate = renderSystemUpdate
         ClientWorld = clientWorld
     }

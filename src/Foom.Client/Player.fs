@@ -89,7 +89,7 @@ module Player =
                 )
             ]
 
-    let preUpdate (app: Application) =
+    let preUpdate (willQuit: bool ref) (app: Application) =
         Behavior.merge
             [
                 Behavior.update (fun () em ea ->
@@ -116,7 +116,9 @@ module Player =
                             | KeyPressed x when x = 'd' -> playerComp.IsMovingRight <- true
                             | KeyReleased x when x = 'd' -> playerComp.IsMovingRight <- false
 
-                            | _ -> ()
+                            | KeyPressed x when x = '\027' -> willQuit := true
+
+                            | x -> ()
                         )
                     )
                 )

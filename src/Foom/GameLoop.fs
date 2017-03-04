@@ -22,10 +22,11 @@ module GameLoop
         { 
             LastTime: int64
             UpdateTime: int64
-            UpdateAccumulator: int64 
+            UpdateAccumulator: int64
+            WillQuit: bool 
         }
 
-    let start updateInterval (alwaysUpdate: unit -> unit) (update: int64 -> int64 -> unit) (render: int64 -> float32 -> unit) : unit =
+    let start updateInterval (alwaysUpdate: unit -> unit) (update: int64 -> int64 -> bool) (render: int64 -> float32 -> unit) : unit =
         let targetUpdateInterval = (1000. / updateInterval) * 10000. |> int64
         let skip = (1000. / 5.) * 10000. |> int64
 
@@ -51,12 +52,13 @@ module GameLoop
                 if gl.UpdateAccumulator >= targetUpdateInterval
                 then
                     ctx.Process ()
-                    update gl.UpdateTime targetUpdateInterval
+                    let willQuit = update gl.UpdateTime targetUpdateInterval
 
                     processUpdate
                         { gl with 
                             UpdateTime = gl.UpdateTime + targetUpdateInterval
                             UpdateAccumulator = gl.UpdateAccumulator - targetUpdateInterval
+                            WillQuit = willQuit
                         }
                 else
                     gl
@@ -69,15 +71,16 @@ module GameLoop
                 }
 
 
-       
-            { gl with UpdateAccumulator = updateAcc }
-            |> processUpdate
-            |> processRender
-            |> loop
+            if not gl.WillQuit then
+                { gl with UpdateAccumulator = updateAcc }
+                |> processUpdate
+                |> processRender
+                |> loop
 
         loop
             {
                 LastTime = 0L
                 UpdateTime = 0L
                 UpdateAccumulator = targetUpdateInterval
+                WillQuit = false
             }
