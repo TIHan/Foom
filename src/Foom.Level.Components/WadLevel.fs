@@ -101,6 +101,12 @@ module WadLevel =
                     height
             | _ -> height
 
+
+        //let checkSidedefs level height (frontSidedef: Foom.Wad.Sidedef option) (backSidedef: Foom.Wad.Sidedef option) =
+        //    match frontSidedef, backSidedef with
+        //    | Some frontSidedef, Some backSidedef ->
+        //        let sector = Foom.Wad.Level.getSector sidedef.SectorNumber level
+
         let rec calculateCeilingHeight sector =
 
             // heuristic
@@ -121,12 +127,11 @@ module WadLevel =
 
         level
         |> Level.iteriSector (fun i sector ->
-            let ceilingHeight = sector.CeilingHeight//calculateCeilingHeight sector
+            let ceilingHeight = calculateCeilingHeight sector
 
             let upperMiddleHeight =
                 if sector.CeilingHeight < ceilingHeight then
-                    //Some sector.CeilingHeight
-                    None
+                    Some sector.CeilingHeight
                 else
                     None
 

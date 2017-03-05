@@ -111,7 +111,12 @@ module Level =
 
                 if frontSideSector.ceilingHeight > backSideSector.ceilingHeight then
 
-                    let floorHeight, ceilingHeight = backSideSector.ceilingHeight, frontSideSector.ceilingHeight
+                    let frontSideSectorCeilingHeight =
+                        match frontSideSector.upperMiddleHeight with
+                        | Some height -> height
+                        | _ -> frontSideSector.ceilingHeight
+
+                    let floorHeight, ceilingHeight = backSideSector.ceilingHeight, frontSideSectorCeilingHeight
 
                     upperFront <-
                         [|
