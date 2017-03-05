@@ -90,21 +90,17 @@ let vertices, normals = sphere
 
 let skyVertices =
     vertices
-    |> Array.map (fun x ->
-        let v = Vector4.Transform (x, Matrix4x4.CreateScale(1000.f))
-        Vector3 (v.X, v.Y, v.Z)
-    )
     |> Array.rev
 
 type SkyInput (program: ShaderProgram) =
     inherit MeshInput (program)
 
-    member val Normal = program.CreateVertexAttributeVector3 ("vertexNormal_modelspace")
+    member val Model = program.CreateUniformMatrix4x4 ("uni_model")
 
-type Sky (normal: Vector3 []) =
+type Sky () =
     inherit GpuResource ()
 
-    member val Normal = Buffer.createVector3 (normal)
+    member val Model = Matrix4x4.CreateScale (100.f)
 
 type SkyRendererComponent (pipeline, texture) =
-    inherit RenderComponent<Sky> (pipeline, texture, Mesh (skyVertices, [||], [||]), Sky(normals))
+    inherit RenderComponent<Sky> (pipeline, texture, Mesh (skyVertices, [||], [||]), Sky())

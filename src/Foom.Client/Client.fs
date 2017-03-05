@@ -31,7 +31,7 @@ module Pipelines =
     let sky =
         pipeline {
             do! runProgramWithMesh "Sky" SkyInput noOutput (fun (sky: Sky) input draw ->
-                input.Normal.Set sky.Normal
+                input.Model.Set sky.Model
                 draw ()
             )
         }
