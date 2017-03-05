@@ -206,7 +206,7 @@ let spawnWallMesh level (wall: Wall) wad =
         
         let sector = Foom.Level.Level.getSector frontSide.SectorId level
 
-        spawnWallPartMesh sector frontSide.Upper upperFront wad isSky
+        spawnWallPartMesh sector frontSide.Upper upperFront wad false
         spawnWallPartMesh sector frontSide.Middle middleFront wad false
         spawnWallPartMesh sector frontSide.Lower lowerFront wad false
 
@@ -373,7 +373,7 @@ let updates (clientWorld: ClientWorld) =
                    // em.Add (skyEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), LayerMask.Layer0, ClearFlags.None, 1))
                    // em.Add (skyEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
 
-                    em.Add (skyEnt, SkyRendererComponent ("Sky", "Sky1.bmp"))
+                    em.Add (skyEnt, SkyRendererComponent ("Sky", "milky2.jpg"))
 
                 | _ -> ()
             )
