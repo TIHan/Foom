@@ -3,8 +3,10 @@ module Foom.Client.Client
 
 open Foom.Ecs
 open Foom.Renderer
+open System.Numerics
 
 open Foom.Client.Sprite
+open Foom.Client.Sky
 
 type SpriteInput (program: ShaderProgram) =
     inherit MeshInput (program)
@@ -14,6 +16,7 @@ type SpriteInput (program: ShaderProgram) =
     member val Positions = program.CreateInstanceAttributeVector3 ("instance_position")
 
     member val LightLevels = program.CreateInstanceAttributeVector4 ("instance_lightLevel")
+
 
 module Pipelines =
     open Pipeline
@@ -27,7 +30,8 @@ module Pipelines =
 
     let sky =
         pipeline {
-            do! runProgramWithMesh "Sky" MeshInput noOutput (fun (_: Level.Sky) input draw ->
+            do! runProgramWithMesh "Sky" SkyInput noOutput (fun (sky: Sky) input draw ->
+                input.Normal.Set sky.Normal
                 draw ()
             )
         }
