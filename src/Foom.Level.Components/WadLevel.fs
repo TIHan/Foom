@@ -121,11 +121,21 @@ module WadLevel =
 
         level
         |> Level.iteriSector (fun i sector ->
+            let ceilingHeight = sector.CeilingHeight//calculateCeilingHeight sector
+
+            let upperMiddleHeight =
+                if sector.CeilingHeight < ceilingHeight then
+                    //Some sector.CeilingHeight
+                    None
+                else
+                    None
+
             let s =
                 {
                     lightLevel = sector.LightLevel
                     floorHeight = sector.FloorHeight
-                    ceilingHeight = calculateCeilingHeight sector
+                    ceilingHeight = ceilingHeight
+                    upperMiddleHeight = upperMiddleHeight
                     floorTextureName = sector.FloorTextureName
                     ceilingTextureName = sector.CeilingTextureName
                 }

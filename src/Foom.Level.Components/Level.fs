@@ -152,7 +152,14 @@ module Level =
                         )
                     )
 
-                | _ -> frontSideSector.floorHeight, frontSideSector.ceilingHeight
+                | _ -> 
+
+                    let ceilingHeight =
+                        match frontSideSector.upperMiddleHeight with
+                        | Some height -> height
+                        | _ -> frontSideSector.ceilingHeight
+
+                    frontSideSector.floorHeight, ceilingHeight
 
             middleFront <-
                 [|
