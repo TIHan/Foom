@@ -91,56 +91,13 @@ module WadLevel =
     let toSectors (level: Foom.Wad.Level) =
         let arr = ResizeArray<Foom.Level.Sector> ()
 
-        let checkSidedef level height (sidedef: Foom.Wad.Sidedef option) =
-            match sidedef with
-            | Some sidedef ->
-                let sector = Foom.Wad.Level.getSector sidedef.SectorNumber level
-                if sector.CeilingHeight > height then
-                    sector.CeilingHeight
-                else
-                    height
-            | _ -> height
-
-
-        //let checkSidedefs level height (frontSidedef: Foom.Wad.Sidedef option) (backSidedef: Foom.Wad.Sidedef option) =
-        //    match frontSidedef, backSidedef with
-        //    | Some frontSidedef, Some backSidedef ->
-        //        let sector = Foom.Wad.Level.getSector sidedef.SectorNumber level
-
-        let rec calculateCeilingHeight sector =
-
-            // heuristic
-            if sector.CeilingTextureName.ToUpper () = "F_SKY1" then
-                let mutable height = sector.CeilingHeight
-
-                (sector.Id, level)
-                ||> Foom.Wad.Level.iterLinedefBySectorId (fun linedef ->
-
-                    height <- checkSidedef level height linedef.FrontSidedef
-                    height <- checkSidedef level height linedef.BackSidedef
-
-                )
-
-                height
-            else
-                sector.CeilingHeight
-
         level
         |> Level.iteriSector (fun i sector ->
-            let ceilingHeight = calculateCeilingHeight sector
-
-            let upperMiddleHeight =
-                if sector.CeilingHeight < ceilingHeight then
-                    Some sector.CeilingHeight
-                else
-                    None
-
             let s =
                 {
                     lightLevel = sector.LightLevel
                     floorHeight = sector.FloorHeight
-                    ceilingHeight = ceilingHeight
-                    upperMiddleHeight = upperMiddleHeight
+                    ceilingHeight = sector.CeilingHeight
                     floorTextureName = sector.FloorTextureName
                     ceilingTextureName = sector.CeilingTextureName
                 }

@@ -206,7 +206,7 @@ let spawnWallMesh level (wall: Wall) wad =
         
         let sector = Foom.Level.Level.getSector frontSide.SectorId level
 
-        spawnWallPartMesh sector frontSide.Upper upperFront wad false
+        spawnWallPartMesh sector frontSide.Upper upperFront wad isSky
         spawnWallPartMesh sector frontSide.Middle middleFront wad false
         spawnWallPartMesh sector frontSide.Lower lowerFront wad false
 
@@ -318,12 +318,13 @@ let updates (clientWorld: ClientWorld) =
             level
             |> Level.iterThing (fun thing ->
                 match thing with
-                | Thing.Doom thing ->
+                | Thing.Doom thing when thing.Flags.HasFlag (DoomThingFlags.SkillLevelFourAndFive) ->
 
                     let mutable image = None
 
                     match thing.Type with
                     | ThingType.HealthBonus -> image <- Some "BON1A0.bmp"
+                    | ThingType.ArmorBonus -> image <- Some "BON2A0.bmp"
                     | ThingType.DeadPlayer -> image <- Some "PLAYN0.bmp"
                     | ThingType.GreenArmor -> image <- Some "ARM1A0.bmp"
                     | ThingType.Stimpack -> image <- Some "STIMA0.bmp"
@@ -332,6 +333,7 @@ let updates (clientWorld: ClientWorld) =
                     | ThingType.TallTechnoPillar -> image <- Some "ELECA0.bmp"
                     | ThingType.Player1Start -> image <- Some "PLAYA1.bmp"
                     | ThingType.AmmoClip -> image <- Some "CLIPA0.bmp"
+                    | ThingType.ShotgunGuy -> image <- Some "SPOSA1.bmp"
                     | _ -> ()
 
                     match image with
