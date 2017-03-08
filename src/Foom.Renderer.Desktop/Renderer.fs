@@ -371,6 +371,7 @@ module Pipeline =
                             let (texture, meshManager) = pair.Value
 
                             input.Texture.Set texture.Buffer
+                            input.TextureResolution.Set (Vector2 (single texture.Buffer.Width, single texture.Buffer.Height))
 
                             input.Time.Set context.Time
                             input.View.Set context.View

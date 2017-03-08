@@ -10,6 +10,7 @@ in vec4 instance_lightLevel;
 
 uniform mat4x4 uni_projection;
 uniform mat4x4 uni_view;
+uniform vec2 uTextureResolution;
 
 out vec2 uv;
 out vec4 color;
@@ -17,10 +18,15 @@ out vec4 lightLevel;
 
 void main ()
 {
+	float halfX = uTextureResolution.x / 2.0;
+	vec3 min = vec3 (-halfX, 0, 0);
+	vec3 max = vec3 (halfX, 0, uTextureResolution.y);
+	vec3 mid = min + ((max - min) / 2.0);
+
 	vec3 CameraRight_worldspace = vec3 (uni_view[0][0], uni_view[1][0], uni_view[2][0]);
 	vec3 CameraUp_worldspace = vec3 (uni_view[0][1], uni_view[1][1], uni_view[2][1]);
 
-	vec3 c = vec3 (in_center.x, in_center.y, position.z) + instance_position;
+	vec3 c = vec3 (mid.x, 0, position.z) + instance_position;
 	vec3 pos = position - c + instance_position;
 	vec3 vertexPosition_worldspace =
 		c
