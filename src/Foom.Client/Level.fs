@@ -132,6 +132,8 @@ let exportSpriteTextures (wad: Wad) =
 
 let globalBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray * Color ResizeArray> ()
 
+let levelMaterialCache = Dictionary<string, Material> ()
+
 let runGlobalBatch (em: EntityManager) =
     globalBatch
     |> Seq.iter (fun pair ->
@@ -141,13 +143,23 @@ let runGlobalBatch (em: EntityManager) =
 
         let ent = em.Spawn ()
 
+        let material = 
+            match levelMaterialCache.TryGetValue (texturePath) with
+            | true, x -> x
+            | _ ->
+                let pipelineName = if isSky then "Sky" else "World"
+                let material = Material (pipelineName, texturePath)
+
+                levelMaterialCache.[texturePath] <- material
+
+                material
+
         let meshInfo : RendererSystem.MeshInfo =
             {
                 Position = vertices |> Seq.toArray
                 Uv = uv |> Seq.toArray
                 Color = color |> Seq.toArray
-                Texture = texturePath
-                SubRenderer = if isSky then "Sky" else "World"
+                Material = material
             }
 
         em.Add (ent, RendererSystem.MeshRenderComponent (meshInfo))
@@ -342,9 +354,20 @@ let updates (clientWorld: ClientWorld) =
                         let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos :?> Foom.Level.Sector
                         let pos = Vector3 (pos, single sector.floorHeight)
 
+                        let material = 
+                            match levelMaterialCache.TryGetValue (image) with
+                            | true, x -> x
+                            | _ ->
+                                let pipelineName = "World"
+                                let material = Material (pipelineName, image)
+
+                                levelMaterialCache.[image] <- material
+
+                                material
+
                         let ent = em.Spawn ()
                         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(pos)))
-                        em.Add (ent, SpriteComponent ("World", image, sector.lightLevel))
+                        em.Add (ent, SpriteComponent (material, sector.lightLevel))
                     | _ -> ()
 
                 | _ -> ()
@@ -375,7 +398,8 @@ let updates (clientWorld: ClientWorld) =
                    // em.Add (skyEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), LayerMask.Layer0, ClearFlags.None, 1))
                    // em.Add (skyEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
 
-                    em.Add (skyEnt, SkyRendererComponent ("Sky", "milky2.jpg"))
+                    let material = Material ("Sky", "milky2.jpg")
+                    em.Add (skyEnt, SkyRendererComponent (material))
 
                 | _ -> ()
             )

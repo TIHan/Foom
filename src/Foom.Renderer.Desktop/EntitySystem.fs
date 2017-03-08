@@ -16,8 +16,7 @@ type MeshInfo =
         Uv: Vector2 []
         Color: Color []
 
-        Texture: string
-        SubRenderer: string
+        Material: Material
     }
 
     member this.ToMesh () =
@@ -33,26 +32,24 @@ type MeshInfo =
         Mesh (this.Position, this.Uv, color)
 
 [<AbstractClass>]
-type BaseRenderComponent (subRenderer: string, texture: string, mesh: Mesh, extraResource: GpuResource) =
+type BaseRenderComponent (material: Material, mesh: Mesh, extraResource: GpuResource) =
     inherit Component ()
 
-    member val SubRenderer = subRenderer
-
-    member val Texture = texture
+    member val Material = material
 
     member val Mesh = mesh
 
     member val ExtraResource = extraResource
 
 [<AbstractClass>]
-type RenderComponent<'T when 'T :> GpuResource> (subRenderer, texture, mesh, extra: 'T) =
-    inherit BaseRenderComponent (subRenderer, texture, mesh, extra)
+type RenderComponent<'T when 'T :> GpuResource> (material, mesh, extra: 'T) =
+    inherit BaseRenderComponent (material, mesh, extra)
 
     member val Extra = extra
 
 [<Sealed>]
 type MeshRenderComponent (meshInfo: MeshInfo) =
-    inherit RenderComponent<UnitResource> (meshInfo.SubRenderer, meshInfo.Texture, meshInfo.ToMesh (), UnitResource ())
+    inherit RenderComponent<UnitResource> (meshInfo.Material, meshInfo.ToMesh (), UnitResource ())
 
 let handleMeshRender (renderer: Renderer) =
     Behavior.handleEvent (fun (evt: Foom.Ecs.Events.AnyComponentAdded) _ em ->
@@ -61,9 +58,17 @@ let handleMeshRender (renderer: Renderer) =
             | Some comp ->
                 let meshRendererComp = comp :?> BaseRenderComponent
                 let mesh = meshRendererComp.Mesh
-                let texture = meshRendererComp.Texture
-                let subRenderer = meshRendererComp.SubRenderer
-                renderer.TryAddMesh (subRenderer, texture, mesh, meshRendererComp.ExtraResource) |> ignore
+                let material = meshRendererComp.Material
+
+                (*
+                This will be replaced by an asset management system.
+                *)
+                if not material.IsInitialized then
+                    material.Texture.Buffer.Set (new BitmapTextureFile (material.TexturePath))
+                    material.IsInitialized <- true
+                (**)
+
+                renderer.TryAddMesh (material, mesh, meshRendererComp.ExtraResource) |> ignore
             | _ -> ()
     )
 

@@ -19,11 +19,9 @@ type Sprite =
 type SpriteComponent =
     inherit Component
 
-    new : subRenderer: string * texture: string * lightLevel: int -> SpriteComponent
+    new : material: Material * lightLevel: int -> SpriteComponent
 
-    member SubRenderer : string
-
-    member Texture : string
+    member Material : Material
 
     member LightLevel : int with get, set
 

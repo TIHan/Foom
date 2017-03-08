@@ -91,31 +91,21 @@ type ProgramCache (gl) =
     member this.Remove (name: string) =
         cache.Remove (name.ToUpper ())
 
-type TextureCache (gl) =
-    let cache = Dictionary<string, Texture> ()
-
-    member this.GetOrCreateTexture (fileName: string) =
-        let fileName = fileName.ToUpper ()
-
-        match cache.TryGetValue (fileName) with
-        | true, texture -> texture
-        | _ ->
-            let buffer = Texture2DBuffer ([||], 0, 0)
-
-            // TODO: we should extract the bmp logic from Texture2DBuffer and put it here.
-            buffer.Set (new BitmapTextureFile (fileName))
-
-            buffer.TryBufferData gl |> ignore
-
-            {
-                Buffer = buffer
-            }
-
 // *****************************************
 // *****************************************
 // Shader
 // *****************************************
 // *****************************************
+
+type Material (pipelineName: string, texturePath: string) =
+
+    member val PipelineName = pipelineName
+
+    member val TexturePath = texturePath
+
+    member val Texture = { Buffer = Texture2DBuffer ([||], 0, 0) }
+
+    member val IsInitialized = false with get, set
 
 [<Struct>]
 type TextureMeshId =
@@ -140,6 +130,8 @@ type SubPipeline (context: PipelineContext, pipeline: Pipeline<unit>) =
 
     member this.TryAddTextureMesh (texture: Texture, mesh: Mesh, extra: GpuResource) =
         let typ = extra.GetType()
+
+        texture.Buffer.TryBufferData context.GL |> ignore
 
         match lookup.TryGetValue (typ) with
         | true, t -> 
@@ -479,7 +471,6 @@ module Final =
 type Renderer =
     {
         programCache: ProgramCache
-        textureCache: TextureCache
 
         finalPipeline: PipelineContext
         finalPositionBuffer: Vector3Buffer
@@ -508,7 +499,6 @@ type Renderer =
         let renderer =
             {
                 programCache = programCache
-                textureCache = TextureCache gl
                 finalPipeline = finalPipelineContext
                 finalPositionBuffer = positionBuffer
                 time = 0.f
@@ -519,8 +509,8 @@ type Renderer =
 
         renderer
 
-    member this.TryAddMesh (subRenderer, texture, mesh, extra: 'T) =
-        this.finalPipeline.TryAddMesh (subRenderer, this.textureCache.GetOrCreateTexture (texture), mesh, extra)
+    member this.TryAddMesh (material: Material, mesh, extra: 'T) =
+        this.finalPipeline.TryAddMesh (material.PipelineName, material.Texture, mesh, extra)
 
     member this.Draw (time: float32) view projection =
         this.time <- time
