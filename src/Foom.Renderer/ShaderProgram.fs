@@ -1,7 +1,6 @@
 ﻿namespace Foom.Renderer
 
 open System
-open System.Drawing
 open System.Numerics
 open System.Collections.Generic
 open System.IO
@@ -81,58 +80,60 @@ type ShaderProgram =
         }
 
     member this.CreateUniform<'T> (name) =
+        let gl = this.gl
+
         if this.isInitialized then failwithf "Cannot create uniform, %s. Shader already initialized." name
 
         let uni = Uniform<'T> (name)
             
         let initUni =
             fun () ->
-                uni.Location <- Backend.getUniformLocation this.programId uni.Name
+                uni.Location <- gl.GetUniformLocation (this.programId, uni.Name)
 
         let setValue =
             match uni :> obj with
             | :? Uniform<int> as uni ->              
                 fun () -> 
                     if uni.IsDirty && uni.Location > -1 then 
-                        Backend.bindUniformInt uni.Location uni.Value
+                        gl.BindUniform (uni.Location, uni.Value)
                         uni.IsDirty <- false
 
             | :? Uniform<float32> as uni ->              
                 fun () -> 
                     if uni.IsDirty && uni.Location > -1 then 
-                        Backend.bindUniform_float uni.Location uni.Value
+                        gl.BindUniform (uni.Location, uni.Value)
                         uni.IsDirty <- false
 
             | :? Uniform<Vector2> as uni ->         
                 fun () -> 
                     if uni.IsDirty && uni.Location > -1 then 
-                        Backend.bindUniformVector2 uni.Location uni.Value
+                        gl.BindUniform (uni.Location, uni.Value)
                         uni.IsDirty <- false
 
             | :? Uniform<Vector4> as uni ->         
                 fun () -> 
                     if uni.IsDirty && uni.Location > -1 then 
-                        Backend.bindUniformVector4 uni.Location uni.Value
+                        gl.BindUniform (uni.Location, uni.Value)
                         uni.IsDirty <- false
 
             | :? Uniform<Matrix4x4> as uni ->        
                 fun () -> 
                     if uni.IsDirty && uni.Location > -1 then 
-                        Backend.bindUniformMatrix4x4 uni.Location uni.Value
+                        gl.BindUniform (uni.Location, uni.Value)
                         uni.IsDirty <- false
 
             | :? Uniform<Texture2DBuffer> as uni ->
                 fun () ->
                     if uni.IsDirty && not (obj.ReferenceEquals (uni.Value, null)) && uni.Location > -1 then 
                         uni.Value.TryBufferData this.gl |> ignore
-                        Backend.bindUniformInt uni.Location 0
+                        gl.BindUniform (uni.Location, 0)
                         uni.Value.Bind this.gl
                         uni.IsDirty <- false
 
             | :? Uniform<RenderTexture> as uni ->
                 fun () ->
                     if uni.IsDirty && not (obj.ReferenceEquals (uni.Value, null)) && uni.Location > -1 then 
-                        Backend.bindUniformInt uni.Location 0
+                        gl.BindUniform (uni.Location, 0)
                         uni.Value.BindTexture this.gl
                         uni.IsDirty <- false
 
@@ -169,10 +170,11 @@ type ShaderProgram =
         attrib
 
     member this.AddVertexAttribute<'T> (attrib: VertexAttribute<'T>) =
+        let gl = this.gl
 
         let initAttrib =
             fun () ->
-                attrib.Location <- Backend.getAttributeLocation this.programId attrib.Name
+                attrib.Location <- gl.GetAttributeLocation (this.programId, attrib.Name)
                 if (attrib.Location = -1) then
                     System.Diagnostics.Debug.WriteLine("Could not find attribute, " + attrib.Name + ".")
 
@@ -236,9 +238,9 @@ type ShaderProgram =
                         bindBuffer ()
 
                         // TODO: this will change
-                        Backend.bindVertexAttributePointer_Float attrib.Location size
-                        Backend.enableVertexAttribute attrib.Location
-                        Backend.glVertexAttribDivisor attrib.Location attrib.Divisor
+                        gl.BindAttributePointerFloat32 (attrib.Location, size)
+                        gl.EnableAttribute attrib.Location
+                        gl.AttributeDivisor (attrib.Location, attrib.Divisor)
 
                         let length = getLength ()
                         if attrib.Divisor > 0 then
@@ -324,12 +326,13 @@ type ShaderProgram =
         if this.length > 0 then
             match this.drawOperation with
             | Normal ->
-                Backend.drawTriangles 0 this.length
+                this.gl.DrawTriangles (0, this.length)
             | Instanced ->
                 if this.instanceCount > 0 then
-                    Backend.drawTrianglesInstanced this.length this.instanceCount
+                    this.gl.DrawTrianglesInstanced (this.length, this.instanceCount)
 
     member this.Run (renderPass: RenderPass) =
+        let gl = this.gl
 
         if this.programId > 0 then
             this.isUnbinded <- false
@@ -347,25 +350,32 @@ type ShaderProgram =
 
             match renderPass with
             | NoDepth ->
-                Backend.depthMaskFalse ()
+                gl.DisableDepthMask ()
+
                 this.Draw ()
-                Backend.depthMaskTrue ()
+
+                gl.EnableDepthMask ()
 
             | Stencil1 ->
-                Backend.enableStencilTest ()
-                Backend.colorMaskFalse ()
-                Backend.depthMaskFalse ()
-                Backend.stencil1 ()
+                gl.EnableStencilTest ()
+                gl.DisableColorMask ()
+                gl.DisableDepthMask ()
+                gl.Stencil1 ()
+
                 this.Draw ()
-                Backend.depthMaskTrue ()
-                Backend.colorMaskTrue ()
-                Backend.disableStencilTest ()
+
+                gl.EnableDepthMask ()
+                gl.EnableColorMask ()
+                gl.DisableStencilTest ()
 
             | Stencil2 ->
-                Backend.enableStencilTest ()
-                Backend.stencil2 ()
+                gl.EnableStencilTest ()
+                gl.Stencil2 ()
+
                 this.Draw ()
-                Backend.disableStencilTest ()
+
+                gl.DisableStencilTest ()
 
 
             | _ -> this.Draw ()
+

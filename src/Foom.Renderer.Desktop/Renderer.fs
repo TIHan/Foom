@@ -10,17 +10,6 @@ open Foom.Collections
 
 // *****************************************
 // *****************************************
-// Texture
-// *****************************************
-// *****************************************
-
-type Texture =
-    {
-        Buffer: Texture2DBuffer
-    }
-
-// *****************************************
-// *****************************************
 // Mesh
 // *****************************************
 // *****************************************
@@ -103,7 +92,7 @@ type Material (pipelineName: string, texturePath: string) =
 
     member val TexturePath = texturePath
 
-    member val Texture = { Buffer = Texture2DBuffer ([||], 0, 0) }
+    member val TextureBuffer = Texture2DBuffer ([||], 0, 0)
 
     member val IsInitialized = false with get, set
 
@@ -124,26 +113,26 @@ type Shader<'Input, 'Output> = Shader of 'Input * 'Output * ShaderProgram
 type SubPipeline (context: PipelineContext, pipeline: Pipeline<unit>) =
 
     let releases = ResizeArray<unit -> unit> ()
-    let lookup = Dictionary<Type, Dictionary<int, Texture * CompactManager<Mesh * obj>>> ()
+    let lookup = Dictionary<Type, Dictionary<int, Texture2DBuffer * CompactManager<Mesh * obj>>> ()
 
     member this.Pipeline = pipeline
 
-    member this.TryAddTextureMesh (texture: Texture, mesh: Mesh, extra: GpuResource) =
+    member this.TryAddTextureMesh (textureBuffer: Texture2DBuffer, mesh: Mesh, extra: GpuResource) =
         let typ = extra.GetType()
 
-        texture.Buffer.TryBufferData context.GL |> ignore
+        textureBuffer.TryBufferData context.GL |> ignore
 
         match lookup.TryGetValue (typ) with
         | true, t -> 
             let m =
-                match t.TryGetValue (texture.Buffer.Id) with
+                match t.TryGetValue (textureBuffer.Id) with
                 | true, (_, m) -> m
                 | _ ->
                     let m = CompactManager<Mesh * obj>.Create (10000)
-                    t.[texture.Buffer.Id] <- (texture, m)
+                    t.[textureBuffer.Id] <- (textureBuffer, m)
                     m
             let meshId = m.Add (mesh, extra :> obj)
-            let textureId = texture.Buffer.Id
+            let textureId = textureBuffer.Id
 
             TextureMeshId (meshId, textureId, typ)
             |> Some
@@ -368,10 +357,10 @@ module Pipeline =
                         lookup
                         |> Seq.iter (fun pair ->
                             let key = pair.Key
-                            let (texture, meshManager) = pair.Value
+                            let (textureBuffer, meshManager) = pair.Value
 
-                            input.Texture.Set texture.Buffer
-                            input.TextureResolution.Set (Vector2 (single texture.Buffer.Width, single texture.Buffer.Height))
+                            input.Texture.Set textureBuffer
+                            input.TextureResolution.Set (Vector2 (single textureBuffer.Width, single textureBuffer.Height))
 
                             input.Time.Set context.Time
                             input.View.Set context.View
@@ -511,7 +500,7 @@ type Renderer =
         renderer
 
     member this.TryAddMesh (material: Material, mesh, extra: 'T) =
-        this.finalPipeline.TryAddMesh (material.PipelineName, material.Texture, mesh, extra)
+        this.finalPipeline.TryAddMesh (material.PipelineName, material.TextureBuffer, mesh, extra)
 
     member this.Draw (time: float32) view projection =
         this.time <- time

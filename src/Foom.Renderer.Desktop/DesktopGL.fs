@@ -63,6 +63,66 @@ type DesktopGL () =
         member this.CreateRenderbuffer (width, height) =
             Backend.createRenderbuffer width height
 
+        member this.GetUniformLocation (programId, name) =
+            Backend.getUniformLocation programId name
+
+        member this.BindUniform (locationId, value) =
+            Backend.bindUniformInt locationId value
+
+        member this.BindUniform (locationId, value) =
+            Backend.bindUniform_float locationId value
+
+        member this.BindUniform (locationId, value) =
+            Backend.bindUniformVector2 locationId value
+
+        member this.BindUniform (locationId, value) =
+            Backend.bindUniformVector4 locationId value
+
+        member this.BindUniform (locationId, value) =
+            Backend.bindUniformMatrix4x4 locationId value
+
+        member this.GetAttributeLocation (programId, name) =
+            Backend.getAttributeLocation programId name
+
+        member this.BindAttributePointerFloat32 (locationId, size) =
+            Backend.bindVertexAttributePointer_Float locationId size
+
+        member this.EnableAttribute locationId =
+            Backend.enableVertexAttribute locationId
+
+        member this.AttributeDivisor (locationId, divisor) =
+            Backend.glVertexAttribDivisor locationId divisor
+
+        member this.DrawTriangles (first, count) =
+            Backend.drawTriangles first count
+
+        member this.DrawTrianglesInstanced (count, primcount) =
+            Backend.drawTrianglesInstanced count primcount
+
+        member this.EnableDepthMask () =
+            Backend.depthMaskTrue ()
+
+        member this.DisableDepthMask () =
+            Backend.depthMaskFalse ()
+
+        member this.EnableColorMask () =
+            Backend.colorMaskTrue ()
+
+        member this.DisableColorMask () =
+            Backend.colorMaskFalse ()
+
+        member this.EnableStencilTest () =
+            Backend.enableStencilTest ()
+
+        member this.DisableStencilTest () =
+            Backend.disableStencilTest ()
+
+        member this.Stencil1 () =
+            Backend.stencil1 ()
+
+        member this.Stencil2 () =
+            Backend.stencil2 ()
+
         member this.Clear () =
             Backend.clear ()
 

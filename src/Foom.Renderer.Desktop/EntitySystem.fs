@@ -64,7 +64,7 @@ let handleMeshRender (renderer: Renderer) =
                 This will be replaced by an asset management system.
                 *)
                 if not material.IsInitialized then
-                    material.Texture.Buffer.Set (new BitmapTextureFile (material.TexturePath))
+                    material.TextureBuffer.Set (new BitmapTextureFile (material.TexturePath))
                     material.IsInitialized <- true
                 (**)
 

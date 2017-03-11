@@ -40,6 +40,52 @@ type IGL =
     abstract CreateRenderbuffer : width: int * height: int -> int
 
 
+    abstract GetUniformLocation : programId: int * name: string -> int
+
+    abstract BindUniform : locationId: int * int -> unit
+
+    abstract BindUniform : locationId: int * float32 -> unit
+
+    abstract BindUniform : locationId: int * Vector2 -> unit
+
+    abstract BindUniform : locationId: int * Vector4 -> unit
+
+    abstract BindUniform : locationId: int * Matrix4x4 -> unit
+
+
+    abstract GetAttributeLocation : programId: int * name: string -> int
+
+    abstract BindAttributePointerFloat32 : locationId: int * size: int -> unit
+
+    abstract EnableAttribute : locationId: int -> unit
+
+    abstract AttributeDivisor : locationId: int * divisor: int -> unit
+
+
+    abstract DrawTriangles : first: int * count: int -> unit
+
+    abstract DrawTrianglesInstanced : count: int * primcount: int -> unit
+
+
+    abstract EnableDepthMask : unit -> unit
+
+    abstract DisableDepthMask : unit -> unit
+
+    abstract EnableColorMask : unit -> unit
+
+    abstract DisableColorMask : unit -> unit
+
+
+
+    abstract EnableStencilTest : unit -> unit
+
+    abstract DisableStencilTest : unit -> unit
+
+    abstract Stencil1 : unit -> unit // this will change
+
+    abstract Stencil2 : unit -> unit // this will change
+
+
     abstract Clear : unit -> unit
 
 [<AbstractClass>]

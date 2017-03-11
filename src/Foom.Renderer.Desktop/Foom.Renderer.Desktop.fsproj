@@ -57,7 +57,6 @@
   <ItemGroup>
     <Compile Include="Backend.fs" />
     <Compile Include="DesktopGL.fs" />
-    <Compile Include="ShaderProgram.fs" />
     <Compile Include="Renderer.fs" />
     <Compile Include="CameraComponent.fs" />
     <Compile Include="EntitySystem.fs" />
