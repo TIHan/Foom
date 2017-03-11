@@ -158,7 +158,7 @@ let runGlobalBatch (em: EntityManager) =
             {
                 Position = vertices |> Seq.toArray
                 Uv = uv |> Seq.toArray
-                Color = color |> Seq.toArray
+                Color = color |> Seq.map (fun x -> Vector4 (single x.R, single x.G, single x.B, single x.A)) |> Seq.toArray
                 Material = material
             }
 

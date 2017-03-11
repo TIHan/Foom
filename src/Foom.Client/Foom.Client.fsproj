@@ -135,5 +135,9 @@
       <Project>{7EBB87FB-C951-4FCE-9B0D-FD825A66AF32}</Project>
       <Name>Foom.Level.Components</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Renderer\Foom.Game.Renderer.fsproj">
+      <Project>{181E47F5-8BF0-4AEC-B452-0A88D5BFD28F}</Project>
+      <Name>Foom.Game.Renderer</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

@@ -6,7 +6,7 @@ open System.Numerics
 open System.Collections.Generic
 open System.Runtime.InteropServices
 
-type DesktopGL () =
+type DesktopGL (app: Application) =
 
     interface IGL with
 
@@ -137,6 +137,9 @@ type DesktopGL () =
 
         member this.Clear () =
             Backend.clear ()
+
+        member this.Swap () =
+            Backend.draw app
 
 type BitmapTextureFile (filePath: string) =
     inherit TextureFile ()

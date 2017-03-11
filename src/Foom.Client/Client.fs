@@ -3,6 +3,7 @@ module Foom.Client.Client
 
 open Foom.Ecs
 open Foom.Renderer
+open System.IO
 open System.Numerics
 
 open Foom.Client.Sprite
@@ -67,14 +68,18 @@ module Pipelines =
 
 let init (world: World) =
     let app = Backend.init ()
+    let gl = DesktopGL (app)
+
     let renderSystem = 
-        app
-        |> RendererSystem.create
+        RendererSystem.create
             Pipelines.renderPipeline
             [
                 ("World", Pipelines.worldPipeline)
                 ("Sky", Pipelines.skyPipeline)
             ]
+            gl
+            (fun filePath -> File.ReadAllText filePath |> System.Text.Encoding.UTF8.GetBytes)
+            (fun filePath -> new BitmapTextureFile (filePath))
 
     let renderSystemUpdate = world.AddBehavior (Behavior.merge [ renderSystem ])
 

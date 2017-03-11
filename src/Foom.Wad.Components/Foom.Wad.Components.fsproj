@@ -5,7 +5,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{4AA248F8-5CB9-415A-A0D0-42CBC7241D2E}</ProjectGuid>
     <TargetProfile>netcore</TargetProfile>
-    <TargetFSharpCoreVersion>3.7.4.0</TargetFSharpCoreVersion>
+    <TargetFSharpCoreVersion>3.3.1.0</TargetFSharpCoreVersion>
     <OutputType>Library</OutputType>
     <RootNamespace>Foom.Wad.Components</RootNamespace>
     <AssemblyName>Foom.Wad.Components</AssemblyName>

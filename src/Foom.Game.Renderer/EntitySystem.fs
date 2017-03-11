@@ -1,20 +1,21 @@
 ﻿module Foom.Renderer.RendererSystem
 
 open System
+open System.Reflection
 open System.Numerics
 open System.IO
-open System.Drawing
 open System.Collections.Generic
 
 open Foom.Ecs
 open Foom.Math
 open Foom.Common.Components
+open Foom.Renderer
 
 type MeshInfo =
     {
         Position: Vector3 []
         Uv: Vector2 []
-        Color: Color []
+        Color: Vector4 []
 
         Material: Material
     }
@@ -24,10 +25,10 @@ type MeshInfo =
             this.Color
             |> Array.map (fun c ->
                 Vector4 (
-                    single c.R / 255.f,
-                    single c.G / 255.f,
-                    single c.B / 255.f,
-                    single c.A / 255.f)
+                    single c.X / 255.f,
+                    single c.Y / 255.f,
+                    single c.Z / 255.f,
+                    single c.W / 255.f)
             )
         Mesh (this.Position, this.Uv, color)
 
@@ -51,9 +52,9 @@ type RenderComponent<'T when 'T :> GpuResource> (material, mesh, extra: 'T) =
 type MeshRenderComponent (meshInfo: MeshInfo) =
     inherit RenderComponent<UnitResource> (meshInfo.Material, meshInfo.ToMesh (), UnitResource ())
 
-let handleMeshRender (renderer: Renderer) =
+let handleMeshRender loadTextureFile (renderer: Renderer) =
     Behavior.handleEvent (fun (evt: Foom.Ecs.Events.AnyComponentAdded) _ em ->
-        if typeof<BaseRenderComponent>.IsAssignableFrom(evt.ComponentType) then
+        if typeof<BaseRenderComponent>.GetTypeInfo().IsAssignableFrom(evt.ComponentType.GetTypeInfo()) then
             match em.TryGet (evt.Entity, evt.ComponentType) with
             | Some comp ->
                 let meshRendererComp = comp :?> BaseRenderComponent
@@ -64,7 +65,7 @@ let handleMeshRender (renderer: Renderer) =
                 This will be replaced by an asset management system.
                 *)
                 if not material.IsInitialized then
-                    material.TextureBuffer.Set (new BitmapTextureFile (material.TexturePath))
+                    material.TextureBuffer.Set (loadTextureFile material.TexturePath)
                     material.IsInitialized <- true
                 (**)
 
@@ -72,17 +73,16 @@ let handleMeshRender (renderer: Renderer) =
             | _ -> ()
     )
 
-let create worldPipeline subPipelines (app: Application) : Behavior<float32 * float32> =
+let create worldPipeline subPipelines (gl: IGL) fileReadAllText loadTextureFile : Behavior<float32 * float32> =
 
     // This should probably be on the camera itself :)
     let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
-    let desktopGL = DesktopGL ()
 
-    let renderer = Renderer.Create (desktopGL, (fun filePath -> File.ReadAllText filePath |> System.Text.Encoding.UTF8.GetBytes), subPipelines, worldPipeline)
+    let renderer = Renderer.Create (gl, fileReadAllText, subPipelines, worldPipeline)
 
     Behavior.merge
         [
-            handleMeshRender renderer
+            handleMeshRender loadTextureFile renderer
 
             Behavior.update (fun ((time, deltaTime): float32 * float32) em _ ->
 
@@ -113,7 +113,7 @@ let create worldPipeline subPipelines (app: Application) : Behavior<float32 * fl
 
                 renderer.Draw time g_view g_projection
 
-                Backend.draw app
+                gl.Swap ()
             )
 
         ]

@@ -97,6 +97,8 @@ type IGL =
 
     abstract Clear : unit -> unit
 
+    abstract Swap : unit -> unit
+
 [<AbstractClass>]
 type TextureFile () =
     
