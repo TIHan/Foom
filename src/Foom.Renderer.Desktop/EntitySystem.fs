@@ -78,7 +78,7 @@ let create worldPipeline subPipelines (app: Application) : Behavior<float32 * fl
     let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
     let desktopGL = DesktopGL ()
 
-    let renderer = Renderer.Create (desktopGL, subPipelines, worldPipeline)
+    let renderer = Renderer.Create (desktopGL, (fun filePath -> File.ReadAllText filePath |> System.Text.Encoding.UTF8.GetBytes), subPipelines, worldPipeline)
 
     Behavior.merge
         [

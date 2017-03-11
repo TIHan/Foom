@@ -123,6 +123,18 @@ type DesktopGL () =
         member this.Stencil2 () =
             Backend.stencil2 ()
 
+        member this.LoadProgram (vertexBytes, fragmentBytes) =
+            Backend.loadShaders vertexBytes fragmentBytes
+
+        member this.UseProgram programId =
+            Backend.useProgram programId
+
+        member this.EnableDepthTest () =
+            Backend.enableDepth ()
+
+        member this.DisableDepthTest () =
+            Backend.disableDepth ()
+
         member this.Clear () =
             Backend.clear ()
 

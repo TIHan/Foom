@@ -1,7 +1,6 @@
 ﻿namespace Foom.Renderer
 
 open System
-open System.Drawing
 open System.Numerics
 open System.Collections.Generic
 open System.IO
@@ -57,7 +56,7 @@ type MeshInput (shaderProgram: ShaderProgram) =
 // *****************************************
 // *****************************************
 
-type ProgramCache (gl) =
+type ProgramCache (gl: IGL, fileReadAllText) =
     let cache = Dictionary<string, int> ()
 
     member this.CreateShaderProgram (name: string) =
@@ -67,9 +66,9 @@ type ProgramCache (gl) =
             match cache.TryGetValue (name) with
             | true, programId -> programId
             | _ ->
-                let vertexBytes = File.ReadAllText (name + ".vert") |> System.Text.Encoding.UTF8.GetBytes
-                let fragmentBytes = File.ReadAllText (name + ".frag") |> System.Text.Encoding.UTF8.GetBytes
-                let programId = Backend.loadShaders vertexBytes fragmentBytes
+                let vertexBytes = fileReadAllText (name + ".vert")//File.ReadAllText (name + ".vert") |> System.Text.Encoding.UTF8.GetBytes
+                let fragmentBytes = fileReadAllText (name + ".frag")//File.ReadAllText (name + ".frag") |> System.Text.Encoding.UTF8.GetBytes
+                let programId = gl.LoadProgram (vertexBytes, fragmentBytes)//Backend.loadShaders vertexBytes fragmentBytes
 
                 cache.[name] <- programId
 
@@ -251,10 +250,10 @@ type Shader<'Input, 'Output> with
             Pipeline (
                 fun context ->
                     context.AddAction (fun () ->
-                        Backend.useProgram program.programId
+                        context.GL.UseProgram program.programId
                         f input (fun () -> program.Run RenderPass.Depth)
                         program.Unbind ()
-                        Backend.useProgram 0
+                        context.GL.UseProgram 0
                     )
                     output
             )
@@ -272,7 +271,7 @@ module Pipeline =
     let clear =
         Pipeline (
             fun context ->
-                context.AddAction Backend.clear
+                context.AddAction context.GL.Clear
         )
 
     let captureFrame width height p =
@@ -352,7 +351,7 @@ module Pipeline =
                     let lookup = subPipeline.GetLookup (t)
 
                     context.AddAction (fun () ->
-                        Backend.useProgram program.programId
+                        context.GL.UseProgram program.programId
 
                         lookup
                         |> Seq.iter (fun pair ->
@@ -381,7 +380,7 @@ module Pipeline =
                             program.Unbind ()
                         )
 
-                        Backend.useProgram 0
+                        context.GL.UseProgram 0
                     )
                 )
         )
@@ -390,18 +389,18 @@ module Pipeline =
         Pipeline (
             fun context ->
                 context.AddAction (fun () ->
-                    Backend.enableStencilTest ()
-                    Backend.colorMaskFalse ()
-                    Backend.depthMaskFalse ()
-                    Backend.stencil1 ()
+                    context.GL.EnableStencilTest ()
+                    context.GL.DisableColorMask ()
+                    context.GL.DisableDepthMask ()
+                    context.GL.Stencil1 ()
                 )
 
                 run context p
 
                 context.AddAction (fun () ->
-                    Backend.depthMaskTrue ()
-                    Backend.colorMaskTrue ()
-                    Backend.disableStencilTest ()
+                    context.GL.EnableDepthMask ()
+                    context.GL.EnableColorMask ()
+                    context.GL.DisableStencilTest ()
                 )
         )
 
@@ -409,14 +408,14 @@ module Pipeline =
         Pipeline (
             fun context ->
                 context.AddAction (fun () ->
-                    Backend.enableStencilTest ()
-                    Backend.stencil2 ()
+                    context.GL.EnableStencilTest ()
+                    context.GL.Stencil2 ()
                 )
 
                 run context p
 
                 context.AddAction (fun () ->
-                    Backend.disableStencilTest ()
+                    context.GL.DisableStencilTest ()
                 )
         )
 
@@ -460,6 +459,7 @@ module Final =
 
 type Renderer =
     {
+        gl: IGL
         programCache: ProgramCache
 
         finalPipeline: PipelineContext
@@ -468,9 +468,9 @@ type Renderer =
         mutable time: float32
     }
 
-    static member Create (gl, subPipelines, worldPipeline) =
+    static member Create (gl: IGL, fileReadAllText, subPipelines, worldPipeline) =
 
-        let programCache = ProgramCache gl
+        let programCache = ProgramCache (gl, fileReadAllText)
 
         let vertices =
             [|
@@ -488,6 +488,7 @@ type Renderer =
 
         let renderer =
             {
+                gl = gl
                 programCache = programCache
                 finalPipeline = finalPipelineContext
                 finalPositionBuffer = positionBuffer
@@ -508,11 +509,11 @@ type Renderer =
         this.finalPipeline.Projection <- projection
         this.finalPipeline.View <- view
 
-        Backend.enableDepth ()
+        this.gl.EnableDepthTest ()
 
         this.finalPipeline.Run ()
 
-        Backend.disableDepth ()
+        this.gl.DisableDepthTest ()
 
 // *****************************************
 // *****************************************

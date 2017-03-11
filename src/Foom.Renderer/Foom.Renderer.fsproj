@@ -42,6 +42,7 @@
     <Compile Include="IGL.fs" />
     <Compile Include="Buffers.fs" />
     <Compile Include="ShaderProgram.fs" />
+    <Compile Include="Renderer.fs" />
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

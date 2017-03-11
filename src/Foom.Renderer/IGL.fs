@@ -86,6 +86,15 @@ type IGL =
     abstract Stencil2 : unit -> unit // this will change
 
 
+    abstract LoadProgram : vertexBytes: byte [] * fragmentBytes: byte [] -> int
+
+    abstract UseProgram : programId: int -> unit
+
+
+    abstract EnableDepthTest : unit -> unit
+
+    abstract DisableDepthTest : unit -> unit
+
     abstract Clear : unit -> unit
 
 [<AbstractClass>]
