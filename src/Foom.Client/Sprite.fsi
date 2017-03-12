@@ -11,8 +11,6 @@ open Foom.Game.Assets
 type Sprite =
     inherit GpuResource
 
-    member Center : Vector3Buffer
-
     member Positions : Vector3Buffer
 
     member LightLevels : Vector4Buffer

@@ -13,10 +13,8 @@ open Foom.Renderer.RendererSystem
 open Foom.Game.Assets
 
 [<Sealed>]
-type Sprite (center, positions, lightLevels) =
+type Sprite (positions, lightLevels) =
     inherit GpuResource ()
-
-    member val Center = Buffer.createVector3 center
 
     member val Positions = Buffer.createVector3 positions
 
@@ -33,25 +31,6 @@ let createSpriteVertices width height =
         Vector3 (-halfWidth, 0.f, single height)
         Vector3 (-halfWidth, 0.f, 0.f)
     |]
-
-let createSpriteCenter (vertices: Vector3 []) =
-    vertices
-    |> Seq.chunkBySize 6
-    |> Seq.map (fun quadVerts ->
-        let min = 
-            quadVerts
-            |> Array.sortBy (fun x -> x.X)
-            |> Array.sortBy (fun x -> x.Z)
-            |> Array.head
-        let max =
-            quadVerts
-            |> Array.sortByDescending (fun x -> x.X)
-            |> Array.sortByDescending (fun x -> x.Z)
-            |> Array.head
-        let mid = min + ((max - min) / 2.f)
-        Array.init quadVerts.Length (fun _ -> mid)
-    )
-    |> Seq.reduce Array.append
 
 let createSpriteColor lightLevel =
     let color = Array.init 6 (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
@@ -75,7 +54,7 @@ let uv =
     |]
 
 type SpriteRendererComponent (pipelineName, texture, lightLevel) =
-    inherit RenderComponent<Sprite> (pipelineName, texture, Mesh ([||], uv, createSpriteColor lightLevel), Sprite ([||], [||], [||]))
+    inherit RenderComponent<Sprite> (pipelineName, texture, Mesh ([||], uv, createSpriteColor lightLevel), Sprite ([||], [||]))
 
     member val SpriteCount = 0 with get, set
 
@@ -130,10 +109,8 @@ let handleSprite () =
                         x
 
                 let vertices = createSpriteVertices width height
-                let center = createSpriteCenter vertices
 
                 comp.Mesh.Position.Set vertices
-                comp.Extra.Center.Set center
             )
 
             Behavior.update (fun _ em ea ->

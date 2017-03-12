@@ -3,7 +3,7 @@
 in vec3 position;
 in vec2 in_uv;
 in vec4 in_color;
-in vec3 in_center;
+
 
 in vec3 instance_position;
 in vec4 instance_lightLevel;

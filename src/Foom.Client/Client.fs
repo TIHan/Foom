@@ -52,7 +52,6 @@ module Pipelines =
             )
 
             do! runProgramWithMesh "Sprite" SpriteInput noOutput (fun (sprite: Sprite) input draw ->
-                input.Center.Set sprite.Center
                 input.Positions.Set sprite.Positions
                 input.LightLevels.Set sprite.LightLevels
                 draw ()
