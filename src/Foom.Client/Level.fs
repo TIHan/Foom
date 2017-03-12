@@ -150,7 +150,7 @@ let runGlobalBatch (em: EntityManager) =
             match levelMaterialCache.TryGetValue (texturePath) with
             | true, x -> x
             | _ ->
-                let texture = Texture (texturePath)
+                let texture = Texture (TextureKind.Single texturePath)
 
                 levelMaterialCache.[texturePath] <- texture
 
@@ -360,7 +360,7 @@ let updates (clientWorld: ClientWorld) =
                             match levelMaterialCache.TryGetValue (texturePath) with
                             | true, x -> x
                             | _ ->
-                                let texture = Texture (texturePath)
+                                let texture = Texture (TextureKind.Single texturePath)
 
                                 levelMaterialCache.[texturePath] <- texture
 
@@ -399,7 +399,7 @@ let updates (clientWorld: ClientWorld) =
                    // em.Add (skyEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), LayerMask.Layer0, ClearFlags.None, 1))
                    // em.Add (skyEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
 
-                    em.Add (skyEnt, SkyRendererComponent ("Sky", Texture ("milky2.jpg")))
+                    em.Add (skyEnt, SkyRendererComponent ("Sky", Texture (TextureKind.Single "milky2.jpg")))
 
                 | _ -> ()
             )

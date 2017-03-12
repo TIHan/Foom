@@ -53,7 +53,7 @@ type RenderComponent<'T when 'T :> GpuResource> (pipelineName, texturePath, mesh
 type MeshRenderComponent (pipelineName, texture, meshInfo: MeshInfo) =
     inherit RenderComponent<UnitResource> (pipelineName, texture, meshInfo.ToMesh (), UnitResource ())
 
-let handleMeshRender loadTextureFile (renderer: Renderer) =
+let handleMeshRender (am: AssetManager) (renderer: Renderer) =
     Behavior.handleEvent (fun (evt: Foom.Ecs.Events.AnyComponentAdded) _ em ->
         if typeof<BaseRenderComponent>.GetTypeInfo().IsAssignableFrom(evt.ComponentType.GetTypeInfo()) then
             match em.TryGet (evt.Entity, evt.ComponentType) with
@@ -63,18 +63,13 @@ let handleMeshRender loadTextureFile (renderer: Renderer) =
                 let texture = meshRendererComp.Texture
                 let mesh = meshRendererComp.Mesh
 
-                (*
-                This will be replaced by an asset management system.
-                *)
-                if not texture.Buffer.HasData then
-                    texture.Buffer.Set (loadTextureFile texture.AssetPath)
-                (**)
+                am.LoadTexture (texture)
 
                 renderer.TryAddMesh (pipelineName, texture.Buffer, mesh, meshRendererComp.ExtraResource) |> ignore
             | _ -> ()
     )
 
-let create worldPipeline subPipelines (gl: IGL) fileReadAllText loadTextureFile : Behavior<float32 * float32> =
+let create worldPipeline subPipelines (gl: IGL) fileReadAllText am : Behavior<float32 * float32> =
 
     // This should probably be on the camera itself :)
     let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
@@ -83,7 +78,7 @@ let create worldPipeline subPipelines (gl: IGL) fileReadAllText loadTextureFile 
 
     Behavior.merge
         [
-            handleMeshRender loadTextureFile renderer
+            handleMeshRender am renderer
 
             Behavior.update (fun ((time, deltaTime): float32 * float32) em _ ->
 

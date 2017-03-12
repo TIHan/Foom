@@ -6,8 +6,10 @@ open Foom.Renderer
 open System.IO
 open System.Numerics
 
+open Foom.Renderer
 open Foom.Client.Sprite
 open Foom.Client.Sky
+open Foom.Game.Assets
 
 type SpriteInput (program: ShaderProgram) =
     inherit MeshInput (program)
@@ -70,6 +72,15 @@ let init (world: World) =
     let app = Backend.init ()
     let gl = DesktopGL (app)
 
+    let assetLoader =
+        {
+            new IAssetLoader with
+
+                member this.LoadTextureFile (assetPath) =
+                    new BitmapTextureFile (assetPath) :> TextureFile
+        }
+
+    let am = AssetManager (assetLoader)
     let renderSystem = 
         RendererSystem.create
             Pipelines.renderPipeline
@@ -79,7 +90,8 @@ let init (world: World) =
             ]
             gl
             (fun filePath -> File.ReadAllText filePath |> System.Text.Encoding.UTF8.GetBytes)
-            (fun filePath -> new BitmapTextureFile (filePath))
+            am
+           
 
     let renderSystemUpdate = world.AddBehavior (Behavior.merge [ renderSystem ])
 
