@@ -68,19 +68,21 @@ type SpriteComponent (pipelineName: string, texture: Texture, lightLevel: int) =
 
     member val Texture = texture
 
+    member val Frame = 0 with get, set
+
     member val LightLevel = lightLevel with get, set
 
     member val RendererComponent : SpriteRendererComponent = Unchecked.defaultof<SpriteRendererComponent> with get, set
 
 let handleSprite () =
-    let lookup = Dictionary<string * string, Entity * SpriteRendererComponent> ()
+    let lookup = Dictionary<string * Texture, Entity * SpriteRendererComponent> ()
 
     Behavior.merge
         [
 
             Behavior.handleComponentAdded (fun ent (comp: SpriteComponent) _ em ->
                 let _, rendererComp = 
-                    let key = (comp.PipelineName.ToUpper (), comp.Texture.AssetPath.ToUpper ())
+                    let key = (comp.PipelineName.ToUpper (), comp.Texture)
                     match lookup.TryGetValue (key) with
                     | true, x -> x
                     | _ ->
