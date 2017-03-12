@@ -20,18 +20,6 @@ type Sprite (positions, lightLevels) =
 
     member val LightLevels = Buffer.createVector4 lightLevels
 
-let createSpriteVertices width height =
-    let halfWidth = single width / 2.f
-
-    [|
-        Vector3 (-halfWidth, 0.f, 0.f)
-        Vector3 (halfWidth, 0.f, 0.f)
-        Vector3 (halfWidth, 0.f, single height)
-        Vector3 (halfWidth, 0.f, single height)
-        Vector3 (-halfWidth, 0.f, single height)
-        Vector3 (-halfWidth, 0.f, 0.f)
-    |]
-
 let createSpriteColor lightLevel =
     let color = Array.init 6 (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
     color
@@ -42,6 +30,16 @@ let createSpriteColor lightLevel =
             single c.B / 255.f,
             single c.A / 255.f)
     )
+
+let vertices =
+    [|
+        Vector3 (-1.f, 0.f, 0.f)
+        Vector3 (1.f, 0.f, 0.f)
+        Vector3 (1.f, 0.f, 1.f)
+        Vector3 (1.f, 0.f, 1.f)
+        Vector3 (-1.f, 0.f, 1.f)
+        Vector3 (-1.f, 0.f, 0.f)
+    |]
 
 let uv =
     [|
@@ -54,13 +52,13 @@ let uv =
     |]
 
 type SpriteRendererComponent (pipelineName, texture, lightLevel) =
-    inherit RenderComponent<Sprite> (pipelineName, texture, Mesh ([||], uv, createSpriteColor lightLevel), Sprite ([||], [||]))
+    inherit RenderComponent<Sprite> (pipelineName, texture, Mesh (vertices, uv, createSpriteColor lightLevel), Sprite ([||], [||]))
 
     member val SpriteCount = 0 with get, set
 
-    member val Positions : Vector3 [] = Array.zeroCreate 100000
+    member val Positions : Vector3 [] = Array.zeroCreate 1000000
 
-    member val LightLevels : Vector4 [] = Array.zeroCreate 100000
+    member val LightLevels : Vector4 [] = Array.zeroCreate 1000000
 
 [<Sealed>]
 type SpriteComponent (pipelineName: string, texture: Texture, lightLevel: int) =
@@ -76,7 +74,7 @@ type SpriteComponent (pipelineName: string, texture: Texture, lightLevel: int) =
 
 let handleSprite () =
     let lookup = Dictionary<string * string, Entity * SpriteRendererComponent> ()
-    let textureLookup = Dictionary<string, int * int> ()
+
     Behavior.merge
         [
 
@@ -96,21 +94,6 @@ let handleSprite () =
                         rendererEnt, rendererComp
                     
                 comp.RendererComponent <- rendererComp
-            )
-
-            Behavior.handleComponentAdded (fun ent (comp: SpriteRendererComponent) _ em ->
-                let width, height =
-                    match textureLookup.TryGetValue (comp.Texture.AssetPath.ToUpper ()) with
-                    | true, x -> x
-                    | _ ->
-                        use bmp = new Bitmap(comp.Texture.AssetPath)
-                        let x = (bmp.Width, bmp.Height)
-                        textureLookup.[comp.Texture.AssetPath.ToUpper()] <- x
-                        x
-
-                let vertices = createSpriteVertices width height
-
-                comp.Mesh.Position.Set vertices
             )
 
             Behavior.update (fun _ em ea ->

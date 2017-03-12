@@ -23,11 +23,13 @@ void main ()
 	vec3 max = vec3 (halfX, 0, uTextureResolution.y);
 	vec3 mid = min + ((max - min) / 2.0);
 
+	vec3 pos0 = position * vec3 (halfX, 0, uTextureResolution.y);
+
 	vec3 CameraRight_worldspace = vec3 (uni_view[0][0], uni_view[1][0], uni_view[2][0]);
 	vec3 CameraUp_worldspace = vec3 (uni_view[0][1], uni_view[1][1], uni_view[2][1]);
 
-	vec3 c = vec3 (mid.x, 0, position.z) + instance_position;
-	vec3 pos = position - c + instance_position;
+	vec3 c = vec3 (mid.x, 0, pos0.z) + instance_position;
+	vec3 pos = pos0 - c + instance_position;
 	vec3 vertexPosition_worldspace =
 		c
 		+ CameraRight_worldspace * pos.x + CameraUp_worldspace * pos.z;
