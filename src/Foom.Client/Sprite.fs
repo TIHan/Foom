@@ -73,8 +73,8 @@ let uv =
         Vector2 (0.f, 0.f * -1.f)
     |]
 
-type SpriteRendererComponent (material, lightLevel) =
-    inherit RenderComponent<Sprite> (material, Mesh ([||], uv, createSpriteColor lightLevel), Sprite ([||], [||], [||]))
+type SpriteRendererComponent (pipelineName, texture, lightLevel) =
+    inherit RenderComponent<Sprite> (pipelineName, texture, Mesh ([||], uv, createSpriteColor lightLevel), Sprite ([||], [||], [||]))
 
     member val SpriteCount = 0 with get, set
 
@@ -83,10 +83,12 @@ type SpriteRendererComponent (material, lightLevel) =
     member val LightLevels : Vector4 [] = Array.zeroCreate 100000
 
 [<Sealed>]
-type SpriteComponent (material: Material, lightLevel: int) =
+type SpriteComponent (pipelineName: string, texture: Texture, lightLevel: int) =
     inherit Component ()
 
-    member val Material = material
+    member val PipelineName = pipelineName
+
+    member val Texture = texture
 
     member val LightLevel = lightLevel with get, set
 
@@ -100,11 +102,11 @@ let handleSprite () =
 
             Behavior.handleComponentAdded (fun ent (comp: SpriteComponent) _ em ->
                 let _, rendererComp = 
-                    let key = (comp.Material.PipelineName.ToUpper (), comp.Material.TexturePath.ToUpper ())
+                    let key = (comp.PipelineName.ToUpper (), comp.Texture.AssetPath.ToUpper ())
                     match lookup.TryGetValue (key) with
                     | true, x -> x
                     | _ ->
-                        let rendererComp = new SpriteRendererComponent(comp.Material, 255)
+                        let rendererComp = new SpriteRendererComponent(comp.PipelineName, comp.Texture, 255)
 
                         let rendererEnt = em.Spawn ()
                         em.Add (rendererEnt, rendererComp)
@@ -118,12 +120,12 @@ let handleSprite () =
 
             Behavior.handleComponentAdded (fun ent (comp: SpriteRendererComponent) _ em ->
                 let width, height =
-                    match textureLookup.TryGetValue (comp.Material.TexturePath.ToUpper ()) with
+                    match textureLookup.TryGetValue (comp.Texture.AssetPath.ToUpper ()) with
                     | true, x -> x
                     | _ ->
-                        use bmp = new Bitmap(comp.Material.TexturePath)
+                        use bmp = new Bitmap(comp.Texture.AssetPath)
                         let x = (bmp.Width, bmp.Height)
-                        textureLookup.[comp.Material.TexturePath.ToUpper()] <- x
+                        textureLookup.[comp.Texture.AssetPath.ToUpper()] <- x
                         x
 
                 let vertices = createSpriteVertices width height

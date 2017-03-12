@@ -102,5 +102,5 @@ type Sky () =
 
     member val Model = Matrix4x4.CreateScale (100.f)
 
-type SkyRendererComponent (material) =
-    inherit RenderComponent<Sky> (material, Mesh (skyVertices, [||], [||]), Sky())
+type SkyRendererComponent (pipelineName, texture) =
+    inherit RenderComponent<Sky> (pipelineName, texture, Mesh (skyVertices, [||], [||]), Sky())

@@ -18,6 +18,7 @@ open Foom.Common.Components
 open Foom.Wad.Components
 open Foom.Client.Sprite
 open Foom.Client.Sky
+open Foom.Renderer.RendererSystem
 
 let exportFlatTextures (wad: Wad) =
     wad
@@ -132,7 +133,7 @@ let exportSpriteTextures (wad: Wad) =
 
 let globalBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray * Color ResizeArray> ()
 
-let levelMaterialCache = Dictionary<string, Material> ()
+let levelMaterialCache = Dictionary<string, Texture> ()
 
 let runGlobalBatch (em: EntityManager) =
     globalBatch
@@ -143,26 +144,25 @@ let runGlobalBatch (em: EntityManager) =
 
         let ent = em.Spawn ()
 
-        let material = 
+        let pipelineName = if isSky then "Sky" else "World"
+        let texture = 
             match levelMaterialCache.TryGetValue (texturePath) with
             | true, x -> x
             | _ ->
-                let pipelineName = if isSky then "Sky" else "World"
-                let material = Material (pipelineName, texturePath)
+                let texture = Texture (texturePath)
 
-                levelMaterialCache.[texturePath] <- material
+                levelMaterialCache.[texturePath] <- texture
 
-                material
+                texture
 
         let meshInfo : RendererSystem.MeshInfo =
             {
                 Position = vertices |> Seq.toArray
                 Uv = uv |> Seq.toArray
                 Color = color |> Seq.map (fun x -> Vector4 (single x.R, single x.G, single x.B, single x.A)) |> Seq.toArray
-                Material = material
             }
 
-        em.Add (ent, RendererSystem.MeshRenderComponent (meshInfo))
+        em.Add (ent, RendererSystem.MeshRenderComponent (pipelineName, texture, meshInfo))
     )
 
 open System.Linq
@@ -349,25 +349,25 @@ let updates (clientWorld: ClientWorld) =
                     | _ -> ()
 
                     match image with
-                    | Some image ->
+                    | Some texturePath ->
                         let pos = Vector2 (single thing.X, single thing.Y)
                         let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos :?> Foom.Level.Sector
                         let pos = Vector3 (pos, single sector.floorHeight)
 
-                        let material = 
-                            match levelMaterialCache.TryGetValue (image) with
+                        let pipelineName = "World"
+                        let texture = 
+                            match levelMaterialCache.TryGetValue (texturePath) with
                             | true, x -> x
                             | _ ->
-                                let pipelineName = "World"
-                                let material = Material (pipelineName, image)
+                                let texture = Texture (texturePath)
 
-                                levelMaterialCache.[image] <- material
+                                levelMaterialCache.[texturePath] <- texture
 
-                                material
+                                texture
 
                         let ent = em.Spawn ()
                         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(pos)))
-                        em.Add (ent, SpriteComponent (material, sector.lightLevel))
+                        em.Add (ent, SpriteComponent (pipelineName, texture, sector.lightLevel))
                     | _ -> ()
 
                 | _ -> ()
@@ -398,8 +398,7 @@ let updates (clientWorld: ClientWorld) =
                    // em.Add (skyEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), LayerMask.Layer0, ClearFlags.None, 1))
                    // em.Add (skyEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
 
-                    let material = Material ("Sky", "milky2.jpg")
-                    em.Add (skyEnt, SkyRendererComponent (material))
+                    em.Add (skyEnt, SkyRendererComponent ("Sky", Texture ("milky2.jpg")))
 
                 | _ -> ()
             )

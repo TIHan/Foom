@@ -72,12 +72,12 @@ type Texture2DBufferQueueItem =
     | Data of byte []
     | File of TextureFile
 
-type Texture2DBuffer (data, width, height) =
+type Texture2DBuffer () =
 
     let mutable id = 0
-    let mutable width = width
-    let mutable height = height
-    let mutable queuedData = Data (data)
+    let mutable width = 0
+    let mutable height = 0
+    let mutable queuedData = Empty
     let mutable isTransparent = false
 
     member this.Id = id
@@ -87,6 +87,8 @@ type Texture2DBuffer (data, width, height) =
     member this.Height = height
 
     member this.IsTransparent = isTransparent
+
+    member this.HasData = id > 0 || queuedData <> Empty
 
     member this.Set (file: TextureFile) =
         width <- file.Width

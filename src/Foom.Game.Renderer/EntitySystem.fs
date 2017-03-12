@@ -11,13 +11,18 @@ open Foom.Math
 open Foom.Common.Components
 open Foom.Renderer
 
+[<Sealed>]
+type Texture (assetPath: string) = 
+
+    member val AssetPath = assetPath
+
+    member val Buffer = Texture2DBuffer ()
+
 type MeshInfo =
     {
         Position: Vector3 []
         Uv: Vector2 []
         Color: Vector4 []
-
-        Material: Material
     }
 
     member this.ToMesh () =
@@ -33,24 +38,26 @@ type MeshInfo =
         Mesh (this.Position, this.Uv, color)
 
 [<AbstractClass>]
-type BaseRenderComponent (material: Material, mesh: Mesh, extraResource: GpuResource) =
+type BaseRenderComponent (pipelineName: string, texture: Texture, mesh: Mesh, extraResource: GpuResource) =
     inherit Component ()
 
-    member val Material = material
+    member val PipelineName = pipelineName
+
+    member val Texture = texture
 
     member val Mesh = mesh
 
     member val ExtraResource = extraResource
 
 [<AbstractClass>]
-type RenderComponent<'T when 'T :> GpuResource> (material, mesh, extra: 'T) =
-    inherit BaseRenderComponent (material, mesh, extra)
+type RenderComponent<'T when 'T :> GpuResource> (pipelineName, texturePath, mesh, extra: 'T) =
+    inherit BaseRenderComponent (pipelineName, texturePath, mesh, extra)
 
     member val Extra = extra
 
 [<Sealed>]
-type MeshRenderComponent (meshInfo: MeshInfo) =
-    inherit RenderComponent<UnitResource> (meshInfo.Material, meshInfo.ToMesh (), UnitResource ())
+type MeshRenderComponent (pipelineName, texture, meshInfo: MeshInfo) =
+    inherit RenderComponent<UnitResource> (pipelineName, texture, meshInfo.ToMesh (), UnitResource ())
 
 let handleMeshRender loadTextureFile (renderer: Renderer) =
     Behavior.handleEvent (fun (evt: Foom.Ecs.Events.AnyComponentAdded) _ em ->
@@ -58,18 +65,18 @@ let handleMeshRender loadTextureFile (renderer: Renderer) =
             match em.TryGet (evt.Entity, evt.ComponentType) with
             | Some comp ->
                 let meshRendererComp = comp :?> BaseRenderComponent
+                let pipelineName = meshRendererComp.PipelineName
+                let texture = meshRendererComp.Texture
                 let mesh = meshRendererComp.Mesh
-                let material = meshRendererComp.Material
 
                 (*
                 This will be replaced by an asset management system.
                 *)
-                if not material.IsInitialized then
-                    material.TextureBuffer.Set (loadTextureFile material.TexturePath)
-                    material.IsInitialized <- true
+                if not texture.Buffer.HasData then
+                    texture.Buffer.Set (loadTextureFile texture.AssetPath)
                 (**)
 
-                renderer.TryAddMesh (material, mesh, meshRendererComp.ExtraResource) |> ignore
+                renderer.TryAddMesh (pipelineName, texture.Buffer, mesh, meshRendererComp.ExtraResource) |> ignore
             | _ -> ()
     )
 

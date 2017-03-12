@@ -85,16 +85,6 @@ type ProgramCache (gl: IGL, fileReadAllText) =
 // *****************************************
 // *****************************************
 
-type Material (pipelineName: string, texturePath: string) =
-
-    member val PipelineName = pipelineName
-
-    member val TexturePath = texturePath
-
-    member val TextureBuffer = Texture2DBuffer ([||], 0, 0)
-
-    member val IsInitialized = false with get, set
-
 [<Struct>]
 type TextureMeshId =
 
@@ -500,8 +490,8 @@ type Renderer =
 
         renderer
 
-    member this.TryAddMesh (material: Material, mesh, extra: 'T) =
-        this.finalPipeline.TryAddMesh (material.PipelineName, material.TextureBuffer, mesh, extra)
+    member this.TryAddMesh (pipelineName: string, textureBuffer, mesh, extra: 'T) =
+        this.finalPipeline.TryAddMesh (pipelineName, textureBuffer, mesh, extra)
 
     member this.Draw (time: float32) view projection =
         this.time <- time

@@ -4,6 +4,7 @@ open System.Numerics
 
 open Foom.Ecs
 open Foom.Renderer
+open Foom.Renderer.RendererSystem
 
 [<Sealed; Class>]
 type Sprite =
@@ -19,9 +20,11 @@ type Sprite =
 type SpriteComponent =
     inherit Component
 
-    new : material: Material * lightLevel: int -> SpriteComponent
+    new : pipelineName: string * texture: Texture * lightLevel: int -> SpriteComponent
 
-    member Material : Material
+    member PipelineName : string
+
+    member Texture : Texture
 
     member LightLevel : int with get, set
 
