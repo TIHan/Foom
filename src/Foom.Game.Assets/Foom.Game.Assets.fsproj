@@ -2,12 +2,12 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{181E47F5-8BF0-4AEC-B452-0A88D5BFD28F}</ProjectGuid>
+    <ProjectGuid>{C41FC4BC-8B5A-4497-9765-FDEAD54749ED}</ProjectGuid>
     <TargetProfile>netcore</TargetProfile>
     <TargetFSharpCoreVersion>3.3.1.0</TargetFSharpCoreVersion>
     <OutputType>Library</OutputType>
-    <RootNamespace>Foom.Game.Renderer</RootNamespace>
-    <AssemblyName>Foom.Game.Renderer</AssemblyName>
+    <RootNamespace>Foom.Game.Assets</RootNamespace>
+    <AssemblyName>Foom.Game.Assets</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
@@ -38,69 +38,30 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Sprite.vert">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Sprite.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Wireframe.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Wireframe.vert">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="TextureMesh.vert">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="TextureMesh.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Fullscreen.vert">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Fullscreen.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Sky.vert">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Sky.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <Compile Include="CameraComponent.fs" />
-    <Compile Include="EntitySystem.fs" />
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Foom.Ecs\Foom.Ecs.fsproj">
       <Project>{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}</Project>
       <Name>Foom.Ecs</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Foom.Geometry\Foom.Geometry.fsproj">
-      <Project>{34AA5257-2F5B-4097-8250-1FD4956D1130}</Project>
-      <Name>Foom.Geometry</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Foom.Math\Foom.Math.fsproj">
-      <Project>{B94F520E-B150-45A7-ADA1-E2945BE9A743}</Project>
-      <Name>Foom.Math</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Foom.Collections\Foom.Collections.fsproj">
-      <Project>{C18C5AB4-4C69-4EA0-AE74-FEFBBD945C05}</Project>
-      <Name>Foom.Collections</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Foom.Common.Components\Foom.Common.Components.fsproj">
-      <Project>{FB77CA41-3C2E-4D41-826D-5FCF9EF10C88}</Project>
-      <Name>Foom.Common.Components</Name>
     </ProjectReference>
     <ProjectReference Include="..\Foom.Renderer\Foom.Renderer.fsproj">
       <Project>{ED30B5EB-571D-4815-BE37-DDF7ED6198CC}</Project>
       <Name>Foom.Renderer</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Foom.Game.Assets\Foom.Game.Assets.fsproj">
-      <Project>{C41FC4BC-8B5A-4497-9765-FDEAD54749ED}</Project>
-      <Name>Foom.Game.Assets</Name>
+    <ProjectReference Include="..\Foom.Math\Foom.Math.fsproj">
+      <Project>{B94F520E-B150-45A7-ADA1-E2945BE9A743}</Project>
+      <Name>Foom.Math</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Geometry\Foom.Geometry.fsproj">
+      <Project>{34AA5257-2F5B-4097-8250-1FD4956D1130}</Project>
+      <Name>Foom.Geometry</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Collections\Foom.Collections.fsproj">
+      <Project>{C18C5AB4-4C69-4EA0-AE74-FEFBBD945C05}</Project>
+      <Name>Foom.Collections</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Texture.fs" />
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
 </Project>

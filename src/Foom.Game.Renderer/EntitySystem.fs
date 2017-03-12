@@ -10,13 +10,7 @@ open Foom.Ecs
 open Foom.Math
 open Foom.Common.Components
 open Foom.Renderer
-
-[<Sealed>]
-type Texture (assetPath: string) = 
-
-    member val AssetPath = assetPath
-
-    member val Buffer = Texture2DBuffer ()
+open Foom.Game.Assets
 
 type MeshInfo =
     {

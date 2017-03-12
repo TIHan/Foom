@@ -4,7 +4,8 @@ open System.Numerics
 
 open Foom.Ecs
 open Foom.Renderer
-open Foom.Renderer.RendererSystem
+
+open Foom.Game.Assets
 
 [<Sealed; Class>]
 type Sprite =

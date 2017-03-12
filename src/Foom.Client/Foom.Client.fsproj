@@ -139,5 +139,9 @@
       <Project>{181E47F5-8BF0-4AEC-B452-0A88D5BFD28F}</Project>
       <Name>Foom.Game.Renderer</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Assets\Foom.Game.Assets.fsproj">
+      <Project>{C41FC4BC-8B5A-4497-9765-FDEAD54749ED}</Project>
+      <Name>Foom.Game.Assets</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

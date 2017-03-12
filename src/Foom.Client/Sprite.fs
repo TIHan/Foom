@@ -10,6 +10,7 @@ open Foom.Ecs
 open Foom.Renderer
 open Foom.Collections
 open Foom.Renderer.RendererSystem
+open Foom.Game.Assets
 
 [<Sealed>]
 type Sprite (center, positions, lightLevels) =

@@ -19,6 +19,7 @@ open Foom.Wad.Components
 open Foom.Client.Sprite
 open Foom.Client.Sky
 open Foom.Renderer.RendererSystem
+open Foom.Game.Assets
 
 let exportFlatTextures (wad: Wad) =
     wad
