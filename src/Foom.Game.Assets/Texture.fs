@@ -1,5 +1,7 @@
 ﻿namespace Foom.Game.Assets
 
+open System.Numerics
+
 open Foom.Ecs
 open Foom.Renderer
 
@@ -10,11 +12,24 @@ type TextureKind =
 [<Sealed>]
 type Texture (kind: TextureKind) = 
 
+    let frameCount =
+        match kind with
+        | Single _ -> 1
+        | Multi xs -> xs.Length
+
     member val Kind = kind
 
     member val Buffer = Texture2DBuffer ()
 
-    member val Frame = 0 with get, set
+    member val FrameCount = frameCount
+
+    member val Dimensions = ResizeArray<Vector2> ()
+
+    member this.GetFrameDimension frame =
+        if frame >= this.Dimensions.Count || frame < 0 then
+            Vector2 (0.f, 0.f)
+        else
+            this.Dimensions.[frame]
 
     member this.AssetPath =
         match kind with
@@ -29,10 +44,13 @@ type IAssetLoader =
 type AssetManager (assetLoader: IAssetLoader) =
 
     member this.LoadTexture (texture: Texture) =
-        match texture.Kind with
-        | Single assetPath ->
+        if not texture.Buffer.HasData then
 
-            if not texture.Buffer.HasData then
-                texture.Buffer.Set (assetLoader.LoadTextureFile assetPath)
+            match texture.Kind with
+            | Single assetPath ->
 
-        | _ -> ()
+                let textureFile = assetLoader.LoadTextureFile assetPath
+                texture.Buffer.Set (textureFile)
+                texture.Dimensions.Add (Vector2 (single textureFile.Width, single textureFile.Height))
+
+            | _ -> ()
