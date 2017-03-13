@@ -57,7 +57,10 @@ void main ()
     gl_Position = vertex;
 
 
-    uv = in_uv;
+    float uvX = (width / uTextureResolution.x) * in_uv.x + (offsetX / uTextureResolution.x);
+    float uvY = (height / uTextureResolution.y) * in_uv.y + (offsetY / uTextureResolution.y);
+
+    uv = vec2 (uvX, uvY);
 	color = in_color;
 	lightLevel = instance_lightLevel;
 }
