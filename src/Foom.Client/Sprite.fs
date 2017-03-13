@@ -13,12 +13,15 @@ open Foom.Renderer.RendererSystem
 open Foom.Game.Assets
 
 [<Sealed>]
-type Sprite (positions, lightLevels) =
+type Sprite (positions, lightLevels, uvOffsets) =
     inherit GpuResource ()
 
     member val Positions = Buffer.createVector3 positions
 
     member val LightLevels = Buffer.createVector4 lightLevels
+
+    member val UvOffsets = Buffer.createVector4 uvOffsets
+   
 
 let createSpriteColor lightLevel =
     let color = Array.init 6 (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
@@ -52,13 +55,15 @@ let uv =
     |]
 
 type SpriteRendererComponent (pipelineName, texture, lightLevel) =
-    inherit RenderComponent<Sprite> (pipelineName, texture, Mesh (vertices, uv, createSpriteColor lightLevel), Sprite ([||], [||]))
+    inherit RenderComponent<Sprite> (pipelineName, texture, Mesh (vertices, uv, createSpriteColor lightLevel), Sprite ([||], [||], [||]))
 
     member val SpriteCount = 0 with get, set
 
-    member val Positions : Vector3 [] = Array.zeroCreate 1000000
+    member val Positions : Vector3 [] = Array.zeroCreate 100000
 
-    member val LightLevels : Vector4 [] = Array.zeroCreate 1000000
+    member val LightLevels : Vector4 [] = Array.zeroCreate 100000
+
+    member val UvOffsets : Vector4 [] = Array.zeroCreate 10000
 
 [<Sealed>]
 type SpriteComponent (pipelineName: string, texture: Texture, lightLevel: int) =
@@ -74,15 +79,17 @@ type SpriteComponent (pipelineName: string, texture: Texture, lightLevel: int) =
 
     member val RendererComponent : SpriteRendererComponent = Unchecked.defaultof<SpriteRendererComponent> with get, set
 
-let handleSprite () =
+let handleSprite (am: AssetManager) =
     let lookup = Dictionary<string * Texture, Entity * SpriteRendererComponent> ()
 
     Behavior.merge
         [
 
             Behavior.handleComponentAdded (fun ent (comp: SpriteComponent) _ em ->
+                am.LoadTexture (comp.Texture)
+
                 let _, rendererComp = 
-                    let key = (comp.PipelineName.ToUpper (), comp.Texture)
+                    let key = (comp.PipelineName, comp.Texture)
                     match lookup.TryGetValue (key) with
                     | true, x -> x
                     | _ ->
@@ -103,8 +110,15 @@ let handleSprite () =
                     let rendererComp = spriteComp.RendererComponent
                     if rendererComp.SpriteCount < rendererComp.Positions.Length then
                         let c = single spriteComp.LightLevel / 255.f
+
                         rendererComp.Positions.[rendererComp.SpriteCount] <- transformComp.Position
                         rendererComp.LightLevels.[rendererComp.SpriteCount] <- Vector4 (c, c, c, 1.f)
+
+                        let frames = rendererComp.Texture.Frames
+                        let frame = spriteComp.Frame
+                        if frame < frames.Length then                  
+                            rendererComp.UvOffsets.[rendererComp.SpriteCount] <- frames.[frame]
+
                         rendererComp.SpriteCount <- rendererComp.SpriteCount + 1
                 )
             )

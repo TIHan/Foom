@@ -24,7 +24,7 @@ type IGL =
 
     abstract CreateTexture : width: int * height: int * data: nativeint -> int
 
-    abstract CreateTextureFromFile : filePath: string -> int
+    abstract SetSubTexture : xOffset: int * yOffset: int * width: int * height: int * data: nativeint * textureId: int -> unit
 
     abstract DeleteTexture : int -> unit
 

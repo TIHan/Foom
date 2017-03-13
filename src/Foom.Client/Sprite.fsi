@@ -15,6 +15,8 @@ type Sprite =
 
     member LightLevels : Vector4Buffer
 
+    member UvOffsets : Vector4Buffer
+
 [<Sealed; Class>]
 type SpriteComponent =
     inherit Component
@@ -27,4 +29,4 @@ type SpriteComponent =
 
     member LightLevel : int with get, set
 
-val handleSprite : unit -> Behavior<_>
+val handleSprite : AssetManager -> Behavior<_>

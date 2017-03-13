@@ -115,7 +115,7 @@ let physicsUpdateBehavior (clientWorld: ClientWorld) =
     )
 
 
-let create (app: Application) (clientWorld: ClientWorld) =
+let create (app: Application) (clientWorld: ClientWorld) am =
     Behavior.merge
         (
             [
@@ -126,7 +126,7 @@ let create (app: Application) (clientWorld: ClientWorld) =
             @
             [
                Player.fixedUpdate
-               Sprite.handleSprite ()
+               Sprite.handleSprite am
 
               // addRigidBodyBehavior clientWorld
              //  physicsUpdateBehavior clientWorld

@@ -243,6 +243,8 @@ let spawnWallMesh level (wall: Wall) wad =
 
     | _ -> ()
 
+let ArmorBonusTexture = Texture (TextureKind.Multi [ "BON2A0.bmp" ])
+
 let updates (clientWorld: ClientWorld) =
     [
         Behavior.wadLoading
@@ -357,6 +359,10 @@ let updates (clientWorld: ClientWorld) =
 
                         let pipelineName = "World"
                         let texture = 
+                            if thing.Type = ThingType.ArmorBonus then
+                                ArmorBonusTexture
+                            else
+
                             match levelMaterialCache.TryGetValue (texturePath) with
                             | true, x -> x
                             | _ ->

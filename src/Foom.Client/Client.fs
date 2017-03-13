@@ -20,6 +20,8 @@ type SpriteInput (program: ShaderProgram) =
 
     member val LightLevels = program.CreateInstanceAttributeVector4 ("instance_lightLevel")
 
+    member val UvOffsets = program.CreateInstanceAttributeVector4 ("instance_uvOffset")
+
 
 module Pipelines =
     open Pipeline
@@ -54,6 +56,7 @@ module Pipelines =
             do! runProgramWithMesh "Sprite" SpriteInput noOutput (fun (sprite: Sprite) input draw ->
                 input.Positions.Set sprite.Positions
                 input.LightLevels.Set sprite.LightLevels
+                input.UvOffsets.Set sprite.UvOffsets
                 draw ()
             )
         }
@@ -96,7 +99,7 @@ let init (world: World) =
 
     let clientSubworld = world.CreateSubworld ()
     let clientWorld = ClientWorld.Create (clientSubworld, world.SpawnEntity ())
-    let clientSystemUpdate = ClientSystem.create app clientWorld |> clientSubworld.AddBehavior
+    let clientSystemUpdate = ClientSystem.create app clientWorld am |> clientSubworld.AddBehavior
 
     world.Publish (ClientSystem.LoadWadAndLevelRequested ("doom1.wad", "e1m1"))
    // world.Publish (ClientSystem.LoadWadAndLevelRequested ("doom2.wad", "map10"))

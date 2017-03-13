@@ -599,3 +599,13 @@ module Backend =
         C """
         glDrawArraysInstanced (GL_TRIANGLES, 0, count, primcount);
         """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let setSubTexture (xOffset: int) (yOffset: int) (width: int) (height: int) (data: nativeint) (textureId: int) : unit =
+        C """
+        glBindTexture (GL_TEXTURE_2D, textureId);
+
+        glTexSubImage2D(GL_TEXTURE_2D, 0, xOffset, yOffset, width, height, GL_BGRA, GL_UNSIGNED_BYTE, data);
+
+        glBindTexture (GL_TEXTURE_2D, textureId);
+        """

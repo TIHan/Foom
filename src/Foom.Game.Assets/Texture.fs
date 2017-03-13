@@ -21,15 +21,7 @@ type Texture (kind: TextureKind) =
 
     member val Buffer = Texture2DBuffer ()
 
-    member val FrameCount = frameCount
-
-    member val Dimensions = ResizeArray<Vector2> ()
-
-    member this.GetFrameDimension frame =
-        if frame >= this.Dimensions.Count || frame < 0 then
-            Vector2 (0.f, 0.f)
-        else
-            this.Dimensions.[frame]
+    member val Frames : Vector4 [] = [||] with get, set
 
     member this.AssetPath =
         match kind with
@@ -51,6 +43,28 @@ type AssetManager (assetLoader: IAssetLoader) =
 
                 let textureFile = assetLoader.LoadTextureFile assetPath
                 texture.Buffer.Set (textureFile)
-                texture.Dimensions.Add (Vector2 (single textureFile.Width, single textureFile.Height))
+                texture.Frames <- [| Vector4 (0.f, 0.f, single textureFile.Width, single textureFile.Height) |]; 
 
-            | _ -> ()
+            | Multi assetPaths ->
+
+                let textureFiles =
+                    assetPaths
+                    |> List.map assetLoader.LoadTextureFile
+
+                let maxWidth = 1024
+                let maxHeight = 1024
+               
+                let mutable xOffset = 0
+
+                let frames = Array.zeroCreate textureFiles.Length
+                textureFiles
+                |> List.iteri (fun i file ->
+                    frames.[i] <- Vector4 (single xOffset, 0.f, single file.Width, single file.Height)
+
+                    xOffset <- xOffset + file.Width
+                )
+
+                if xOffset > 1024 then
+                    failwith "finish texture packing implementation"
+                  
+                texture.Buffer.Set (textureFiles, maxWidth, maxHeight)

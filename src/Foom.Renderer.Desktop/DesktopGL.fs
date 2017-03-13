@@ -43,7 +43,8 @@ type DesktopGL (app: Application) =
         member this.CreateTexture (width, height, data) =
             Backend.createTexture width height data
 
-        member this.CreateTextureFromFile (filePath:string) = 1
+        member this.SetSubTexture (xOffset, yOffset, width, height, data, textureId) =
+            Backend.setSubTexture xOffset yOffset width height data textureId
 
         member this.DeleteTexture id =
             Backend.deleteTexture id

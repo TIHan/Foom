@@ -71,6 +71,7 @@ type Texture2DBufferQueueItem =
     | Empty
     | Data of byte []
     | File of TextureFile
+    | Files of TextureFile list * width: int * height: int
 
 type Texture2DBuffer () =
 
@@ -86,14 +87,17 @@ type Texture2DBuffer () =
 
     member this.Height = height
 
-    member this.IsTransparent = isTransparent
-
     member this.HasData = id > 0 || queuedData <> Empty
 
     member this.Set (file: TextureFile) =
         width <- file.Width
         height <- file.Height
         queuedData <- File file
+
+    member this.Set (files: TextureFile list, width', height') =
+        width <- width'
+        height <- height'
+        queuedData <- Files (files, width', height')
 
     member this.Bind (gl: IGL) =
         if id <> 0 then
@@ -116,13 +120,33 @@ type Texture2DBuffer () =
             true
 
         | File file ->
-            isTransparent <- file.IsTransparent
 
             file.UseData (fun data -> id <- gl.CreateTexture (file.Width, file.Height, data))
 
             file.Dispose ()
             queuedData <- Empty
             true
+
+        | Files (files, width, height) ->
+
+            id <- gl.CreateTexture (width, height, nativeint 0)
+
+            let mutable xOffset = 0
+
+            files
+            |> List.iter (fun file ->
+                file.UseData (fun data -> 
+                    gl.SetSubTexture (xOffset, 0, file.Width, file.Height, data, id)
+                )
+
+                xOffset <- xOffset + file.Width
+
+                file.Dispose ()
+            )
+
+            queuedData <- Empty
+            true
+
         | _ -> false
 
     member this.Release (gl: IGL) =
