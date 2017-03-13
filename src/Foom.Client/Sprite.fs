@@ -107,7 +107,7 @@ let handleSprite (am: AssetManager) : Behavior<float32 * float32> =
                     let frameIndex = int (animatedSpriteComp.CurrentTime / animatedSpriteComp.FrameTime)
 
                     let frameIndex =
-                        if frameIndex < 0 then 0
+                        if frameIndex < 0 || frameIndex >= animatedSpriteComp.FrameArray.Length then 0
                         else frameIndex
 
                     spriteComp.Frame <- animatedSpriteComp.FrameArray.[frameIndex]
