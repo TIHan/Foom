@@ -1,5 +1,6 @@
 ﻿module Foom.Client.Sprite
 
+open System
 open System.Numerics
 
 open Foom.Ecs
@@ -29,4 +30,9 @@ type SpriteComponent =
 
     member LightLevel : int with get, set
 
-val handleSprite : AssetManager -> Behavior<_>
+val handleSprite : AssetManager -> Behavior<float32 * float32>
+
+type AnimatedSpriteComponent =
+    inherit Component
+
+    new : time: TimeSpan * int list -> AnimatedSpriteComponent

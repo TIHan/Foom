@@ -375,6 +375,10 @@ let updates (clientWorld: ClientWorld) =
                         let ent = em.Spawn ()
                         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(pos)))
                         em.Add (ent, SpriteComponent (pipelineName, texture, sector.lightLevel))
+
+                        if thing.Type = ThingType.ArmorBonus then
+                            let interval = TimeSpan.FromSeconds(1.)
+                            em.Add (ent, AnimatedSpriteComponent (interval, [ 0; 1; 2; 3; 2; 1 ]))
                     | _ -> ()
 
                 | _ -> ()

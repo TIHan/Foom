@@ -79,11 +79,44 @@ type SpriteComponent (pipelineName: string, texture: Texture, lightLevel: int) =
 
     member val RendererComponent : SpriteRendererComponent = Unchecked.defaultof<SpriteRendererComponent> with get, set
 
-let handleSprite (am: AssetManager) =
+
+type AnimatedSpriteComponent (time: TimeSpan, frames: int list) =
+    inherit Component ()
+
+    member val Time = time
+
+    member val Frames = frames
+
+    member val TimeSeconds = single time.TotalSeconds
+
+    member val FrameArray = frames |> Array.ofList
+
+    member val FrameTime = single time.TotalSeconds / single frames.Length
+
+    member val CurrentTime = 0.f with get, set
+
+
+let handleSprite (am: AssetManager) : Behavior<float32 * float32> =
     let lookup = Dictionary<string * Texture, Entity * SpriteRendererComponent> ()
 
     Behavior.merge
         [
+
+            Behavior.update (fun (time, deltaTime) em ea ->
+                em.ForEach<AnimatedSpriteComponent, SpriteComponent> (fun _ animatedSpriteComp spriteComp ->
+                    let frameIndex = int (animatedSpriteComp.CurrentTime / animatedSpriteComp.FrameTime)
+
+                    let frameIndex =
+                        if frameIndex < 0 then 0
+                        else frameIndex
+
+                    spriteComp.Frame <- animatedSpriteComp.FrameArray.[frameIndex]
+
+                    animatedSpriteComp.CurrentTime <- animatedSpriteComp.CurrentTime + deltaTime
+                    if animatedSpriteComp.CurrentTime > animatedSpriteComp.TimeSeconds then
+                        animatedSpriteComp.CurrentTime <- animatedSpriteComp.CurrentTime - animatedSpriteComp.TimeSeconds
+                )
+            )
 
             Behavior.handleComponentAdded (fun ent (comp: SpriteComponent) _ em ->
                 am.LoadTexture (comp.Texture)
