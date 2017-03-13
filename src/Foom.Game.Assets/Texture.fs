@@ -23,11 +23,6 @@ type Texture (kind: TextureKind) =
 
     member val Frames : Vector4 [] = [||] with get, set
 
-    member this.AssetPath =
-        match kind with
-        | Single x -> x
-        | _ -> ""
-
 type IAssetLoader =
 
     abstract LoadTextureFile : assetPath: string -> TextureFile
@@ -63,6 +58,8 @@ type AssetManager (assetLoader: IAssetLoader) =
 
                     xOffset <- xOffset + file.Width
                 )
+
+                texture.Frames <- frames
 
                 if xOffset > 1024 then
                     failwith "finish texture packing implementation"

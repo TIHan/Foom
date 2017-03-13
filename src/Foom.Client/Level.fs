@@ -243,7 +243,7 @@ let spawnWallMesh level (wall: Wall) wad =
 
     | _ -> ()
 
-let ArmorBonusTexture = Texture (TextureKind.Multi [ "BON2A0.bmp" ])
+let ArmorBonusTexture = Texture (TextureKind.Multi [ "BON2A0.bmp"; "BON2B0.bmp"; "BON2C0.bmp"; "BON2D0.bmp" ])
 
 let updates (clientWorld: ClientWorld) =
     [

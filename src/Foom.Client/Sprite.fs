@@ -116,8 +116,11 @@ let handleSprite (am: AssetManager) =
 
                         let frames = rendererComp.Texture.Frames
                         let frame = spriteComp.Frame
-                        if frame < frames.Length then                  
-                            rendererComp.UvOffsets.[rendererComp.SpriteCount] <- frames.[frame]
+                        let frame = 
+                            if frame >= frames.Length then 0
+                            else frame
+                                             
+                        rendererComp.UvOffsets.[rendererComp.SpriteCount] <- frames.[frame]
 
                         rendererComp.SpriteCount <- rendererComp.SpriteCount + 1
                 )
@@ -127,6 +130,7 @@ let handleSprite (am: AssetManager) =
                 em.ForEach<SpriteRendererComponent> (fun _ rendererComp ->
                     rendererComp.Extra.Positions.Set (rendererComp.Positions, rendererComp.SpriteCount)
                     rendererComp.Extra.LightLevels.Set (rendererComp.LightLevels, rendererComp.SpriteCount)
+                    rendererComp.Extra.UvOffsets.Set (rendererComp.UvOffsets, rendererComp.SpriteCount)
                     rendererComp.SpriteCount <- 0
                 )
             )
