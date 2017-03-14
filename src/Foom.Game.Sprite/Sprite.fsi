@@ -1,4 +1,4 @@
-﻿module Foom.Client.Sprite
+﻿module Foom.Game.Sprite
 
 open System
 open System.Numerics

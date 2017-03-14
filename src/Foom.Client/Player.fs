@@ -8,8 +8,9 @@ open Foom.Ecs
 open Foom.Math
 open Foom.Geometry
 open Foom.Client
-open Foom.Common.Components
 open Foom.Renderer
+
+open Foom.Game.Core
 
 [<Sealed>]
 type PlayerComponent () =

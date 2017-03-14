@@ -14,12 +14,13 @@ open Foom.Renderer
 open Foom.Geometry
 open Foom.Level
 open Foom.Wad
-open Foom.Common.Components
 open Foom.Wad.Components
-open Foom.Client.Sprite
 open Foom.Client.Sky
 open Foom.Renderer.RendererSystem
+
+open Foom.Game.Core
 open Foom.Game.Assets
+open Foom.Game.Sprite
 
 let exportFlatTextures (wad: Wad) =
     wad

@@ -1,4 +1,4 @@
-﻿namespace Foom.Common.Components
+﻿namespace Foom.Game.Core
 
 open System
 open System.Numerics

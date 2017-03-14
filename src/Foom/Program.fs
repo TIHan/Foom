@@ -6,7 +6,6 @@ open System.Threading.Tasks
 
 open Foom.Client
 open Foom.Ecs
-open Foom.Common.Components
 
 let world = World (65536)
 

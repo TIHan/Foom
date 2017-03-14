@@ -14,7 +14,8 @@ open Foom.Renderer
 open Foom.Wad
 open Foom.Wad.Level
 open Foom.Wad.Components
-open Foom.Common.Components
+
+open Foom.Game.Core
 
 // These are sectors to look for and test to ensure things are working as they should.
 // 568 - map10 sunder
@@ -126,7 +127,7 @@ let create (app: Application) (clientWorld: ClientWorld) am =
             @
             [
                Player.fixedUpdate
-               Sprite.handleSprite am
+               Foom.Game.Sprite.handleSprite am
 
               // addRigidBodyBehavior clientWorld
              //  physicsUpdateBehavior clientWorld

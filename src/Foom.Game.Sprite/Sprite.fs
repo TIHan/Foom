@@ -1,16 +1,15 @@
-﻿module Foom.Client.Sprite
+﻿module Foom.Game.Sprite
 
 open System
-open System.Drawing
 open System.Numerics
 open System.Collections.Generic
 
-open Foom.Common.Components
 open Foom.Ecs
 open Foom.Renderer
 open Foom.Collections
 open Foom.Renderer.RendererSystem
 open Foom.Game.Assets
+open Foom.Game.Core
 
 [<Sealed>]
 type Sprite (positions, lightLevels, uvOffsets) =
@@ -24,14 +23,14 @@ type Sprite (positions, lightLevels, uvOffsets) =
    
 
 let createSpriteColor lightLevel =
-    let color = Array.init 6 (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
+    let color = Array.init 6 (fun _ -> Vector4 (255.f, lightLevel, lightLevel, lightLevel))
     color
     |> Array.map (fun c ->
         Vector4 (
-            single c.R / 255.f,
-            single c.G / 255.f,
-            single c.B / 255.f,
-            single c.A / 255.f)
+            c.X / 255.f,
+            c.Y / 255.f,
+            c.Z / 255.f,
+            c.W / 255.f)
     )
 
 let vertices =
@@ -126,7 +125,7 @@ let handleSprite (am: AssetManager) : Behavior<float32 * float32> =
                     match lookup.TryGetValue (key) with
                     | true, x -> x
                     | _ ->
-                        let rendererComp = new SpriteRendererComponent(comp.PipelineName, comp.Texture, 255)
+                        let rendererComp = new SpriteRendererComponent(comp.PipelineName, comp.Texture, 255.f)
 
                         let rendererEnt = em.Spawn ()
                         em.Add (rendererEnt, rendererComp)

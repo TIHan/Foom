@@ -7,9 +7,11 @@ open System.IO
 open System.Numerics
 
 open Foom.Renderer
-open Foom.Client.Sprite
 open Foom.Client.Sky
+
+open Foom.Game.Core
 open Foom.Game.Assets
+open Foom.Game.Sprite
 
 type SpriteInput (program: ShaderProgram) =
     inherit MeshInput (program)
