@@ -343,6 +343,10 @@ let updates (clientWorld: ClientWorld) =
 
                     | ThingType.GreenArmor -> GreenArmor.spawn position em |> ignore
 
+                    | ThingType.BlueArmor -> BlueArmor.spawn position em |> ignore
+
+                    | ThingType.SoulSphere -> SoulSphere.spawn position em |> ignore
+
                     | ThingType.BloodyMess
                     | ThingType.BloodyMess2 -> GibbedMarine.spawn position em |> ignore
 
@@ -363,10 +367,12 @@ let updates (clientWorld: ClientWorld) =
                     | ThingType.AmmoClip -> image <- Some "CLIPA0.bmp"
                     | _ -> ()
 
+                    let pos = Vector2 (single thing.X, single thing.Y)
+                    let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos
+
                     match image with
-                    | Some texturePath ->
-                        let pos = Vector2 (single thing.X, single thing.Y)
-                        let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos :?> Foom.Level.Sector
+                    | Some texturePath when sector <> null ->
+                        let sector = sector :?> Foom.Level.Sector
                         let pos = Vector3 (pos, single sector.floorHeight)
 
                         let pipelineName = "World"
