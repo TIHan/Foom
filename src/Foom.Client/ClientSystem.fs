@@ -16,6 +16,7 @@ open Foom.Wad.Level
 open Foom.Wad.Components
 
 open Foom.Game.Core
+open Foom.Game.Sprite
 
 // These are sectors to look for and test to ensure things are working as they should.
 // 568 - map10 sunder
@@ -70,19 +71,52 @@ let loadWadAndLevelBehavior (clientWorld: ClientWorld) =
             em.Add (clientWorld.Entity, LevelComponent(evt.Level))
     )
 
-let addRigidBodyBehavior (clientWorld: ClientWorld) =
-    // This should be part of a physics system.
-    Behavior.handleEvent (fun (evt: Events.ComponentAdded<CharacterControllerComponent>) _ em ->
+let addRigidBodyBehavior (clientWorld: ClientWorld) : Behavior<float32 * float32> =
+    Behavior.merge
+        [
+            // This should be part of a physics system.
+            Behavior.handleEvent (fun (evt: Events.ComponentAdded<CharacterControllerComponent>) _ em ->
+                opt {
+                    let! charContrComp = em.TryGet<CharacterControllerComponent> evt.Entity
+                    let! transformComp = em.TryGet<TransformComponent> evt.Entity
+                    let! physicsEngineComp = em.TryGet<PhysicsEngineComponent> clientWorld.Entity
+
+                    physicsEngineComp.PhysicsEngine
+                    |> PhysicsEngine.addRigidBody charContrComp.RigidBody
+                }
+                |> ignore
+            )
+
+            // This should be part of a physics system.
+            Behavior.handleEvent (fun (evt: Events.ComponentAdded<RigidBodyComponent>) _ em ->
+                opt {
+                    let! rbodyComp = em.TryGet<RigidBodyComponent> evt.Entity
+                    let! transformComp = em.TryGet<TransformComponent> evt.Entity
+                    let! physicsEngineComp = em.TryGet<PhysicsEngineComponent> clientWorld.Entity
+
+                    physicsEngineComp.PhysicsEngine
+                    |> PhysicsEngine.addRigidBody rbodyComp.RigidBody
+                }
+                |> ignore
+            )
+    ]
+
+let physicsSpriteBehavior (clientWorld: ClientWorld) =
+    Behavior.handleComponentAdded (fun (ent: Entity) (spriteComp: SpriteComponent) _ em ->
         opt {
-            let! charContrComp = em.TryGet<CharacterControllerComponent> evt.Entity
-            let! transformComp = em.TryGet<TransformComponent> evt.Entity
+            let! charContrComp = em.TryGet<RigidBodyComponent> ent
             let! physicsEngineComp = em.TryGet<PhysicsEngineComponent> clientWorld.Entity
 
-            physicsEngineComp.PhysicsEngine
-            |> PhysicsEngine.addRigidBody charContrComp.RigidBody
+            // TODO: This can be null, fix it.
+            let sector =
+                physicsEngineComp.PhysicsEngine
+                |> PhysicsEngine.findWithPoint charContrComp.RigidBody.WorldPosition
 
-        }
-        |> ignore
+            if obj.ReferenceEquals (sector, null) |> not then
+                let sector = sector :?> Foom.Level.Sector
+
+                spriteComp.LightLevel <- sector.lightLevel
+        } |> ignore
     )
 
 let physicsUpdateBehavior (clientWorld: ClientWorld) =
@@ -129,7 +163,8 @@ let create (app: Application) (clientWorld: ClientWorld) am =
                Player.fixedUpdate
                Foom.Game.Sprite.handleSprite am
 
-              // addRigidBodyBehavior clientWorld
+               addRigidBodyBehavior clientWorld
+               physicsSpriteBehavior clientWorld
              //  physicsUpdateBehavior clientWorld
             ]
         )

@@ -4,6 +4,7 @@ open System
 open System.Numerics
 
 open Foom.Ecs
+open Foom.Physics
 
 open Foom.Game.Core
 open Foom.Game.Assets
@@ -20,4 +21,5 @@ module ArmorBonus =
         em.Add (ent, SpriteComponent ("World", texture, 255))
         let interval = TimeSpan.FromSeconds(1.)
         em.Add (ent, AnimatedSpriteComponent (interval, [ 0; 1; 2; 3; 2; 1 ]))
+        em.Add (ent, RigidBodyComponent(position, 20.f, 16.f))
         ent
