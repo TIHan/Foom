@@ -163,7 +163,7 @@ let create (app: Application) (clientWorld: ClientWorld) am =
             @
             [
                Player.fixedUpdate
-               Foom.Game.Sprite.handleSprite am
+               Sprite.update am
 
                addRigidBodyBehavior clientWorld
                physicsSpriteBehavior clientWorld

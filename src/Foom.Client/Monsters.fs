@@ -19,8 +19,7 @@ module ShotgunGuy =
         let ent = em.Spawn ()
         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(position)))
         em.Add (ent, SpriteComponent ("World", texture, 255))
-        let interval = TimeSpan.FromSeconds(0.65)
-        em.Add (ent, AnimatedSpriteComponent (interval, [ 0; 1 ]))
+        em.Add (ent, AnimatedSpriteComponent (TimeSpan.FromSeconds(0.65), [ 0; 1 ]))
         em.Add (ent, RigidBodyComponent(position, 20.f, 56.f))
         ent
 

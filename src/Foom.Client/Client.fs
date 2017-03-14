@@ -1,29 +1,16 @@
 ﻿[<RequireQualifiedAccess>]
 module Foom.Client.Client
 
-open Foom.Ecs
-open Foom.Renderer
 open System.IO
 open System.Numerics
 
+open Foom.Ecs
 open Foom.Renderer
 open Foom.Client.Sky
 
 open Foom.Game.Core
 open Foom.Game.Assets
 open Foom.Game.Sprite
-
-type SpriteInput (program: ShaderProgram) =
-    inherit MeshInput (program)
-
-    member val Center = program.CreateVertexAttributeVector3 ("in_center")
-
-    member val Positions = program.CreateInstanceAttributeVector3 ("instance_position")
-
-    member val LightLevels = program.CreateInstanceAttributeVector4 ("instance_lightLevel")
-
-    member val UvOffsets = program.CreateInstanceAttributeVector4 ("instance_uvOffset")
-
 
 module Pipelines =
     open Pipeline
@@ -55,12 +42,7 @@ module Pipelines =
                 draw ()
             )
 
-            do! runProgramWithMesh "Sprite" SpriteInput noOutput (fun (sprite: Sprite) input draw ->
-                input.Positions.Set sprite.Positions
-                input.LightLevels.Set sprite.LightLevels
-                input.UvOffsets.Set sprite.UvOffsets
-                draw ()
-            )
+            do! Sprite.pipeline
         }
 
     let renderPipeline =
