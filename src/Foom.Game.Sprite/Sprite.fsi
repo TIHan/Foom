@@ -18,6 +18,8 @@ type SpriteComponent =
 
     member Texture : Texture
 
+    member Frame : int with get, set
+
     member LightLevel : int with get, set
 
 module Sprite =
@@ -25,8 +27,3 @@ module Sprite =
     val pipeline : Pipeline<unit>
 
     val update : AssetManager -> Behavior<float32 * float32>
-
-type AnimatedSpriteComponent =
-    inherit Component
-
-    new : time: TimeSpan * int list -> AnimatedSpriteComponent

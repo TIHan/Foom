@@ -74,6 +74,7 @@
   <ItemGroup>
     <Compile Include="Sprite.fsi" />
     <Compile Include="Sprite.fs" />
+    <Compile Include="SpriteAnimation.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />

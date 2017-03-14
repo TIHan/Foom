@@ -163,6 +163,7 @@ let create (app: Application) (clientWorld: ClientWorld) am =
             @
             [
                Player.fixedUpdate
+               SpriteAnimation.update
                Sprite.update am
 
                addRigidBodyBehavior clientWorld
