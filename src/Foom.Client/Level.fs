@@ -21,6 +21,7 @@ open Foom.Renderer.RendererSystem
 open Foom.Game.Core
 open Foom.Game.Assets
 open Foom.Game.Sprite
+open Foom.Game.Gameplay.Doom
 
 let exportFlatTextures (wad: Wad) =
     wad
@@ -244,8 +245,6 @@ let spawnWallMesh level (wall: Wall) wad =
 
     | _ -> ()
 
-let ArmorBonusTexture = Texture (TextureKind.Multi [ "BON2A0.bmp"; "BON2B0.bmp"; "BON2C0.bmp"; "BON2D0.bmp" ])
-
 let updates (clientWorld: ClientWorld) =
     [
         Behavior.wadLoading
@@ -336,11 +335,20 @@ let updates (clientWorld: ClientWorld) =
                 match thing with
                 | Thing.Doom thing when thing.Flags.HasFlag (DoomThingFlags.SkillLevelFourAndFive) ->
 
+                    match thing.Type with
+                    | ThingType.ArmorBonus -> 
+                        let pos = Vector2 (single thing.X, single thing.Y)
+                        let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos :?> Foom.Level.Sector
+                        let pos = Vector3 (pos, single sector.floorHeight)
+
+                        ArmorBonus.spawn pos em |> ignore 
+
+                    | _ ->
+
                     let mutable image = None
 
                     match thing.Type with
                     | ThingType.HealthBonus -> image <- Some "BON1A0.bmp"
-                    | ThingType.ArmorBonus -> image <- Some "BON2A0.bmp"
                     | ThingType.DeadPlayer -> image <- Some "PLAYN0.bmp"
                     | ThingType.GreenArmor -> image <- Some "ARM1A0.bmp"
                     | ThingType.Stimpack -> image <- Some "STIMA0.bmp"
@@ -360,9 +368,6 @@ let updates (clientWorld: ClientWorld) =
 
                         let pipelineName = "World"
                         let texture = 
-                            if thing.Type = ThingType.ArmorBonus then
-                                ArmorBonusTexture
-                            else
 
                             match levelMaterialCache.TryGetValue (texturePath) with
                             | true, x -> x
@@ -376,10 +381,6 @@ let updates (clientWorld: ClientWorld) =
                         let ent = em.Spawn ()
                         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(pos)))
                         em.Add (ent, SpriteComponent (pipelineName, texture, sector.lightLevel))
-
-                        if thing.Type = ThingType.ArmorBonus then
-                            let interval = TimeSpan.FromSeconds(1.)
-                            em.Add (ent, AnimatedSpriteComponent (interval, [ 0; 1; 2; 3; 2; 1 ]))
                     | _ -> ()
 
                 | _ -> ()
