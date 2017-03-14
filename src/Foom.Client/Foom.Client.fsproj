@@ -54,6 +54,8 @@
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <ItemGroup>
     <Compile Include="Items.fs" />
+    <Compile Include="Monsters.fs" />
+    <Compile Include="Decorations.fs" />
     <Compile Include="ClientWorld.fs" />
     <Compile Include="Player.fs" />
     <Compile Include="Sky.fs" />

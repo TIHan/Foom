@@ -335,13 +335,18 @@ let updates (clientWorld: ClientWorld) =
                 match thing with
                 | Thing.Doom thing when thing.Flags.HasFlag (DoomThingFlags.SkillLevelFourAndFive) ->
 
-                    match thing.Type with
-                    | ThingType.ArmorBonus -> 
-                        let pos = Vector2 (single thing.X, single thing.Y)
-                        let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos :?> Foom.Level.Sector
-                        let pos = Vector3 (pos, single sector.floorHeight)
+                    let position = Vector3 (single thing.X, single thing.Y, 0.f)
 
-                        ArmorBonus.spawn pos em |> ignore 
+                    match thing.Type with
+
+                    | ThingType.ArmorBonus -> ArmorBonus.spawn position em |> ignore 
+
+                    | ThingType.GreenArmor -> GreenArmor.spawn position em |> ignore
+
+                    | ThingType.BloodyMess
+                    | ThingType.BloodyMess2 -> GibbedMarine.spawn position em |> ignore
+
+                    | ThingType.ShotgunGuy -> ShotgunGuy.spawn position em |> ignore
 
                     | _ ->
 
@@ -350,14 +355,12 @@ let updates (clientWorld: ClientWorld) =
                     match thing.Type with
                     | ThingType.HealthBonus -> image <- Some "BON1A0.bmp"
                     | ThingType.DeadPlayer -> image <- Some "PLAYN0.bmp"
-                    | ThingType.GreenArmor -> image <- Some "ARM1A0.bmp"
                     | ThingType.Stimpack -> image <- Some "STIMA0.bmp"
                     | ThingType.Medkit -> image <- Some "MEDIA0.bmp"
                     | ThingType.Barrel -> image <- Some "BAR1A0.bmp"
                     | ThingType.TallTechnoPillar -> image <- Some "ELECA0.bmp"
                     | ThingType.Player1Start -> image <- Some "PLAYA1.bmp"
                     | ThingType.AmmoClip -> image <- Some "CLIPA0.bmp"
-                    | ThingType.ShotgunGuy -> image <- Some "SPOSA1.bmp"
                     | _ -> ()
 
                     match image with

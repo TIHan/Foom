@@ -105,6 +105,7 @@ let physicsSpriteBehavior (clientWorld: ClientWorld) =
     Behavior.handleComponentAdded (fun (ent: Entity) (spriteComp: SpriteComponent) _ em ->
         opt {
             let! charContrComp = em.TryGet<RigidBodyComponent> ent
+            let! transformComp = em.TryGet<TransformComponent> ent
             let! physicsEngineComp = em.TryGet<PhysicsEngineComponent> clientWorld.Entity
 
             // TODO: This can be null, fix it.
@@ -116,6 +117,7 @@ let physicsSpriteBehavior (clientWorld: ClientWorld) =
                 let sector = sector :?> Foom.Level.Sector
 
                 spriteComp.LightLevel <- sector.lightLevel
+                transformComp.Position <- Vector3 (transformComp.Position.X, transformComp.Position.Y, single sector.floorHeight)
         } |> ignore
     )
 

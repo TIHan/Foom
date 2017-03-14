@@ -23,3 +23,17 @@ module ArmorBonus =
         em.Add (ent, AnimatedSpriteComponent (interval, [ 0; 1; 2; 3; 2; 1 ]))
         em.Add (ent, RigidBodyComponent(position, 20.f, 16.f))
         ent
+
+module GreenArmor =
+
+    let texture = Texture (TextureKind.Multi [ "ARM1A0.bmp"; "ARM1B0.bmp" ])
+
+    let spawn position (em: EntityManager) =
+
+        let ent = em.Spawn ()
+        em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(position)))
+        em.Add (ent, SpriteComponent ("World", texture, 255))
+        let interval = TimeSpan.FromSeconds(0.5)
+        em.Add (ent, AnimatedSpriteComponent (interval, [ 0; 1 ]))
+        em.Add (ent, RigidBodyComponent(position, 20.f, 16.f))
+        ent
