@@ -12,79 +12,6 @@ open Foom.Collections
 
 #nowarn "9"
 
-[<Struct; StructLayout (LayoutKind.Explicit)>]
-type Entity =
-
-    [<FieldOffset (0)>]
-    val Index : int
-
-    [<FieldOffset (4)>]
-    val Version : uint32
-
-    [<FieldOffset (0); DefaultValue>]
-    val Id : uint64
-
-    new (index, version) = { Index = index; Version = version }
-
-    member this.IsZero = this.Id = 0UL
-
-    override this.ToString () = String.Format ("(Entity #{0}.{1})", this.Index, this.Version)
-
-[<AbstractClass>]
-type Component () =
-
-    member val Owner = Entity (0, 0u) with get, set
-
-module Events =
-
-    type ComponentAdded<'T when 'T :> Component> = 
-        { entity: Entity }
-
-        member this.Entity = this.entity
-
-        interface IEvent
-
-    type ComponentRemoved<'T when 'T :> Component> = 
-        { entity: Entity }
-
-        member this.Entity = this.entity
-
-        interface IEvent
-
-    type AnyComponentAdded =
-        { entity: Entity; componentType: Type }
-
-        member this.Entity = this.entity
-
-        member this.ComponentType = this.componentType
-
-        interface IEvent
-
-    type AnyComponentRemoved =
-        { entity: Entity; componentType: Type }
-
-        member this.Entity = this.entity
-
-        member this.ComponentType = this.componentType
-
-        interface IEvent
-
-    type EntitySpawned =
-        { entity: Entity }
-
-        member this.Entity = this.entity
-
-        interface IEvent
-
-    type EntityDestroyed =
-        { entity: Entity }
-
-        member this.Entity = this.entity
-
-        interface IEvent
-
-open Events
-
 type IEntityLookupData =
 
     abstract Entities : Entity UnsafeResizeArray with get
@@ -92,6 +19,8 @@ type IEntityLookupData =
     abstract GetIndex : int -> int
 
     abstract GetComponent : int -> Component
+
+open Events
 
 [<ReferenceEquality>]
 type EntityLookupData<'T when 'T :> Component> =
@@ -323,8 +252,8 @@ type EntityManager =
                         data.Components.Add comp
                         data.Entities.Add entity
 
-                        this.AnyComponentAddedEvent.Trigger ({ entity = entity; componentType = typeof<'T> })
-                        data.ComponentAddedEvent.Trigger ({ entity = entity })
+                        this.AnyComponentAddedEvent.Trigger (AnyComponentAdded (entity, typeof<'T>))
+                        data.ComponentAddedEvent.Trigger (ComponentAdded<'T> (entity))
             else
                 Debug.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot add component, {1}", entity, typeof<'T>.Name))
 
@@ -349,8 +278,8 @@ type EntityManager =
                     if not (entity.Index.Equals swappingEntity.Index) then
                         data.IndexLookup.[swappingEntity.Index] <- index
 
-                    this.AnyComponentRemovedEvent.Trigger ({ entity = entity; componentType = typeof<'T> })
-                    data.ComponentRemovedEvent.Trigger ({ entity = entity })
+                    this.AnyComponentRemovedEvent.Trigger (AnyComponentRemoved (entity, typeof<'T>))
+                    data.ComponentRemovedEvent.Trigger (ComponentRemoved<'T> (entity))
                 else
                     Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, does not exist on {1}", typeof<'T>.Name, entity))
 
@@ -374,7 +303,7 @@ type EntityManager =
             this.ActiveVersions.[entity.Index] <- entity.Version
             this.ActiveIndices.[entity.Index] <- true
 
-            this.EntitySpawnedEvent.Trigger ({ entity = entity })
+            this.EntitySpawnedEvent.Trigger (EntitySpawned entity)
 
             entity
 
@@ -391,7 +320,7 @@ type EntityManager =
                 this.ActiveVersions.[entity.Index] <- 0u
                 this.ActiveIndices.[entity.Index] <- false
 
-                this.EntityDestroyedEvent.Trigger ({ entity = entity })
+                this.EntityDestroyedEvent.Trigger (EntityDestroyed entity)
             else
                 Debug.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot destroy.", entity))
 

@@ -43,8 +43,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="EventAggregator.fsi" />
-    <Compile Include="EventAggregator.fs" />
+    <Compile Include="Core.fsi" />
+    <Compile Include="Core.fs" />
     <Compile Include="EntityManager.fsi" />
     <Compile Include="EntityManager.fs" />
     <Compile Include="Behavior.fsi" />
