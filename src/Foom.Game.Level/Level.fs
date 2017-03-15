@@ -3,12 +3,20 @@
 open System.Numerics
 open System.Collections.Generic
 
+open Foom.Ecs
+
 type Level =
     {
         walls: Wall ResizeArray
         wallLookup: Dictionary<int, int ResizeArray>
         sectors: Sector ResizeArray
-    }
+    } 
+
+[<Sealed>]
+type LevelComponent (level: Level) =
+    inherit Component ()
+
+    member val Level = level
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Level =
