@@ -12,15 +12,15 @@ open Foom.Math
 open Foom.Physics
 open Foom.Renderer
 open Foom.Geometry
-open Foom.Level
 open Foom.Wad
-open Foom.Wad.Components
 open Foom.Client.Sky
 open Foom.Renderer.RendererSystem
 
 open Foom.Game.Core
 open Foom.Game.Assets
 open Foom.Game.Sprite
+open Foom.Game.Level
+open Foom.Game.Wad
 open Foom.Game.Gameplay.Doom
 
 let exportFlatTextures (wad: Wad) =
@@ -207,7 +207,7 @@ let spawnWallPartMesh sector (part: WallPart) (vertices: Vector3 []) wad isSky =
 let spawnWallMesh level (wall: Wall) wad =
     let (
         (upperFront, middleFront, lowerFront),
-        (upperBack, middleBack, lowerBack)) = Foom.Level.Level.createWallGeometry wall level
+        (upperBack, middleBack, lowerBack)) = Foom.Game.Level.Level.createWallGeometry wall level
 
     match wall.FrontSide with
     | Some frontSide ->
@@ -215,11 +215,11 @@ let spawnWallMesh level (wall: Wall) wad =
         let isSky =
             match wall.BackSide with
             | Some backSide ->
-                let sector = Foom.Level.Level.getSector backSide.SectorId level
+                let sector = Foom.Game.Level.Level.getSector backSide.SectorId level
                 sector.ceilingTextureName.Equals("F_SKY1")
             | _ -> false
         
-        let sector = Foom.Level.Level.getSector frontSide.SectorId level
+        let sector = Foom.Game.Level.Level.getSector frontSide.SectorId level
 
         spawnWallPartMesh sector frontSide.Upper upperFront wad isSky
         spawnWallPartMesh sector frontSide.Middle middleFront wad false
@@ -233,11 +233,11 @@ let spawnWallMesh level (wall: Wall) wad =
         let isSky =
             match wall.FrontSide with
             | Some frontSide ->
-                let sector = Foom.Level.Level.getSector frontSide.SectorId level
+                let sector = Foom.Game.Level.Level.getSector frontSide.SectorId level
                 sector.ceilingTextureName.Equals("F_SKY1")
             | _ -> false
 
-        let sector = Foom.Level.Level.getSector backSide.SectorId level
+        let sector = Foom.Game.Level.Level.getSector backSide.SectorId level
 
         spawnWallPartMesh sector backSide.Upper upperBack wad isSky
         spawnWallPartMesh sector backSide.Middle middleBack wad false
@@ -266,7 +266,7 @@ let updates (clientWorld: ClientWorld) =
                 Array.init sectorCount (fun _ -> ResizeArray ())
 
             lvl
-            |> Foom.Level.Level.iteriSector (fun i sector ->
+            |> Foom.Game.Level.Level.iteriSector (fun i sector ->
 
                 (i, level)
                 ||> Level.iterLinedefBySectorId (fun linedef ->
@@ -331,7 +331,7 @@ let updates (clientWorld: ClientWorld) =
             )
 
             level
-            |> Level.iterThing (fun thing ->
+            |> Foom.Wad.Level.iterThing (fun thing ->
                 match thing with
                 | Thing.Doom thing when thing.Flags.HasFlag (DoomThingFlags.SkillLevelFourAndFive) ->
 
@@ -372,7 +372,7 @@ let updates (clientWorld: ClientWorld) =
 
                     match image with
                     | Some texturePath when sector <> null ->
-                        let sector = sector :?> Foom.Level.Sector
+                        let sector = sector :?> Foom.Game.Level.Sector
                         let pos = Vector3 (pos, single sector.floorHeight)
 
                         let pipelineName = "World"
@@ -399,12 +399,12 @@ let updates (clientWorld: ClientWorld) =
             em.Add (clientWorld.Entity, physicsEngineComp)
 
             level
-            |> Level.tryFindPlayer1Start
+            |> Foom.Wad.Level.tryFindPlayer1Start
             |> Option.iter (function
                 | Doom doomThing ->
                     let sector =
                         physicsEngineComp.PhysicsEngine
-                        |> PhysicsEngine.findWithPoint (Vector2 (single doomThing.X, single doomThing.Y)) :?> Foom.Level.Sector
+                        |> PhysicsEngine.findWithPoint (Vector2 (single doomThing.X, single doomThing.Y)) :?> Foom.Game.Level.Sector
 
                     let position = Vector3 (single doomThing.X, single doomThing.Y, single sector.floorHeight + 28.f)
 

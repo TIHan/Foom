@@ -13,10 +13,10 @@ open Foom.Geometry
 open Foom.Renderer
 open Foom.Wad
 open Foom.Wad.Level
-open Foom.Wad.Components
 
 open Foom.Game.Core
 open Foom.Game.Sprite
+open Foom.Game.Wad
 
 // These are sectors to look for and test to ensure things are working as they should.
 // 568 - map10 sunder
@@ -114,7 +114,7 @@ let physicsSpriteBehavior (clientWorld: ClientWorld) =
                 |> PhysicsEngine.findWithPoint charContrComp.RigidBody.WorldPosition
 
             if obj.ReferenceEquals (sector, null) |> not then
-                let sector = sector :?> Foom.Level.Sector
+                let sector = sector :?> Foom.Game.Level.Sector
 
                 spriteComp.LightLevel <- sector.lightLevel
                 transformComp.Position <- Vector3 (transformComp.Position.X, transformComp.Position.Y, single sector.floorHeight)
@@ -144,7 +144,7 @@ let physicsUpdateBehavior (clientWorld: ClientWorld) =
                 |> PhysicsEngine.findWithPoint rbody.WorldPosition
 
             if obj.ReferenceEquals (sector, null) |> not then
-                let sector = sector :?> Foom.Level.Sector
+                let sector = sector :?> Foom.Game.Level.Sector
 
                 transformComp.Position <- Vector3 (rbody.WorldPosition, single sector.floorHeight + 50.f)
         } |> ignore

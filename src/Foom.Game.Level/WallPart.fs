@@ -1,4 +1,4 @@
-﻿namespace Foom.Level
+﻿namespace Foom.Game.Level
 
 open System
 open System.Numerics

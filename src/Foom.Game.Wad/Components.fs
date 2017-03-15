@@ -1,4 +1,4 @@
-﻿namespace Foom.Wad.Components
+﻿namespace Foom.Game.Wad
 
 open System
 open System.IO

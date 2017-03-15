@@ -1,4 +1,4 @@
-﻿namespace Foom.Level
+﻿namespace Foom.Game.Level
 
 open System.Numerics
 open System.Collections.Generic
@@ -8,7 +8,6 @@ type Level =
         walls: Wall ResizeArray
         wallLookup: Dictionary<int, int ResizeArray>
         sectors: Sector ResizeArray
-        things: Foom.Wad.Thing ResizeArray // temporary: get rid of it soon
     }
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
@@ -55,7 +54,6 @@ module Level =
             walls = ResizeArray (walls)
             wallLookup = wallLookup
             sectors = ResizeArray (sectors)
-            things = ResizeArray ()
         }
 
     let iterWall f level =
@@ -80,22 +78,11 @@ module Level =
 
     let getSectorCount level = level.sectors.Count
 
-    let tryFindPlayer1Start level =
-        level.things
-        |> Seq.tryFind (function
-            | Foom.Wad.Doom doomThing ->
-                doomThing.Type = Foom.Wad.ThingType.Player1Start
-            | _ -> false
-        )
-
     let lightLevelBySectorId sectorId (level: Level) =
         let sector = level.sectors.[sectorId]
         let lightLevel = sector.lightLevel
         if lightLevel > 255 then 255uy
         else byte lightLevel
-
-    let iterThing f level =
-        level.things |> Seq.iter f
 
     let createWallGeometry (wall: Wall) (level: Level) : (Vector3 [] * Vector3 [] * Vector3 []) * (Vector3 [] * Vector3 [] * Vector3 [])  =
         let seg = wall.Segment

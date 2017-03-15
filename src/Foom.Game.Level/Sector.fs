@@ -1,4 +1,4 @@
-﻿namespace Foom.Level
+﻿namespace Foom.Game.Level
 
 type Sector =
     {

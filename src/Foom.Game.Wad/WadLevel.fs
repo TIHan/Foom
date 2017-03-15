@@ -1,4 +1,4 @@
-﻿namespace Foom.Level
+﻿namespace Foom.Game.Wad
 
 open System
 open System.Numerics
@@ -7,10 +7,10 @@ open System.Collections.Generic
 open Foom.Geometry
 open Foom.Wad
 
+open Foom.Game.Level
+
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module WadLevel =
-
-    open Foom.Wad
 
     type WallSection =
         | Upper
@@ -89,10 +89,10 @@ module WadLevel =
         arr
 
     let toSectors (level: Foom.Wad.Level) =
-        let arr = ResizeArray<Foom.Level.Sector> ()
+        let arr = ResizeArray<Foom.Game.Level.Sector> ()
 
         level
-        |> Level.iteriSector (fun i sector ->
+        |> Foom.Wad.Level.iteriSector (fun i sector ->
             let s =
                 {
                     lightLevel = sector.LightLevel
@@ -112,8 +112,8 @@ module WadLevel =
 
         Level.create walls sectors
 
-    let createSectorGeometry sectorId (level: Foom.Level.Level) = 
-        match level |> Foom.Level.Level.tryGetSector sectorId with
+    let createSectorGeometry sectorId (level: Foom.Game.Level.Level) = 
+        match level |> Foom.Game.Level.Level.tryGetSector sectorId with
         | None -> Seq.empty
         | Some sector ->
 
