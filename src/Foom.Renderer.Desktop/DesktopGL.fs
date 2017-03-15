@@ -38,7 +38,10 @@ type DesktopGL (app: Application) =
             handle.Free ()
 
         member this.BindTexture id =
-            Backend.bindTexture id
+            Backend.bindTexture2D id
+
+        member this.ActiveTexture number =
+            Backend.activeTexture number
 
         member this.CreateTexture (width, height, data) =
             Backend.createTexture width height data
@@ -69,6 +72,12 @@ type DesktopGL (app: Application) =
 
         member this.BindUniform (locationId, value) =
             Backend.bindUniformInt locationId value
+
+        member this.BindUniform (locationId, count, values: int []) =
+            let handle = GCHandle.Alloc (values, GCHandleType.Pinned)
+            let addr = handle.AddrOfPinnedObject ()
+            Backend.bindUniformIntVarying locationId count addr
+            handle.Free ()
 
         member this.BindUniform (locationId, value) =
             Backend.bindUniform_float locationId value

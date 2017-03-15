@@ -63,6 +63,7 @@ type ShaderProgram =
         mutable binds: ResizeArray<unit -> unit>
         mutable unbinds: ResizeArray<unit -> unit>
         mutable instanceCount: int
+        mutable activeTextureCount: int
     }
 
     static member Create (gl, programId) =
@@ -77,6 +78,7 @@ type ShaderProgram =
             binds = ResizeArray ()
             unbinds = ResizeArray ()
             instanceCount = -1
+            activeTextureCount = 0
         }
 
     member this.CreateUniform<'T> (name) =
@@ -127,15 +129,41 @@ type ShaderProgram =
                     if uni.IsDirty && not (obj.ReferenceEquals (uni.Value, null)) && uni.Location > -1 then 
                         uni.Value.TryBufferData this.gl |> ignore
                         gl.BindUniform (uni.Location, 0)
+                        gl.ActiveTexture (this.activeTextureCount)
                         uni.Value.Bind this.gl
+                        uni.IsDirty <- false
+
+                        this.activeTextureCount <- this.activeTextureCount + 1
+
+            | :? Uniform<Texture2DBuffer []> as uni ->
+                let values = Array.zeroCreate 128 // Add checks
+                fun () ->
+                    if uni.IsDirty && not (obj.ReferenceEquals (uni.Value, null)) && uni.Location > -1 && uni.Value.Length > 0 then 
+
+                        for i = 0 to uni.Value.Length - 1 do
+                            let x = uni.Value.[i]
+                            x.TryBufferData this.gl |> ignore
+                            values.[i] <- this.activeTextureCount + i
+
+                        gl.BindUniform (uni.Location, uni.Value.Length, values)
+
+                        for i = 0 to uni.Value.Length - 1 do
+                            let x = uni.Value.[i]
+                            gl.ActiveTexture this.activeTextureCount
+                            x.Bind this.gl
+                            this.activeTextureCount <- this.activeTextureCount + 1
+
                         uni.IsDirty <- false
 
             | :? Uniform<RenderTexture> as uni ->
                 fun () ->
                     if uni.IsDirty && not (obj.ReferenceEquals (uni.Value, null)) && uni.Location > -1 then 
                         gl.BindUniform (uni.Location, 0)
+                        gl.ActiveTexture (this.activeTextureCount)
                         uni.Value.BindTexture this.gl
                         uni.IsDirty <- false
+
+                        this.activeTextureCount <- this.activeTextureCount + 1
 
             | _ -> failwith "This should not happen."
 
@@ -290,6 +318,9 @@ type ShaderProgram =
     member this.CreateUniformTexture2D (name) =
         this.CreateUniform<Texture2DBuffer> (name)
 
+    member this.CreateUniformTexture2DVarying (name) =
+        this.CreateUniform<Texture2DBuffer []> (name)
+
     member this.CreateUniformRenderTexture (name) =
         this.CreateUniform<RenderTexture> (name)
 
@@ -378,4 +409,6 @@ type ShaderProgram =
 
 
             | _ -> this.Draw ()
+
+            this.activeTextureCount <- 0
 

@@ -22,6 +22,8 @@ type IGL =
 
     abstract BindTexture : int -> unit
 
+    abstract ActiveTexture : number: int -> unit
+
     abstract CreateTexture : width: int * height: int * data: nativeint -> int
 
     abstract SetSubTexture : xOffset: int * yOffset: int * width: int * height: int * data: nativeint * textureId: int -> unit
@@ -51,6 +53,8 @@ type IGL =
     abstract BindUniform : locationId: int * Vector4 -> unit
 
     abstract BindUniform : locationId: int * Matrix4x4 -> unit
+
+    abstract BindUniform : locationId: int * int * int [] -> unit
 
 
     abstract GetAttributeLocation : programId: int * name: string -> int

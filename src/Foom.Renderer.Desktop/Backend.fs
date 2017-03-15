@@ -316,6 +316,12 @@ module Backend =
         """
 
     [<Import; MI (MIO.NoInlining)>]
+    let bindUniformIntVarying (id: int) (size: int) (values: nativeint) : unit =
+        C """
+        glUniform1iv (id, size, values);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
     let bindUniform_float (id: int) (value: float32) : unit =
         C """
         glUniform1f (id, value);
@@ -328,9 +334,14 @@ module Backend =
         """
 
     [<Import; MI (MIO.NoInlining)>]
-    let bindTexture2D (textureId: int) (textureNumber: int) : unit =
+    let activeTexture (number: int) : unit =
         C """
-        glActiveTexture(GL_TEXTURE0);
+        glActiveTexture (GL_TEXTURE0 + number);
+        """
+
+    [<Import; MI (MIO.NoInlining)>]
+    let bindTexture2D (textureId: int) : unit =
+        C """
         glBindTexture(GL_TEXTURE_2D, textureId);
         """
 
@@ -364,13 +375,6 @@ module Backend =
         C """
         GLuint uni = glGetUniformLocation (shaderProgram, "uni_texture");
         glUniform1i(textureId, 0);
-        """
-
-    [<Import; MI (MIO.NoInlining)>]
-    let bindTexture (textureId: int) : unit =
-        C """
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, textureId);
         """
 
     [<Import; MI (MIO.NoInlining)>]

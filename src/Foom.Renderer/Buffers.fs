@@ -101,7 +101,7 @@ type Texture2DBuffer () =
 
     member this.Bind (gl: IGL) =
         if id <> 0 then
-            gl.BindTexture id // this does activetexture0, change this eventually  
+            gl.BindTexture id 
 
     member this.TryBufferData (gl: IGL) =
         match queuedData with

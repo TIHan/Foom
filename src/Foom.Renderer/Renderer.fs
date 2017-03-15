@@ -40,7 +40,7 @@ type MeshInput (shaderProgram: ShaderProgram) =
 
     member val Color = shaderProgram.CreateVertexAttributeVector4 ("in_color")
 
-    member val Texture = shaderProgram.CreateUniformTexture2D ("uni_texture")
+    member val Texture = shaderProgram.CreateUniformTexture2DVarying ("uni_texture")
 
     member val View = shaderProgram.CreateUniformMatrix4x4 ("uni_view")
 
@@ -348,7 +348,8 @@ module Pipeline =
                             let key = pair.Key
                             let (textureBuffer, meshManager) = pair.Value
 
-                            input.Texture.Set textureBuffer
+                            // TODO: generates garbage
+                            input.Texture.Set [|textureBuffer|]
                             input.TextureResolution.Set (Vector2 (single textureBuffer.Width, single textureBuffer.Height))
 
                             input.Time.Set context.Time
