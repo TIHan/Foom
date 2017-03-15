@@ -34,57 +34,47 @@ type WadComponent (wadName: string) =
 module Behavior =
 
     let wadLoading (openWad: string -> Stream) f =
-        Behavior.handleEvent (fun (evt: Events.ComponentAdded<WadComponent>) _ entityManager ->
+        Behavior.handleComponentAdded (fun ent (wadComp: WadComponent) _ em ->
+            match wadComp.State with
+            | WadState.ReadyToLoad fileName ->
 
-            entityManager.TryGet<WadComponent> evt.Entity
-            |> Option.iter (fun wadComp ->
+                let wad = Wad.create (openWad fileName)
+                //let wad = Wad.extend (openWad "Untitled.wad") wad
+               // let wad = Wad.extend (openWad "sunder.wad") wad
+                wadComp.State <- WadState.Loaded wad
+                f wad em
 
-                match wadComp.State with
-                | WadState.ReadyToLoad fileName ->
-
-                    let wad = Wad.create (openWad fileName)
-                    //let wad = Wad.extend (openWad "Untitled.wad") wad
-                   // let wad = Wad.extend (openWad "sunder.wad") wad
-                    wadComp.State <- WadState.Loaded wad
-                    f wad entityManager
-
-                | _ -> ()
-            )
+            | _ -> ()
         )
 
     let levelLoading f =
-        Behavior.handleEvent (fun (evt: Events.ComponentAdded<LevelComponent>) _ entityManager ->
+        Behavior.handleComponentAdded (fun ent (levelComp: LevelComponent) _ em ->
+            match levelComp.State with
+            | LevelState.ReadyToLoad levelName ->
 
-            entityManager.TryGet<LevelComponent> evt.Entity
-            |> Option.iter (fun levelComp ->
+                match em.TryGet<WadComponent> ent with
+                | Some wadComp ->
 
-                match levelComp.State with
-                | LevelState.ReadyToLoad levelName ->
+                    match wadComp.State with
+                    | WadState.Loaded wad ->
+                  
+                        let level = Wad.findLevel levelName wad
+                        levelComp.State <- LevelState.Loaded level
+                        f wad level em
 
-                    match entityManager.TryGet<WadComponent> evt.Entity with
-                    | Some wadComp ->
-
-                        match wadComp.State with
-                        | WadState.Loaded wad ->
-                      
-                            let level = Wad.findLevel levelName wad
-                            levelComp.State <- LevelState.Loaded level
-                            f wad level entityManager
-
-                        | WadState.ReadyToLoad wadName ->
-
-                            Debug.WriteLine (
-                                String.Format ("Tried to load level, {0}, but WAD, {1}, is not loaded.", levelName, wadName)
-                            )
-                            entityManager.Remove<LevelComponent> evt.Entity
-
-                    | _ ->
+                    | WadState.ReadyToLoad wadName ->
 
                         Debug.WriteLine (
-                            String.Format ("Tried to load level, {0}, but no WAD found.", levelName)
+                            String.Format ("Tried to load level, {0}, but WAD, {1}, is not loaded.", levelName, wadName)
                         )
-                        entityManager.Remove<LevelComponent> evt.Entity
+                        em.Remove<LevelComponent> ent
 
-                | _ -> ()
-            )
+                | _ ->
+
+                    Debug.WriteLine (
+                        String.Format ("Tried to load level, {0}, but no WAD found.", levelName)
+                    )
+                    em.Remove<LevelComponent> ent
+
+            | _ -> ()
         )

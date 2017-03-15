@@ -75,10 +75,9 @@ let addRigidBodyBehavior (clientWorld: ClientWorld) : Behavior<float32 * float32
     Behavior.merge
         [
             // This should be part of a physics system.
-            Behavior.handleEvent (fun (evt: Events.ComponentAdded<CharacterControllerComponent>) _ em ->
+            Behavior.handleComponentAdded (fun ent (charContrComp: CharacterControllerComponent) _ em ->
                 opt {
-                    let! charContrComp = em.TryGet<CharacterControllerComponent> evt.Entity
-                    let! transformComp = em.TryGet<TransformComponent> evt.Entity
+                    let! transformComp = em.TryGet<TransformComponent> ent
                     let! physicsEngineComp = em.TryGet<PhysicsEngineComponent> clientWorld.Entity
 
                     physicsEngineComp.PhysicsEngine
@@ -88,10 +87,9 @@ let addRigidBodyBehavior (clientWorld: ClientWorld) : Behavior<float32 * float32
             )
 
             // This should be part of a physics system.
-            Behavior.handleEvent (fun (evt: Events.ComponentAdded<RigidBodyComponent>) _ em ->
+            Behavior.handleComponentAdded (fun ent (rbodyComp: RigidBodyComponent) _ em ->
                 opt {
-                    let! rbodyComp = em.TryGet<RigidBodyComponent> evt.Entity
-                    let! transformComp = em.TryGet<TransformComponent> evt.Entity
+                    let! transformComp = em.TryGet<TransformComponent> ent
                     let! physicsEngineComp = em.TryGet<PhysicsEngineComponent> clientWorld.Entity
 
                     physicsEngineComp.PhysicsEngine

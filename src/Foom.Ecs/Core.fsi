@@ -38,19 +38,19 @@ type Component =
 /// A marker for event data.
 type IEvent = interface end
 
+/// Published when a component was added to an existing entity.
+[<Sealed>]
+type ComponentAdded =
+
+    internal new : Entity * Component -> ComponentAdded
+
+    /// The entity the component was added to.
+    member Entity : Entity
+
+    member Component : Component
+
 /// Common events published by the Entity Manager.
 module Events = 
-
-    /// Published when a component was added to an existing entity.
-    [<Sealed>]
-    type ComponentAdded<'T when 'T :> Component> =
-
-        internal new : Entity -> ComponentAdded<'T>
-
-        /// The entity the component was added to.
-        member Entity : Entity
-
-        interface IEvent
 
     /// Published when a component was removed from an exsting entity.
     [<Sealed>]
@@ -124,3 +124,5 @@ type EventAggregator =
     member Publish<'T when 'T :> IEvent and 'T : not struct> : 'T -> unit
 
     member internal GetEvent<'T when 'T :> IEvent> : unit -> Event<'T>
+
+    member internal GetComponentAddedEvent : Type -> Event<ComponentAdded>

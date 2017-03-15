@@ -37,14 +37,14 @@ type Component () =
 
 type IEvent = interface end
 
+[<Sealed>]
+type ComponentAdded (ent: Entity, comp: Component) = 
+
+    member val Entity = ent
+
+    member val Component = comp
+
 module Events =
-
-    [<Sealed>]
-    type ComponentAdded<'T when 'T :> Component> (ent: Entity) = 
-
-        member this.Entity = ent
-
-        interface IEvent
 
     [<Sealed>]
     type ComponentRemoved<'T when 'T :> Component> (ent: Entity) = 
@@ -91,11 +91,15 @@ open Events
 type EventAggregator  =
     {
         Lookup: ConcurrentDictionary<Type, obj>
+
+        ComponentAddedLookup: Dictionary<Type, obj>
     }
 
     static member Create () =
         {
             Lookup = ConcurrentDictionary<Type, obj> ()
+
+            ComponentAddedLookup = Dictionary ()
         }
 
     member this.Publish (event: 'T when 'T :> IEvent and 'T : not struct) =
@@ -105,5 +109,14 @@ type EventAggregator  =
 
     member this.GetEvent<'T when 'T :> IEvent> () =
        this.Lookup.GetOrAdd (typeof<'T>, valueFactory = (fun _ -> Event<'T> () :> obj)) :?> Event<'T>
+
+    member this.GetComponentAddedEvent (t: Type) =
+        let mutable o = null
+        if (this.ComponentAddedLookup.TryGetValue (t, &o)) then
+            o :?> Event<ComponentAdded>
+        else
+            let e = Event<ComponentAdded> ()
+            this.ComponentAddedLookup.[t] <- e :> obj
+            e
 
     

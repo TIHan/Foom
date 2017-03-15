@@ -25,7 +25,7 @@ open Events
 [<ReferenceEquality>]
 type EntityLookupData<'T when 'T :> Component> =
     {
-        ComponentAddedEvent: Event<ComponentAdded<'T>>
+        ComponentAddedEvent: Event<ComponentAdded>
         ComponentRemovedEvent: Event<ComponentRemoved<'T>>
 
         RemoveComponent: Entity -> unit
@@ -127,7 +127,7 @@ type EntityManager =
             let factory t =
                 let data =
                     {
-                        ComponentAddedEvent = this.EventAggregator.GetEvent<ComponentAdded<'T>> ()
+                        ComponentAddedEvent = this.EventAggregator.GetComponentAddedEvent (typeof<'T>)
                         ComponentRemovedEvent = this.EventAggregator.GetEvent<ComponentRemoved<'T>> ()
 
                         RemoveComponent = fun entity -> this.Remove<'T> entity
@@ -253,7 +253,7 @@ type EntityManager =
                         data.Entities.Add entity
 
                         this.AnyComponentAddedEvent.Trigger (AnyComponentAdded (entity, typeof<'T>))
-                        data.ComponentAddedEvent.Trigger (ComponentAdded<'T> (entity))
+                        data.ComponentAddedEvent.Trigger (ComponentAdded (entity, comp))
             else
                 Debug.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot add component, {1}", entity, typeof<'T>.Name))
 
