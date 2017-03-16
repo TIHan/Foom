@@ -38,7 +38,7 @@ type Component () =
 type IEvent = interface end
 
 [<Sealed>]
-type ComponentAdded (ent: Entity, comp: Component) = 
+type ComponentAdded<'T when 'T :> Component> (ent: Entity, comp: 'T) = 
 
     member val Entity = ent
 
@@ -110,12 +110,13 @@ type EventAggregator  =
     member this.GetEvent<'T when 'T :> IEvent> () =
        this.Lookup.GetOrAdd (typeof<'T>, valueFactory = (fun _ -> Event<'T> () :> obj)) :?> Event<'T>
 
-    member this.GetComponentAddedEvent (t: Type) =
+    member this.GetComponentAddedEvent<'T when 'T :> Component> () =
+        let t = typeof<'T>
         let mutable o = null
         if (this.ComponentAddedLookup.TryGetValue (t, &o)) then
-            o :?> Event<ComponentAdded>
+            o :?> Event<ComponentAdded<'T>>
         else
-            let e = Event<ComponentAdded> ()
+            let e = Event<ComponentAdded<'T>> ()
             this.ComponentAddedLookup.[t] <- e :> obj
             e
 

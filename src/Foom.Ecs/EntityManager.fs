@@ -25,7 +25,7 @@ open Events
 [<ReferenceEquality>]
 type EntityLookupData<'T when 'T :> Component> =
     {
-        ComponentAddedEvent: Event<ComponentAdded>
+        ComponentAddedEvent: Event<ComponentAdded<'T>>
         ComponentRemovedEvent: Event<ComponentRemoved<'T>>
 
         RemoveComponent: Entity -> unit
@@ -127,7 +127,7 @@ type EntityManager =
             let factory t =
                 let data =
                     {
-                        ComponentAddedEvent = this.EventAggregator.GetComponentAddedEvent (typeof<'T>)
+                        ComponentAddedEvent = this.EventAggregator.GetComponentAddedEvent<'T> ()
                         ComponentRemovedEvent = this.EventAggregator.GetEvent<ComponentRemoved<'T>> ()
 
                         RemoveComponent = fun entity -> this.Remove<'T> entity
