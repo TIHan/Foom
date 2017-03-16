@@ -44,8 +44,9 @@ type EntityLookupData<'T when 'T :> Component> =
 
         member this.GetComponent index = this.Components.Buffer.[index] :> Component
 
-[<ReferenceEquality>]
-type EntityManager =
+type EntityBuilder = EntityBuilder of (Entity -> EntityManager -> unit)
+
+and [<ReferenceEquality>] EntityManager =
     {
         EventAggregator: EventAggregator
 
@@ -307,6 +308,13 @@ type EntityManager =
 
             entity
 
+    member this.Spawn (entBuilder: EntityBuilder) =
+        match entBuilder with
+        | EntityBuilder f ->
+            let ent = this.Spawn ()
+            f ent this
+            ent
+
     member this.Destroy (entity: Entity) =
         if this.CurrentIterations > 0 then
             this.PendingQueue.Enqueue (fun () -> this.Destroy entity)
@@ -423,3 +431,16 @@ type EntityManager =
         item
 
     member this.MaxNumberOfEntities = this.MaxEntityAmount - 1
+
+[<AutoOpen>]
+module EntityBuilderModule =
+
+    let entity = EntityBuilder (fun _ _ -> ())
+
+    let (==>) (entBuilder: EntityBuilder) (comp: 'T when 'T :> Component) =
+        match entBuilder with
+        | EntityBuilder f ->
+            EntityBuilder (fun ent em ->
+                f ent em
+                em.Add<'T> (ent, comp)
+            )

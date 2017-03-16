@@ -339,7 +339,7 @@ let updates (clientWorld: ClientWorld) =
 
                     match thing.Type with
 
-                    | ThingType.ArmorBonus -> ArmorBonus.spawn position em |> ignore 
+                    | ThingType.ArmorBonus -> ArmorBonus.spawn position |> em.Spawn |> ignore 
 
                     | ThingType.GreenArmor -> GreenArmor.spawn position em |> ignore
 

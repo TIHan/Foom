@@ -5,6 +5,9 @@ open System.Runtime.InteropServices
 
 #nowarn "9"
 
+[<Sealed>]
+type EntityBuilder
+
 /// Responsible for querying/adding/removing components and spawning/destroying entities.
 [<Sealed>]
 type EntityManager =
@@ -54,7 +57,17 @@ type EntityManager =
 
     member Spawn : unit -> Entity
 
+    member Spawn : EntityBuilder -> Entity
+
     /// Defers to destroy the specified Entity.
     member Destroy : Entity -> unit
 
     member MaxNumberOfEntities : int
+
+[<AutoOpen>]
+module EntityBuilderModule =
+
+    val entity : EntityBuilder
+
+    val (==>) : EntityBuilder -> #Component -> EntityBuilder
+ 

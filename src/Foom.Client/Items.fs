@@ -14,15 +14,12 @@ module ArmorBonus =
 
     let texture = Texture (TextureKind.Multi [ "BON2A0.bmp"; "BON2B0.bmp"; "BON2C0.bmp"; "BON2D0.bmp" ])
 
-    let spawn position (em: EntityManager) =
-
-        let ent = em.Spawn ()
-        em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(position)))
-        em.Add (ent, SpriteComponent ("World", texture, 255))
-        let interval = TimeSpan.FromSeconds(1.)
-        em.Add (ent, SpriteAnimationComponent (interval, [ 0; 1; 2; 3; 2; 1 ]))
-        em.Add (ent, RigidBodyComponent(position, 20.f, 16.f))
-        ent
+    let spawn position =
+        entity
+            ==> TransformComponent (Matrix4x4.CreateTranslation (position))
+            ==> SpriteComponent ("World", texture, 255)
+            ==> SpriteAnimationComponent (TimeSpan.FromSeconds 1., [ 0; 1; 2; 3; 2; 1 ])
+            ==> RigidBodyComponent (position, 20.f, 16.f)
 
 module GreenArmor =
 
