@@ -41,6 +41,8 @@ type DesktopServer () =
 
     let buffer = Array.zeroCreate<byte> 65536
 
+    let mutable reliableStringSequence = 0us
+
     interface IServer with
 
         member this.Start () =
@@ -91,12 +93,16 @@ type DesktopServer () =
 
         member this.BroadcastReliableString str =
             let bytes = System.Text.Encoding.UTF8.GetBytes (str)
-            let bytes = Array.append [| byte ServerMessage.ReliableString |] bytes 
+            let seqBytes = BitConverter.GetBytes (reliableStringSequence)
+            let bytes = Array.append seqBytes bytes 
+            let bytes = Array.append [| byte ServerMessage.ReliableString |] bytes
             lookup
             |> Seq.iter (fun pair ->
                 let (endpoint, connectedClient) = pair.Value
                 udp.Send (bytes, bytes.Length, endpoint :?> IPEndPoint) |> ignore
             )
+
+            reliableStringSequence <- reliableStringSequence + 1us
 
     interface IDisposable with
 
@@ -139,7 +145,7 @@ type DesktopClient () =
                     match Microsoft.FSharp.Core.LanguagePrimitives.EnumOfValue<byte, ServerMessage> (a) with
                     | ServerMessage.ReliableString ->
 
-                        let packet = DesktopPacket (buffer, 1, bytes - 1) :> IPacket
+                        let packet = DesktopPacket (buffer, 3, bytes - 3) :> IPacket
                         serverPacketReceived.Trigger (packet)
 
                     | _ -> ()
