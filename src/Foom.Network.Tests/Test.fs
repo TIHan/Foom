@@ -33,10 +33,10 @@ type Test() =
         use client = new DesktopClient () :> IClient
 
         let mutable str = ""
-        server.ClientPacketReceived.Add (fun (_, packet) ->
+        client.ServerPacketReceived.Add (fun (packet) ->
             str <- packet.ReadReliableString ()
-            if str.Equals ("reliablestring") then
-                failwith "wut ups"
+            //if str.Equals ("reliablestring") then
+            //    failwith "wut ups"
         )
 
         server.Start () 
@@ -46,12 +46,14 @@ type Test() =
         |> Async.RunSynchronously
         |> ignore
 
-        for i = 1 to 10000 do
-            client.SendReliableString ("wrong;")
-
-        client.SendReliableString ("reliablestring")
-
         server.Heartbeat ()
+
+        for i = 1 to 1000 do
+            server.BroadcastReliableString ("wrong;")
+
+        server.BroadcastReliableString ("reliablestring")
+
+        client.Heartbeat ()
 
         let same = str = "reliablestring"
         Assert.True (same)

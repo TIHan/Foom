@@ -8,8 +8,6 @@ type IPacket =
 
 type IConnectedClient =
 
-    abstract Id : int
-
     abstract Address : string
 
 type IServer =
@@ -25,9 +23,13 @@ type IServer =
 
     abstract ClientPacketReceived : IEvent<IConnectedClient * IPacket>
 
+    abstract BroadcastReliableString : string -> unit
+
 type IClient =
     inherit IDisposable
 
     abstract Connect : string -> Async<bool>
 
-    abstract SendReliableString : string -> unit
+    abstract Heartbeat : unit -> unit
+
+    abstract ServerPacketReceived : IEvent<IPacket>
