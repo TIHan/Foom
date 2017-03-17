@@ -2,6 +2,16 @@
 
 open System
 
+type IPacket = 
+
+    abstract ReadReliableString : unit -> string
+
+type IConnectedClient =
+
+    abstract Id : int
+
+    abstract Address : string
+
 type IServer =
     inherit IDisposable
 
@@ -11,9 +21,13 @@ type IServer =
 
     abstract Heartbeat : unit -> unit
 
-    abstract ClientConnected : IEvent<string>
+    abstract ClientConnected : IEvent<IConnectedClient>
+
+    abstract ClientPacketReceived : IEvent<IConnectedClient * IPacket>
 
 type IClient =
     inherit IDisposable
 
     abstract Connect : string -> Async<bool>
+
+    abstract SendReliableString : string -> unit
