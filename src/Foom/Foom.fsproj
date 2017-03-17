@@ -116,6 +116,14 @@
       <HintPath>..\..\packages\System.Numerics.Vectors.4.3.0\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <ProjectReference Include="..\Foom.Network\Foom.Network.fsproj">
+      <Project>{A446D691-8F20-40BD-98AC-B5FB2EFD5D04}</Project>
+      <Name>Foom.Network</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Network.Desktop\Foom.Network.Desktop.fsproj">
+      <Project>{D916B23C-0D8F-4044-8C93-AF4DBAA7D3BE}</Project>
+      <Name>Foom.Network.Desktop</Name>
+    </ProjectReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
