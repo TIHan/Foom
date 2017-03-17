@@ -12,17 +12,6 @@ let world = World (65536)
 
 let start (invoke: Task ref) =
 
-    let server = DesktopServer () :> IServer
-    let client = DesktopClient () :> IClient
-
-    server.Start () 
-    |> ignore
-
-    client.Connect ("127.0.0.1") 
-    |> Async.RunSynchronously
-    |> ignore
-
-    server.Heartbeat ()
     let client = Client.init (world)
 
     let stopwatch = System.Diagnostics.Stopwatch ()
