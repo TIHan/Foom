@@ -35,6 +35,8 @@ type Test() =
         let mutable str = ""
         server.ClientPacketReceived.Add (fun (_, packet) ->
             str <- packet.ReadReliableString ()
+            if str.Equals ("reliablestring") then
+                failwith "wut ups"
         )
 
         server.Start () 

@@ -38,7 +38,7 @@ type DesktopServer () =
 
     let udp = new UdpClient (27015)
 
-    let lookup = Dictionary<IPAddress, EndPoint * IConnectedClient> ()
+    let lookup = Dictionary<IPAddress, EndPoint * DesktopConnectedClient> ()
 
     let buffer = Array.zeroCreate<byte> 65536
 
@@ -72,7 +72,7 @@ type DesktopServer () =
                         if not <| lookup.ContainsKey ipendpoint.Address then
                             udp.Send ([| byte ServerMessage.ConnectionEstablished |], 1, ipendpoint) |> ignore
 
-                            let connectedClient = DesktopConnectedClient (nextClientId, endpoint) :> IConnectedClient
+                            let connectedClient = DesktopConnectedClient (nextClientId, endpoint)
                             let tup = (endpoint, connectedClient)
                             lookup.[ipendpoint.Address] <- tup
 
@@ -83,7 +83,7 @@ type DesktopServer () =
                         match lookup.TryGetValue ipendpoint.Address with
                         | true, (endpoint, connectedClient) ->
                             let packet = DesktopPacket (buffer, 1, bytes - 1) :> IPacket
-                            clientPacketReceived.Trigger (connectedClient, packet)
+                            clientPacketReceived.Trigger (connectedClient :> IConnectedClient, packet)
                         | _ -> ()
 
                     | _ -> ()
