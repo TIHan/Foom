@@ -10,9 +10,12 @@ open Foom.Network
 type Test() = 
 
     [<Test>]
-    member x.TestCase() =
-        let server = DesktopServer () :> IServer
-        let client = DesktopClient () :> IClient
+    member x.StartClientAndServer () =
+        use server = new DesktopServer () :> IServer
+        use client = new DesktopClient () :> IClient
+
+        let mutable str = ""
+        server.ClientConnected.Add (fun s -> str <- s)
 
         server.Start () 
         |> ignore
@@ -22,4 +25,4 @@ type Test() =
         |> ignore
 
         server.Heartbeat ()
-
+        Assert.True (str.Contains("127.0.0.1"))

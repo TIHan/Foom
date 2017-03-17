@@ -6,20 +6,41 @@ open System.Net.Sockets
 
 type DesktopServer () =
 
+    let clientConnected = Event<string> ()
     let sockets = ResizeArray<Socket> ()
-    let tcp = new TcpListener (IPAddress.Any, 27015)
+    let tcp = TcpListener (IPAddress.Any, 27015)
 
     interface IServer with
 
         member this.Start () =
+            printfn "Starting server..."
+
             tcp.Start ()
-            true
+
+        member this.Stop () =
+            printfn "Stopping server..."
+
+            tcp.Stop ()
 
         member this.Heartbeat () =
             if tcp.Pending () then
                 let socket = tcp.AcceptSocket ()
-                printfn "Client connected: %A" socket.RemoteEndPoint
                 sockets.Add socket
+                clientConnected.Trigger (socket.RemoteEndPoint.ToString ())
+
+        member val ClientConnected = clientConnected.Publish
+
+    interface IDisposable with
+
+        member this.Dispose () =
+            (this :> IServer).Stop ()
+            sockets
+            |> Seq.iter (fun s ->
+                s.Close ()
+                s.Dispose ()
+            )
+            sockets.Clear ()
+
 
 type DesktopClient () =
 
@@ -33,5 +54,11 @@ type DesktopClient () =
                 do! tcp.ConnectAsync (address, 27015) |> Async.AwaitTask
                 return true
             }
+
+    interface IDisposable with
+
+        member this.Dispose () =
+            tcp.Close ()
+            (tcp :> IDisposable).Dispose ()
 
             
