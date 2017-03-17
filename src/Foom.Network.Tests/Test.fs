@@ -35,9 +35,6 @@ type Test() =
         let mutable str = ""
         server.ClientPacketReceived.Add (fun (_, packet) ->
             str <- packet.ReadReliableString ()
-            str <-
-                str.Split ([|';'|])
-                |> Array.last
         )
 
         server.Start () 

@@ -5,7 +5,7 @@ open System.Net
 open System.Net.Sockets
 open System.Collections.Generic
 
-type DesktopPacket (count: int, buffer: byte []) =
+type DesktopPacket (buffer, index, count) =
 
     member val Count = count
 
@@ -14,24 +14,31 @@ type DesktopPacket (count: int, buffer: byte []) =
     interface IPacket with
 
         member this.ReadReliableString () =
-            System.Text.Encoding.UTF8.GetString(buffer, 0, count)
+            System.Text.Encoding.UTF8.GetString(buffer, index, count)
 
-type DesktopConnectedClient (id: int, socket: Socket) =
+type DesktopConnectedClient (id: int, endpoint: EndPoint) =
 
     interface IConnectedClient with
 
         member this.Id = id
 
-        member this.Address = socket.RemoteEndPoint.ToString ()
+        member this.Address = endpoint.ToString ()
+
+type ClientMessage =
+    | ConnectionRequested = 0uy
+    | ReliableString = 1uy
+
+type ServerMessage =
+    | ConnectionEstablished = 0uy
        
 type DesktopServer () =
 
     let clientConnected = Event<IConnectedClient> ()
     let clientPacketReceived = Event<IConnectedClient * IPacket> ()
 
-    let tcp = TcpListener (IPAddress.Any, 27015)
+    let udp = new UdpClient (27015)
 
-    let lookup = Dictionary<int, Socket * IConnectedClient> ()
+    let lookup = Dictionary<IPAddress, EndPoint * IConnectedClient> ()
 
     let buffer = Array.zeroCreate<byte> 65536
 
@@ -42,32 +49,44 @@ type DesktopServer () =
         member this.Start () =
             printfn "Starting server..."
 
-            tcp.Start ()
+           // tcp.Start ()
 
         member this.Stop () =
             printfn "Stopping server..."
 
-            tcp.Stop ()
+            //tcp.Stop ()
 
         member this.Heartbeat () =
-            if tcp.Pending () then
-                let socket = tcp.AcceptSocket ()
-                let connectedClient = DesktopConnectedClient (nextClientId, socket) :> IConnectedClient
+            while udp.Available > 0 do
+                let ipendpoint = IPEndPoint (IPAddress.Any, 0)
+                let mutable endpoint = ipendpoint :> EndPoint
+                let bytes = udp.Client.ReceiveFrom (buffer, &endpoint)
+                let ipendpoint : IPEndPoint = downcast endpoint
 
-                lookup.[nextClientId] <- (socket, connectedClient)
-                clientConnected.Trigger (connectedClient)
-                nextClientId <- nextClientId + 1
+                if bytes > 0 then
+                    let a = buffer.[0]
 
-            lookup
-            |> Seq.iter (fun pair ->
-                let (s, connectedClient) = pair.Value
-                if s.Connected && s.Poll (0, SelectMode.SelectRead) then
-                    let mutable endpoint = s.RemoteEndPoint
-                    let bytes = s.ReceiveFrom (buffer, &endpoint)
-                    if bytes > 0 then
-                        let packet = DesktopPacket (bytes, buffer) :> IPacket
-                        clientPacketReceived.Trigger (connectedClient, packet)
-            )
+                    match Microsoft.FSharp.Core.LanguagePrimitives.EnumOfValue<byte, ClientMessage> (a) with
+                    | ClientMessage.ConnectionRequested -> 
+
+                        if not <| lookup.ContainsKey ipendpoint.Address then
+                            udp.Send ([| byte ServerMessage.ConnectionEstablished |], 1, ipendpoint) |> ignore
+
+                            let connectedClient = DesktopConnectedClient (nextClientId, endpoint) :> IConnectedClient
+                            let tup = (endpoint, connectedClient)
+                            lookup.[ipendpoint.Address] <- tup
+
+                            clientConnected.Trigger (connectedClient)
+
+                    | ClientMessage.ReliableString ->
+
+                        match lookup.TryGetValue ipendpoint.Address with
+                        | true, (endpoint, connectedClient) ->
+                            let packet = DesktopPacket (buffer, 1, bytes - 1) :> IPacket
+                            clientPacketReceived.Trigger (connectedClient, packet)
+                        | _ -> ()
+
+                    | _ -> ()
 
         member val ClientConnected = clientConnected.Publish
 
@@ -76,39 +95,35 @@ type DesktopServer () =
     interface IDisposable with
 
         member this.Dispose () =
+            udp.Close ()
+            (udp :> IDisposable).Dispose ()
             (this :> IServer).Stop ()
-            lookup
-            |> Seq.iter (fun pair ->
-                let (s, _) = pair.Value
-                s.Close ()
-                s.Dispose ()
-            )
             lookup.Clear ()
 
 
 type DesktopClient () =
 
-    let tcp = new TcpClient ()
+    let udp = new UdpClient ()
 
     interface IClient with
 
         member this.Connect ip =
             async {
                 let address = IPAddress.Parse ip
-                do! tcp.ConnectAsync (address, 27015) |> Async.AwaitTask
+                udp.Connect (IPEndPoint (address, 27015))
+                udp.Send ([| byte ClientMessage.ConnectionRequested |], 1) |> ignore
                 return true
             }
 
         member this.SendReliableString msg =
-            let stream = tcp.GetStream ()
 
             let bytes = System.Text.Encoding.UTF8.GetBytes (msg)
-            stream.Write (bytes, 0, bytes.Length)
+            udp.Send (Array.append [| byte ClientMessage.ReliableString |]bytes, 1 + bytes.Length) |> ignore
 
     interface IDisposable with
 
         member this.Dispose () =
-            tcp.Close ()
-            (tcp :> IDisposable).Dispose ()
+            udp.Close ()
+            (udp :> IDisposable).Dispose ()
 
             
