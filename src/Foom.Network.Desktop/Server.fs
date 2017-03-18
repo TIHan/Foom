@@ -84,11 +84,15 @@ type DesktopServer () =
         member val Received = received.Publish
 
         member this.BroadcastReliableString str =
+            (this :> IServer).DebugBroadcastReliableString (str, reliableStringSequence)
+            reliableStringSequence <- reliableStringSequence + 1us
+
+        member this.DebugBroadcastReliableString (str, n) =
             writerms.Position <- 0L
             writerms.SetLength (0L)
 
             writer.Write (byte ServerMessageType.ReliableOrder)
-            writer.Write (reliableStringSequence)
+            writer.Write (n)
             writer.Write (str)
 
             lookup
@@ -96,8 +100,6 @@ type DesktopServer () =
                 let (endpoint, connectedClient) = pair.Value
                 udp.Send (writerms.GetBuffer (), int writerms.Length, endpoint :?> IPEndPoint) |> ignore
             )
-
-            reliableStringSequence <- reliableStringSequence + 1us
 
     interface IDisposable with
 
@@ -117,7 +119,6 @@ type DesktopClient () =
     let reader = new BinaryReader (ms)
     let mutable reliableSeqN = 0us
 
-    let reliableSizes = Array.zeroCreate<int> 65536
     let reliablePositions = Array.zeroCreate<int> 65536
     let reliableExists = Array.zeroCreate<bool> 65536
 
@@ -145,7 +146,7 @@ type DesktopClient () =
 
                 let mutable endpoint = mainEndpoint :> EndPoint
                 let buffer = ms.GetBuffer ()
-                let bytes = udp.Client.ReceiveFrom (buffer, &endpoint)
+                let bytes = udp.Client.ReceiveFrom (buffer, int ms.Position, 1024, SocketFlags.None, &endpoint)
 
                 if bytes > 0 then
                     let a = reader.ReadByte ()
@@ -156,11 +157,11 @@ type DesktopClient () =
                         let seqN = reader.ReadUInt16 ()
 
                         reliableExists.[int seqN] <- true
-                        reliableSizes.[int seqN] <- bytes - 3 // 3 is the header size
                         reliablePositions.[int seqN] <- int ms.Position
                         ms.Position <- ms.Position + int64 (bytes - 3)
 
-                        maxSeqN <- seqN
+                        if seqN > maxSeqN || seqN < startSeqN then
+                            maxSeqN <- seqN
                     | _ -> ()
 
             let mutable hasMoreData = false
@@ -178,8 +179,7 @@ type DesktopClient () =
                 let exists = reliableExists.[i]
                 if exists && not missingPackets then
                     reliableExists.[i] <- false
-                    let size = reliableSizes.[i]
-                    let position = reliableSizes.[i]
+                    let position = reliablePositions.[i]
 
                     ms.Position <- int64 position
                     received.Trigger (reader)
@@ -192,11 +192,11 @@ type DesktopClient () =
                     let exists = reliableExists.[i]
                     if exists && not missingPackets then
                         reliableExists.[i] <- false
-                        let size = reliableSizes.[i]
-                        let position = reliableSizes.[i]
+                        let position = reliablePositions.[i]
 
                         ms.Position <- int64 position
                         received.Trigger (reader)
+                        reliableSeqN <- uint16 i
                     else
                         missingPackets <- true
 

@@ -30,6 +30,8 @@ type IServer =
 
     abstract BroadcastReliableString : string -> unit
 
+    abstract DebugBroadcastReliableString : string * uint16 -> unit
+
 type IClient =
     inherit IDisposable
 

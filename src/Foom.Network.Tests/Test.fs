@@ -48,10 +48,10 @@ type Test() =
 
         server.Heartbeat ()
 
-        //for i = 1 to 4 do
-        server.BroadcastReliableString ("wrong")
+        server.DebugBroadcastReliableString ("reliablestring", 1001us)
 
-        server.BroadcastReliableString ("reliablestring")
+        for i = 0 to 1000 do
+            server.DebugBroadcastReliableString ("wrongwrong", uint16 i)
 
         client.Heartbeat ()
 
