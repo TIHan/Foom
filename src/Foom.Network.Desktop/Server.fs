@@ -114,10 +114,15 @@ type DesktopClient () =
     let udp = new UdpClient ()
     let received = Event<BinaryReader> ()
 
+    let packetBuffer = Array.zeroCreate<byte> 1024
+    let packetStream = new MemoryStream (packetBuffer)
+    let packetReader = new BinaryReader (packetStream)
+
     // reliable
-    let ms = new MemoryStream (65536)
-    let reader = new BinaryReader (ms)
     let mutable reliableSeqN = 0us
+    let reliableStream = new MemoryStream (65536)
+    let reliableReader = new BinaryReader (reliableStream)
+    let reliableWriter = new BinaryWriter (reliableStream)
 
     let reliablePositions = Array.zeroCreate<int> 65536
     let reliableExists = Array.zeroCreate<bool> 65536
@@ -136,32 +141,41 @@ type DesktopClient () =
             }
 
         member this.Heartbeat () =
-            reader.BaseStream.Position <- 0L
-            ms.SetLength (65536L)
+            packetStream.SetLength (1024L)
+            reliableStream.SetLength (65536L)
 
             let mutable startSeqN = reliableSeqN
             let mutable maxSeqN = reliableSeqN
 
             while udp.Available > 0 do
+                packetStream.Position <- 0L
 
                 let mutable endpoint = mainEndpoint :> EndPoint
-                let buffer = ms.GetBuffer ()
-                let bytes = udp.Client.ReceiveFrom (buffer, int ms.Position, 1024, SocketFlags.None, &endpoint)
+                let bytes = udp.Client.ReceiveFrom (packetBuffer, &endpoint)
 
                 if bytes > 0 then
-                    let a = reader.ReadByte ()
+                    let a = packetReader.ReadByte ()
 
                     match Microsoft.FSharp.Core.LanguagePrimitives.EnumOfValue<byte, ServerMessageType> (a) with
                     | ServerMessageType.ReliableOrder ->
 
-                        let seqN = reader.ReadUInt16 ()
+                        let seqN = packetReader.ReadUInt16 ()
 
                         if reliableExists.[int seqN] then
                             failwith "we have looped all the way around 65536"
 
+                        let count = bytes - 3
+
+                        if int reliableStream.Position + bytes >= 65536 then
+                            failwith "we are over the stream, handle this later"
+
+                        reliablePositions.[int seqN] <- int reliableStream.Position
                         reliableExists.[int seqN] <- true
-                        reliablePositions.[int seqN] <- int ms.Position
-                        ms.Position <- ms.Position + int64 (bytes - 3)
+
+
+                        Buffer.BlockCopy (packetBuffer, 3, reliableStream.GetBuffer (), int reliableStream.Position, count)
+                        reliableStream.Position <- reliableStream.Position + int64 count
+
 
                         if seqN > maxSeqN || seqN < startSeqN then
                             maxSeqN <- seqN
@@ -184,8 +198,8 @@ type DesktopClient () =
                     reliableExists.[i] <- false
                     let position = reliablePositions.[i]
 
-                    ms.Position <- int64 position
-                    received.Trigger (reader)
+                    reliableStream.Position <- int64 position
+                    received.Trigger (reliableReader)
                     reliableSeqN <- uint16 i
                 else
                     missingPackets <- true
@@ -197,8 +211,8 @@ type DesktopClient () =
                         reliableExists.[i] <- false
                         let position = reliablePositions.[i]
 
-                        ms.Position <- int64 position
-                        received.Trigger (reader)
+                        reliableStream.Position <- int64 position
+                        received.Trigger (reliableReader)
                         reliableSeqN <- uint16 i
                     else
                         missingPackets <- true
@@ -209,10 +223,6 @@ type DesktopClient () =
 
         member this.Dispose () =
             udp.Close ()
-            reader.Close ()
-            reader.Dispose ()
-            ms.Close ()
-            ms.Dispose ()
             (udp :> IDisposable).Dispose ()
 
             
