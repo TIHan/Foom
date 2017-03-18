@@ -1,10 +1,15 @@
 ﻿namespace Foom.Network
 
 open System
+open System.IO
 
-type IPacket = 
+type ServerMessageType =
+    | ConnectionEstablished = 0uy
+    | ReliableOrder = 1uy
 
-    abstract ReadReliableString : unit -> string
+type ClientMessageType =
+    | ConnectionRequested = 0uy
+    | AckReliableOrder = 1uy
 
 type IConnectedClient =
 
@@ -21,7 +26,7 @@ type IServer =
 
     abstract ClientConnected : IEvent<IConnectedClient>
 
-    abstract ClientPacketReceived : IEvent<IConnectedClient * IPacket>
+    abstract Received : IEvent<IConnectedClient * BinaryReader>
 
     abstract BroadcastReliableString : string -> unit
 
@@ -32,4 +37,4 @@ type IClient =
 
     abstract Heartbeat : unit -> unit
 
-    abstract ServerPacketReceived : IEvent<IPacket>
+    abstract Received : IEvent<BinaryReader>

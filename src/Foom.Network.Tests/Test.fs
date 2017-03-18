@@ -33,8 +33,8 @@ type Test() =
         use client = new DesktopClient () :> IClient
 
         let mutable str = ""
-        client.ServerPacketReceived.Add (fun (packet) ->
-            str <- packet.ReadReliableString ()
+        client.Received.Add (fun (reader) ->
+            str <- reader.ReadString ()
             //if str.Equals ("reliablestring") then
             //    failwith "wut ups"
         )
@@ -48,8 +48,8 @@ type Test() =
 
         server.Heartbeat ()
 
-        for i = 1 to 1000 do
-            server.BroadcastReliableString ("wrong;")
+       // for i = 1 to 2 do
+//            server.BroadcastReliableString ("wrong;")
 
         server.BroadcastReliableString ("reliablestring")
 

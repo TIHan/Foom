@@ -1,39 +1,21 @@
 ﻿namespace Foom.Network
 
 open System
+open System.IO
 open System.Net
 open System.Net.Sockets
 open System.Collections.Generic
-
-type DesktopPacket (buffer, index, count) =
-
-    member val Count = count
-
-    member val Buffer = buffer
-
-    interface IPacket with
-
-        member this.ReadReliableString () =
-            System.Text.Encoding.UTF8.GetString(buffer, index, count)
 
 type DesktopConnectedClient (endpoint: EndPoint) =
 
     interface IConnectedClient with
 
         member this.Address = endpoint.ToString ()
-
-type ClientMessage =
-    | ConnectionRequested = 0uy
-    //| ReliableString = 1uy
-
-type ServerMessage =
-    | ConnectionEstablished = 0uy
-    | ReliableString = 1uy
        
 type DesktopServer () =
 
     let clientConnected = Event<IConnectedClient> ()
-    let clientPacketReceived = Event<IConnectedClient * IPacket> ()
+    let received = Event<IConnectedClient * BinaryReader> ()
 
     let udp = new UdpClient (27015)
 
@@ -65,11 +47,11 @@ type DesktopServer () =
                 if bytes > 0 then
                     let a = buffer.[0]
 
-                    match Microsoft.FSharp.Core.LanguagePrimitives.EnumOfValue<byte, ClientMessage> (a) with
-                    | ClientMessage.ConnectionRequested -> 
+                    match Microsoft.FSharp.Core.LanguagePrimitives.EnumOfValue<byte, ClientMessageType> (a) with
+                    | ClientMessageType.ConnectionRequested -> 
 
                         if not <| lookup.ContainsKey ipendpoint.Address then
-                            udp.Send ([| byte ServerMessage.ConnectionEstablished |], 1, ipendpoint) |> ignore
+                            udp.Send ([| byte ServerMessageType.ConnectionEstablished |], 1, ipendpoint) |> ignore
 
                             let connectedClient = DesktopConnectedClient (endpoint)
                             let tup = (endpoint, connectedClient)
@@ -89,13 +71,13 @@ type DesktopServer () =
 
         member val ClientConnected = clientConnected.Publish
 
-        member val ClientPacketReceived = clientPacketReceived.Publish
+        member val Received = received.Publish
 
         member this.BroadcastReliableString str =
             let bytes = System.Text.Encoding.UTF8.GetBytes (str)
             let seqBytes = BitConverter.GetBytes (reliableStringSequence)
             let bytes = Array.append seqBytes bytes 
-            let bytes = Array.append [| byte ServerMessage.ReliableString |] bytes
+            let bytes = Array.append [| byte ServerMessageType.ReliableOrder |] bytes
             lookup
             |> Seq.iter (fun pair ->
                 let (endpoint, connectedClient) = pair.Value
@@ -116,10 +98,9 @@ type DesktopServer () =
 type DesktopClient () =
 
     let udp = new UdpClient ()
-
-    let buffer = Array.zeroCreate<byte> 65536
-
-    let serverPacketReceived = Event<IPacket> ()
+    let ms = new MemoryStream (65536)
+    let reader = new BinaryReader (ms)
+    let received = Event<BinaryReader> ()
 
     let mutable mainEndpoint = null
 
@@ -130,32 +111,40 @@ type DesktopClient () =
                 let address = IPAddress.Parse ip
                 mainEndpoint <- IPEndPoint (address, 27015)
                 udp.Connect (mainEndpoint)
-                udp.Send ([| byte ClientMessage.ConnectionRequested |], 1) |> ignore
+                udp.Send ([| byte ClientMessageType.ConnectionRequested |], 1) |> ignore
                 return true
             }
 
         member this.Heartbeat () =
+           // reader.BaseStream.Position <- 0L
+
             while udp.Available > 0 do
+                reader.BaseStream.Position <- 0L
                 let mutable endpoint = mainEndpoint :> EndPoint
-                let bytes = udp.Client.ReceiveFrom (buffer, &endpoint)
+                let bytes = udp.Client.ReceiveFrom (ms.GetBuffer (), &endpoint)
+                ms.SetLength (int64 bytes)
 
                 if bytes > 0 then
-                    let a = buffer.[0]
+                    let a = reader.ReadByte ()
 
-                    match Microsoft.FSharp.Core.LanguagePrimitives.EnumOfValue<byte, ServerMessage> (a) with
-                    | ServerMessage.ReliableString ->
+                    match Microsoft.FSharp.Core.LanguagePrimitives.EnumOfValue<byte, ServerMessageType> (a) with
+                    | ServerMessageType.ReliableOrder ->
+                        let seqN = reader.ReadUInt16 ()
 
-                        let packet = DesktopPacket (buffer, 3, bytes - 3) :> IPacket
-                        serverPacketReceived.Trigger (packet)
+                        received.Trigger (reader)
 
                     | _ -> ()
 
-        member val ServerPacketReceived = serverPacketReceived.Publish
+        member val Received = received.Publish
 
     interface IDisposable with
 
         member this.Dispose () =
             udp.Close ()
+            reader.Close ()
+            reader.Dispose ()
+            ms.Close ()
+            ms.Dispose ()
             (udp :> IDisposable).Dispose ()
 
             
