@@ -21,10 +21,8 @@ type DesktopServer () =
 
     let lookup = Dictionary<IPAddress, EndPoint * DesktopConnectedClient> ()
 
-    let readerms = new MemoryStream (65536)
-    let reader = new BinaryReader (readerms)
-    let writerms = new MemoryStream (65536)
-    let writer = new BinaryWriter (writerms)
+    let outgoingReliableStream = new ByteStream (65536)
+    let incomingReliableStream = new ByteStream (65536)
 
     let mutable reliableStringSequence = 0us
 
@@ -41,21 +39,21 @@ type DesktopServer () =
             //tcp.Stop ()
 
         member this.Heartbeat () =
-            writerms.Position <- 0L
-            writerms.SetLength (0L)
+            outgoingReliableStream.Position <- 0L
+            outgoingReliableStream.SetLength 0L
 
             while udp.Available > 0 do
-                readerms.Position <- 0L
-                readerms.SetLength (1024L)
+                incomingReliableStream.Position <- 0L
+                incomingReliableStream.SetLength 1024L
 
                 let ipendpoint = IPEndPoint (IPAddress.Any, 0)
                 let mutable endpoint = ipendpoint :> EndPoint
-                let bytes = udp.Client.ReceiveFrom (readerms.GetBuffer (), &endpoint)
+                let bytes = udp.Client.ReceiveFrom (incomingReliableStream.Buffer, &endpoint)
                 let ipendpoint : IPEndPoint = downcast endpoint
-                readerms.SetLength (int64 bytes)
+                incomingReliableStream.SetLength (int64 bytes)
 
                 if bytes > 0 then
-                    let a = reader.ReadByte ()
+                    let a = incomingReliableStream.Reader.ReadByte ()
 
                     match Microsoft.FSharp.Core.LanguagePrimitives.EnumOfValue<byte, ClientMessageType> (a) with
                     | ClientMessageType.ConnectionRequested -> 
@@ -88,8 +86,9 @@ type DesktopServer () =
             reliableStringSequence <- reliableStringSequence + 1us
 
         member this.DebugBroadcastReliableString (str, n) =
-            writerms.Position <- 0L
-            writerms.SetLength (0L)
+            outgoingReliableStream.Position <- 0L
+            outgoingReliableStream.SetLength (0L)
+            let writer = outgoingReliableStream.Writer
 
             writer.Write (byte ServerMessageType.ReliableOrder)
             writer.Write (n)
@@ -98,7 +97,7 @@ type DesktopServer () =
             lookup
             |> Seq.iter (fun pair ->
                 let (endpoint, connectedClient) = pair.Value
-                udp.Send (writerms.GetBuffer (), int writerms.Length, endpoint :?> IPEndPoint) |> ignore
+                udp.Send (outgoingReliableStream.Buffer, int outgoingReliableStream.Length, endpoint :?> IPEndPoint) |> ignore
             )
 
     interface IDisposable with

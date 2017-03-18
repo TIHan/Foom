@@ -3,6 +3,35 @@
 open System
 open System.IO
 
+type ByteStream (size) =
+
+    let buffer = Array.zeroCreate<byte> size
+    let ms = new MemoryStream (buffer)
+    let reader = new BinaryReader (ms)
+    let writer = new BinaryWriter (ms)
+
+    member this.Buffer = buffer
+
+    member this.Reader = reader
+
+    member this.Writer = writer
+
+    member this.Position
+        with get () = ms.Position
+        and set position = ms.Position <- position
+
+    member this.SetLength value =
+        ms.SetLength (value)
+
+    member this.Length = ms.Length
+
+    interface IDisposable with
+        
+        member this.Dispose () =
+            reader.Dispose ()
+            writer.Dispose ()
+            ms.Dispose ()
+
 type ServerMessageType =
     | ConnectionEstablished = 0uy
     | ReliableOrder = 1uy
