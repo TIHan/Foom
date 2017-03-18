@@ -156,6 +156,9 @@ type DesktopClient () =
 
                         let seqN = reader.ReadUInt16 ()
 
+                        if reliableExists.[int seqN] then
+                            failwith "we have looped all the way around 65536"
+
                         reliableExists.[int seqN] <- true
                         reliablePositions.[int seqN] <- int ms.Position
                         ms.Position <- ms.Position + int64 (bytes - 3)
