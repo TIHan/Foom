@@ -2,6 +2,7 @@
 
 open System
 open System.IO
+open System.Collections.Generic
 
 type ByteStream (size) =
 
@@ -32,22 +33,31 @@ type ByteStream (size) =
             writer.Dispose ()
             ms.Dispose ()
 
-
-type OutgoingMessage () =
-
-    member val Stream = new ByteStream (1024)
-
-    member this.Writer = this.Stream.Writer
-    
-
-
 type ServerMessageType =
-    | ConnectionEstablished = 0uy
-    | ReliableOrder = 1uy
+   | ConnectionEstablished = 0uy
+
+   | UnreliableSequenced = 1uy
 
 type ClientMessageType =
-    | ConnectionRequested = 0uy
-    | AckReliableOrder = 1uy
+   | ConnectionRequested = 0uy
+
+type ServerUnreliableChannel () =
+
+    let writeStreams = Array.init 64 (fun _ -> new ByteStream (1024))
+    let outgoingQueue = Queue<ByteStream> ()
+
+    let mutable nextOutgoingSize = 0L
+    let mutable seqN = 0us
+
+    member this.EnqueueStream (stream: ByteStream) =
+        outgoingQueue.Enqueue (stream)
+        nextOutgoingSize <- nextOutgoingSize + stream.Length
+
+    member this.Process (processStream: ByteStream -> unit) =
+        ()
+            
+            
+   
 
 type IConnectedClient =
 
@@ -65,10 +75,6 @@ type IServer =
     abstract ClientConnected : IEvent<IConnectedClient>
 
     abstract Received : IEvent<IConnectedClient * BinaryReader>
-
-    abstract CreateMessage : unit -> OutgoingMessage
-
-    abstract SendMessage : OutgoingMessage -> unit
 
 type IClient =
     inherit IDisposable
