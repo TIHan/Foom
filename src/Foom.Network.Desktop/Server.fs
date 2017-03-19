@@ -19,12 +19,14 @@ type DesktopServer () =
 
     let udp = new UdpClient (27015)
 
-    let lookup = Dictionary<IPAddress, EndPoint * DesktopConnectedClient> ()
+    let lookup = Dictionary<IPAddress, EndPoint * DesktopConnectedClient * bool [] * DateTime []> ()
 
     let outgoingReliableStream = new ByteStream (65536)
     let incomingReliableStream = new ByteStream (65536)
 
     let mutable reliableStringSequence = 0us
+
+    let reliableQueue = Queue<OutgoingMessage> ()
 
     interface IServer with
 
@@ -39,8 +41,6 @@ type DesktopServer () =
             //tcp.Stop ()
 
         member this.Heartbeat () =
-            outgoingReliableStream.Position <- 0L
-            outgoingReliableStream.SetLength 0L
 
             while udp.Available > 0 do
                 incomingReliableStream.Position <- 0L
@@ -62,9 +62,9 @@ type DesktopServer () =
                             udp.Send ([| byte ServerMessageType.ConnectionEstablished |], 1, ipendpoint) |> ignore
 
                             let connectedClient = DesktopConnectedClient (endpoint)
-                            let tup = (endpoint, connectedClient)
+                            let tup = (endpoint, connectedClient, Array.init 65536 (fun _ -> true), Array.init 65536 (fun _ -> DateTime.Now))
                             lookup.[ipendpoint.Address] <- tup
-
+                            //udp.JoinMulticastGroup ipendpoint.Address
                             clientConnected.Trigger (connectedClient)
 
                     //| ClientMessage.ReliableString ->
@@ -77,28 +77,46 @@ type DesktopServer () =
 
                     | _ -> ()
 
+            let dateTime = DateTime.Now
+            let milli = dateTime.TimeOfDay.TotalMilliseconds
+            lookup
+            |> Seq.iter (fun pair ->
+                let (_, _, reliable, reliableTime) = pair.Value
+
+                for i = 0 to reliable.Length - 1 do
+                    if not reliable.[i] && (milli - reliableTime.[i].TimeOfDay.TotalMilliseconds) > 500. then
+                        failwith "this should fail"
+            )
+
+            outgoingReliableStream.Position <- 0L
+            outgoingReliableStream.SetLength 0L
+
+            outgoingReliableStream.Writer.Write (byte ServerMessageType.ReliableOrder)
+            outgoingReliableStream.Writer.Write (reliableStringSequence)
+            reliableStringSequence <- reliableStringSequence + 1us
+
+            while reliableQueue.Count > 0 && lookup.Count > 0 do
+                let msg = reliableQueue.Dequeue ()
+                outgoingReliableStream.Writer.Write (msg.Stream.Buffer, 0, int msg.Stream.Length)
+
+                lookup
+                |> Seq.iter (fun pair ->
+                    let (endpoint, _, _, _) = pair.Value
+
+                    udp.Client.SendTo (outgoingReliableStream.Buffer, int outgoingReliableStream.Length, SocketFlags.None, endpoint)
+                    |> ignore
+                )
+            reliableQueue.Clear ()
+
         member val ClientConnected = clientConnected.Publish
 
         member val Received = received.Publish
 
-        member this.BroadcastReliableString str =
-            (this :> IServer).DebugBroadcastReliableString (str, reliableStringSequence)
-            reliableStringSequence <- reliableStringSequence + 1us
+        member this.CreateMessage () =
+            new OutgoingMessage ()
 
-        member this.DebugBroadcastReliableString (str, n) =
-            outgoingReliableStream.Position <- 0L
-            outgoingReliableStream.SetLength (0L)
-            let writer = outgoingReliableStream.Writer
-
-            writer.Write (byte ServerMessageType.ReliableOrder)
-            writer.Write (n)
-            writer.Write (str)
-
-            lookup
-            |> Seq.iter (fun pair ->
-                let (endpoint, connectedClient) = pair.Value
-                udp.Send (outgoingReliableStream.Buffer, int outgoingReliableStream.Length, endpoint :?> IPEndPoint) |> ignore
-            )
+        member this.SendMessage (msg: OutgoingMessage) =
+            reliableQueue.Enqueue msg
 
     interface IDisposable with
 
@@ -123,6 +141,9 @@ type DesktopClient () =
     let reliableReader = new BinaryReader (reliableStream)
     let reliableWriter = new BinaryWriter (reliableStream)
 
+    let outgoingStream = new ByteStream (65536)
+    let outgoingQueue = new Queue<OutgoingMessage> ()
+
     let reliablePositions = Array.zeroCreate<int> 65536
     let reliableExists = Array.zeroCreate<bool> 65536
 
@@ -140,6 +161,7 @@ type DesktopClient () =
             }
 
         member this.Heartbeat () =
+
             packetStream.SetLength (1024L)
             reliableStream.SetLength (65536L)
 

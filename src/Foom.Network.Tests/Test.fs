@@ -35,8 +35,6 @@ type Test() =
         let mutable str = ""
         client.Received.Add (fun (reader) ->
             str <- reader.ReadString ()
-            //if str.Equals ("reliablestring") then
-            //    failwith "wut ups"
         )
 
         server.Start () 
@@ -46,45 +44,22 @@ type Test() =
         |> Async.RunSynchronously
         |> ignore
 
-        server.Heartbeat ()
+        let msg = server.CreateMessage ()
+        msg.Writer.Write ("wrong")
 
-        server.DebugBroadcastReliableString ("reliablestring", 1001us)
+        server.SendMessage (msg)
 
-        for i = 0 to 1000 do
-            server.DebugBroadcastReliableString ("wrongwrong", uint16 i)
+        let msg = server.CreateMessage ()
+        msg.Writer.Write ("reliablestring")
 
-        client.Heartbeat ()
-
-        let same = str = "reliablestring"
-        Assert.True (same)
-
-    [<Test>]
-    member x.SendAndReceiveReliableStringBig () =
-        use server = new DesktopServer () :> IServer
-        use client = new DesktopClient () :> IClient
-
-        let mutable str = ""
-        client.Received.Add (fun (reader) ->
-            str <- reader.ReadString ()
-            //if str.Equals ("reliablestring") then
-            //    failwith "wut ups"
-        )
-
-        server.Start () 
-        |> ignore
-
-        client.Connect ("127.0.0.1") 
-        |> Async.RunSynchronously
-        |> ignore
+        server.SendMessage (msg)
 
         server.Heartbeat ()
-
-        server.DebugBroadcastReliableString ("reliablestring", 10001us)
-
-        for i = 0 to 10000 do
-            server.DebugBroadcastReliableString ("wrongwrong", uint16 i)
-
         client.Heartbeat ()
+
+        //System.Threading.Thread.Sleep(100)
+
+        //server.Heartbeat ()
 
         let same = str = "reliablestring"
         Assert.True (same)

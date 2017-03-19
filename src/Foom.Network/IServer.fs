@@ -32,6 +32,15 @@ type ByteStream (size) =
             writer.Dispose ()
             ms.Dispose ()
 
+
+type OutgoingMessage () =
+
+    member val Stream = new ByteStream (1024)
+
+    member this.Writer = this.Stream.Writer
+    
+
+
 type ServerMessageType =
     | ConnectionEstablished = 0uy
     | ReliableOrder = 1uy
@@ -57,9 +66,9 @@ type IServer =
 
     abstract Received : IEvent<IConnectedClient * BinaryReader>
 
-    abstract BroadcastReliableString : string -> unit
+    abstract CreateMessage : unit -> OutgoingMessage
 
-    abstract DebugBroadcastReliableString : string * uint16 -> unit
+    abstract SendMessage : OutgoingMessage -> unit
 
 type IClient =
     inherit IDisposable
