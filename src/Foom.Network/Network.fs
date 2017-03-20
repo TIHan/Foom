@@ -22,6 +22,8 @@ type IClient =
 
     abstract Connect : address: string * port: int -> unit
 
+    abstract Disconnect : unit -> unit
+
     abstract Update : unit -> unit
 
     abstract Connected : IEvent<unit>

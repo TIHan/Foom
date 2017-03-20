@@ -56,6 +56,10 @@ type Client () as this =
         member this.Connect (address, port) =
             client.Connect (address, port)
 
+        member this.Disconnect () =
+            for peer in client.GetPeers () do
+                client.DisconnectPeer (peer)
+
         member this.Update () =
             client.PollEvents ()
 
@@ -66,7 +70,7 @@ type Client () as this =
     interface IDisposable with
         
         member this.Dispose () =
-            ()
+            client.Stop ()
 
 type Server (maxConnections) as this =
 
@@ -123,4 +127,4 @@ type Server (maxConnections) as this =
     interface IDisposable with
 
         member this.Dispose () =
-            ()
+            server.Stop ()
