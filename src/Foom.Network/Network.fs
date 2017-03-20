@@ -4,6 +4,14 @@ open System
 open System.IO
 open System.Collections.Generic
 
+type IWriter =
+
+    abstract Put : int32 -> unit
+
+type IReader =
+
+    abstract GetInt : unit -> int32
+
 type IServer =
     inherit IDisposable
 
@@ -17,6 +25,12 @@ type IServer =
 
     abstract ClientDisconnected : IEvent<unit>
 
+    abstract SendToAll<'T when 'T : struct and 'T :> ValueType and 'T : (new : unit -> 'T)> : 'T -> unit
+
+    abstract RegisterType<'T when 'T : struct and 'T :> ValueType and 'T : (new : unit -> 'T)> : (IWriter -> 'T -> unit) * (IReader -> 'T) -> unit
+
+    abstract Subscribe<'T when 'T : struct and 'T :> ValueType and 'T : (new : unit -> 'T)> : ('T -> unit) -> unit
+
 type IClient =
     inherit IDisposable
 
@@ -29,3 +43,7 @@ type IClient =
     abstract Connected : IEvent<unit>
 
     abstract Disconnected : IEvent<unit>
+
+    abstract RegisterType<'T when 'T : struct and 'T :> ValueType and 'T : (new : unit -> 'T)> : (IWriter -> 'T -> unit) * (IReader -> 'T) -> unit
+
+    abstract Subscribe<'T when 'T : struct and 'T :> ValueType and 'T : (new : unit -> 'T)> : ('T -> unit) -> unit

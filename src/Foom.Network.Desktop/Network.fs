@@ -9,9 +9,31 @@ open System.Collections.Generic
 open LiteNetLib
 open LiteNetLib.Utils
 
+type Writer () =
+
+    member val DataWriter = Unchecked.defaultof<NetDataWriter> with get, set
+
+    interface IWriter with
+
+        member this.Put value =
+            this.DataWriter.Put value
+
+type Reader () =
+
+    member val DataReader = Unchecked.defaultof<NetDataReader> with get, set
+
+    interface IReader with
+
+        member this.GetInt () =
+            this.DataReader.GetInt ()
+
 type Client () as this =
 
     static let mutable messagesReceivedCount = 0
+
+    let serializer = NetSerializer ()
+    let writer = Writer ()
+    let reader = Reader ()
 
     let client = NetManager (this, "foom")
     let connected = Event<unit> ()
@@ -43,7 +65,7 @@ type Client () as this =
             printfn "[Client] error! %A" socketErrorCode
 
         member this.OnNetworkReceive (peer, reader) =
-            ()
+            serializer.ReadAllPackets (reader)
 
         member this.OnNetworkReceiveUnconnected (remoteEndPoint, reader, messageType) =
             ()
@@ -67,12 +89,33 @@ type Client () as this =
 
         member val Disconnected = disconnected.Publish
 
+        member this.RegisterType<'T when 'T : struct and 'T :> ValueType and 'T : (new : unit -> 'T)> (write: IWriter -> 'T -> unit, read: IReader -> 'T) =
+            let action : Action<NetDataWriter, 'T> = 
+                Action<NetDataWriter, 'T> (fun dataWriter data -> 
+                    writer.DataWriter <- dataWriter
+                    write writer data
+                )
+            let func : Func<NetDataReader, 'T> =
+                Func<NetDataReader, 'T> (fun dataReader ->
+                    reader.DataReader <- dataReader
+                    read reader
+                )
+            serializer.RegisterCustomType (action, func)
+
+        member this.Subscribe<'T when 'T : struct and 'T :> ValueType and 'T : (new : unit -> 'T)> f =
+            serializer.Subscribe<'T> (Action<'T> (f))
+
     interface IDisposable with
         
         member this.Dispose () =
             client.Stop ()
 
 type Server (maxConnections) as this =
+
+    let serializer = NetSerializer ()
+    let dataWriter = NetDataWriter (true)
+    let writer = Writer ()
+    let reader = Reader ()
 
     let server = NetManager (this, maxConnections, "foom")
     let clientConnected = Event<unit> ()
@@ -100,7 +143,7 @@ type Server (maxConnections) as this =
             printfn "[Server] error: %A" socketErrorCode
 
         member this.OnNetworkReceive (peer, reader) =
-            ()
+            serializer.ReadAllPackets (reader)
 
         member this.OnNetworkReceiveUnconnected (remoteEndPoint, reader, messageType) =
 
@@ -108,6 +151,7 @@ type Server (maxConnections) as this =
 
         member this.OnNetworkLatencyUpdate (peer, latency) =
             ()
+
 
     interface IServer with
 
@@ -123,6 +167,28 @@ type Server (maxConnections) as this =
         member val ClientConnected = clientConnected.Publish
 
         member val ClientDisconnected = clientDisconnected.Publish
+
+        member this.SendToAll<'T when 'T : struct and 'T :> ValueType and 'T : (new : unit -> 'T)> (data: 'T) =
+            dataWriter.Reset ()
+            serializer.Serialize<'T> (dataWriter, data)
+            for peer in server.GetPeers () do
+                peer.Send (dataWriter, SendOptions.Sequenced)
+
+        member this.RegisterType<'T when 'T : struct and 'T :> ValueType and 'T : (new : unit -> 'T)> (write: IWriter -> 'T -> unit, read: IReader -> 'T) =
+            let action : Action<NetDataWriter, 'T> = 
+                Action<NetDataWriter, 'T> (fun dataWriter data -> 
+                    writer.DataWriter <- dataWriter
+                    write writer data
+                )
+            let func : Func<NetDataReader, 'T> =
+                Func<NetDataReader, 'T> (fun dataReader ->
+                    reader.DataReader <- dataReader
+                    read reader
+                )
+            serializer.RegisterCustomType (action, func)
+
+        member this.Subscribe<'T when 'T : struct and 'T :> ValueType and 'T : (new : unit -> 'T)> f =
+            serializer.Subscribe<'T> (Action<'T> (f))
 
     interface IDisposable with
 
