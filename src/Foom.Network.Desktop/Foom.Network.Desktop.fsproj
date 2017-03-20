@@ -45,9 +45,13 @@
       <Project>{A446D691-8F20-40BD-98AC-B5FB2EFD5D04}</Project>
       <Name>Foom.Network</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\lib\LiteNetLib\LiteNetLib.csproj">
+      <Project>{B0A014E4-0392-4E35-AA42-8FB5A40417E0}</Project>
+      <Name>LiteNetLib</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Server.fs" />
+    <Compile Include="Network.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(FSharpTargetsPath)" />
