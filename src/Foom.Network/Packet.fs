@@ -26,8 +26,11 @@ type Packet () =
 
         // setup header
         byteWriter.WriteByte (byte typ)
-        byteWriter.WriteUInt16 (0us)
-        byteWriter.WriteByte (0uy)
+
+        match typ with
+        | _ -> ()
+        //byteWriter.WriteUInt16 (0us)
+        //byteWriter.WriteByte (0uy)
 
         Buffer.BlockCopy (bytes, startIndex, byteStream.Raw, NetConstants.UdpHeaderSize, size)
 
@@ -95,10 +98,7 @@ type Server (udpServer: IUdpServer) =
 
                 recvStream.Length <- byteCount
 
-                // read header
                 let typ = recvReader.ReadByte ()
-                let sequenceId = recvReader.ReadUInt16 ()
-                let fragmentCount = recvReader.ReadByte ()
 
                 match LanguagePrimitives.EnumOfValue typ with
                 | PacketType.ConnectionRequested ->
@@ -119,7 +119,27 @@ type Server (udpServer: IUdpServer) =
         |> Seq.iter (fun client -> client.Update ())
 
 [<Sealed>]
-type Client () =
+type Client (udpClient: IUdpClient) =
 
-    let packetPool = Stack (Array.init 64 (fun _ -> Packet ()))
+    let recvStream = ByteStream (NetConstants.PacketSize)
+    let recvReader = ByteReader (recvStream)
 
+    member this.Receive () =
+
+        while udpClient.IsDataAvailable do
+            recvStream.Length <- 0
+
+            match udpClient.Receive (recvStream.Raw, recvStream.Raw.Length) with
+            | 0 -> ()
+            | byteCount ->
+
+                recvStream.Length <- byteCount
+
+                let typ = recvReader.ReadByte ()
+
+                match LanguagePrimitives.EnumOfValue typ with
+                | PacketType.ConnectionAccepted ->
+
+                    System.Diagnostics.Debug.WriteLine "[Client] connected."
+
+                | _ -> ()
