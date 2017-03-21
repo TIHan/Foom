@@ -36,6 +36,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Network.fs" />
+    <Compile Include="ByteStream.fs" />
+    <Compile Include="Udp.fs" />
+    <Compile Include="Constants.fs" />
+    <Compile Include="Packet.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />

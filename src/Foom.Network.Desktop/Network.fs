@@ -5,6 +5,7 @@ open System.IO
 open System.Net
 open System.Net.Sockets
 open System.Collections.Generic
+open System.Runtime.InteropServices
 
 open LiteNetLib
 open LiteNetLib.Utils
@@ -162,6 +163,7 @@ type Server (maxConnections) as this =
             server.Stop ()
 
         member this.Update () =
+            dataWriter.Reset ()
             server.PollEvents ()
 
         member val ClientConnected = clientConnected.Publish
@@ -169,10 +171,8 @@ type Server (maxConnections) as this =
         member val ClientDisconnected = clientDisconnected.Publish
 
         member this.SendToAll<'T when 'T : struct and 'T :> ValueType and 'T : (new : unit -> 'T)> (data: 'T) =
-            dataWriter.Reset ()
             serializer.Serialize<'T> (dataWriter, data)
-            for peer in server.GetPeers () do
-                peer.Send (dataWriter, SendOptions.Sequenced)
+            server.SendToAll (dataWriter, SendOptions.ReliableOrdered)
 
         member this.RegisterType<'T when 'T : struct and 'T :> ValueType and 'T : (new : unit -> 'T)> (write: IWriter -> 'T -> unit, read: IReader -> 'T) =
             let action : Action<NetDataWriter, 'T> = 
@@ -194,3 +194,153 @@ type Server (maxConnections) as this =
 
         member this.Dispose () =
             server.Stop ()
+
+[<Sealed>]
+type UdpEndPoint (ipEndPoint: IPEndPoint) =
+        
+    member this.IPEndPoint = ipEndPoint
+
+    interface IUdpEndPoint with
+
+        member this.IPAddress = ipEndPoint.Address.ToString ()
+
+[<AbstractClass>]
+type Udp =
+
+    val UdpClient : UdpClient
+
+    val UdpClientV6 : UdpClient
+
+    new () =
+        let udpClient = new UdpClient ()
+        let udpClientV6 = new UdpClient ()
+
+        { UdpClient = udpClient; UdpClientV6 = udpClientV6 }
+
+    new (port) =
+        let udpClient = new UdpClient (port, AddressFamily.InterNetwork)
+        let udpClientV6 = new UdpClient (port, AddressFamily.InterNetworkV6)
+
+        { UdpClient = udpClient; UdpClientV6 = udpClientV6 }
+
+    interface IUdp with
+
+        member this.IsDataAvailable = 
+            this.UdpClient.Available > 0 || this.UdpClientV6.Available > 0
+
+        member this.Close () =
+            this.UdpClient.Close ()
+            this.UdpClientV6.Close ()
+
+    interface IDisposable with
+
+        member this.Dispose () =
+            (this :> IUdp).Close ()
+            (this.UdpClient :> IDisposable).Dispose ()
+            (this.UdpClientV6 :> IDisposable).Dispose ()
+
+[<Sealed>]
+type UdpClient () =
+    inherit Udp ()
+
+    let mutable isConnected = false
+    let mutable isIpV6 = false
+
+    interface IUdpClient with
+       
+        member this.Connect (address, port) =
+            match IPAddress.TryParse (address) with
+            | true, ipAddress -> 
+                if ipAddress.AddressFamily = AddressFamily.InterNetwork then
+                    this.UdpClient.Connect (ipAddress, port)
+                    isConnected <- true
+                    isIpV6 <- false
+                    true
+                elif ipAddress.AddressFamily = AddressFamily.InterNetworkV6 then
+                    this.UdpClientV6.Connect (ipAddress, port)
+                    isConnected <- true
+                    isIpV6 <- true
+                    true
+                else
+                    false
+            | _ ->
+                if address.ToLower () = "localhost" then
+                    try
+                        this.UdpClientV6.Connect (IPAddress.IPv6Loopback, port)
+                        isConnected <- true
+                        isIpV6 <- true
+                    with | _ ->
+                        this.UdpClient.Connect (IPAddress.Loopback, port)
+                        isConnected <- true
+                        isIpV6 <- false
+                    true
+                else
+                    false
+
+        member this.RemoteEndPoint =
+            if not isConnected then
+                failwith "Remote End Point is invalid because we haven't tried to connect."
+
+            if isIpV6 then
+                UdpEndPoint (this.UdpClientV6.Client.RemoteEndPoint :?> IPEndPoint) :> IUdpEndPoint
+            else
+                UdpEndPoint (this.UdpClient.Client.RemoteEndPoint :?> IPEndPoint) :> IUdpEndPoint
+
+        member this.Receive (buffer, size) =
+            if not isConnected then
+                failwith "Receive is invalid because we haven't tried to connect."
+
+            let ipEndPoint = IPEndPoint (IPAddress.Any, 0)
+            let mutable endPoint = ipEndPoint :> EndPoint
+
+            match this.UdpClient.Client.ReceiveFrom (buffer, 0, size, SocketFlags.None, &endPoint) with
+            | 0 ->
+
+                match this.UdpClientV6.Client.ReceiveFrom (buffer, 0, size, SocketFlags.None, &endPoint) with
+                | 0 -> 0
+                | byteCount -> byteCount
+
+            | byteCount -> byteCount
+
+        member this.Send (buffer, size) =
+            if not isConnected then
+                failwith "Send is invalid because we haven't tried to connect."
+ 
+            if isIpV6 then
+                this.UdpClientV6.Send (buffer, size)
+            else
+                this.UdpClient.Send (buffer, size)
+
+[<Sealed>]
+type UdpServer (port) =
+    inherit Udp (port)
+
+    interface IUdpServer with
+
+        member this.Receive (buffer, size, [<Out>] remoteEP: byref<IUdpEndPoint>) =
+            let ipEndPoint = IPEndPoint (IPAddress.Any, 0)
+            let mutable endPoint = ipEndPoint :> EndPoint
+
+            match this.UdpClient.Client.ReceiveFrom (buffer, 0, size, SocketFlags.None, &endPoint) with
+            | 0 ->
+
+                match this.UdpClientV6.Client.ReceiveFrom (buffer, 0, size, SocketFlags.None, &endPoint) with
+                | 0 -> 0
+                | byteCount ->
+                    remoteEP <- UdpEndPoint (endPoint :?> IPEndPoint)
+                    byteCount
+
+            | byteCount ->
+                remoteEP <- UdpEndPoint (endPoint :?> IPEndPoint)
+                byteCount
+
+        member this.Send (buffer, size, remoteEP) =
+            match remoteEP with
+            | :? UdpEndPoint as remoteEP -> 
+                if remoteEP.IPEndPoint.AddressFamily = AddressFamily.InterNetwork then
+                    this.UdpClient.Send (buffer, size, remoteEP.IPEndPoint)
+                elif remoteEP.IPEndPoint.AddressFamily = AddressFamily.InterNetworkV6 then
+                    this.UdpClientV6.Send (buffer, size, remoteEP.IPEndPoint)
+                else
+                    0
+            | _ -> 0

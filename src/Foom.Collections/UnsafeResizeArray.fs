@@ -18,6 +18,12 @@
                 buffer = Array.zeroCreate<'T> capacity
             }
 
+        static member Create (buffer: 'T []) =
+            {
+                count = buffer.Length
+                buffer = buffer
+            }
+
         member this.IncreaseCapacity () =
             let newLength = uint32 this.buffer.Length * 2u
             if newLength >= uint32 Int32.MaxValue then

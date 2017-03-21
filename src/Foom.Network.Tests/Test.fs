@@ -7,180 +7,53 @@ open NUnit.Framework
 
 open Foom.Network
 
-[<Struct>]
-type TestStruct =
-
-    val mutable X : int
-
-    val mutable Y : int
-
-    new (x, y) = { X = x; Y = y }
-
-    static member Serialize (writer: IWriter) (data: TestStruct) =
-        writer.Put data.X
-
-    static member Deserialize (reader: IReader) =
-        TestStruct (reader.GetInt (), reader.GetInt ())
-
 [<TestFixture>]
 type Test() = 
 
     [<Test>]
-    member x.ConnectionWorks () =
-        use server = new Server (64) :> IServer
-        use client = new Client () :> IClient
+    member this.TestUdp () : unit =
+        use udpClient = new UdpClient () :> IUdpClient
+        use udpServer = new UdpServer (27015) :> IUdpServer
 
-        Assert.True (server.Start (27015))
+        Assert.False (udpClient.Connect ("break this", 27015))
+        Assert.True (udpClient.Connect ("localhost", 27015))
 
-        let mutable isDone = false
-        let mutable isConnected = false
+        for i = 0 to 100 do
 
-        async {
-            while not isDone do
-                server.Update ()
-                do! Async.Sleep 15
-        }
-        |> Async.Start
+            Assert.Greater (udpClient.Send ([| 123uy + byte i |], 1), 0)
 
-        client.Connect ("localhost", 27015)
+            let buffer = [| 0uy |]
+            let mutable endPoint = Unchecked.defaultof<IUdpEndPoint>
+            Assert.Greater (udpServer.Receive (buffer, 1, &endPoint), 0)
+            Assert.IsNotNull (endPoint)
+            Assert.AreEqual (123uy + byte i, buffer.[0])
 
-        client.Connected.Add (fun () ->
-            isDone <- true
-            isConnected <- true
-        )
+            Assert.Greater (udpServer.Send ([| 33uy + byte i |], 1, endPoint), 0)
+            Assert.Greater (udpClient.Receive (buffer, 1), 0)
+            Assert.AreEqual (33uy + byte i, buffer.[0])
 
-        client.Disconnected.Add (fun () ->
-            isDone <- true
-        )
-
-        async {
-            while not isDone do
-                client.Update ()
-                do! Async.Sleep 15
-        }
-        |> Async.RunSynchronously
-
-        Assert.True (isConnected)
 
     [<Test>]
-    member x.DisconnectionWorks () =
-        use server = new Server (64) :> IServer
-        use client = new Client () :> IClient
+    member this.ReadWriteStreamWorks () : unit =
 
-        Assert.True (server.Start (27015))
+        let byteStream = ByteStream (1024)
+        let byteWriter = ByteWriter (byteStream)
+        let byteReader = ByteReader (byteStream)
 
-        let mutable isDone = false
-        let mutable isConnected = false
+        let ops =
+            [
+                (byteWriter.WriteInt (Int32.MaxValue), fun () -> Assert.AreEqual (Int32.MaxValue, byteReader.ReadInt ()))
+                (byteWriter.WriteInt (Int32.MinValue), fun () -> Assert.AreEqual (Int32.MinValue, byteReader.ReadInt ()))
 
-        async {
-            while not isDone do
-                server.Update ()
-                do! Async.Sleep 15
-        }
-        |> Async.Start
+                (byteWriter.WriteUInt32 (UInt32.MaxValue), fun () -> Assert.AreEqual (UInt32.MaxValue, byteReader.ReadUInt32 ()))
+                (byteWriter.WriteUInt32 (UInt32.MinValue), fun () -> Assert.AreEqual (UInt32.MinValue, byteReader.ReadUInt32 ()))
 
-        client.Connect ("localhost", 27015)
+                (byteWriter.WriteSingle (5.388572987598298734987f), fun () -> Assert.AreEqual (5.388572987598298734987f, byteReader.ReadSingle ()))
+            ]
 
-        client.Connected.Add (fun () ->
-            isDone <- true
-            isConnected <- true
+        byteStream.Position <- 0
+
+        ops
+        |> List.iter (fun (_, test) ->
+            test ()
         )
-
-        client.Disconnected.Add (fun () ->
-            isDone <- true
-            isConnected <- false
-        )
-
-        async {
-            while not isDone do
-                client.Update ()
-                do! Async.Sleep 15
-        }
-        |> Async.RunSynchronously
-
-        Assert.True (isConnected)
-
-        isDone <- false
-
-        client.Disconnect ()
-
-        async {
-            while not isDone do
-                server.Update ()
-                do! Async.Sleep 15
-        }
-        |> Async.Start
-
-        async {
-            while not isDone do
-                client.Update ()
-                do! Async.Sleep 15
-        }
-        |> Async.RunSynchronously
-
-        Assert.False (isConnected)
-
-    [<Test>]
-    member x.SerializationWorks () =
-        use server = new Server (64) :> IServer
-        use client = new Client () :> IClient
-
-        let mutable isDone = false
-        let mutable isConnected = false
-
-        server.RegisterType<TestStruct> (TestStruct.Serialize, TestStruct.Deserialize)
-        client.RegisterType<TestStruct> (TestStruct.Serialize, TestStruct.Deserialize)
-        client.Subscribe<TestStruct> (fun testStruct ->
-            printfn "Test struct: %A" testStruct
-            isDone <- true
-        )
-
-        Assert.True (server.Start (27015))
-
-
-
-        async {
-            while not isDone do
-                server.Update ()
-                do! Async.Sleep 15
-        }
-        |> Async.Start
-
-        client.Connect ("localhost", 27015)
-
-        client.Connected.Add (fun () ->
-            isDone <- true
-            isConnected <- true
-        )
-
-        client.Disconnected.Add (fun () ->
-            isDone <- true
-            isConnected <- false
-        )
-
-        async {
-            while not isDone do
-                client.Update ()
-                do! Async.Sleep 15
-        }
-        |> Async.RunSynchronously
-
-        Assert.True (isConnected)
-
-        isDone <- false
-
-        server.SendToAll<TestStruct> (TestStruct (1234, 5678))
-
-        async {
-            while not isDone do
-                server.Update ()
-                do! Async.Sleep 15
-        }
-        |> Async.Start
-
-        async {
-            while not isDone do
-                client.Update ()
-                do! Async.Sleep 15
-        }
-        |> Async.RunSynchronously
