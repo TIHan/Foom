@@ -27,12 +27,12 @@ type Test() =
 
         for i = 0 to 100 do
             let i = 0
-            Assert.Greater (udpClient.Send ([| 123uy + byte i |], 1), 0)
+            Assert.True (udpClient.Send ([| 123uy + byte i |], 1) > 0)
 
             let buffer = [| 0uy |]
             let mutable endPoint = Unchecked.defaultof<IUdpEndPoint>
             while not udpServer.IsDataAvailable do ()
-            Assert.Greater (udpServer.Receive (buffer, 0, 1, &endPoint), 0)
+            Assert.True (udpServer.Receive (buffer, 0, 1, &endPoint) > 0)
             Assert.IsNotNull (endPoint)
             Assert.AreEqual (123uy + byte i, buffer.[0])
 
@@ -41,12 +41,12 @@ type Test() =
             let maxBytes = Array.zeroCreate<byte> amount
             maxBytes.[amount - 1] <- 123uy
 
-            Assert.Greater (udpClient.Send (maxBytes, maxBytes.Length), 0)
+            Assert.True (udpClient.Send (maxBytes, maxBytes.Length) > 0)
 
             let buffer = Array.zeroCreate<byte> amount
             let mutable endPoint = Unchecked.defaultof<IUdpEndPoint>
             while not udpServer.IsDataAvailable do ()
-            Assert.Greater (udpServer.Receive (buffer, 0, buffer.Length, &endPoint), 0)
+            Assert.True (udpServer.Receive (buffer, 0, buffer.Length, &endPoint) > 0)
             Assert.IsNotNull (endPoint)
             Assert.AreEqual (123uy, buffer.[amount - 1])
 
