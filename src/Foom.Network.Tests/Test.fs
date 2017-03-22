@@ -43,6 +43,11 @@ type Test() =
             Assert.IsNotNull (endPoint)
             Assert.AreEqual (123uy, buffer.[amount - 1])
 
+        Assert.AreEqual (8192, udpClient.SendBufferSize)
+        Assert.AreEqual (65535, udpClient.ReceiveBufferSize)
+        Assert.AreEqual (8192, udpServer.SendBufferSize)
+        Assert.AreEqual (65535, udpServer.ReceiveBufferSize)
+
         test 512
         test 1024
         test 8192
@@ -58,7 +63,7 @@ type Test() =
         udpClient.SendBufferSize <- 65487
         test (65487)
 
-        for i = 1 to 65535 do
+        for i = 1 to 65535 - 48 do
             udpClient.SendBufferSize <- i
             test i
 

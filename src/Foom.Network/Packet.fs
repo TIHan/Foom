@@ -37,7 +37,7 @@ type Packet () =
         byteWriter.WriteUInt16 (0us)
         byteWriter.WriteByte (0uy)
 
-        Buffer.BlockCopy (bytes, startIndex, byteStream.Raw, NetConstants.UdpHeaderSize, size)
+        Buffer.BlockCopy (bytes, startIndex, byteStream.Raw, NetConstants.PacketHeaderSize, size)
 
         byteStream.Length <- byteStream.Length + size
 
