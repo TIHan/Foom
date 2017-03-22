@@ -3,7 +3,10 @@
 open System
 open System.Runtime.InteropServices
 
+open FSharp.NativeInterop
+
 #nowarn "9"
+#nowarn "21"
 
 [<Struct; StructLayout (LayoutKind.Explicit)>]
 type DoubleUnion =
@@ -179,6 +182,17 @@ type ByteWriter (byteStream: ByteStream) =
         Buffer.BlockCopy (bytes, 0, byteStream.Raw, byteStream.position, bytes.Length)
         byteStream.position <- byteStream.position + bytes.Length
 
+    member this.Write<'T when 'T : unmanaged> (value: 'T) =
+        let mutable value = value
+        let size = sizeof<'T>
+
+        byteStream.CheckBounds size
+
+        let ptr = &&value |> NativePtr.toNativeInt
+
+        Marshal.Copy (ptr, byteStream.Raw, byteStream.position, size)
+        byteStream.position <- byteStream.position + size
+
 [<Sealed>]
 type ByteReader (byteStream: ByteStream) =
 
@@ -229,3 +243,13 @@ type ByteReader (byteStream: ByteStream) =
         let mutable s = SingleUnion ()
         s.Value <- value
         s.SingleValue
+
+    member this.Read<'T when 'T : unmanaged> () : 'T =
+        let size = sizeof<'T>
+        let mutable value = Unchecked.defaultof<'T>
+
+        let ptr = &&value |> NativePtr.toNativeInt
+
+        Marshal.Copy (byteStream.Raw, byteStream.position, ptr, size)
+        value
+

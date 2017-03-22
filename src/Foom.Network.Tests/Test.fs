@@ -7,6 +7,13 @@ open NUnit.Framework
 
 open Foom.Network
 
+[<Struct>]
+type TestStruct =
+    {
+        X: int
+        Y: int
+    }
+
 [<TestFixture>]
 type Test() = 
 
@@ -74,6 +81,8 @@ type Test() =
         let byteWriter = ByteWriter (byteStream)
         let byteReader = ByteReader (byteStream)
 
+        let testStruct = { X = 1234; Y = 5678 }
+
         let ops =
             [
                 (byteWriter.WriteInt (Int32.MaxValue), fun () -> Assert.AreEqual (Int32.MaxValue, byteReader.ReadInt ()))
@@ -83,6 +92,8 @@ type Test() =
                 (byteWriter.WriteUInt32 (UInt32.MinValue), fun () -> Assert.AreEqual (UInt32.MinValue, byteReader.ReadUInt32 ()))
 
                 (byteWriter.WriteSingle (5.388572987598298734987f), fun () -> Assert.AreEqual (5.388572987598298734987f, byteReader.ReadSingle ()))
+
+                (byteWriter.Write (testStruct), fun () -> Assert.AreEqual (testStruct, byteReader.Read<TestStruct> ()))
             ]
 
         byteStream.Position <- 0
