@@ -127,11 +127,20 @@ type Test() =
         let mutable isIpv6Connected = false
         let mutable clientDidConnect = false
 
-        client.Connected.Add (fun () -> isConnected <- true)
-        clientV6.Connected.Add (fun () -> isIpv6Connected <- true)
-        server.ClientConnected.Add (fun _ -> clientDidConnect <- true)
+        client.Connected.Add (fun endPoint -> 
+            isConnected <- true
+            printfn "[Client] connected to %s." endPoint.IPAddress
+        )
+        clientV6.Connected.Add (fun endPoint -> 
+            isIpv6Connected <- true
+            printfn "[Client] connected to %s." endPoint.IPAddress
+        )
+        server.ClientConnected.Add (fun endPoint -> 
+            clientDidConnect <- true
+            printfn "[Server] Client connected from %s." endPoint.IPAddress
+        )
 
-        client.Connect ("localhost", 27015)
+        client.Connect ("127.0.0.1", 27015)
         clientV6.Connect ("::1", 27015)
         client.Update ()
         clientV6.Update ()

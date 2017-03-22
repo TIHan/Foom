@@ -148,7 +148,7 @@ type Client (udpClient: IUdpClient) =
     let packetPool = Stack (Array.init 64 (fun _ -> Packet ()))
     let packetQueue = Queue<Packet> ()
 
-    let connected = Event<unit> ()
+    let connected = Event<IUdpEndPoint> ()
 
     member val Connected = connected.Publish
 
@@ -175,7 +175,7 @@ type Client (udpClient: IUdpClient) =
                 match LanguagePrimitives.EnumOfValue typ with
                 | PacketType.ConnectionAccepted ->
 
-                    connected.Trigger ()
+                    connected.Trigger (udpClient.RemoteEndPoint)
 
                 | _ -> ()
 
