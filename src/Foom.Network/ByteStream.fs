@@ -53,28 +53,27 @@ module LitteEndian =
 
 module private InternalStream =
 
-    let inline checkBounds offset (data: byte []) position =
-        if position + offset >= data.Length then
-            failwith "Cannot read outside thebounds of the byte array."
+    let inline checkBounds offset length position =
+        position + offset <= length
 
-    let inline checkBoundsNoException offset (data: byte []) position =
-        if position + offset >= data.Length then
-            false
-        else
-            true
+    //let inline checkBoundsNoException offset (data: byte []) length position =
+    //    if position + offset >= length then
+    //        false
+    //    else
+    //        true
 
     let inline setLength value (data: byte []) (position: byref<int>) (length: byref<int>) =
-        if value > data.Length || value < 1 then
+        if value > data.Length || value < 0 then
             failwith "Length cannot be set because it is outside the bounds of the byte array."
 
-        if position >= value then
+        if position > value then
             position <- value - 1
 
         length <- value
 
-    let inline setPosition value (data: byte []) (position: byref<int>) =
-        if value < 0 || value >= data.Length then
-            failwith "Position cannot be set because it is outside the bounds of the byte array."
+    let inline setPosition value (data: byte []) length (position: byref<int>) =
+        if value < 0 || value > length then
+            failwith "Position cannot be set because it is greater than or equal to the length."
 
         position <- value
 
@@ -87,7 +86,13 @@ type ByteStream (maxSize) =
     [<DefaultValue>] val mutable length : int
     [<DefaultValue>] val mutable position : int
 
-    member this.CheckBounds offset = checkBounds offset data this.position
+    member this.CheckBounds offset = 
+        if checkBounds offset data.Length this.position |> not then
+            failwith "Outside the bounds of the array."
+
+    member this.CheckBoundsLength offset = 
+        if checkBounds offset this.length this.position |> not then
+            failwith "Outside the bounds of the stream."
 
     //member this.TryResize offset =
     //    if not (checkBoundsNoException offset data this.position) then
@@ -116,7 +121,7 @@ type ByteStream (maxSize) =
 
     member this.Position
         with get () = this.position
-        and set value = setPosition value data &this.position
+        and set value = setPosition value data this.length &this.position
 
 [<Sealed>]
 type ByteWriter (byteStream: ByteStream) =
@@ -178,42 +183,42 @@ type ByteWriter (byteStream: ByteStream) =
 type ByteReader (byteStream: ByteStream) =
 
     member this.ReadByte () : byte =
-        byteStream.CheckBounds 1
+        byteStream.CheckBoundsLength 1
 
         let value = LitteEndian.read8 byteStream.Raw byteStream.position |> byte
         byteStream.position <- byteStream.position + 1
         value
 
     member this.ReadSByte () : sbyte =
-        byteStream.CheckBounds 1
+        byteStream.CheckBoundsLength 1
 
         let value = LitteEndian.read8 byteStream.Raw byteStream.position |> sbyte
         byteStream.position <- byteStream.position + 1
         value
 
     member this.ReadInt16 () : int16 =
-        byteStream.CheckBounds 2
+        byteStream.CheckBoundsLength 2
 
         let value = LitteEndian.read16 byteStream.Raw byteStream.position |> int16
         byteStream.position <- byteStream.position + 2
         value
 
     member this.ReadUInt16 () : uint16 =
-        byteStream.CheckBounds 2
+        byteStream.CheckBoundsLength 2
 
         let value = LitteEndian.read16 byteStream.Raw byteStream.position |> uint16
         byteStream.position <- byteStream.position + 2
         value
 
     member this.ReadInt () : int =
-        byteStream.CheckBounds 4
+        byteStream.CheckBoundsLength 4
 
         let value = LitteEndian.read32 byteStream.Raw byteStream.position |> int
         byteStream.position <- byteStream.position + 4
         value
 
     member this.ReadUInt32 () : uint32 =
-        byteStream.CheckBounds 4
+        byteStream.CheckBoundsLength 4
 
         let value = LitteEndian.read32 byteStream.Raw byteStream.position |> uint32
         byteStream.position <- byteStream.position + 4

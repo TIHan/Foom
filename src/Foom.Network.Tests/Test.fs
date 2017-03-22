@@ -19,19 +19,48 @@ type Test() =
         Assert.True (udpClient.Connect ("localhost", 27015))
 
         for i = 0 to 100 do
-
+            let i = 0
             Assert.Greater (udpClient.Send ([| 123uy + byte i |], 1), 0)
 
             let buffer = [| 0uy |]
             let mutable endPoint = Unchecked.defaultof<IUdpEndPoint>
-            Assert.Greater (udpServer.Receive (buffer, 1, &endPoint), 0)
+            while not udpServer.IsDataAvailable do ()
+            Assert.Greater (udpServer.Receive (buffer, 0, 1, &endPoint), 0)
             Assert.IsNotNull (endPoint)
             Assert.AreEqual (123uy + byte i, buffer.[0])
 
-            Assert.Greater (udpServer.Send ([| 33uy + byte i |], 1, endPoint), 0)
-            Assert.Greater (udpClient.Receive (buffer, 1), 0)
-            Assert.AreEqual (33uy + byte i, buffer.[0])
+        let test amount =
 
+            let maxBytes = Array.zeroCreate<byte> amount
+            maxBytes.[amount - 1] <- 123uy
+
+            Assert.Greater (udpClient.Send (maxBytes, maxBytes.Length), 0)
+
+            let buffer = Array.zeroCreate<byte> amount
+            let mutable endPoint = Unchecked.defaultof<IUdpEndPoint>
+            while not udpServer.IsDataAvailable do ()
+            Assert.Greater (udpServer.Receive (buffer, 0, buffer.Length, &endPoint), 0)
+            Assert.IsNotNull (endPoint)
+            Assert.AreEqual (123uy, buffer.[amount - 1])
+
+        test 512
+        test 1024
+        test 8192
+        udpClient.SendBufferSize <- 8193
+        test 8193
+
+        udpClient.SendBufferSize <- 10000
+        test 10000
+
+        udpClient.SendBufferSize <- 65000
+        test 65000
+
+        udpClient.SendBufferSize <- 65487
+        test (65487)
+
+        for i = 1 to 65535 do
+            udpClient.SendBufferSize <- i
+            test i
 
     [<Test>]
     member this.ReadWriteStreamWorks () : unit =
@@ -57,3 +86,22 @@ type Test() =
         |> List.iter (fun (_, test) ->
             test ()
         )
+
+    [<Test>]
+    member this.ClientAndServer () : unit =
+        use udpClient = new UdpClient () :> IUdpClient
+        use udpServer = new UdpServer (27015) :> IUdpServer
+
+        let client = Client (udpClient)
+        let server = Server (udpServer)
+
+        let mutable isConnected = false
+
+        client.Connected.Add (fun () -> isConnected <- true)
+
+        client.Connect ("localhost", 27015)
+        client.Update ()
+        server.Update ()
+        client.Update ()
+
+        Assert.True (isConnected)

@@ -12,6 +12,10 @@ type IUdp =
 
     abstract IsDataAvailable : bool
 
+    abstract ReceiveBufferSize : int with get, set
+
+    abstract SendBufferSize : int with get, set
+
     abstract Close : unit -> unit
 
 type IUdpClient =
@@ -19,7 +23,7 @@ type IUdpClient =
 
     abstract Connect : address: string * port: int -> bool
 
-    abstract Receive : byte [] * size: int -> int
+    abstract Receive : byte [] * offset: int * size: int -> int
 
     abstract Send : byte[] * size: int -> int
 
@@ -28,6 +32,6 @@ type IUdpClient =
 type IUdpServer =
     inherit IUdp
 
-    abstract Receive : byte [] * size: int * [<Out>] remoteEP: byref<IUdpEndPoint> -> int
+    abstract Receive : byte [] * offset: int * size: int * [<Out>] remoteEP: byref<IUdpEndPoint> -> int
 
     abstract Send : byte [] * size: int * IUdpEndPoint -> int
