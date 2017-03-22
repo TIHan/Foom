@@ -18,7 +18,7 @@ type TestStruct =
 type Test() = 
 
     [<Test>]
-    member this.TestUdp () : unit =
+    member this.UdpWorks () : unit =
         use udpClient = new UdpClient () :> IUdpClient
         use udpServer = new UdpServer (27015) :> IUdpServer
 
@@ -68,20 +68,21 @@ type Test() =
         test 65000
 
         udpClient.SendBufferSize <- 65487
-        test (65487)
+        test 65487
 
         for i = 1 to 65535 - 48 do
             udpClient.SendBufferSize <- i
             test i
 
     [<Test>]
-    member this.ReadWriteStreamWorks () : unit =
+    member this.ByteStream () : unit =
 
         let byteStream = ByteStream (1024)
         let byteWriter = ByteWriter (byteStream)
         let byteReader = ByteReader (byteStream)
 
-        let testStruct = { X = 1234; Y = 5678 }
+        let mutable testStruct = { X = 1234; Y = 5678 }
+        let mutable testStruct2 = { X = 0; Y = 0 }
 
         let ops =
             [
@@ -94,6 +95,13 @@ type Test() =
                 (byteWriter.WriteSingle (5.388572987598298734987f), fun () -> Assert.AreEqual (5.388572987598298734987f, byteReader.ReadSingle ()))
 
                 (byteWriter.Write (testStruct), fun () -> Assert.AreEqual (testStruct, byteReader.Read<TestStruct> ()))
+                (byteWriter.Write (&testStruct), fun () -> 
+                    Assert.AreNotEqual (testStruct, testStruct2)
+                    let t = byteReader.Read<TestStruct> (&testStruct2)
+                    Assert.AreEqual (testStruct, testStruct2)
+                )
+
+                (byteWriter.WriteSingle (7.38857298759829874987f), fun () -> Assert.AreEqual (7.38857298759829874987f, byteReader.ReadSingle ()))
             ]
 
         byteStream.Position <- 0
@@ -104,7 +112,7 @@ type Test() =
         )
 
     [<Test>]
-    member this.ClientAndServer () : unit =
+    member this.ClientAndServerWorks () : unit =
         use udpClient = new UdpClient () :> IUdpClient
         use udpServer = new UdpServer (27015) :> IUdpServer
 

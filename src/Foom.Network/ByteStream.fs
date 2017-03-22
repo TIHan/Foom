@@ -5,8 +5,9 @@ open System.Runtime.InteropServices
 
 open FSharp.NativeInterop
 
+// Disable native interop warnings
 #nowarn "9"
-#nowarn "21"
+#nowarn "51"
 
 [<Struct; StructLayout (LayoutKind.Explicit)>]
 type DoubleUnion =
@@ -191,6 +192,18 @@ type ByteWriter (byteStream: ByteStream) =
         let ptr = &&value |> NativePtr.toNativeInt
 
         Marshal.Copy (ptr, byteStream.Raw, byteStream.position, size)
+        byteStream.length <- byteStream.length + size
+        byteStream.position <- byteStream.position + size
+
+    member this.Write<'T when 'T : unmanaged> (value: byref<'T>) =
+        let size = sizeof<'T>
+
+        byteStream.CheckBounds size
+
+        let ptr = &&value |> NativePtr.toNativeInt
+
+        Marshal.Copy (ptr, byteStream.Raw, byteStream.position, size)
+        byteStream.length <- byteStream.length + size
         byteStream.position <- byteStream.position + size
 
 [<Sealed>]
@@ -246,10 +259,21 @@ type ByteReader (byteStream: ByteStream) =
 
     member this.Read<'T when 'T : unmanaged> () : 'T =
         let size = sizeof<'T>
+
+        byteStream.CheckBoundsLength size
+
         let mutable value = Unchecked.defaultof<'T>
+        let ptr = &&value |> NativePtr.toNativeInt
+        Marshal.Copy (byteStream.Raw, byteStream.position, ptr, size)
+        byteStream.position <- byteStream.position + size
+        value
+
+    member this.Read<'T when 'T : unmanaged> (value: byref<'T>) =
+        let size = sizeof<'T>
+
+        byteStream.CheckBoundsLength size
 
         let ptr = &&value |> NativePtr.toNativeInt
-
         Marshal.Copy (byteStream.Raw, byteStream.position, ptr, size)
-        value
+        byteStream.position <- byteStream.position + size
 
