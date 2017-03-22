@@ -37,8 +37,8 @@ type Udp =
     val mutable sendBufferSize : int
 
     new () =
-        let udpClient = new UdpClient ()
-        let udpClientV6 = new UdpClient ()
+        let udpClient = new UdpClient (AddressFamily.InterNetwork)
+        let udpClientV6 = new UdpClient (AddressFamily.InterNetworkV6)
 
         udpClient.Client.Blocking <- false
         udpClientV6.Client.Blocking <- false
@@ -114,6 +114,7 @@ type UdpClient () =
     interface IUdpClient with
        
         member this.Connect (address, port) =
+
             match IPAddress.TryParse (address) with
             | true, ipAddress -> 
                 if ipAddress.AddressFamily = AddressFamily.InterNetwork then
@@ -155,10 +156,10 @@ type UdpClient () =
             if not isConnected then
                 failwith "Receive is invalid because we haven't tried to connect."
 
-            let ipEndPoint = IPEndPoint (IPAddress.Any, 0)
-            let mutable endPoint = ipEndPoint :> EndPoint
-
             if this.UdpClient.Available > 0 then
+
+                let ipEndPoint = IPEndPoint (IPAddress.Any, 0)
+                let mutable endPoint = ipEndPoint :> EndPoint
 
                 match this.UdpClient.Client.ReceiveFrom (buffer, offset, size, SocketFlags.None, &endPoint) with
                 | 0 -> 0
@@ -166,6 +167,9 @@ type UdpClient () =
                     byteCount
 
             elif this.UdpClientV6.Available > 0 then
+
+                let ipEndPoint = IPEndPoint (IPAddress.IPv6Any, 0)
+                let mutable endPoint = ipEndPoint :> EndPoint
 
                 match this.UdpClientV6.Client.ReceiveFrom (buffer, offset, size, SocketFlags.None, &endPoint) with
                 | 0 -> 0
@@ -191,10 +195,11 @@ type UdpServer (port) =
     interface IUdpServer with
 
         member this.Receive (buffer, offset, size, [<Out>] remoteEP: byref<IUdpEndPoint>) =
-            let ipEndPoint = IPEndPoint (IPAddress.Any, 0)
-            let mutable endPoint = ipEndPoint :> EndPoint
 
             if this.UdpClient.Available > 0 then
+
+                let ipEndPoint = IPEndPoint (IPAddress.Any, 0)
+                let mutable endPoint = ipEndPoint :> EndPoint
 
                 match this.UdpClient.Client.ReceiveFrom (buffer, offset, size, SocketFlags.None, &endPoint) with
                 | 0 -> 0
@@ -203,6 +208,9 @@ type UdpServer (port) =
                     byteCount
 
             elif this.UdpClientV6.Available > 0 then
+
+                let ipEndPoint = IPEndPoint (IPAddress.IPv6Any, 0)
+                let mutable endPoint = ipEndPoint :> EndPoint
 
                 match this.UdpClientV6.Client.ReceiveFrom (buffer, offset, size, SocketFlags.None, &endPoint) with
                 | 0 -> 0

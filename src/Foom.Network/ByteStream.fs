@@ -66,12 +66,12 @@ module private InternalStream =
     //    else
     //        true
 
-    let inline setLength value (data: byte []) (position: byref<int>) (length: byref<int>) =
+    let setLength value (data: byte []) (position: byref<int>) (length: byref<int>) =
         if value > data.Length || value < 0 then
             failwith "Length cannot be set because it is outside the bounds of the byte array."
 
         if position > value then
-            position <- value - 1
+            position <- value
 
         length <- value
 

@@ -20,10 +20,12 @@ type Test() =
     [<Test>]
     member this.UdpWorks () : unit =
         use udpClient = new UdpClient () :> IUdpClient
+        use udpClientV4 = new UdpClient () :> IUdpClient
         use udpServer = new UdpServer (27015) :> IUdpServer
 
         Assert.False (udpClient.Connect ("break this", 27015))
-        Assert.True (udpClient.Connect ("localhost", 27015))
+        Assert.True (udpClient.Connect ("::1", 27015))
+        Assert.True (udpClientV4.Connect ("127.0.0.1", 27015))
 
         for i = 0 to 100 do
             let i = 0
@@ -114,18 +116,29 @@ type Test() =
     [<Test>]
     member this.ClientAndServerWorks () : unit =
         use udpClient = new UdpClient () :> IUdpClient
+        use udpClientV6 = new UdpClient () :> IUdpClient
         use udpServer = new UdpServer (27015) :> IUdpServer
 
         let client = Client (udpClient)
+        let clientV6 = Client (udpClientV6)
         let server = Server (udpServer)
 
         let mutable isConnected = false
+        let mutable isIpv6Connected = false
+        let mutable clientDidConnect = false
 
         client.Connected.Add (fun () -> isConnected <- true)
+        clientV6.Connected.Add (fun () -> isIpv6Connected <- true)
+        server.ClientConnected.Add (fun _ -> clientDidConnect <- true)
 
         client.Connect ("localhost", 27015)
+        clientV6.Connect ("::1", 27015)
         client.Update ()
+        clientV6.Update ()
         server.Update ()
         client.Update ()
+        clientV6.Update ()
 
         Assert.True (isConnected)
+        Assert.True (isIpv6Connected)
+        Assert.True (clientDidConnect)

@@ -100,6 +100,10 @@ type Server (udpServer: IUdpServer) =
 
     let clients = ResizeArray<ConnectedClient> ()
 
+    let clientConnected = Event<IUdpEndPoint> ()
+
+    member val ClientConnected = clientConnected.Publish
+
     member private this.Receive () =
 
         while udpServer.IsDataAvailable do
@@ -122,6 +126,8 @@ type Server (udpServer: IUdpServer) =
                     clients.Add client
 
                     client.SendConnectionAccepted ()
+
+                    clientConnected.Trigger endPoint
 
                 | _ -> ()
 
