@@ -5,21 +5,26 @@ open System.Numerics
 open Foom.Math
 
 [<Struct>]
-type LineSegment2D =
-    {
-        A: Vector2
-        B: Vector2
-    }
+type LineSegment2D = 
+    LineSegment2D of Vector2 * Vector2 with
+
+    member inline this.A =
+        match this with
+        | LineSegment2D (a, _) -> a
+
+    member inline this.B =
+        match this with
+        | LineSegment2D (_, b) -> b
 
 module LineSegment2D =
 
     // From Book: Real-Time Collision Detection
     // Modified, so it might not work :(
-    let intersectsAABB (aabb: AABB2D) (seg: LineSegment2D) =
+    let intersectsAABB (aabb: AABB2D) (LineSegment2D (a, b)) =
         let c = aabb.Center
         let e = aabb.Extents
-        let m = (seg.A + seg.B) * 0.5f
-        let d = seg.B - m
+        let m = a + b * 0.5f
+        let d = b - m
         let m = m - c
 
         let adx = abs d.X
@@ -37,36 +42,36 @@ module LineSegment2D =
         else
             true
 
-    let aabb (seg: LineSegment2D) =
-        let mutable minX = seg.A.X
-        let mutable maxX = seg.A.X
-        let mutable minY = seg.A.Y
-        let mutable maxY = seg.A.Y
+    let aabb (LineSegment2D (a, b)) =
+        let mutable minX = a.X
+        let mutable maxX = a.X
+        let mutable minY = a.Y
+        let mutable maxY = a.Y
 
-        if seg.B.X < minX then minX <- seg.B.X
-        if seg.B.X > maxX then maxX <- seg.B.X
-        if seg.B.Y < minY then minY <- seg.B.Y
-        if seg.B.Y > maxY then maxY <- seg.B.Y
+        if b.X < minX then minX <- b.X
+        if b.X > maxX then maxX <- b.X
+        if b.Y < minY then minY <- b.Y
+        if b.Y > maxY then maxY <- b.Y
 
         AABB2D.ofMinAndMax (Vector2 (minX, minY)) (Vector2 (maxX, maxY))
 
-    let findClosestPointByPoint (p: Vector2) (seg: LineSegment2D) =
-        let ab = seg.B - seg.A
+    let findClosestPointByPoint (p: Vector2) (LineSegment2D (b, a)) =
+        let ab = b - a
 
-        let t = Vec2.dot (p - seg.A) ab
+        let t = Vec2.dot (p - a) ab
         if (t <= 0.f) then
-            (0.f, seg.A)
+            (0.f, a)
         else
             let denom = Vec2.dot ab ab
             if (t >= denom) then
-                (1.f, seg.B)
+                (1.f, b)
             else
                 let t = t / denom
-                (t, seg.A + (t * ab))
+                (t, a + (t * ab))
 
-    let normal (seg: LineSegment2D) =
-        let dx = seg.B.X - seg.A.X
-        let dy = seg.B.Y - seg.A.Y
+    let normal (LineSegment2D (a, b)) =
+        let dx = b.X - a.X
+        let dy = b.Y - a.Y
 
         let dir1 =
             Vector2 (-dy, dx)
@@ -78,7 +83,9 @@ module LineSegment2D =
 
         dir2
 
-    let inline isPointOnLeftSide (p: Vector2) (seg: LineSegment2D) =
-        let v1 = seg.A
-        let v2 = seg.B
+    let inline isPointOnLeftSide (p: Vector2) (LineSegment2D (v1, v2)) =
         (v2.X - v1.X) * (p.Y - v1.Y) - (v2.Y - v1.Y) * (p.X - v1.X) > 0.f
+
+    let inline startPoint (LineSegment2D (a, _)) = a
+
+    let inline endPoint (LineSegment2D (_, b)) = b

@@ -68,9 +68,9 @@ module Triangle2D =
 
     // This isn't efficient yet.
     let intersectsAABB (aabb: AABB2D) (tri: Triangle2D) =
-        let l0 = { A = tri.A; B = tri.B }
-        let l1 = { A = tri.B; B = tri.C }
-        let l2 = { A = tri.C; B = tri.A }
+        let l0 = LineSegment2D (tri.B, tri.B)
+        let l1 = LineSegment2D (tri.B, tri.C)
+        let l2 = LineSegment2D (tri.C, tri.A)
 
         let min = aabb.Min ()
         let max = aabb.Max ()

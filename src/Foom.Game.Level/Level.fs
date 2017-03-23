@@ -4,6 +4,7 @@ open System.Numerics
 open System.Collections.Generic
 
 open Foom.Ecs
+open Foom.Geometry
 
 type Level =
     {
@@ -93,7 +94,7 @@ module Level =
         else byte lightLevel
 
     let createWallGeometry (wall: Wall) (level: Level) : (Vector3 [] * Vector3 [] * Vector3 []) * (Vector3 [] * Vector3 [] * Vector3 [])  =
-        let seg = wall.Segment
+        let (LineSegment2D (a, b)) = wall.Segment
 
         // Upper Front
         let mutable upperFront = [||]
@@ -110,13 +111,13 @@ module Level =
 
                     upperFront <-
                         [|
-                            Vector3 (seg.A, single floorHeight)
-                            Vector3 (seg.B, single floorHeight)
-                            Vector3 (seg.B, single ceilingHeight)
+                            Vector3 (a, single floorHeight)
+                            Vector3 (b, single floorHeight)
+                            Vector3 (b, single ceilingHeight)
 
-                            Vector3 (seg.B, single ceilingHeight)
-                            Vector3 (seg.A, single ceilingHeight)
-                            Vector3 (seg.A, single floorHeight)
+                            Vector3 (b, single ceilingHeight)
+                            Vector3 (a, single ceilingHeight)
+                            Vector3 (a, single floorHeight)
                         |]
             )
         )
@@ -152,13 +153,13 @@ module Level =
 
             middleFront <-
                 [|
-                    Vector3 (seg.A, single floorHeight)
-                    Vector3 (seg.B, single floorHeight)
-                    Vector3 (seg.B, single ceilingHeight)
+                    Vector3 (a, single floorHeight)
+                    Vector3 (b, single floorHeight)
+                    Vector3 (b, single ceilingHeight)
 
-                    Vector3 (seg.B, single ceilingHeight)
-                    Vector3 (seg.A, single ceilingHeight)
-                    Vector3 (seg.A, single floorHeight)
+                    Vector3 (b, single ceilingHeight)
+                    Vector3 (a, single ceilingHeight)
+                    Vector3 (a, single floorHeight)
                 |]
         )
 
@@ -177,13 +178,13 @@ module Level =
 
                     lowerFront <-
                         [|
-                            Vector3 (seg.A, single floorHeight)
-                            Vector3 (seg.B, single floorHeight)
-                            Vector3 (seg.B, single ceilingHeight)
+                            Vector3 (a, single floorHeight)
+                            Vector3 (b, single floorHeight)
+                            Vector3 (b, single ceilingHeight)
 
-                            Vector3 (seg.B, single ceilingHeight)
-                            Vector3 (seg.A, single ceilingHeight)
-                            Vector3 (seg.A, single floorHeight)
+                            Vector3 (b, single ceilingHeight)
+                            Vector3 (a, single ceilingHeight)
+                            Vector3 (a, single floorHeight)
                         |]
             )
         )
@@ -203,13 +204,13 @@ module Level =
 
                     upperBack <-
                         [|
-                            Vector3 (seg.B, single floorHeight)
-                            Vector3 (seg.A, single floorHeight)
-                            Vector3 (seg.A, single ceilingHeight)
+                            Vector3 (b, single floorHeight)
+                            Vector3 (a, single floorHeight)
+                            Vector3 (a, single ceilingHeight)
 
-                            Vector3 (seg.A, single ceilingHeight)
-                            Vector3 (seg.B, single ceilingHeight)
-                            Vector3 (seg.B, single floorHeight)
+                            Vector3 (a, single ceilingHeight)
+                            Vector3 (b, single ceilingHeight)
+                            Vector3 (b, single floorHeight)
                         |]
             )
         )
@@ -244,13 +245,13 @@ module Level =
 
             middleBack <-
                 [|
-                    Vector3 (seg.B, single floorHeight)
-                    Vector3 (seg.A, single floorHeight)
-                    Vector3 (seg.A, single ceilingHeight)
+                    Vector3 (b, single floorHeight)
+                    Vector3 (a, single floorHeight)
+                    Vector3 (a, single ceilingHeight)
 
-                    Vector3 (seg.A, single ceilingHeight)
-                    Vector3 (seg.B, single ceilingHeight)
-                    Vector3 (seg.B, single floorHeight)
+                    Vector3 (a, single ceilingHeight)
+                    Vector3 (b, single ceilingHeight)
+                    Vector3 (b, single floorHeight)
                 |]
         )
 
@@ -269,13 +270,13 @@ module Level =
 
                     lowerBack <-
                         [|
-                            Vector3 (seg.B, single floorHeight)
-                            Vector3 (seg.A, single floorHeight)
-                            Vector3 (seg.A, single ceilingHeight)
+                            Vector3 (b, single floorHeight)
+                            Vector3 (a, single floorHeight)
+                            Vector3 (a, single ceilingHeight)
 
-                            Vector3 (seg.A, single ceilingHeight)
-                            Vector3 (seg.B, single ceilingHeight)
-                            Vector3 (seg.B, single floorHeight)
+                            Vector3 (a, single ceilingHeight)
+                            Vector3 (b, single ceilingHeight)
+                            Vector3 (b, single floorHeight)
                         |]
             )
         )

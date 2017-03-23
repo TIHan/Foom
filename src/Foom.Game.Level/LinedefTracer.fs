@@ -29,12 +29,12 @@ type LinedefPolygon =
         let mutable c = false
 
         for i = 0 to linedefs.Length - 1 do
-            let linedef = linedefs.[i].Segment
+            let (LineSegment2D (a, b)) = linedefs.[i].Segment
 
-            let xp1 = linedef.A.X
-            let xp2 = linedef.B.X
-            let yp1 = linedef.A.Y
-            let yp2 = linedef.B.Y
+            let xp1 = a.X
+            let xp2 = b.X
+            let yp1 = a.Y
+            let yp2 = b.Y
 
             if
                 ((yp1 > point.Y) <> (yp2 > point.Y)) &&
@@ -53,21 +53,22 @@ module LinedefTracer =
         (v2.X - v1.X) * (p.Y - v1.Y) - (v2.Y - v1.Y) * (p.X - v1.X) > 0.f
 
     let isPointOnFrontSide (p: Vector2) (linedef: Wall) (tracer: LinedefTracer) =
+        let (LineSegment2D (a, b)) = linedef.Segment
         if linedef.FrontSide.IsSome && linedef.FrontSide.Value.SectorId = tracer.sectorId
-        then isPointOnLeftSide linedef.Segment.B linedef.Segment.A p
-        else isPointOnLeftSide linedef.Segment.A linedef.Segment.B p
+        then isPointOnLeftSide b a p
+        else isPointOnLeftSide a b p
 
     let findClosestLinedef (linedefs: Wall list) =
-        let s = linedefs |> List.minBy (fun x -> x.Segment.A.X)
-        let e = linedefs |> List.minBy (fun x -> x.Segment.B.X)
+        let s = linedefs |> List.minBy (fun x -> (LineSegment2D.startPoint x.Segment).X)
+        let e = linedefs |> List.minBy (fun x -> (LineSegment2D.endPoint x.Segment).X)
 
         let v =
-            if s.Segment.A.X <= e.Segment.B.X 
-            then s.Segment.A
-            else e.Segment.B
+            if (LineSegment2D.startPoint s.Segment).X <= (LineSegment2D.endPoint e.Segment).X 
+            then LineSegment2D.startPoint s.Segment
+            else LineSegment2D.endPoint e.Segment
 
-        match linedefs |> List.tryFind (fun x -> x.Segment.A.Equals v) with
-        | None -> linedefs |> List.find (fun x -> x.Segment.B.Equals v)
+        match linedefs |> List.tryFind (fun x -> (LineSegment2D.startPoint x.Segment).Equals v) with
+        | None -> linedefs |> List.find (fun x -> (LineSegment2D.endPoint x.Segment).Equals v)
         | Some linedef -> linedef
 
     let inline nonVisitedLinedefs tracer = 

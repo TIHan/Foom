@@ -74,7 +74,7 @@ module WadLevel =
         level
         |> Level.iterLinedef (fun linedef ->
             {
-                Segment = { A = linedef.Start; B = linedef.End }
+                Segment = LineSegment2D (linedef.Start, linedef.End)
                 Special = Nothing // TODO
                 FrontSide =
                     linedef.FrontSidedef

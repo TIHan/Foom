@@ -194,13 +194,13 @@ module PhysicsEngine =
         else
             1.f
 
-    let findIntersectionTimeOfPointAndVelocity point velocity seg =
+    let findIntersectionTimeOfPointAndVelocity point velocity (LineSegment2D (a, b) as seg) =
         if LineSegment2D.isPointOnLeftSide point seg then
             1.f
         else
 
-            let p = seg.A
-            let r = (seg.B - p)
+            let p = a
+            let r = (b - p)
             let q = point
             let s = velocity
             let result = findIntersectionTime p r q s
@@ -253,7 +253,7 @@ module PhysicsEngine =
             // TODO: Implement solver.
             narrowPhase
             |> Seq.distinct
-            |> Seq.iter (fun seg ->
+            |> Seq.iter (fun (LineSegment2D (a, b) as seg) ->
 
                 let v00 = rBody.WorldPosition + Vector2 (min.X, min.Y)
                 let v01 = rBody.WorldPosition + Vector2 (max.X, min.Y)
@@ -265,26 +265,26 @@ module PhysicsEngine =
                         seg, point, 1.f, false
                     else
 
-                    let p = seg.A
-                    let r = (seg.B - p)
+                    let p = a
+                    let r = (b - p)
                     let q = point
                     let s = velocity
                     let result = findIntersectionTime p r q s
 
                     seg, point, result, false
 
-                let e0 = { A = v00; B = v01 }
-                let e1 = { A = v01; B = v02 }
-                let e2 = { A = v02; B = v03 }
-                let e3 = { A = v03; B = v00 }
+                let e0 = LineSegment2D (v00, v01)
+                let e1 = LineSegment2D (v01, v02)
+                let e2 = LineSegment2D (v02, v03)
+                let e3 = LineSegment2D (v03, v00)
 
-                let checkRev point (seg: LineSegment2D) =
+                let checkRev point (LineSegment2D (a, b) as seg) =
                     if LineSegment2D.isPointOnLeftSide point seg then
                         seg, point, 1.f, true
                     else
 
-                    let p = seg.A
-                    let r = (seg.B - p)
+                    let p = a
+                    let r = (b - p)
                     let q = point
                     let s = -velocity
                     let result = findIntersectionTime p r q s
@@ -297,14 +297,14 @@ module PhysicsEngine =
                         check v01 seg
                         check v02 seg
                         check v03 seg
-                        checkRev seg.A e0
-                        checkRev seg.B e0
-                        checkRev seg.A e1
-                        checkRev seg.B e1
-                        checkRev seg.A e2
-                        checkRev seg.B e2
-                        checkRev seg.A e3
-                        checkRev seg.B e3
+                        checkRev a e0
+                        checkRev b e0
+                        checkRev a e1
+                        checkRev b e1
+                        checkRev a e2
+                        checkRev b e2
+                        checkRev a e3
+                        checkRev b e3
                     ]
                     |> List.minBy (fun (_, _, t, _) -> t)
 
@@ -325,9 +325,9 @@ module PhysicsEngine =
             )
 
             match firstSegHit, firstPointHit with
-            | Some seg, Some point ->
+            | Some (LineSegment2D (a, b)), Some point ->
 
-                let segDir = (seg.B - seg.A) |> Vector2.Normalize
+                let segDir = (b - a) |> Vector2.Normalize
                 let newVelocity = velocity * (hitTime) + paddedVelocity
 
                 warpRigidBody (Vector3 (rBody.WorldPosition + newVelocity, z)) rBody eng

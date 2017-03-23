@@ -5,11 +5,12 @@ open System.Numerics
 open Foom.Math
 
 [<Struct>]
-type LineSegment2D =
-    {
-        A: Vector2
-        B: Vector2
-    }
+type LineSegment2D = 
+    LineSegment2D of Vector2 * Vector2 with
+
+    member inline A : Vector2
+
+    member inline B : Vector2
 
 module LineSegment2D =
 
@@ -22,3 +23,7 @@ module LineSegment2D =
     val normal : LineSegment2D -> Vector2
 
     val inline isPointOnLeftSide : Vector2 -> LineSegment2D -> bool
+
+    val inline startPoint : LineSegment2D -> Vector2
+
+    val inline endPoint : LineSegment2D -> Vector2
