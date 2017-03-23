@@ -273,10 +273,10 @@ module PhysicsEngine =
 
                     seg, point, result, false
 
-                let e0 = LineSegment2D (v00, v01)
-                let e1 = LineSegment2D (v01, v02)
-                let e2 = LineSegment2D (v02, v03)
-                let e3 = LineSegment2D (v03, v00)
+                let e0 = { A = v00; B = v01 }
+                let e1 = { A = v01; B = v02 }
+                let e2 = { A = v02; B = v03 }
+                let e3 = { A = v03; B = v00 }
 
                 let checkRev point (seg: LineSegment2D) =
                     if LineSegment2D.isPointOnLeftSide point seg then

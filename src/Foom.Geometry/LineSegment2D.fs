@@ -6,14 +6,11 @@ open Foom.Math
 
 [<Struct>]
 type LineSegment2D =
+    {
+        A: Vector2
+        B: Vector2
+    }
 
-    val A : Vector2
-
-    val B : Vector2
-
-    new (a, b) = { A = a; B = b }
-
-[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module LineSegment2D =
 
     // From Book: Real-Time Collision Detection

@@ -274,7 +274,7 @@ let updates (clientWorld: ClientWorld) =
                     let isUpper = linedef.Flags.HasFlag (LinedefFlags.UpperTextureUnpegged)
                     let staticWall =
                         {
-                            LineSegment = (LineSegment2D (linedef.Start, linedef.End))
+                            LineSegment = { A = linedef.Start; B = linedef.End }
 
                             IsTrigger = (linedef.FrontSidedef.IsSome && linedef.BackSidedef.IsSome) //&& not isImpassible && isUpper
 
@@ -288,7 +288,7 @@ let updates (clientWorld: ClientWorld) =
                     if isImpassible then
                         let staticWall =
                             {
-                                LineSegment = (LineSegment2D (linedef.End, linedef.Start))
+                                LineSegment = { A = linedef.End; B = linedef.Start }
 
                                 IsTrigger = false
 

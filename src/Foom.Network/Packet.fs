@@ -11,6 +11,14 @@ type PacketType =
     | ConnectionRequested = 2uy
     | ConnectionAccepted = 3uy
 
+[<Struct>]
+type PacketHeader =
+    {
+        PacketType: PacketType
+        SequenceId: uint16
+        FragmentChunks: byte
+    }
+
 [<Sealed>]
 type Packet () =
 
@@ -18,9 +26,18 @@ type Packet () =
     let byteWriter = ByteWriter (byteStream)
     let byteReader = ByteReader (byteStream)
 
+    let mutable capturedHeader = Unchecked.defaultof<PacketHeader>
+
     member this.Length = byteStream.Length
 
     member this.Raw = byteStream.Raw
+
+    member this.Header =
+        let originalPos = byteStream.Position
+        byteStream.Position <- 0
+        byteReader.Read (&capturedHeader)
+        byteStream.Position <- originalPos
+        capturedHeader
 
     member this.Type : PacketType =
         let originalPos = byteStream.Position
@@ -33,9 +50,7 @@ type Packet () =
         byteStream.Length <- 0
 
         // setup header
-        byteWriter.WriteByte (byte typ)
-        byteWriter.WriteUInt16 (0us)
-        byteWriter.WriteByte (0uy)
+        byteWriter.Write { PacketType = typ; SequenceId = 0us; FragmentChunks = 0uy }
 
         Buffer.BlockCopy (bytes, startIndex, byteStream.Raw, NetConstants.PacketHeaderSize, size)
 
@@ -43,6 +58,7 @@ type Packet () =
 
     member this.Reset () =
         byteStream.Length <- 0
+        capturedHeader <- Unchecked.defaultof<PacketHeader>
 
 [<Sealed>]
 type UnreliableChannel (client: ConnectedClient, endPoint: IUdpEndPoint) =
@@ -116,9 +132,9 @@ type Server (udpServer: IUdpServer) =
 
                 recvStream.Length <- byteCount
 
-                let typ = recvReader.ReadByte ()
+                let header = recvReader.Read<PacketHeader> ()
 
-                match LanguagePrimitives.EnumOfValue typ with
+                match header.PacketType with
                 | PacketType.ConnectionRequested ->
 
                     let client = ConnectedClient (endPoint, udpServer)
@@ -170,9 +186,9 @@ type Client (udpClient: IUdpClient) =
 
                 recvStream.Length <- byteCount
 
-                let typ = recvReader.ReadByte ()
+                let header = recvReader.Read<PacketHeader> ()
 
-                match LanguagePrimitives.EnumOfValue typ with
+                match header.PacketType with
                 | PacketType.ConnectionAccepted ->
 
                     connected.Trigger (udpClient.RemoteEndPoint)

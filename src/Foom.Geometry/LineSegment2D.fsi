@@ -6,14 +6,11 @@ open Foom.Math
 
 [<Struct>]
 type LineSegment2D =
+    {
+        A: Vector2
+        B: Vector2
+    }
 
-    val A : Vector2
-
-    val B : Vector2
-
-    new : Vector2 * Vector2 -> LineSegment2D
-
-[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module LineSegment2D =
 
     val intersectsAABB : AABB2D -> LineSegment2D -> bool
