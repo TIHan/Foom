@@ -7,31 +7,62 @@ open Foom.Math
 [<Struct>]
 type Triangle2D =
 
-    val A : Vector2
+    val mutable P1 : Vector2
+    val mutable P2 : Vector2
+    val mutable P3 : Vector2
 
-    val B : Vector2
+    new (p1, p2, p3) = { P1 = p1; P2 = p2; P3 = p3 }
 
-    val C : Vector2
+    member tri.Area () = 
+        (tri.P1.X - tri.P2.X) * (tri.P2.Y - tri.P3.Y) - (tri.P2.X - tri.P3.X) * (tri.P1.Y - tri.P2.Y)
 
-    new (a, b, c) = { A = a; B = b; C = c } 
+    member tri.BoundingBox () =
+        let mutable minX = tri.P1.X
+        let mutable maxX = tri.P1.X
+        let mutable minY = tri.P1.Y
+        let mutable maxY = tri.P1.Y
 
-[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
-module Triangle2D =
+        if tri.P2.X < minX then minX <- tri.P2.X
+        if tri.P2.X > maxX then maxX <- tri.P2.X
+        if tri.P2.Y < minY then minY <- tri.P2.Y
+        if tri.P2.Y > maxY then maxY <- tri.P2.Y
 
-    let inline area (tri: Triangle2D) =
-        (tri.A.X - tri.B.X) * (tri.B.Y - tri.C.Y) - (tri.B.X-tri.C.X) * (tri.A.Y - tri.B.Y)
+        if tri.P3.X < minX then minX <- tri.P3.X
+        if tri.P3.X > maxX then maxX <- tri.P3.X
+        if tri.P3.Y < minY then minY <- tri.P3.Y
+        if tri.P3.Y > maxY then maxY <- tri.P3.Y
+
+        AABB2D.ofMinAndMax (Vector2 (minX, minY)) (Vector2 (maxX, maxY))
+
+    // This isn't efficient yet.
+    member tri.Intersects (aabb: AABB2D) =
+        let l0 = LineSegment2D (tri.P2, tri.P2)
+        let l1 = LineSegment2D (tri.P2, tri.P3)
+        let l2 = LineSegment2D (tri.P3, tri.P1)
+
+        let min = aabb.Min ()
+        let max = aabb.Max ()
+
+        LineSegment2D.intersectsAABB aabb l0 ||
+        LineSegment2D.intersectsAABB aabb l1 ||
+        LineSegment2D.intersectsAABB aabb l2 ||
+        AABB2D.containsPoint tri.P1 aabb ||
+        AABB2D.containsPoint tri.P2 aabb ||
+        AABB2D.containsPoint tri.P3 aabb ||
+        tri.Contains min ||
+        tri.Contains max
 
     // From book: Real-Time Collision Detection - Pages 47-48
     // Note: "If several points are tested against the same triangle, the terms d00, d01, d11, and
     //     denom only have to be computed once, as they are fixed for a given triangle."
-    let containsPoint (p: Vector2) (tri: Triangle2D) =
+    member tri.Contains (p : Vector2) =
         // ************************
         // Barycentric
         //     "bary" comes from Greek, meaning weight.
         // ************************
-        let v0 = tri.B - tri.A
-        let v1 = tri.C - tri.A
-        let v2 = p - tri.A
+        let v0 = tri.P2 - tri.P1
+        let v1 = tri.P3 - tri.P1
+        let v2 = p - tri.P1
 
         let d00 = Vec2.dot v0 v0
         let d01 = Vec2.dot v0 v1
@@ -48,38 +79,7 @@ module Triangle2D =
 
         0.f <= u && u <= 1.f && 0.f <= v && v <= 1.f && 0.f <= w && w <= 1.f
 
-    let aabb (tri: Triangle2D) =
-        let mutable minX = tri.A.X
-        let mutable maxX = tri.A.X
-        let mutable minY = tri.A.Y
-        let mutable maxY = tri.A.Y
+module Triangle2D =
 
-        if tri.B.X < minX then minX <- tri.B.X
-        if tri.B.X > maxX then maxX <- tri.B.X
-        if tri.B.Y < minY then minY <- tri.B.Y
-        if tri.B.Y > maxY then maxY <- tri.B.Y
+    let inline area (tri : Triangle2D) = tri.Area ()
 
-        if tri.C.X < minX then minX <- tri.C.X
-        if tri.C.X > maxX then maxX <- tri.C.X
-        if tri.C.Y < minY then minY <- tri.C.Y
-        if tri.C.Y > maxY then maxY <- tri.C.Y
-
-        AABB2D.ofMinAndMax (Vector2 (minX, minY)) (Vector2 (maxX, maxY))
-
-    // This isn't efficient yet.
-    let intersectsAABB (aabb: AABB2D) (tri: Triangle2D) =
-        let l0 = LineSegment2D (tri.B, tri.B)
-        let l1 = LineSegment2D (tri.B, tri.C)
-        let l2 = LineSegment2D (tri.C, tri.A)
-
-        let min = aabb.Min ()
-        let max = aabb.Max ()
-
-        LineSegment2D.intersectsAABB aabb l0 ||
-        LineSegment2D.intersectsAABB aabb l1 ||
-        LineSegment2D.intersectsAABB aabb l2 ||
-        AABB2D.containsPoint tri.A aabb ||
-        AABB2D.containsPoint tri.B aabb ||
-        AABB2D.containsPoint tri.C aabb ||
-        containsPoint (min) tri ||
-        containsPoint (max) tri

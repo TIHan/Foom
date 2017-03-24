@@ -5,21 +5,20 @@ open System.Numerics
 [<Struct>]
 type Triangle2D =
 
-    val A : Vector2
-
-    val B : Vector2
-
-    val C : Vector2
+    val mutable P1 : Vector2
+    val mutable P2 : Vector2
+    val mutable P3 : Vector2
 
     new : Vector2 * Vector2 * Vector2 -> Triangle2D
 
-[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
+    member Intersects : AABB2D -> bool
+
+    member Contains : Vector2 -> bool
+
+    member Area : unit -> single
+
+    member BoundingBox : unit -> AABB2D
+
 module Triangle2D =
 
     val inline area : Triangle2D -> float32
-
-    val containsPoint : Vector2 -> Triangle2D -> bool
-
-    val aabb : Triangle2D -> AABB2D
-
-    val intersectsAABB : AABB2D -> Triangle2D -> bool

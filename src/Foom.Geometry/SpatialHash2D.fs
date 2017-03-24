@@ -66,7 +66,7 @@ type SpatialHash2D<'T> =
         | _ -> None
 
     member this.AddByTriangle f (tri: Triangle2D) =
-        let aabb = Triangle2D.aabb tri
+        let aabb = tri.BoundingBox ()
         let min = aabb.Min ()
         let max = aabb.Max ()
 
@@ -82,7 +82,7 @@ type SpatialHash2D<'T> =
                 let max = Vector2 (single ((x + 1) * this.CellSize), single ((y + 1) * this.CellSize))
                 let aabb = AABB2D.ofMinAndMax min max
 
-                if Triangle2D.intersectsAABB aabb tri then
+                if tri.Intersects aabb then
                     let hash = Hash2D (x, y)
                     this.InternalAdd hash f
 

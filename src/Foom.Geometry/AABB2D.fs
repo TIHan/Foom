@@ -2,6 +2,7 @@
 
 open System.Numerics
 
+[<Struct>]
 type AABB2D =
     {
         center: Vector2
@@ -16,7 +17,6 @@ type AABB2D =
 
     member this.Max () = this.Center + this.Extents
 
-[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module AABB2D =
 
     let inline center (b: AABB2D) = b.Center

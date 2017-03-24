@@ -148,9 +148,9 @@ module WadLevel =
                                     triangles
                                     |> Seq.map (fun tri ->
                                         [|
-                                            Vector3 (tri.C.X, tri.C.Y, single sector.ceilingHeight)
-                                            Vector3 (tri.B.X, tri.B.Y, single sector.ceilingHeight)
-                                            Vector3 (tri.A.X, tri.A.Y, single sector.ceilingHeight)
+                                            Vector3 (tri.P3.X, tri.P3.Y, single sector.ceilingHeight)
+                                            Vector3 (tri.P2.X, tri.P2.Y, single sector.ceilingHeight)
+                                            Vector3 (tri.P1.X, tri.P1.Y, single sector.ceilingHeight)
                                         |]
                                     )
                                     |> Seq.reduce Array.append
@@ -164,9 +164,9 @@ module WadLevel =
                                     triangles
                                     |> Seq.map (fun tri ->
                                         [|
-                                            Vector3 (tri.A.X, tri.A.Y, single sector.floorHeight)
-                                            Vector3 (tri.B.X, tri.B.Y, single sector.floorHeight)
-                                            Vector3 (tri.C.X, tri.C.Y, single sector.floorHeight)
+                                            Vector3 (tri.P1.X, tri.P1.Y, single sector.floorHeight)
+                                            Vector3 (tri.P2.X, tri.P2.Y, single sector.floorHeight)
+                                            Vector3 (tri.P3.X, tri.P3.Y, single sector.floorHeight)
                                         |]
                                     )
                                     |> Seq.reduce Array.append

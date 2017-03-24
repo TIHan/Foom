@@ -64,7 +64,7 @@ module PhysicsEngine =
                         let mutable result = Unchecked.defaultof<obj>
 
                         for i = 0 to data.Triangles.Count - 1 do
-                            if Triangle2D.containsPoint p data.Triangles.[i] then
+                            if data.Triangles.[i].Contains p then
                                 result <- data.TriangleData.[i]
 
                         result

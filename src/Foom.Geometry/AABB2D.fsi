@@ -2,8 +2,12 @@
 
 open System.Numerics
 
-[<Sealed>]
+[<Struct>]
 type AABB2D =
+    private {
+        center: Vector2
+        extents: Vector2
+    }
 
     member Center : Vector2
 
@@ -13,7 +17,6 @@ type AABB2D =
 
     member Max : unit -> Vector2
 
-[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module AABB2D =
 
     val inline center : AABB2D -> Vector2
