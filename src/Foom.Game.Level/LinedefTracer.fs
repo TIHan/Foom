@@ -29,7 +29,9 @@ type LinedefPolygon =
         let mutable c = false
 
         for i = 0 to linedefs.Length - 1 do
-            let (LineSegment2D (a, b)) = linedefs.[i].Segment
+            let seg = linedefs.[i].Segment
+            let a = seg.A
+            let b = seg.B
 
             let xp1 = a.X
             let xp2 = b.X
@@ -53,7 +55,10 @@ module LinedefTracer =
         (v2.X - v1.X) * (p.Y - v1.Y) - (v2.Y - v1.Y) * (p.X - v1.X) > 0.f
 
     let isPointOnFrontSide (p: Vector2) (linedef: Wall) (tracer: LinedefTracer) =
-        let (LineSegment2D (a, b)) = linedef.Segment
+        let seg = linedef.Segment
+        let a = seg.A
+        let b = seg.B
+
         if linedef.FrontSide.IsSome && linedef.FrontSide.Value.SectorId = tracer.sectorId
         then isPointOnLeftSide b a p
         else isPointOnLeftSide a b p

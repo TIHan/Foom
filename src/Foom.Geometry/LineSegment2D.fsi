@@ -6,11 +6,11 @@ open Foom.Math
 
 [<Struct>]
 type LineSegment2D = 
-    LineSegment2D of Vector2 * Vector2 with
 
-    member inline A : Vector2
+    val mutable A : Vector2
+    val mutable B : Vector2
 
-    member inline B : Vector2
+    new : Vector2 * Vector2 -> LineSegment2D
 
 module LineSegment2D =
 

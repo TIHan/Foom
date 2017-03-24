@@ -6,21 +6,21 @@ open Foom.Math
 
 [<Struct>]
 type LineSegment2D = 
-    LineSegment2D of Vector2 * Vector2 with
 
-    member inline this.A =
-        match this with
-        | LineSegment2D (a, _) -> a
+    val mutable A : Vector2
+    val mutable B : Vector2
 
-    member inline this.B =
-        match this with
-        | LineSegment2D (_, b) -> b
+    new (a, b) =
+        { A = a; B = b }
 
 module LineSegment2D =
 
     // From Book: Real-Time Collision Detection
     // Modified, so it might not work :(
-    let intersectsAABB (aabb: AABB2D) (LineSegment2D (a, b)) =
+    let intersectsAABB (aabb : AABB2D) (seg : LineSegment2D) =
+        let a = seg.A
+        let b = seg.B
+
         let c = aabb.Center
         let e = aabb.Extents
         let m = a + b * 0.5f
@@ -42,7 +42,10 @@ module LineSegment2D =
         else
             true
 
-    let aabb (LineSegment2D (a, b)) =
+    let aabb (seg : LineSegment2D) =
+        let a = seg.A
+        let b = seg.B
+
         let mutable minX = a.X
         let mutable maxX = a.X
         let mutable minY = a.Y
@@ -55,7 +58,10 @@ module LineSegment2D =
 
         AABB2D.ofMinAndMax (Vector2 (minX, minY)) (Vector2 (maxX, maxY))
 
-    let findClosestPointByPoint (p: Vector2) (LineSegment2D (b, a)) =
+    let findClosestPointByPoint (p : Vector2) (seg : LineSegment2D) =
+        let a = seg.A
+        let b = seg.B
+
         let ab = b - a
 
         let t = Vec2.dot (p - a) ab
@@ -69,9 +75,9 @@ module LineSegment2D =
                 let t = t / denom
                 (t, a + (t * ab))
 
-    let normal (LineSegment2D (a, b)) =
-        let dx = b.X - a.X
-        let dy = b.Y - a.Y
+    let normal (seg : LineSegment2D) =
+        let dx = seg.B.X - seg.A.X
+        let dy = seg.B.Y - seg.A.Y
 
         let dir1 =
             Vector2 (-dy, dx)
@@ -83,9 +89,11 @@ module LineSegment2D =
 
         dir2
 
-    let inline isPointOnLeftSide (p: Vector2) (LineSegment2D (v1, v2)) =
+    let inline isPointOnLeftSide (p : Vector2) (seg : LineSegment2D) =
+        let v1 = seg.A
+        let v2 = seg.B
         (v2.X - v1.X) * (p.Y - v1.Y) - (v2.Y - v1.Y) * (p.X - v1.X) > 0.f
 
-    let inline startPoint (LineSegment2D (a, _)) = a
+    let inline startPoint (seg : LineSegment2D) = seg.A
 
-    let inline endPoint (LineSegment2D (_, b)) = b
+    let inline endPoint (seg : LineSegment2D) = seg.B

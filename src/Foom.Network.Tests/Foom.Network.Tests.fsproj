@@ -61,5 +61,8 @@
       <Project>{D916B23C-0D8F-4044-8C93-AF4DBAA7D3BE}</Project>
       <Name>Foom.Network.Desktop</Name>
     </ProjectReference>
+    <Reference Include="System.Numerics.Vectors">
+      <HintPath>..\..\packages\System.Numerics.Vectors.4.3.0\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>

@@ -1,6 +1,7 @@
 ﻿namespace Foom.Network.Tests
 
 open System
+open System.Numerics
 open System.Threading.Tasks
 
 open NUnit.Framework
@@ -9,9 +10,9 @@ open Foom.Network
 
 [<Struct>]
 type TestStruct =
-    {
-        X: int
-        Y: int
+    { 
+        x: int
+        y: int
     }
 
 [<TestFixture>]
@@ -83,8 +84,8 @@ type Test() =
         let byteWriter = ByteWriter (byteStream)
         let byteReader = ByteReader (byteStream)
 
-        let mutable testStruct = { X = 1234; Y = 5678 }
-        let mutable testStruct2 = { X = 0; Y = 0 }
+        let mutable testStruct = { x = 1234; y = 5678 }
+        let mutable testStruct2 = { x = 0; y = 0 }
 
         let ops =
             [

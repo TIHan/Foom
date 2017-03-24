@@ -6,19 +6,26 @@ open Foom.Math
 
 [<Struct>]
 type Circle2D =
+    {
+        center : Vector2
+        radius : single
+    }
 
-    val mutable Center : Vector2
+    member this.Center = this.center
 
-    val Radius : float32
+    member this.Radius = this.radius
 
-    new (center, radius) = { Center = center; Radius = radius }
-
-[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Circle2D =
 
-    let inline center (circle: Circle2D) = circle.Center
+    let create center radius =
+        if radius < 0.f then
+            failwith "Circle2D: Radius cannot be less than 0."
 
-    let inline radius (circle: Circle2D) = circle.Radius
+        { center = center; radius = radius }
 
-    let aabb (circle: Circle2D) =
+    let inline center (circle : Circle2D) = circle.Center
+
+    let inline radius (circle : Circle2D) = circle.Radius
+
+    let aabb (circle : Circle2D) =
         AABB2D.ofCenterAndExtents circle.Center (Vector2 (circle.Radius, circle.Radius))

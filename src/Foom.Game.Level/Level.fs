@@ -94,7 +94,9 @@ module Level =
         else byte lightLevel
 
     let createWallGeometry (wall: Wall) (level: Level) : (Vector3 [] * Vector3 [] * Vector3 []) * (Vector3 [] * Vector3 [] * Vector3 [])  =
-        let (LineSegment2D (a, b)) = wall.Segment
+        let seg = wall.Segment
+        let a = seg.A
+        let b = seg.B
 
         // Upper Front
         let mutable upperFront = [||]

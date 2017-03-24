@@ -6,15 +6,18 @@ open Foom.Math
 
 [<Struct>]
 type Circle2D =
+    private {
+        center : Vector2
+        radius : single
+    }
 
-    val mutable Center : Vector2
+    member Center : Vector2
 
-    val Radius : float32
+    member Radius : single
 
-    new : Vector2 * float32 -> Circle2D
-
-[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
 module Circle2D =
+
+    val create : center : Vector2 -> radius : single -> Circle2D
 
     val inline center : Circle2D -> Vector2
 

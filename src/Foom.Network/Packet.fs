@@ -13,11 +13,17 @@ type PacketType =
 
 [<Struct>]
 type PacketHeader =
-    {
-        PacketType: PacketType
-        SequenceId: uint16
-        FragmentChunks: byte
+    { 
+        packetType: PacketType
+        sequenceId: uint16
+        fragmentChunks: byte
     }
+
+    member this.PacketType = this.packetType
+
+    member this.SequenceId = this.sequenceId
+
+    member this.FragmentChunks = this.fragmentChunks
 
 [<Sealed>]
 type Packet () =
@@ -50,7 +56,7 @@ type Packet () =
         byteStream.Length <- 0
 
         // setup header
-        byteWriter.Write { PacketType = typ; SequenceId = 0us; FragmentChunks = 0uy }
+        byteWriter.Write { packetType = typ; sequenceId = 0us; fragmentChunks = 0uy }
 
         Buffer.BlockCopy (bytes, startIndex, byteStream.Raw, NetConstants.PacketHeaderSize, size)
 

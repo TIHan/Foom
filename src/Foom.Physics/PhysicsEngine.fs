@@ -194,10 +194,12 @@ module PhysicsEngine =
         else
             1.f
 
-    let findIntersectionTimeOfPointAndVelocity point velocity (LineSegment2D (a, b) as seg) =
+    let findIntersectionTimeOfPointAndVelocity point velocity seg =
         if LineSegment2D.isPointOnLeftSide point seg then
             1.f
         else
+            let a = seg.A
+            let b = seg.B
 
             let p = a
             let r = (b - p)
@@ -253,7 +255,9 @@ module PhysicsEngine =
             // TODO: Implement solver.
             narrowPhase
             |> Seq.distinct
-            |> Seq.iter (fun (LineSegment2D (a, b) as seg) ->
+            |> Seq.iter (fun seg ->
+                let a = seg.A
+                let b = seg.B
 
                 let v00 = rBody.WorldPosition + Vector2 (min.X, min.Y)
                 let v01 = rBody.WorldPosition + Vector2 (max.X, min.Y)
@@ -278,10 +282,13 @@ module PhysicsEngine =
                 let e2 = LineSegment2D (v02, v03)
                 let e3 = LineSegment2D (v03, v00)
 
-                let checkRev point (LineSegment2D (a, b) as seg) =
+                let checkRev point seg =
                     if LineSegment2D.isPointOnLeftSide point seg then
                         seg, point, 1.f, true
                     else
+
+                    let a = seg.A
+                    let b = seg.B
 
                     let p = a
                     let r = (b - p)
@@ -325,9 +332,9 @@ module PhysicsEngine =
             )
 
             match firstSegHit, firstPointHit with
-            | Some (LineSegment2D (a, b)), Some point ->
+            | Some seg, Some point ->
 
-                let segDir = (b - a) |> Vector2.Normalize
+                let segDir = (seg.B - seg.A) |> Vector2.Normalize
                 let newVelocity = velocity * (hitTime) + paddedVelocity
 
                 warpRigidBody (Vector3 (rBody.WorldPosition + newVelocity, z)) rBody eng
