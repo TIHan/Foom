@@ -19,11 +19,11 @@ type PacketHeader =
         fragmentChunks: byte
     }
 
-    member this.PacketType = this.packetType
+    member x.PacketType = x.packetType
 
-    member this.SequenceId = this.sequenceId
+    member x.SequenceId = x.sequenceId
 
-    member this.FragmentChunks = this.fragmentChunks
+    member x.FragmentChunks = x.fragmentChunks
 
 [<Sealed>]
 type Packet () =
