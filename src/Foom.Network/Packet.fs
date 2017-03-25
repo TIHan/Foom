@@ -50,6 +50,8 @@ type Packet () =
 
     member this.MergeCount = byteStream.Raw.[5] |> int
 
+    member this.SizeRemaining = byteStream.Raw.Length - byteStream.Length
+
     member this.SetData (packetType, bytes: byte [], startIndex: int, size: int) =
         this.Reset ()
 

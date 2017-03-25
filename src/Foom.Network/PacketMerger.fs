@@ -13,8 +13,7 @@ type PacketMerger (packetPool : PacketPool) =
             let mutable done' = false
             for i = 0 to packets.Count - 1 do
                 let packet' = packets.[i]
-                let sizeRemaining = packet'.Raw.Length - packet'.Length
-                if sizeRemaining > packet.Length && not done' then
+                if packet'.SizeRemaining > packet.Length && not done' then
                     packet'.Merge packet
                     packetPool.Recycle packet
                     done' <- true
