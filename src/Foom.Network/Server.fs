@@ -6,76 +6,54 @@ open System.Collections.Generic
 [<Sealed>]
 type UnreliableChannel (endPoint: IUdpEndPoint) =
 
+    let packetPool = Stack (Array.init 64 (fun _ -> Packet ()))
+
     let outgoingQueue = Queue<Packet> ()
 
-    member this.EnqueuePacket (packet: Packet) =
+    member this.EnqueueData (data, startIndex, size) =
+        let packet = packetPool.Pop ()
+        packet.SetData (PacketType.Unreliable, data, startIndex, size)
         outgoingQueue.Enqueue (packet)
 
     member this.Process f =
         while outgoingQueue.Count > 0 do
             let packet = outgoingQueue.Dequeue ()
             f packet
+            this.RecyclePacket packet
+
+    member this.RecyclePacket (packet : Packet) =
+        packet.Reset ()
+        packetPool.Push packet
 
 [<Sealed>]
-type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
+type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) =
 
     // Channels
     let unreliableChannel = UnreliableChannel (endPoint)
 
-    let packetPool = Stack (Array.init 64 (fun _ -> Packet ()))
-    let mergedPacket = Packet ()
+    // Extra Packet Queue
+    let packetQueue = Queue<Packet> ()
 
-    member this.ResetMergedPacket () =
-        mergedPacket.Reset ()
-        mergedPacket.SetData (PacketType.Merged, [||], 0, 0)
-
-    member this.SendPacket (packet: Packet) =
-        match packet.PacketType with
-
-        | PacketType.Unreliable ->
-            unreliableChannel.EnqueuePacket packet
-
-        | PacketType.ConnectionAccepted ->
-            unreliableChannel.EnqueuePacket packet
-
-        | _ -> ()
-
-    member this.SendMergedPacketNow () =
-        if mergedPacket.MergeCount > 0 then
-            this.SendNow (mergedPacket.Raw, mergedPacket.Length)
-
-    member this.MergePacket (packet : Packet) =
-        if mergedPacket.Raw.Length - mergedPacket.Length > packet.Length then
-            mergedPacket.Merge packet
-        else
-            this.SendMergedPacketNow ()
-            this.ResetMergedPacket ()
-
-    member this.SendNow (data, size) =
-        udpServer.Send (data, size, endPoint) |> ignore
+    member this.SendNow (data : byte [], size) =
+        if size > 0 && data.Length > 0 then
+            udpServer.Send (data, size, endPoint) |> ignore
 
     member this.Send (data, startIndex, size) =
-        let packet = packetPool.Pop ()
-        packet.SetData (PacketType.Unreliable, data, startIndex, size)
-        this.SendPacket packet
+        unreliableChannel.EnqueueData (data, startIndex, size)
 
     member this.SendConnectionAccepted () =
-        let packet = packetPool.Pop ()
+        let packet = Packet ()
         packet.SetData (PacketType.ConnectionAccepted, [||], 0, 0)
-        this.SendPacket (packet)
-
-    member this.RecyclePacket (packet: Packet) =
-        packet.Reset ()
-        packetPool.Push (packet)
+        packetQueue.Enqueue packet
 
     member this.Update () =
-        this.ResetMergedPacket ()
+        while packetQueue.Count > 0 do
+            let packet = packetQueue.Dequeue ()
+            this.SendNow (packet.Raw, packet.Length)
 
         unreliableChannel.Process (fun packet ->
-            this.MergePacket packet
-            this.RecyclePacket packet
+            this.SendNow (packet.Raw, packet.Length)
         )
-        this.SendMergedPacketNow ()
 
 [<Sealed>]
 type Server (udpServer: IUdpServer) =
