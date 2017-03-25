@@ -7,13 +7,16 @@ type PacketType =
 
     | Unreliable = 0uy
     | UnreliableSequenced = 1uy
+    | Reliable = 2uy
+    | ReliableSequenced = 3uy
+    | ReliableOrdered = 4uy
 
-    | ConnectionRequested = 2uy
-    | ConnectionAccepted = 3uy
+    | ConnectionRequested = 5uy
+    | ConnectionAccepted = 6uy
 
-    | Disconnected = 4uy
-    | Kicked = 5uy
-    | Banned = 6uy
+    | Disconnected = 7uy
+    | Kicked = 8uy
+    | Banned = 9uy
 
 [<Struct>]
 type PacketHeader =
