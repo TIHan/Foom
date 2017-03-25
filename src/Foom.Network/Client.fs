@@ -28,7 +28,8 @@ type Client (udpClient: IUdpClient) =
 
         let rec onReceivePacket (reader : ByteReader) =
             let header = reader.Read<PacketHeader> ()
-            match header.PacketType with
+
+            match header.packetType with
             | PacketType.Unreliable ->
 
                 let typeId = reader.ReadByte () |> int
@@ -36,17 +37,15 @@ type Client (udpClient: IUdpClient) =
                 if typeDeserializers.Length > typeId then
                     typeDeserializers.[typeId].Trigger reader
 
-            | PacketType.Merged ->
-
-                for i = 0 to int header.PacketCount - 1 do
-                    onReceivePacket reader
-
             | PacketType.ConnectionAccepted ->
 
                 isConnected <- true
                 connected.Trigger (udpClient.RemoteEndPoint)
 
             | _ -> ()
+
+            for i = 0 to int header.mergeCount - 1 do
+                onReceivePacket reader
 
         onReceivePacket reader
 

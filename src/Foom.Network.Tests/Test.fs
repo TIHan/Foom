@@ -207,7 +207,7 @@ type Test() =
             printfn "%A" msg
         )
 
-        for i = 0 to 128 do
+        for i = 0 to 0 do
             server.Publish ({ a = 9898; b = 3456 })
             server.Publish ({ c = 1337; d = 666 })
 
