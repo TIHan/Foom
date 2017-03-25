@@ -67,13 +67,6 @@ type Test() =
         Network.RegisterType (TestMessage2.Serialize, TestMessage2.Deserialize)
         Network.RegisterType (TestMessage3.Serialize, TestMessage3.Deserialize)
 
-    //[<Test>]
-    //member this.PacketMergingWorks () : unit =
-    //    let p1 = Packet ()
-    //    let p2 = Packet ()
-
-
-
     [<Test>]
     member this.UdpWorks () : unit =
         use udpClient = new UdpClient () :> IUdpClient
@@ -206,27 +199,21 @@ type Test() =
 
         client.Subscribe<TestMessage2> (fun msg -> 
             messageReceived <- true
-           // printfn "%A" msg
+            printfn "%A" msg
         )
         clientV6.Subscribe<TestMessage2> (fun msg -> 
             messageReceived <- true
-           // printfn "%A" msg
+            printfn "%A" msg
         )
 
         client.Subscribe<TestMessage> (fun msg -> 
             messageReceived <- true
-           // printfn "%A" msg
+            printfn "%A" msg
         )
         clientV6.Subscribe<TestMessage> (fun msg -> 
             messageReceived <- true
-            //printfn "%A" msg
+            printfn "%A" msg
         )
-
-        //for i = 0 to 6 - 1 do
-        //    let udpClient = new UdpClient () :> IUdpClient
-        //    let client = Client (udpClient)
-        //    client.Connect ("localhost", 27015) |> ignore
-        //    client.Update ()
 
         server.Publish ({ a = 9898; b = 3456 })
 
@@ -235,7 +222,7 @@ type Test() =
         let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 
         //for i = 0 to 50 do
-        for i = 0 to 1000 do
+        for i = 0 to 10 do
             server.Publish ({ a = 9898; b = 3456 })
             server.Publish ({ c = 1337; d = 666 })
 
@@ -243,11 +230,9 @@ type Test() =
 
         stopwatch.Stop ()
 
-        let x = { a = 9898; b = 3456 }
-        let y = { c = 1337; d = 666 }
         let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 
-        for i = 0 to 20 do
+        for i = 0 to 40 do
             server.Publish data
 
         server.Update ()
@@ -257,7 +242,7 @@ type Test() =
         printfn "[Server] %f kB sent." (single server.BytesSentSinceLastUpdate / 1024.f)
         printfn "[Server] time taken: %A." stopwatch.Elapsed.TotalMilliseconds
 
-       // client.Update ()
-       // clientV6.Update ()
+        client.Update ()
+        clientV6.Update ()
 
-        //Assert.True (messageReceived)
+        Assert.True (messageReceived)
