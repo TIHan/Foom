@@ -43,6 +43,7 @@
     <Compile Include="PacketPool.fs" />
     <Compile Include="PacketMerger.fs" />
     <Compile Include="UnreliableChannel.fs" />
+    <Compile Include="ReliableOrderedChannel.fs" />
     <Compile Include="Client.fs" />
     <Compile Include="Server.fs" />
     <None Include="packages.config" />

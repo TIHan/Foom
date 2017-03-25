@@ -310,7 +310,7 @@ type Test() =
 
         Assert.True (channel.HasPendingAcks)
 
-        System.Threading.Thread.Sleep (11000)
+        System.Threading.Thread.Sleep (6000)
 
         channel.Update (fun packet ->
             queue.Enqueue packet
