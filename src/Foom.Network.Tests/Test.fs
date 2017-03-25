@@ -45,19 +45,25 @@ type TestMessage2 =
         msg.c <- byteReader.ReadInt ()
         msg.d <- byteReader.ReadInt ()
 
+module TestMessage3 =
+
+    let buffer = Array.zeroCreate<int> 65536
+
 [<CLIMutable>]
 type TestMessage3 =
     {
         mutable arr : int []
+        mutable len : int
     }
 
+
+
     static member Serialize (msg: TestMessage3) (byteWriter: ByteWriter) =
-        byteWriter.WriteInts (msg.arr, 0, msg.arr.Length)
+        byteWriter.WriteInts (msg.arr, 0, msg.len)
 
     static member Deserialize (msg: TestMessage3) (byteReader: ByteReader) =
-        ()
-        //msg.c <- byteReader.ReadInt ()
-        //msg.d <- byteReader.ReadInt ()
+        msg.len <- byteReader.ReadInts (TestMessage3.buffer)
+        msg.arr <- TestMessage3.buffer
 
 [<TestFixture>]
 type Test() = 
@@ -171,6 +177,7 @@ type Test() =
         let mutable isIpv6Connected = false
         let mutable clientDidConnect = false
         let mutable messageReceived = false
+        let mutable endOfArray = 0
 
         client.Connected.Add (fun endPoint -> 
             isConnected <- true
@@ -199,25 +206,32 @@ type Test() =
 
         client.Subscribe<TestMessage2> (fun msg -> 
             messageReceived <- true
-            printfn "%A" msg
+           // printfn "%A" msg
         )
         clientV6.Subscribe<TestMessage2> (fun msg -> 
             messageReceived <- true
-            printfn "%A" msg
+           // printfn "%A" msg
         )
 
         client.Subscribe<TestMessage> (fun msg -> 
             messageReceived <- true
-            printfn "%A" msg
+           // printfn "%A" msg
         )
         clientV6.Subscribe<TestMessage> (fun msg -> 
             messageReceived <- true
-            printfn "%A" msg
+           // printfn "%A" msg
+        )
+
+
+        client.Subscribe<TestMessage3> (fun msg ->
+            endOfArray <- msg.arr.[msg.len - 1]
         )
 
         server.Publish ({ a = 9898; b = 3456 })
 
-        let data = { arr = Array.zeroCreate 200 }
+        let data = { arr = Array.zeroCreate 200; len = 200 }
+
+        data.arr.[data.len - 1] <- 809
 
         let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 
@@ -232,7 +246,7 @@ type Test() =
 
         let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 
-        for i = 0 to 40 do
+        for i = 0 to 0 do
             server.Publish data
 
         server.Update ()
@@ -246,3 +260,4 @@ type Test() =
         clientV6.Update ()
 
         Assert.True (messageReceived)
+        Assert.AreEqual (808, endOfArray)

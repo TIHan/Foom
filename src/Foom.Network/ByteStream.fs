@@ -316,17 +316,17 @@ type ByteReader (byteStream: ByteStream) =
         byteStream.position <- byteStream.position + size
 
     member this.ReadInts (buffer: int []) =
-        let size = this.ReadInt ()
+        let len = this.ReadInt ()
 
-        if buffer.Length < size then
+        if buffer.Length < len then
             failwith "Buffer is too small for reading an array of ints."
 
-        let size = size * 4
+        let size = len * 4
 
         byteStream.CheckBoundsLength size
 
-        let ptr = &&byteStream.Raw.[0] |> NativePtr.toNativeInt
-        Marshal.Copy (ptr, buffer, byteStream.position, size)
+        Buffer.BlockCopy (byteStream.Raw, byteStream.position, buffer, 0, size)
         byteStream.position <- byteStream.position + size
+        len
 
 
