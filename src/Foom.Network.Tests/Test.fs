@@ -287,7 +287,44 @@ type Test() =
                 channel.Ack (packet.SequenceId)
                 packetPool.Recycle packet
 
-        printf "yopacs"
+        Assert.False (channel.HasPendingAcks)
+
+
+        // Test Resending based on time.
+
+        for i = 0 to 27 do
+            channel.ProcessData (byteStream.Raw, 0, byteStream.Length, fun packet ->
+                packetPool.Recycle packet
+            )
+
+        Assert.True (channel.HasPendingAcks)
+
+        channel.Update (fun packet ->
+            queue.Enqueue packet
+        )
+
+        while queue.Count > 0 do
+            let packet = queue.Dequeue ()
+            channel.Ack (packet.SequenceId)
+            packetPool.Recycle packet
+
+        Assert.True (channel.HasPendingAcks)
+
+        System.Threading.Thread.Sleep (11000)
+
+        channel.Update (fun packet ->
+            queue.Enqueue packet
+        )
+
+        while queue.Count > 0 do
+            let packet = queue.Dequeue ()
+            channel.Ack (packet.SequenceId)
+            packetPool.Recycle packet
+
+        Assert.False (channel.HasPendingAcks)
+
+
+
 
 
  
