@@ -8,21 +8,21 @@ type Client (udpClient: IUdpClient) =
 
     let typeDeserializers = Array.init 1024 (fun _ -> Event<ByteReader> ())
 
-    let packetPool = Stack (Array.init 64 (fun _ -> Packet ()))
+    let packetPool = PacketPool (64)
     let packetQueue = Queue<Packet> ()
 
     let mutable isConnected = false
     let connected = Event<IUdpEndPoint> ()
 
     // Channels
-    let reliableOrderedChannel = ReliableOrderedReceiverChannel ()
+    let reliableOrderedChannel = ReliableOrderedChannelReceiver (packetPool)
 
     member val Connected = connected.Publish
 
     member this.Connect (address, port) =
 
         if udpClient.Connect (address, port) then
-            let packet = packetPool.Pop ()
+            let packet = packetPool.Get ()
             packet.SetData (PacketType.ConnectionRequested, [||], 0, 0)
             packetQueue.Enqueue packet
 
@@ -60,7 +60,7 @@ type Client (udpClient: IUdpClient) =
     member private this.Receive () =
 
         while udpClient.IsDataAvailable do
-            let packet = packetPool.Pop ()
+            let packet = packetPool.Get ()
 
             match udpClient.Receive (packet.Raw, 0, packet.Raw.Length) with
             | 0 -> ()
@@ -73,7 +73,7 @@ type Client (udpClient: IUdpClient) =
 
             let packet = packetQueue.Dequeue ()
             udpClient.Send (packet.Raw, packet.Length) |> ignore
-            this.Recycle packet
+            packetPool.Recycle packet
 
     member this.Subscribe<'T when 'T : (new : unit -> 'T)> f =
         match Network.lookup.TryGetValue typeof<'T> with
@@ -90,7 +90,3 @@ type Client (udpClient: IUdpClient) =
     member this.Update () =
         this.Receive ()
         this.Send ()
-
-    member this.Recycle (packet: Packet) =
-        packet.Reset ()
-        packetPool.Push packet
