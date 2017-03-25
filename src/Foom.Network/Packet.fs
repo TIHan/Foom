@@ -17,7 +17,7 @@ type PacketType =
 
 [<Struct>]
 type PacketHeader =
-    { 
+    {
         packetType: PacketType
         sequenceId: uint16
         fragmentChunks: byte
@@ -55,13 +55,13 @@ type Packet () =
 
         // setup header
         byteWriter.Write { packetType = packetType; sequenceId = 0us; fragmentChunks = 0uy; mergeCount = 0uy }
-        byteWriter.WriteBytes (bytes, startIndex, size)
+        byteWriter.WriteRawBytes (bytes, startIndex, size)
 
     member this.Merge (packet : Packet) =
         mergeCount <- mergeCount + 1
         setMergeCount mergeCount
 
-        byteWriter.WriteBytes (packet.Raw, 0, packet.Length)
+        byteWriter.WriteRawBytes (packet.Raw, 0, packet.Length)
 
     member this.Reset () =
         byteStream.Length <- 0

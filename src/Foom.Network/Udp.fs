@@ -35,3 +35,5 @@ type IUdpServer =
     abstract Receive : byte [] * offset: int * size: int * [<Out>] remoteEP: byref<IUdpEndPoint> -> int
 
     abstract Send : byte [] * size: int * IUdpEndPoint -> int
+
+    abstract BytesSentSinceLastCall : unit -> int

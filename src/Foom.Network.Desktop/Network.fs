@@ -192,6 +192,8 @@ type UdpClient () =
 type UdpServer (port) =
     inherit Udp (port)
 
+    let mutable bytesSentSinceLastCall = 0
+
     interface IUdpServer with
 
         member this.Receive (buffer, offset, size, [<Out>] remoteEP: byref<IUdpEndPoint>) =
@@ -224,9 +226,16 @@ type UdpServer (port) =
             match remoteEP with
             | :? UdpEndPoint as remoteEP -> 
                 if remoteEP.IPEndPoint.AddressFamily = AddressFamily.InterNetwork then
+                    bytesSentSinceLastCall <- bytesSentSinceLastCall + size
                     this.UdpClient.Send (buffer, size, remoteEP.IPEndPoint)
                 elif remoteEP.IPEndPoint.AddressFamily = AddressFamily.InterNetworkV6 then
+                    bytesSentSinceLastCall <- bytesSentSinceLastCall + size
                     this.UdpClientV6.Send (buffer, size, remoteEP.IPEndPoint)
                 else
                     0
             | _ -> 0
+
+        member this.BytesSentSinceLastCall () =
+            let count = bytesSentSinceLastCall
+            bytesSentSinceLastCall <- 0
+            count

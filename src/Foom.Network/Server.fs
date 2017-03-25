@@ -9,17 +9,37 @@ type UnreliableChannel (endPoint: IUdpEndPoint) =
     let packetPool = Stack (Array.init 64 (fun _ -> Packet ()))
 
     let outgoingQueue = Queue<Packet> ()
+    let pendingQueue = Queue<Packet> ()
 
     member this.EnqueueData (data, startIndex, size) =
         let packet = packetPool.Pop ()
         packet.SetData (PacketType.Unreliable, data, startIndex, size)
-        outgoingQueue.Enqueue (packet)
+
+        if pendingQueue.Count > 1 then failwith "Pending Queue shouldn't have more than 1."
+        if pendingQueue.Count = 1 then
+            let peekPacket = pendingQueue.Peek ()
+            if peekPacket.Raw.Length - peekPacket.Length > packet.Length then
+                peekPacket.Merge packet
+                this.RecyclePacket packet
+            else
+                outgoingQueue.Enqueue (pendingQueue.Dequeue ())
+                pendingQueue.Enqueue packet
+        else
+            pendingQueue.Enqueue packet
 
     member this.Process f =
+        if pendingQueue.Count > 1 then failwith "Pending Queue shouldn't have more than 1."
+
+        if pendingQueue.Count = 1 then
+            outgoingQueue.Enqueue (pendingQueue.Dequeue ())
+
         while outgoingQueue.Count > 0 do
             let packet = outgoingQueue.Dequeue ()
             f packet
             this.RecyclePacket packet
+
+        let x = ()
+        ()
 
     member this.RecyclePacket (packet : Packet) =
         packet.Reset ()
@@ -98,6 +118,8 @@ type Server (udpServer: IUdpServer) =
     [<CLIEvent>]
     member val ClientConnected = clientConnected.Publish
 
+    member val BytesSentSinceLastUpdate = 0 with get, set
+
     member this.Publish<'T> (msg: 'T) =
         sendStream.Length <- 0
 
@@ -113,3 +135,4 @@ type Server (udpServer: IUdpServer) =
     member this.Update () =
         receive ()
         send ()
+        this.BytesSentSinceLastUpdate <- udpServer.BytesSentSinceLastCall ()

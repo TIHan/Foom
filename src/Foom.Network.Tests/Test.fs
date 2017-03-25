@@ -45,12 +45,27 @@ type TestMessage2 =
         msg.c <- byteReader.ReadInt ()
         msg.d <- byteReader.ReadInt ()
 
+[<CLIMutable>]
+type TestMessage3 =
+    {
+        mutable arr : int []
+    }
+
+    static member Serialize (msg: TestMessage3) (byteWriter: ByteWriter) =
+        byteWriter.WriteInts (msg.arr, 0, msg.arr.Length)
+
+    static member Deserialize (msg: TestMessage3) (byteReader: ByteReader) =
+        ()
+        //msg.c <- byteReader.ReadInt ()
+        //msg.d <- byteReader.ReadInt ()
+
 [<TestFixture>]
 type Test() = 
 
     do
         Network.RegisterType (TestMessage.Serialize, TestMessage.Deserialize)
         Network.RegisterType (TestMessage2.Serialize, TestMessage2.Deserialize)
+        Network.RegisterType (TestMessage3.Serialize, TestMessage3.Deserialize)
 
     //[<Test>]
     //member this.PacketMergingWorks () : unit =
@@ -191,28 +206,58 @@ type Test() =
 
         client.Subscribe<TestMessage2> (fun msg -> 
             messageReceived <- true
-            printfn "%A" msg
+           // printfn "%A" msg
         )
         clientV6.Subscribe<TestMessage2> (fun msg -> 
             messageReceived <- true
-            printfn "%A" msg
+           // printfn "%A" msg
         )
 
         client.Subscribe<TestMessage> (fun msg -> 
             messageReceived <- true
-            printfn "%A" msg
+           // printfn "%A" msg
         )
         clientV6.Subscribe<TestMessage> (fun msg -> 
             messageReceived <- true
-            printfn "%A" msg
+            //printfn "%A" msg
         )
 
-        for i = 0 to 0 do
+        //for i = 0 to 6 - 1 do
+        //    let udpClient = new UdpClient () :> IUdpClient
+        //    let client = Client (udpClient)
+        //    client.Connect ("localhost", 27015) |> ignore
+        //    client.Update ()
+
+        server.Publish ({ a = 9898; b = 3456 })
+
+        let data = { arr = Array.zeroCreate 200 }
+
+        let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
+
+        //for i = 0 to 50 do
+        for i = 0 to 1000 do
             server.Publish ({ a = 9898; b = 3456 })
             server.Publish ({ c = 1337; d = 666 })
 
         server.Update ()
-        client.Update ()
+
+        stopwatch.Stop ()
+
+        let x = { a = 9898; b = 3456 }
+        let y = { c = 1337; d = 666 }
+        let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
+
+        for i = 0 to 20 do
+            server.Publish data
+
+        server.Update ()
+
+        stopwatch.Stop ()
+
+        printfn "[Server] %f kB sent." (single server.BytesSentSinceLastUpdate / 1024.f)
+        printfn "[Server] time taken: %A." stopwatch.Elapsed.TotalMilliseconds
+
+       // client.Update ()
        // clientV6.Update ()
 
-        Assert.True (messageReceived)
+        //Assert.True (messageReceived)

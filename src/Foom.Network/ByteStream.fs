@@ -198,10 +198,20 @@ type ByteWriter (byteStream: ByteStream) =
             byteStream.length <- len
         byteStream.position <- byteStream.position + bytes.Length
 
-    member this.WriteBytes (bytes: byte [], startIndex, size) =
+    member this.WriteRawBytes (bytes: byte [], startIndex, size) =
         byteStream.CheckBounds size
 
         Buffer.BlockCopy (bytes, startIndex, byteStream.Raw, byteStream.position, size)
+        let len = byteStream.position + size
+        if len > byteStream.length then
+            byteStream.length <- len
+        byteStream.position <- byteStream.position + size
+
+    member this.WriteInts (values: int [], startIndex, size) =
+        this.WriteInt size
+        let size = size * 4
+
+        Buffer.BlockCopy (values, startIndex, byteStream.Raw, byteStream.position, size)
         let len = byteStream.position + size
         if len > byteStream.length then
             byteStream.length <- len
@@ -304,4 +314,19 @@ type ByteReader (byteStream: ByteStream) =
         let ptr = &&value |> NativePtr.toNativeInt
         Marshal.Copy (byteStream.Raw, byteStream.position, ptr, size)
         byteStream.position <- byteStream.position + size
+
+    member this.ReadInts (buffer: int []) =
+        let size = this.ReadInt ()
+
+        if buffer.Length < size then
+            failwith "Buffer is too small for reading an array of ints."
+
+        let size = size * 4
+
+        byteStream.CheckBoundsLength size
+
+        let ptr = &&byteStream.Raw.[0] |> NativePtr.toNativeInt
+        Marshal.Copy (ptr, buffer, byteStream.position, size)
+        byteStream.position <- byteStream.position + size
+
 
