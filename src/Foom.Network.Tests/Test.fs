@@ -229,7 +229,7 @@ type Test() =
 
         server.Publish ({ a = 9898; b = 3456 })
 
-        let data = { arr = Array.zeroCreate 200; len = 200 }
+        let data = { arr = Array.zeroCreate 20000; len = 20000 }
 
         data.arr.[data.len - 1] <- 808
 
