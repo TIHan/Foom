@@ -27,8 +27,6 @@ module ReliableOrderedChannelImpl =
 
 type ReliableOrderedChannel (packetPool : PacketPool) =
 
-    let timeToDisconnect = TimeSpan.FromSeconds 10.
-    let timeToResend = TimeSpan.FromSeconds 1.
     let mutable nextId = 0us
     let mutable oldestId = -1
     let mutable newestId = -1
@@ -78,11 +76,7 @@ type ReliableOrderedChannel (packetPool : PacketPool) =
         if newestId = -1 && oldestId = -1 then
             ()
         else
-            if acks.[int id] then
-                ()
-            elif (dt - ackTimes.[int id]) < timeToResend then
-                ()
-            else
+            if not acks.[int id] then
                 let copypacket = packets.[int id]
                 let packet = packetPool.Get ()
 
@@ -146,9 +140,6 @@ type ReliableOrderedChannel (packetPool : PacketPool) =
     member this.TryResend resend =
         let dt = DateTime.UtcNow
 
-        if oldestId <> -1 && (dt - oldestTimeAck) > timeToDisconnect then
-            failwith "Client has lagged out."
-
         if newestId > oldestId then
             for j = newestId downto oldestId do
                 this.TryGetNonAckedPacket (uint16 j, resend)
@@ -192,6 +183,8 @@ type ReliableOrderedChannelReceiver (packetPool : PacketPool) =
 
         if nextId = sequenceId then
             nextId <- nextId + 1us
+            if sequenceMoreRecent nextId newestId then
+                newestId <- nextId
             f packet
         else
             packetPool.Recycle packet
@@ -205,36 +198,46 @@ type ReliableOrderedChannelReceiver (packetPool : PacketPool) =
 
             packets.[int sequenceId] <- copypacket
 
+    member this.SendPacket (packet : Packet, f) =
+        this.SendData (packet.SequenceId, packet.Raw, sizeof<PacketHeader>, packet.Length - sizeof<PacketHeader>, f)
+
     member x.TryProcess f =
-        let mutable done' = true
+        let mutable done' = false
 
         if newestId > nextId then
             for i = int nextId to int newestId do
                 let packet = packets.[i]
                 if obj.ReferenceEquals (packet, null) |> not && not done' then
                     nextId <- nextId + 1us
-                    done' <- true
                     f packet
+                else
+                    done' <- true
                   
         elif newestId < nextId then
             for i = int nextId to 65536 - 1 do
                 let packet = packets.[i]
                 if obj.ReferenceEquals (packet, null) |> not && not done' then
                     nextId <- nextId + 1us
-                    done' <- true
                     f packet
+                else
+                    done' <- true
 
             for i = 0 to int newestId do
                 let packet = packets.[i]
                 if obj.ReferenceEquals (packet, null) |> not && not done' then
                     nextId <- nextId + 1us
-                    done' <- true
                     f packet
+                else
+                    done' <- true
 
         else
             let i = int nextId
             let packet = packets.[i]
             if obj.ReferenceEquals (packet, null) |> not && not done' then
                 nextId <- nextId + 1us
-                done' <- true
                 f packet
+            else
+                done' <- true
+
+        if sequenceMoreRecent nextId newestId then
+            newestId <- nextId

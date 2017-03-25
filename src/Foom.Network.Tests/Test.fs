@@ -299,18 +299,12 @@ type Test() =
 
         Assert.True (channel.HasPendingAcks)
 
-        channel.TryResend (fun packet ->
-            queue.Enqueue packet
-        )
-
         while queue.Count > 0 do
             let packet = queue.Dequeue ()
             channel.Ack (packet.SequenceId)
             packetPool.Recycle packet
 
         Assert.True (channel.HasPendingAcks)
-
-        System.Threading.Thread.Sleep (6000)
 
         channel.TryResend (fun packet ->
             queue.Enqueue packet
@@ -322,6 +316,68 @@ type Test() =
             packetPool.Recycle packet
 
         Assert.False (channel.HasPendingAcks)
+
+
+    [<Test>]
+    member x.TestReceiver () =
+        let byteStream = ByteStream 1024
+        let byteWriter = ByteWriter byteStream
+
+        byteWriter.WriteInt (1357)
+
+        // Test Receiver
+        let packetPoolSender = PacketPool 64
+        let channelSender = ReliableOrderedChannel packetPoolSender
+
+        let packetPoolReceiver = PacketPool 64
+        let channelReceiver = ReliableOrderedChannelReceiver (packetPoolReceiver)
+
+        for i = 1 to 10 do
+            channelSender.SendData (byteStream.Raw, 0, byteStream.Length, fun packet ->
+
+                channelReceiver.SendPacket (packet, fun packet ->
+                    channelSender.Ack packet.SequenceId
+                    packetPoolReceiver.Recycle packet
+                )
+
+                packetPoolSender.Recycle packet
+            )
+
+        Assert.False (channelSender.HasPendingAcks)
+
+
+        for i = 1 to 10 do
+            channelSender.SendData (byteStream.Raw, 0, byteStream.Length, fun packet ->
+
+                // Let purposely miss a packet.
+                if i <> 5 then
+                    channelReceiver.SendPacket (packet, fun packet ->
+                        channelSender.Ack packet.SequenceId
+                        packetPoolReceiver.Recycle packet
+                    )
+
+                packetPoolSender.Recycle packet
+            )
+
+        Assert.True (channelSender.HasPendingAcks)
+
+        channelSender.TryResend (fun packet ->
+
+            channelReceiver.SendPacket (packet, fun packet ->
+                channelSender.Ack packet.SequenceId
+                packetPoolReceiver.Recycle packet
+            )
+
+            packetPoolSender.Recycle packet
+        )
+
+        channelReceiver.TryProcess (fun packet ->
+            channelSender.Ack packet.SequenceId
+            packetPoolReceiver.Recycle packet
+        )
+
+
+        Assert.False (channelSender.HasPendingAcks)
 
 
 
