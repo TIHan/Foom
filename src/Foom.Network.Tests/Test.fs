@@ -292,7 +292,7 @@ type Test() =
 
         // Test Resending based on time.
 
-        for i = 0 to 27 do
+        for i = 1 to 2 do
             channel.ProcessData (byteStream.Raw, 0, byteStream.Length, fun packet ->
                 packetPool.Recycle packet
             )

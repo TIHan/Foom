@@ -39,7 +39,7 @@ type ReliableOrderedChannel (packetPool : PacketPool) =
     let ackTimes = Array.init 65536 (fun _ -> DateTime ())
     let packets = Array.init 65536 (fun _ -> Unchecked.defaultof<Packet>)
 
-    member this.HasPendingAcks = oldestId <> -1 && newestId <> -1
+    member this.HasPendingAcks = oldestId >= 0 || newestId >= 0
 
     member this.ProcessData (data, startIndex, size, f) =
         let packet = packetPool.Get ()
@@ -98,11 +98,14 @@ type ReliableOrderedChannel (packetPool : PacketPool) =
         copyPacketPool.Recycle packets.[i]
         packets.[i] <- Unchecked.defaultof<Packet>
 
-        let mutable nextOldestId = -1
-        if oldestId = i then
-
+        if oldestId = i && newestId = i then
+            oldestId <- -1
+            oldestTimeAck <- DateTime ()
+            newestId <- -1
+        elif oldestId = i then
+            let mutable nextOldestId = -1
             if newestId > oldestId then
-                for j = newestId downto oldestId + 1 do
+                for j = newestId downto oldestId do
                     if not acks.[j] then
                         nextOldestId <- j
                     
@@ -111,17 +114,34 @@ type ReliableOrderedChannel (packetPool : PacketPool) =
                     if not acks.[j] then
                         nextOldestId <- j
 
-                for j = 65536 - 1 downto oldestId + 1 do
+                for j = 65536 - 1 downto oldestId do
                     if not acks.[j] then
                         nextOldestId <- j
-            else
-                newestId <- -1
 
-        if nextOldestId = -1 then
-            oldestId <- -1
-        else
-            oldestId <- nextOldestId
-            oldestTimeAck <- ackTimes.[oldestId]
+            if nextOldestId = -1 then
+                oldestId <- -1
+                oldestTimeAck <- DateTime ()
+            else
+                oldestId <- nextOldestId
+                oldestTimeAck <- ackTimes.[oldestId]
+
+        elif newestId = i then
+            let mutable nextNewestId = -1
+            if newestId > oldestId then
+                for j = oldestId to newestId do
+                    if not acks.[j] then
+                        nextNewestId <- j
+                    
+            elif newestId < oldestId then
+                for j = oldestId to 65536 - 1 do
+                    if not acks.[j] then
+                        nextNewestId <- j
+
+                for j = 0 to newestId do
+                    if not acks.[j] then
+                        nextNewestId <- j
+
+            newestId <- nextNewestId
                   
     member this.Update resend =
         let dt = DateTime.UtcNow
@@ -141,3 +161,5 @@ type ReliableOrderedChannel (packetPool : PacketPool) =
             for j = 65536 - 1 downto oldestId do
                 if not acks.[j] then
                     this.TryGetNonAckedPacket (uint16 j, resend)
+        else
+            this.TryGetNonAckedPacket (uint16 oldestId, resend)
