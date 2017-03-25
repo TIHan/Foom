@@ -11,12 +11,19 @@ type PacketType =
     | ConnectionRequested = 2uy
     | ConnectionAccepted = 3uy
 
+    | Disconnected = 4uy
+    | Kicked = 5uy
+    | Banned = 6uy
+
+    | Merged = 7uy
+
 [<Struct>]
 type PacketHeader =
     { 
         packetType: PacketType
         sequenceId: uint16
         fragmentChunks: byte
+        packetCount: byte
     }
 
     member x.PacketType = x.packetType
@@ -25,6 +32,8 @@ type PacketHeader =
 
     member x.FragmentChunks = x.fragmentChunks
 
+    member x.PacketCount = x.packetCount
+
 [<Sealed>]
 type Packet () =
 
@@ -32,186 +41,47 @@ type Packet () =
     let byteWriter = ByteWriter (byteStream)
     let byteReader = ByteReader (byteStream)
 
-    let mutable capturedHeader = Unchecked.defaultof<PacketHeader>
+    let mutable packetCount = 0
+    let mutable packetType = PacketType.Unreliable
 
-    member this.Length = byteStream.Length
+    let setPacketCount n =
+        let originalPos = byteStream.Position
+        byteStream.Position <- 5
+        byteWriter.WriteByte (byte n)
+        byteStream.Position <- originalPos
+
+    member this.Length 
+        with get () = byteStream.Length
+        and set value = byteStream.Length <- value
 
     member this.Raw = byteStream.Raw
 
-    member this.Header =
-        let originalPos = byteStream.Position
-        byteStream.Position <- 0
-        byteReader.Read (&capturedHeader)
-        byteStream.Position <- originalPos
-        capturedHeader
+    member this.PacketType = LanguagePrimitives.EnumOfValue (byteStream.Raw.[0])
 
-    member this.Type : PacketType =
-        let originalPos = byteStream.Position
-        byteStream.Position <- 0
-        let typ = LanguagePrimitives.EnumOfValue (byteReader.ReadByte ())
-        byteStream.Position <- originalPos
-        typ
+    member this.MergeCount = byteStream.Raw.[5] |> int
 
-    member this.SetData (typ: PacketType, bytes: byte [], startIndex: int, size: int) =
-        byteStream.Length <- 0
+    member this.SetData (packetType, bytes: byte [], startIndex: int, size: int) =
+        this.Reset ()
 
         // setup header
-        byteWriter.Write { packetType = typ; sequenceId = 0us; fragmentChunks = 0uy }
+        byteWriter.Write { packetType = packetType; sequenceId = 0us; fragmentChunks = 0uy; packetCount = 0uy }
+        byteWriter.WriteBytes (bytes, startIndex, size)
 
-        Buffer.BlockCopy (bytes, startIndex, byteStream.Raw, NetConstants.PacketHeaderSize, size)
+    member this.Merge (packetType, bytes, startIndex, size) =
+        match this.PacketType with
+        | PacketType.Merged ->
 
-        byteStream.Length <- byteStream.Length + size
+            packetCount <- packetCount + 1
+            setPacketCount packetCount
+
+            byteWriter.WriteBytes (bytes, startIndex, size)
+
+        | _ -> failwith "Cannot merge data with a non-merged packet type."
+
+    member this.Merge (packet: Packet) =
+        this.Merge (packet.PacketType, packet.Raw, 0, packet.Length)
 
     member this.Reset () =
         byteStream.Length <- 0
-        capturedHeader <- Unchecked.defaultof<PacketHeader>
 
-[<Sealed>]
-type UnreliableChannel (client: ConnectedClient, endPoint: IUdpEndPoint) =
-
-    let outgoingQueue = Queue<Packet> ()
-
-    member this.EnqueuePacket (packet: Packet) =
-        outgoingQueue.Enqueue (packet)
-
-    member this.Process () =
-        while outgoingQueue.Count > 0 do
-            let packet = outgoingQueue.Dequeue ()
-
-            client.SendData (packet.Raw, packet.Length)
-            client.RecyclePacket packet
-
-and [<Sealed>] ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
-
-    // Channels
-    let unreliableChannel = UnreliableChannel (this, endPoint)
-
-    let packetPool = Stack (Array.init 64 (fun _ -> Packet ()))
-
-    member this.SendPacket (packet: Packet) =
-        match packet.Type with
-
-        | PacketType.Unreliable ->
-            unreliableChannel.EnqueuePacket packet
-
-        | PacketType.ConnectionAccepted ->
-            unreliableChannel.EnqueuePacket packet
-
-        | _ -> ()
-
-    member this.SendData (data, size) =
-        udpServer.Send (data, size, endPoint) |> ignore
-
-    member this.SendConnectionAccepted () =
-        let packet = packetPool.Pop ()
-        packet.SetData (PacketType.ConnectionAccepted, [||], 0, 0)
-        this.SendPacket (packet)
-
-    member this.RecyclePacket (packet: Packet) =
-        packet.Reset ()
-        packetPool.Push (packet)
-
-    member this.Update () =
-        unreliableChannel.Process ()
-
-[<Sealed>]
-type Server (udpServer: IUdpServer) =
-
-    let recvStream = ByteStream (NetConstants.PacketSize)
-    let recvReader = ByteReader (recvStream)
-
-    let clients = ResizeArray<ConnectedClient> ()
-
-    let clientConnected = Event<IUdpEndPoint> ()
-
-    member val ClientConnected = clientConnected.Publish
-
-    member private this.Receive () =
-
-        while udpServer.IsDataAvailable do
-            recvStream.Length <- 0
-
-            let mutable endPoint = Unchecked.defaultof<IUdpEndPoint>
-            match udpServer.Receive (recvStream.Raw, 0, recvStream.Raw.Length, &endPoint) with
-            | 0 -> ()
-            | byteCount ->
-
-                recvStream.Length <- byteCount
-
-                let header = recvReader.Read<PacketHeader> ()
-
-                match header.PacketType with
-                | PacketType.ConnectionRequested ->
-
-                    let client = ConnectedClient (endPoint, udpServer)
-
-                    clients.Add client
-
-                    client.SendConnectionAccepted ()
-
-                    clientConnected.Trigger endPoint
-
-                | _ -> ()
-
-    member this.Send () =
-        clients
-        |> Seq.iter (fun client -> client.Update ())
-
-    member this.Update () =
-        this.Receive ()
-        this.Send ()
-
-[<Sealed>]
-type Client (udpClient: IUdpClient) =
-
-    let recvStream = ByteStream (NetConstants.PacketSize)
-    let recvReader = ByteReader (recvStream)
-
-    let packetPool = Stack (Array.init 64 (fun _ -> Packet ()))
-    let packetQueue = Queue<Packet> ()
-
-    let connected = Event<IUdpEndPoint> ()
-
-    member val Connected = connected.Publish
-
-    member this.Connect (address, port) =
-
-        if udpClient.Connect (address, port) then
-            let packet = packetPool.Pop ()
-            packet.SetData (PacketType.ConnectionRequested, [||], 0, 0)
-            packetQueue.Enqueue packet
-
-    member private this.Receive () =
-
-        while udpClient.IsDataAvailable do
-            recvStream.Length <- 0
-
-            match udpClient.Receive (recvStream.Raw, 0, recvStream.Raw.Length) with
-            | 0 -> ()
-            | byteCount ->
-
-                recvStream.Length <- byteCount
-
-                let header = recvReader.Read<PacketHeader> ()
-
-                match header.PacketType with
-                | PacketType.ConnectionAccepted ->
-
-                    connected.Trigger (udpClient.RemoteEndPoint)
-
-                | _ -> ()
-
-    member private this.Send () =
-        while packetQueue.Count > 0 do
-
-            let packet = packetQueue.Dequeue ()
-            udpClient.Send (packet.Raw, packet.Length) |> ignore
-            this.Recycle packet
-
-    member this.Update () =
-        this.Receive ()
-        this.Send ()
-
-    member this.Recycle (packet: Packet) =
-        packet.Reset ()
-        packetPool.Push packet
+    member this.Reader = byteReader

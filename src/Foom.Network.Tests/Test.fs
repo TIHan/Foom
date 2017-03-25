@@ -15,8 +15,49 @@ type TestStruct =
         y: int
     }
 
+[<CLIMutable>]
+type TestMessage =
+    {
+        mutable a : int
+        mutable b : int
+    }
+
+    static member Serialize (msg: TestMessage) (byteWriter: ByteWriter) =
+        byteWriter.WriteInt (msg.a)
+        byteWriter.WriteInt (msg.b)
+
+    static member Deserialize (msg: TestMessage) (byteReader: ByteReader) =
+        msg.a <- byteReader.ReadInt ()
+        msg.b <- byteReader.ReadInt ()
+
+[<CLIMutable>]
+type TestMessage2 =
+    {
+        mutable c : int
+        mutable d : int
+    }
+
+    static member Serialize (msg: TestMessage2) (byteWriter: ByteWriter) =
+        byteWriter.WriteInt (msg.c)
+        byteWriter.WriteInt (msg.d)
+
+    static member Deserialize (msg: TestMessage2) (byteReader: ByteReader) =
+        msg.c <- byteReader.ReadInt ()
+        msg.d <- byteReader.ReadInt ()
+
 [<TestFixture>]
 type Test() = 
+
+    do
+        Network.RegisterType (TestMessage.Serialize, TestMessage.Deserialize)
+        Network.RegisterType (TestMessage2.Serialize, TestMessage2.Deserialize)
+
+    //[<Test>]
+    //member this.PacketMergingWorks () : unit =
+    //    let p1 = Packet ()
+    //    let p2 = Packet ()
+
+
 
     [<Test>]
     member this.UdpWorks () : unit =
@@ -53,10 +94,10 @@ type Test() =
             Assert.IsNotNull (endPoint)
             Assert.AreEqual (123uy, buffer.[amount - 1])
 
-        Assert.AreEqual (8192, udpClient.SendBufferSize)
-        Assert.AreEqual (65535, udpClient.ReceiveBufferSize)
-        Assert.AreEqual (8192, udpServer.SendBufferSize)
-        Assert.AreEqual (65535, udpServer.ReceiveBufferSize)
+        Assert.AreEqual (64512, udpClient.SendBufferSize)
+        Assert.AreEqual (64512, udpClient.ReceiveBufferSize)
+        Assert.AreEqual (64512, udpServer.SendBufferSize)
+        Assert.AreEqual (64512, udpServer.ReceiveBufferSize)
 
         test 512
         test 1024
@@ -67,13 +108,7 @@ type Test() =
         udpClient.SendBufferSize <- 10000
         test 10000
 
-        udpClient.SendBufferSize <- 65000
-        test 65000
-
-        udpClient.SendBufferSize <- 65487
-        test 65487
-
-        for i = 1 to 65535 - 48 do
+        for i = 1 to 64512 - 48 do
             udpClient.SendBufferSize <- i
             test i
 
@@ -127,6 +162,7 @@ type Test() =
         let mutable isConnected = false
         let mutable isIpv6Connected = false
         let mutable clientDidConnect = false
+        let mutable messageReceived = false
 
         client.Connected.Add (fun endPoint -> 
             isConnected <- true
@@ -152,3 +188,31 @@ type Test() =
         Assert.True (isConnected)
         Assert.True (isIpv6Connected)
         Assert.True (clientDidConnect)
+
+        client.Subscribe<TestMessage2> (fun msg -> 
+            messageReceived <- true
+            printfn "%A" msg
+        )
+        clientV6.Subscribe<TestMessage2> (fun msg -> 
+            messageReceived <- true
+            printfn "%A" msg
+        )
+
+        client.Subscribe<TestMessage> (fun msg -> 
+            messageReceived <- true
+            printfn "%A" msg
+        )
+        clientV6.Subscribe<TestMessage> (fun msg -> 
+            messageReceived <- true
+            printfn "%A" msg
+        )
+
+        for i = 0 to 128 do
+            server.Publish ({ a = 9898; b = 3456 })
+            server.Publish ({ c = 1337; d = 666 })
+
+        server.Update ()
+        client.Update ()
+       // clientV6.Update ()
+
+        Assert.True (messageReceived)

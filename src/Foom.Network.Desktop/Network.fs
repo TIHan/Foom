@@ -20,10 +20,10 @@ type UdpEndPoint (ipEndPoint: IPEndPoint) =
 module UdpConstants =
 
     [<Literal>]
-    let DefaultReceiveBufferSize = 65535
+    let DefaultReceiveBufferSize = 64512
 
     [<Literal>]
-    let DefaultSendBufferSize = 8192
+    let DefaultSendBufferSize = 64512
 
 [<AbstractClass>]
 type Udp =
@@ -43,7 +43,7 @@ type Udp =
         udpClient.Client.Blocking <- false
         udpClientV6.Client.Blocking <- false
 
-        udpClient.Client.ReceiveBufferSize <- UdpConstants.DefaultReceiveBufferSize 
+        udpClient.Client.ReceiveBufferSize <- UdpConstants.DefaultReceiveBufferSize
         udpClientV6.Client.ReceiveBufferSize <- UdpConstants.DefaultReceiveBufferSize
         udpClient.Client.SendBufferSize <- UdpConstants.DefaultSendBufferSize
         udpClientV6.Client.SendBufferSize <- UdpConstants.DefaultSendBufferSize
@@ -51,7 +51,7 @@ type Udp =
         { 
             UdpClient = udpClient
             UdpClientV6 = udpClientV6
-            receiveBufferSize = UdpConstants.DefaultReceiveBufferSize 
+            receiveBufferSize = UdpConstants.DefaultReceiveBufferSize
             sendBufferSize = UdpConstants.DefaultSendBufferSize
         }
 
@@ -62,7 +62,7 @@ type Udp =
         udpClient.Client.Blocking <- false
         udpClientV6.Client.Blocking <- false
 
-        udpClient.Client.ReceiveBufferSize <- UdpConstants.DefaultReceiveBufferSize 
+        udpClient.Client.ReceiveBufferSize <- UdpConstants.DefaultReceiveBufferSize
         udpClientV6.Client.ReceiveBufferSize <- UdpConstants.DefaultReceiveBufferSize
         udpClient.Client.SendBufferSize <- UdpConstants.DefaultSendBufferSize
         udpClientV6.Client.SendBufferSize <- UdpConstants.DefaultSendBufferSize
@@ -70,7 +70,7 @@ type Udp =
         { 
             UdpClient = udpClient
             UdpClientV6 = udpClientV6
-            receiveBufferSize = UdpConstants.DefaultReceiveBufferSize 
+            receiveBufferSize = UdpConstants.DefaultReceiveBufferSize
             sendBufferSize = UdpConstants.DefaultSendBufferSize
         }
 

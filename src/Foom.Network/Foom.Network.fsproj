@@ -3,14 +3,14 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{A446D691-8F20-40BD-98AC-B5FB2EFD5D04}</ProjectGuid>
-    <TargetProfile>netcore</TargetProfile>
     <TargetFSharpCoreVersion>3.3.1.0</TargetFSharpCoreVersion>
     <OutputType>Library</OutputType>
     <RootNamespace>Foom.Network</RootNamespace>
     <AssemblyName>Foom.Network</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
+    <TargetProfile>netcore</TargetProfile>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -38,7 +38,10 @@
     <Compile Include="ByteStream.fs" />
     <Compile Include="Udp.fs" />
     <Compile Include="Constants.fs" />
+    <Compile Include="Network.fs" />
     <Compile Include="Packet.fs" />
+    <Compile Include="Client.fs" />
+    <Compile Include="Server.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />

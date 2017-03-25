@@ -134,42 +134,54 @@ type ByteWriter (byteStream: ByteStream) =
         byteStream.CheckBounds 1
 
         LitteEndian.write8 byteStream.Raw byteStream.position value
-        byteStream.length <- byteStream.length + 1
+        let len = byteStream.position + 1
+        if len > byteStream.length then
+            byteStream.length <- len
         byteStream.position <- byteStream.position + 1
 
     member this.WriteSByte (value: sbyte) =
         byteStream.CheckBounds 1
 
         LitteEndian.write8 byteStream.Raw byteStream.position value
-        byteStream.length <- byteStream.length + 1
+        let len = byteStream.position + 1
+        if len > byteStream.length then
+            byteStream.length <- len
         byteStream.position <- byteStream.position + 1
 
     member this.WriteInt16 (value: int16) =
         byteStream.CheckBounds 2
 
         LitteEndian.write16 byteStream.Raw byteStream.position value
-        byteStream.length <- byteStream.length + 2
+        let len = byteStream.position + 2
+        if len > byteStream.length then
+            byteStream.length <- len
         byteStream.position <- byteStream.position + 2
 
     member this.WriteUInt16 (value: uint16) =
         byteStream.CheckBounds 2
 
         LitteEndian.write16 byteStream.Raw byteStream.position value
-        byteStream.length <- byteStream.length + 2
+        let len = byteStream.position + 2
+        if len > byteStream.length then
+            byteStream.length <- len
         byteStream.position <- byteStream.position + 2
 
     member this.WriteInt (value: int) =
         byteStream.CheckBounds 4
 
         LitteEndian.write32 byteStream.Raw byteStream.position value
-        byteStream.length <- byteStream.length + 4
+        let len = byteStream.position + 4
+        if len > byteStream.length then
+            byteStream.length <- len
         byteStream.position <- byteStream.position + 4
 
     member this.WriteUInt32 (value: uint32) =
         byteStream.CheckBounds 4
 
         LitteEndian.write32 byteStream.Raw byteStream.position value
-        byteStream.length <- byteStream.length + 4
+        let len = byteStream.position + 4
+        if len > byteStream.length then
+            byteStream.length <- len
         byteStream.position <- byteStream.position + 4
 
     member this.WriteSingle (value: single) =
@@ -181,7 +193,19 @@ type ByteWriter (byteStream: ByteStream) =
         byteStream.CheckBounds bytes.Length
 
         Buffer.BlockCopy (bytes, 0, byteStream.Raw, byteStream.position, bytes.Length)
+        let len = byteStream.position + bytes.Length
+        if len > byteStream.length then
+            byteStream.length <- len
         byteStream.position <- byteStream.position + bytes.Length
+
+    member this.WriteBytes (bytes: byte [], startIndex, size) =
+        byteStream.CheckBounds size
+
+        Buffer.BlockCopy (bytes, startIndex, byteStream.Raw, byteStream.position, size)
+        let len = byteStream.position + size
+        if len > byteStream.length then
+            byteStream.length <- len
+        byteStream.position <- byteStream.position + size
 
     member this.Write<'T when 'T : unmanaged> (value: 'T) =
         let mutable value = value
@@ -192,7 +216,9 @@ type ByteWriter (byteStream: ByteStream) =
         let ptr = &&value |> NativePtr.toNativeInt
 
         Marshal.Copy (ptr, byteStream.Raw, byteStream.position, size)
-        byteStream.length <- byteStream.length + size
+        let len = byteStream.position + size
+        if len > byteStream.length then
+            byteStream.length <- len
         byteStream.position <- byteStream.position + size
 
     member this.Write<'T when 'T : unmanaged> (value: byref<'T>) =
@@ -203,7 +229,9 @@ type ByteWriter (byteStream: ByteStream) =
         let ptr = &&value |> NativePtr.toNativeInt
 
         Marshal.Copy (ptr, byteStream.Raw, byteStream.position, size)
-        byteStream.length <- byteStream.length + size
+        let len = byteStream.position + size
+        if len > byteStream.length then
+            byteStream.length <- len
         byteStream.position <- byteStream.position + size
 
 [<Sealed>]
