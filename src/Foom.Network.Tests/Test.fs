@@ -231,7 +231,7 @@ type Test() =
 
         let data = { arr = Array.zeroCreate 200; len = 200 }
 
-        data.arr.[data.len - 1] <- 809
+        data.arr.[data.len - 1] <- 808
 
         let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 

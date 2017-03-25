@@ -4,15 +4,24 @@ open System
 open System.Collections.Generic
 
 [<Sealed>]
-type UnreliableChannel (endPoint: IUdpEndPoint) =
+type UnreliableChannel (endPoint: IUdpEndPoint) as this =
 
     let packetPool = Stack (Array.init 64 (fun _ -> Packet ()))
 
     let outgoingQueue = Queue<Packet> ()
     let pendingQueue = Queue<Packet> ()
 
-    member this.EnqueueData (data, startIndex, size) =
+    let rec enqueueData data startIndex size =
+
         let packet = packetPool.Pop ()
+
+        let sizeRemaining = packet.Raw.Length - packet.Length
+        if sizeRemaining < size then
+            failwith "Message is bigger than the size of an unreliable packet. Consider using a sequenced packet instead."
+            //enqueueData data startIndex sizeRemaining
+            //enqueueData data (startIndex + sizeRemaining) (size - sizeRemaining)
+        else
+
         packet.SetData (PacketType.Unreliable, data, startIndex, size)
 
         if pendingQueue.Count > 1 then failwith "Pending Queue shouldn't have more than 1."
@@ -26,6 +35,9 @@ type UnreliableChannel (endPoint: IUdpEndPoint) =
                 pendingQueue.Enqueue packet
         else
             pendingQueue.Enqueue packet
+
+    member this.EnqueueData (data, startIndex, size) =
+        enqueueData data startIndex size
 
     member this.Process f =
         if pendingQueue.Count > 1 then failwith "Pending Queue shouldn't have more than 1."
@@ -79,7 +91,7 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) =
 type Server (udpServer: IUdpServer) =
 
     let recvPacket = Packet ()
-    let sendStream = ByteStream (64512)
+    let sendStream = ByteStream (1024 * 1024 * 2)
     let sendWriter = ByteWriter (sendStream)
 
     let clients = ResizeArray<ConnectedClient> ()
