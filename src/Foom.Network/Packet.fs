@@ -51,6 +51,20 @@ type Packet () =
 
     member this.PacketType : PacketType = LanguagePrimitives.EnumOfValue (byteStream.Raw.[0])
 
+    member this.SequenceId 
+        with get () =
+            let originalPos = byteStream.Position
+            byteStream.Position <- 1
+            let value = byteReader.ReadUInt16 ()
+            byteStream.Position <- originalPos
+            value
+
+        and set value =
+           let originalPos = byteStream.Position
+           byteStream.Position <- 1
+           byteWriter.WriteUInt16 value
+           byteStream.Position <- originalPos
+
     member this.MergeCount = byteStream.Raw.[5] |> int
 
     member this.SizeRemaining = byteStream.Raw.Length - byteStream.Length

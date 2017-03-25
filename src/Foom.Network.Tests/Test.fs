@@ -3,6 +3,7 @@
 open System
 open System.Numerics
 open System.Threading.Tasks
+open System.Collections.Generic
 
 open NUnit.Framework
 
@@ -229,7 +230,7 @@ type Test() =
 
         server.Publish ({ a = 9898; b = 3456 })
 
-        let data = { arr = Array.zeroCreate 20000; len = 20000 }
+        let data = { arr = Array.zeroCreate 200; len = 200 }
 
         data.arr.[data.len - 1] <- 808
 
@@ -261,3 +262,32 @@ type Test() =
 
         Assert.True (messageReceived)
         Assert.AreEqual (808, endOfArray)
+
+
+    [<Test>]
+    member x.TestReliableOrderedChannel () =
+        let packetPool = PacketPool 64
+        let channel = ReliableOrderedChannel packetPool
+
+        let byteStream = ByteStream 1024
+        let byteWriter = ByteWriter byteStream
+
+        byteWriter.WriteInt (1357)
+
+        let queue = Queue ()
+
+        for i = 0 to 100000 do
+            for i = 0 to 27 do
+                channel.ProcessData (byteStream.Raw, 0, byteStream.Length, fun packet ->
+                  queue.Enqueue packet
+                )
+
+            while queue.Count > 0 do
+                let packet = queue.Dequeue ()
+                channel.Ack (packet.SequenceId)
+                packetPool.Recycle packet
+
+        printf "yopacs"
+
+
+ 
