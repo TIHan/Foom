@@ -9,7 +9,7 @@ type UnreliableChannel (packetPool : PacketPool) =
 
     member this.SendData (data, startIndex, size) =
         let packet = packetPool.Get ()
-        if size > packet.SizeRemaining then
+        if size > packet.LengthRemaining then
             failwith "Unreliable data is larger than what a new packet can hold. Consider using reliable sequenced."
 
         packet.SetData (PacketType.Unreliable, data, startIndex, size)

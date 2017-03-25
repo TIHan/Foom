@@ -224,7 +224,7 @@ type Test() =
         )
 
 
-        client.Subscribe<TestMessage3> (fun msg ->
+        clientV6.Subscribe<TestMessage3> (fun msg ->
             endOfArray <- msg.arr.[msg.len - 1]
         )
 
@@ -234,20 +234,20 @@ type Test() =
 
         data.arr.[data.len - 1] <- 808
 
+        //let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
+
+        ////for i = 0 to 50 do
+        //for i = 0 to 10 do
+        //    server.Publish ({ a = 9898; b = 3456 })
+        //    server.Publish ({ c = 1337; d = 666 })
+
+        //server.Update ()
+
+        //stopwatch.Stop ()
+
         let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 
-        //for i = 0 to 50 do
-        for i = 0 to 10 do
-            server.Publish ({ a = 9898; b = 3456 })
-            server.Publish ({ c = 1337; d = 666 })
-
-        server.Update ()
-
-        stopwatch.Stop ()
-
-        let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
-
-        for i = 0 to 40 do
+        for i = 0 to 0 do
             server.Publish data
 
         server.Update ()
@@ -257,7 +257,7 @@ type Test() =
         printfn "[Server] %f kB sent." (single server.BytesSentSinceLastUpdate / 1024.f)
         printfn "[Server] time taken: %A." stopwatch.Elapsed.TotalMilliseconds
 
-        client.Update ()
+        //client.Update ()
         clientV6.Update ()
 
         Assert.True (messageReceived)

@@ -32,7 +32,7 @@ type Client (udpClient: IUdpClient) =
         let rec onReceivePacket (reader : ByteReader) =
             let header = reader.Read<PacketHeader> ()
 
-            match header.packetType with
+            match header.type' with
             | PacketType.Unreliable ->
 
                 let typeId = reader.ReadByte () |> int
@@ -52,7 +52,7 @@ type Client (udpClient: IUdpClient) =
 
             | _ -> ()
 
-            for i = 0 to int header.mergeCount - 2 do
+            while not reader.IsEndOfStream do
                 onReceivePacket reader
 
         onReceivePacket reader
