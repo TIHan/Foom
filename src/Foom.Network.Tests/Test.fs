@@ -278,7 +278,7 @@ type Test() =
 
         for i = 0 to 100000 do
             for i = 0 to 27 do
-                channel.ProcessData (byteStream.Raw, 0, byteStream.Length, fun packet ->
+                channel.SendData (byteStream.Raw, 0, byteStream.Length, fun packet ->
                   queue.Enqueue packet
                 )
 
@@ -293,13 +293,13 @@ type Test() =
         // Test Resending based on time.
 
         for i = 1 to 2 do
-            channel.ProcessData (byteStream.Raw, 0, byteStream.Length, fun packet ->
+            channel.SendData (byteStream.Raw, 0, byteStream.Length, fun packet ->
                 packetPool.Recycle packet
             )
 
         Assert.True (channel.HasPendingAcks)
 
-        channel.Update (fun packet ->
+        channel.TryResend (fun packet ->
             queue.Enqueue packet
         )
 
@@ -312,7 +312,7 @@ type Test() =
 
         System.Threading.Thread.Sleep (6000)
 
-        channel.Update (fun packet ->
+        channel.TryResend (fun packet ->
             queue.Enqueue packet
         )
 

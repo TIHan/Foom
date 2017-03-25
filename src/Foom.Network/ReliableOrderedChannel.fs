@@ -41,7 +41,7 @@ type ReliableOrderedChannel (packetPool : PacketPool) =
 
     member this.HasPendingAcks = oldestId >= 0 || newestId >= 0
 
-    member this.ProcessData (data, startIndex, size, f) =
+    member this.SendData (data, startIndex, size, f) =
         let packet = packetPool.Get ()
         packet.SetData (PacketType.ReliableOrdered, data, startIndex, size)
         packet.SequenceId <- nextId
@@ -143,7 +143,7 @@ type ReliableOrderedChannel (packetPool : PacketPool) =
 
             newestId <- nextNewestId
                   
-    member this.Update resend =
+    member this.TryResend resend =
         let dt = DateTime.UtcNow
 
         if oldestId <> -1 && (dt - oldestTimeAck) > timeToDisconnect then
@@ -163,3 +163,9 @@ type ReliableOrderedChannel (packetPool : PacketPool) =
                     this.TryGetNonAckedPacket (uint16 j, resend)
         else
             this.TryGetNonAckedPacket (uint16 oldestId, resend)
+
+
+type ReliableOrderedReceiverChannel () =
+
+    member x.SendPacket (packet : Packet) =
+        ()

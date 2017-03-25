@@ -14,6 +14,9 @@ type Client (udpClient: IUdpClient) =
     let mutable isConnected = false
     let connected = Event<IUdpEndPoint> ()
 
+    // Channels
+    let reliableOrderedChannel = ReliableOrderedReceiverChannel ()
+
     member val Connected = connected.Publish
 
     member this.Connect (address, port) =
@@ -36,6 +39,11 @@ type Client (udpClient: IUdpClient) =
 
                 if typeDeserializers.Length > typeId then
                     typeDeserializers.[typeId].Trigger reader
+
+
+            | PacketType.ReliableOrdered ->
+
+                ()
 
             | PacketType.ConnectionAccepted ->
 
