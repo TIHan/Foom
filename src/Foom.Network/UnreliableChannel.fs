@@ -5,10 +5,18 @@ open System.Collections.Generic
 
 type UnreliableChannel (packetPool : PacketPool) =
 
-    member this.ProcessData (data, startIndex, size, f) =
+    let queue = Queue<Packet> ()
+
+    member this.SendData (data, startIndex, size) =
         let packet = packetPool.Get ()
         if size > packet.SizeRemaining then
             failwith "Unreliable data is larger than what a new packet can hold. Consider using reliable sequenced."
 
         packet.SetData (PacketType.Unreliable, data, startIndex, size)
-        f packet
+        queue.Enqueue packet
+ 
+    member this.Flush f =
+        while queue.Count > 0 do
+            let packet = queue.Dequeue ()
+            f packet
+            packetPool.Recycle packet

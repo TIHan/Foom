@@ -52,7 +52,7 @@ type Client (udpClient: IUdpClient) =
 
             | _ -> ()
 
-            for i = 0 to int header.mergeCount - 1 do
+            for i = 0 to int header.mergeCount - 2 do
                 onReceivePacket reader
 
         onReceivePacket reader

@@ -13,4 +13,6 @@ type PacketPool (poolAmount) =
 
     member this.Recycle (packet : Packet) =
         packet.Reset ()
+        if pool.Count + 1 > poolAmount then
+            failwith "For right now, this throws an exception" 
         pool.Push packet

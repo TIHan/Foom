@@ -207,20 +207,20 @@ type Test() =
 
         client.Subscribe<TestMessage2> (fun msg -> 
             messageReceived <- true
-           // printfn "%A" msg
+            printfn "%A" msg
         )
         clientV6.Subscribe<TestMessage2> (fun msg -> 
             messageReceived <- true
-           // printfn "%A" msg
+            printfn "%A" msg
         )
 
         client.Subscribe<TestMessage> (fun msg -> 
             messageReceived <- true
-           // printfn "%A" msg
+            printfn "%A" msg
         )
         clientV6.Subscribe<TestMessage> (fun msg -> 
             messageReceived <- true
-           // printfn "%A" msg
+            printfn "%A" msg
         )
 
 
@@ -373,7 +373,9 @@ type Test() =
 
         channelReceiver.TryProcess (fun packet ->
             channelSender.Ack packet.SequenceId
-            packetPoolReceiver.Recycle packet
+
+            // commenting this out might be bad
+           // packetPoolReceiver.Recycle packet
         )
 
 

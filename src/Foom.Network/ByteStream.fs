@@ -329,4 +329,6 @@ type ByteReader (byteStream: ByteStream) =
         byteStream.position <- byteStream.position + size
         len
 
+    member this.IsEndOfStream = byteStream.position = byteStream.length
+
 

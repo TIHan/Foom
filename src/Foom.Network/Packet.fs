@@ -86,3 +86,7 @@ type Packet () =
         byteStream.Length <- 0
 
     member this.Reader = byteReader
+
+    member this.CopyTo (packet : Packet) =
+        Buffer.BlockCopy (this.Raw, 0, packet.Raw, 0, this.Length)
+        packet.Length <- this.Length

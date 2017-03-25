@@ -44,8 +44,9 @@
     <Compile Include="PacketMerger.fs" />
     <Compile Include="UnreliableChannel.fs" />
     <Compile Include="ReliableOrderedChannel.fs" />
-    <Compile Include="Client.fs" />
+    <Compile Include="ConnectedClient.fs" />
     <Compile Include="Server.fs" />
+    <Compile Include="Client.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />

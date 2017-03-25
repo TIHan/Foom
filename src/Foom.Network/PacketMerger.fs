@@ -7,7 +7,7 @@ type PacketMerger (packetPool : PacketPool) =
 
     let packets = ResizeArray<Packet> (packetPool.Amount)
 
-    member x.EnqueuePacket (packet : Packet) =
+    member x.SendPacket (packet : Packet) =
         if packets.Count > 0 then
 
             let mutable done' = false
@@ -15,16 +15,19 @@ type PacketMerger (packetPool : PacketPool) =
                 let packet' = packets.[i]
                 if packet'.SizeRemaining > packet.Length && not done' then
                     packet'.Merge packet
-                    packetPool.Recycle packet
                     done' <- true
 
             if not done' then
-                packets.Add packet
+                let packet' = packetPool.Get ()
+                packet.CopyTo packet'
+                packets.Add packet'
         else
-            packets.Add packet
+            let packet' = packetPool.Get ()
+            packet.CopyTo packet'
+            packets.Add packet'
 
 
-    member x.Process f =
+    member x.Flush f =
         packets
         |> Seq.iter (fun packet ->
             f packet
