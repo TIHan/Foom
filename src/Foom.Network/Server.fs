@@ -6,10 +6,16 @@ open System.Collections.Generic
 [<Sealed>]
 type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) =
 
-    // Channels
-    let unreliableChannel = UnreliableChannel (endPoint)
+    // Packet Pool
+    let packetPool = PacketPool (64)
 
-    // Extra Packet Queue
+    // Packet Merger
+    let packetMerger = PacketMerger (packetPool)
+
+    // Channels
+    let unreliableChannel = UnreliableChannel (packetPool)
+
+    // Queues
     let packetQueue = Queue<Packet> ()
 
     member this.SendNow (data : byte [], size) =
@@ -17,7 +23,10 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) =
             udpServer.Send (data, size, endPoint) |> ignore
 
     member this.Send (data, startIndex, size) =
-        unreliableChannel.EnqueueData (data, startIndex, size)
+
+        unreliableChannel.ProcessData (data, startIndex, size, fun packet ->
+            packetMerger.EnqueuePacket packet
+        )
 
     member this.SendConnectionAccepted () =
         let packet = Packet ()
@@ -25,11 +34,12 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) =
         packetQueue.Enqueue packet
 
     member this.Update () =
+
         while packetQueue.Count > 0 do
             let packet = packetQueue.Dequeue ()
             this.SendNow (packet.Raw, packet.Length)
 
-        unreliableChannel.Process (fun packet ->
+        packetMerger.Process (fun packet ->
             this.SendNow (packet.Raw, packet.Length)
         )
 
