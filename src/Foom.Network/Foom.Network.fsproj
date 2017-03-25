@@ -36,10 +36,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ByteStream.fs" />
-    <Compile Include="Udp.fs" />
+    <Compile Include="IUdp.fs" />
     <Compile Include="Constants.fs" />
     <Compile Include="Network.fs" />
     <Compile Include="Packet.fs" />
+    <Compile Include="UnreliableChannel.fs" />
     <Compile Include="Client.fs" />
     <Compile Include="Server.fs" />
     <None Include="packages.config" />
