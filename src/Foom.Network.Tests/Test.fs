@@ -262,7 +262,7 @@ type Test() =
 
         let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 
-        for i = 0 to 20 do
+        for i = 0 to 40 do
             server.Publish data
 
         server.Update ()

@@ -37,10 +37,9 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) =
             this.SendNow (packet.Raw, packet.Length)
 
         unreliableChannel.Flush (fun packet ->
-           // packetMerger.SendPacket packet
-           this.SendNow (packet.Raw, packet.Length)
+           packetMerger.SendPacket packet
         )
 
-        //packetMerger.Flush (fun packet ->
-        //    this.SendNow (packet.Raw, packet.Length)
-        //)
+        packetMerger.Flush (fun packet ->
+            this.SendNow (packet.Raw, packet.Length)
+        )
