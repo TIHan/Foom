@@ -17,7 +17,7 @@ let world = World (65536)
 
 let start (invoke: Task ref) =
     let app = Backend.init ()
-    let gl = DesktopGL (app)
+    let gl = OpenTKGL (app)
     let input = DesktopInput (app.Window)
     let assetLoader =
         {
