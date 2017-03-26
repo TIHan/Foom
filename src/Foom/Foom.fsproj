@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -58,6 +57,7 @@
   <Import Project="$(FSharpTargetsPath)" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <ItemGroup>
+    <Compile Include="Temp.fs" />
     <Compile Include="GameLoop.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />
@@ -78,10 +78,6 @@
     </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
-    <ProjectReference Include="..\Foom.Client\Foom.Client.fsproj">
-      <Project>{39A632DA-FF0F-40C4-BC44-4584DB490EA9}</Project>
-      <Name>Foom.Client</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Foom.Renderer.Desktop\Foom.Renderer.Desktop.fsproj">
       <Name>Foom.Renderer.Desktop</Name>
       <Project>{3811dfb5-545f-4fad-b3da-4c245ae85dac}</Project>
@@ -99,10 +95,6 @@
     <ProjectReference Include="..\Foom.Ecs\Foom.Ecs.fsproj">
       <Project>{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}</Project>
       <Name>Foom.Ecs</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Foom.Client.Desktop.Input\Foom.Client.Desktop.Input.fsproj">
-      <Project>{9B962272-2018-4C8C-9E62-528CDC8DB87E}</Project>
-      <Name>Foom.Client.Desktop.Input</Name>
     </ProjectReference>
     <ProjectReference Include="..\Foom.Geometry\Foom.Geometry.fsproj">
       <Project>{34AA5257-2F5B-4097-8250-1FD4956D1130}</Project>
@@ -124,6 +116,51 @@
       <Project>{D916B23C-0D8F-4044-8C93-AF4DBAA7D3BE}</Project>
       <Name>Foom.Network.Desktop</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Collections\Foom.Collections.fsproj">
+      <Project>{C18C5AB4-4C69-4EA0-AE74-FEFBBD945C05}</Project>
+      <Name>Foom.Collections</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Assets\Foom.Game.Assets.fsproj">
+      <Project>{C41FC4BC-8B5A-4497-9765-FDEAD54749ED}</Project>
+      <Name>Foom.Game.Assets</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Client\Foom.Game.Client.fsproj">
+      <Project>{9E5C57CC-0DA0-4720-BC94-9FECC41D2188}</Project>
+      <Name>Foom.Game.Client</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Core\Foom.Game.Core.fsproj">
+      <Project>{7B655BE8-40D7-482B-8B43-05C5DBAA027B}</Project>
+      <Name>Foom.Game.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Level\Foom.Game.Level.fsproj">
+      <Project>{36E00779-B8EB-432A-B784-CDEB05E90D0B}</Project>
+      <Name>Foom.Game.Level</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Renderer\Foom.Game.Renderer.fsproj">
+      <Project>{181E47F5-8BF0-4AEC-B452-0A88D5BFD28F}</Project>
+      <Name>Foom.Game.Renderer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Sprite\Foom.Game.Sprite.fsproj">
+      <Project>{03FA0D75-22BB-40BC-A3EB-ABA52DD304B9}</Project>
+      <Name>Foom.Game.Sprite</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Wad\Foom.Game.Wad.fsproj">
+      <Project>{FD3F2622-9550-4BD7-8D63-5916151DF018}</Project>
+      <Name>Foom.Game.Wad</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Input.Desktop\Foom.Input.Desktop.fsproj">
+      <Project>{5221813B-04B6-450F-9474-669F1E24D57B}</Project>
+      <Name>Foom.Input.Desktop</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Input\Foom.Input.fsproj">
+      <Project>{6DC85453-16AF-4402-A4B4-373336106451}</Project>
+      <Name>Foom.Input</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Physics\Foom.Physics.fsproj">
+      <Project>{6DE9A674-F72C-4BDA-9120-E8EB97E7D5ED}</Project>
+      <Name>Foom.Physics</Name>
+    </ProjectReference>
+    <Reference Include="System.Drawing" />
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

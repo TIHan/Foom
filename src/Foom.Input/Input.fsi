@@ -1,4 +1,4 @@
-﻿namespace Foom.Client
+﻿namespace Foom.Input
 
 type MouseButtonType =
     | Left = 1
@@ -51,12 +51,10 @@ type MouseMoveEvent =
     val XRel : int
     val YRel : int
 
-module Input =
-    val private dispatchKeyboardEvent : KeyboardEvent -> unit
-    val private dispatchMouseButtonEvent : MouseButtonEvent -> unit
-    val private dispatchMouseWheelEvent : MouseWheelEvent -> unit
-    val private dispatchMouseMoveEvent : MouseMoveEvent -> unit
+type IInput =
 
-    val pollEvents : window: nativeint -> unit
-    val getMousePosition : unit -> MousePosition
-    val getState : unit -> InputState
+    abstract PollEvents : unit -> unit
+
+    abstract GetMousePosition : unit -> MousePosition
+
+    abstract GetState : unit -> InputState

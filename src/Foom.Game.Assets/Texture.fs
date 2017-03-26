@@ -30,6 +30,8 @@ type IAssetLoader =
 [<Sealed>]
 type AssetManager (assetLoader: IAssetLoader) =
 
+    member this.AssetLoader = assetLoader
+
     member this.LoadTexture (texture: Texture) =
         if not texture.Buffer.HasData then
 

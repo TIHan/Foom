@@ -3,7 +3,6 @@ module Foom.Client.Level
 
 open System
 open System.IO
-open System.Drawing
 open System.Numerics
 open System.Collections.Generic
 
@@ -23,118 +22,15 @@ open Foom.Game.Level
 open Foom.Game.Wad
 open Foom.Game.Gameplay.Doom
 
-let exportFlatTextures (wad: Wad) =
-    wad
-    |> Wad.iterFlatTextureName (fun name ->
-        Wad.tryFindFlatTexture name wad
-        |> Option.iter (fun tex ->
-            let width = Array2D.length1 tex.Data
-            let height = Array2D.length2 tex.Data
+let mutable globalAM = Unchecked.defaultof<AssetManager>
 
-            let mutable isTransparent = false
+let loadTexture path =
+    globalAM.AssetLoader.LoadTextureFile path
+    //let tex = Texture (TextureKind.Single path)
+    //globalAM.LoadTexture tex
+    //tex
 
-            tex.Data
-            |> Array2D.iter (fun p ->
-                if p.Equals Pixel.Cyan then
-                    isTransparent <- true
-            )
-
-            let format =
-                if isTransparent then
-                    Imaging.PixelFormat.Format32bppArgb
-                else
-                    Imaging.PixelFormat.Format24bppRgb
-
-            let bmp = new Bitmap(width, height, format)
-
-            tex.Data
-            |> Array2D.iteri (fun i j pixel ->
-                if pixel = Pixel.Cyan then
-                    bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
-                else
-                    bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-            )
-
-            bmp.Save (tex.Name + "_flat.bmp")
-            bmp.Dispose ()
-        )
-    )
-
-let exportTextures (wad: Wad) =
-    wad
-    |> Wad.iterTextureName (fun name ->
-        Wad.tryFindTexture name wad
-        |> Option.iter (fun tex ->
-            let width = Array2D.length1 tex.Data
-            let height = Array2D.length2 tex.Data
-
-            let mutable isTransparent = false
-
-            tex.Data
-            |> Array2D.iter (fun p ->
-                if p.Equals Pixel.Cyan then
-                    isTransparent <- true
-            )
-
-            let format =
-                if isTransparent then
-                    Imaging.PixelFormat.Format32bppArgb
-                else
-                    Imaging.PixelFormat.Format24bppRgb
-
-            let bmp = new Bitmap(width, height, format)
-
-            tex.Data
-            |> Array2D.iteri (fun i j pixel ->
-                if pixel = Pixel.Cyan then
-                    bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
-                else
-                    bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-            )
-
-            bmp.Save (tex.Name + ".bmp")
-            bmp.Dispose ()
-        )
-    )
-
-let exportSpriteTextures (wad: Wad) =
-    wad
-    |> Wad.iterSpriteTextureName (fun name ->
-        Wad.tryFindSpriteTexture name wad
-        |> Option.iter (fun tex ->
-            let width = Array2D.length1 tex.Data
-            let height = Array2D.length2 tex.Data
-
-            let mutable isTransparent = false
-
-            tex.Data
-            |> Array2D.iter (fun p ->
-                if p.Equals Pixel.Cyan then
-                    isTransparent <- true
-            )
-
-            let format =
-                if isTransparent then
-                    Imaging.PixelFormat.Format32bppArgb
-                else
-                    Imaging.PixelFormat.Format24bppRgb
-
-            let bmp = new Bitmap(width, height, format)
-
-            tex.Data
-            |> Array2D.iteri (fun i j pixel ->
-                if pixel = Pixel.Cyan then
-                    bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
-                else
-                    bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-            )
-
-            bmp.Save (tex.Name + ".bmp")
-            bmp.Dispose ()
-        )
-    )
-
-let globalBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray * Color ResizeArray> ()
+let globalBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray * Vector4 ResizeArray> ()
 
 let levelMaterialCache = Dictionary<string, Texture> ()
 
@@ -162,7 +58,7 @@ let runGlobalBatch (em: EntityManager) =
             {
                 Position = vertices |> Seq.toArray
                 Uv = uv |> Seq.toArray
-                Color = color |> Seq.map (fun x -> Vector4 (single x.R, single x.G, single x.B, single x.A)) |> Seq.toArray
+                Color = color |> Seq.toArray
             }
 
         em.Add (ent, RendererSystem.MeshRenderComponent (pipelineName, texture, meshInfo))
@@ -172,7 +68,7 @@ open System.Linq
 
 let spawnMesh sector (vertices: IEnumerable<Vector3>) uv (texturePath: string) =
     let lightLevel = sector.lightLevel
-    let color = Array.init (vertices.Count ()) (fun _ -> Color.FromArgb(255, int lightLevel, int lightLevel, int lightLevel))
+    let color = Array.init (vertices.Count ()) (fun _ -> Vector4 (single lightLevel, single lightLevel, single lightLevel, 255.f))
 
     match globalBatch.TryGetValue(texturePath) with
     | true, (gVertices, gUv, gColor) ->
@@ -186,7 +82,7 @@ let spawnSectorGeometryMesh sector (geo: SectorGeometry) wad =
     geo.TextureName
     |> Option.iter (fun textureName ->
         let texturePath = textureName + "_flat.bmp"
-        let t = new Bitmap(texturePath)
+        let t = loadTexture texturePath//new Bitmap(texturePath)
         spawnMesh sector geo.Vertices (SectorGeometry.createUV t.Width t.Height geo) texturePath
     )
 
@@ -196,12 +92,12 @@ let spawnWallPartMesh sector (part: WallPart) (vertices: Vector3 []) wad isSky =
             part.TextureName
             |> Option.iter (fun textureName ->
                 let texturePath = textureName + ".bmp"
-                let t = new Bitmap(texturePath)
+                let t = loadTexture texturePath//new Bitmap(texturePath)
                 spawnMesh sector vertices (WallPart.createUV vertices t.Width t.Height part) texturePath
             )
         else
             let texturePath = "F_SKY1" + "_flat.bmp"
-            let t = new Bitmap(texturePath)
+            let t = loadTexture texturePath//new Bitmap(texturePath)
             spawnMesh sector vertices (WallPart.createUV vertices t.Width t.Height part) texturePath
 
 let spawnWallMesh level (wall: Wall) wad =
@@ -245,15 +141,18 @@ let spawnWallMesh level (wall: Wall) wad =
 
     | _ -> ()
 
-let updates (clientWorld: ClientWorld) =
+let updates openWad exportTextures am (clientWorld: ClientWorld) =
+    globalAM <- am
     [
         Behavior.wadLoading
-            (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
-            (fun wad _ ->
-                wad |> exportFlatTextures
-                wad |> exportTextures
-                wad |> exportSpriteTextures
-            )
+            openWad
+            exportTextures
+           // (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
+            //(fun wad _ ->
+            //    wad |> exportFlatTextures
+            //    wad |> exportTextures
+            //    wad |> exportSpriteTextures
+            //)
 
         Behavior.levelLoading (fun wad level em ->
             let physicsEngineComp = PhysicsEngineComponent (128)

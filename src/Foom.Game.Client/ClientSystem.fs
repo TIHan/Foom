@@ -2,7 +2,6 @@
 
 open System
 open System.IO
-open System.Drawing
 open System.Numerics
 open System.Collections.Generic
 
@@ -150,14 +149,14 @@ let physicsUpdateBehavior (clientWorld: ClientWorld) =
     )
 
 
-let create (app: Application) (clientWorld: ClientWorld) am =
+let create openWad exportTextures (clientWorld: ClientWorld) am =
     Behavior.merge
         (
             [
                 loadWadAndLevelBehavior clientWorld
             ]
             @
-            Level.updates clientWorld
+            Level.updates openWad exportTextures am clientWorld
             @
             [
                Player.fixedUpdate

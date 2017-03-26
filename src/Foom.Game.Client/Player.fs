@@ -9,6 +9,7 @@ open Foom.Math
 open Foom.Geometry
 open Foom.Client
 open Foom.Renderer
+open Foom.Input
 
 open Foom.Game.Core
 
@@ -90,14 +91,14 @@ module Player =
                 )
             ]
 
-    let preUpdate (willQuit: bool ref) (app: Application) =
+    let preUpdate (willQuit: bool ref) (input : IInput) =
         Behavior.merge
             [
                 Behavior.update (fun () em ea ->
                     em.ForEach<CameraComponent, TransformComponent, PlayerComponent> (fun ent cameraComp transformComp playerComp ->
 
-                        Input.pollEvents (app.Window)
-                        let inputState = Input.getState ()
+                        input.PollEvents ()
+                        let inputState = input.GetState ()
 
                         inputState.Events
                         |> List.iter (function

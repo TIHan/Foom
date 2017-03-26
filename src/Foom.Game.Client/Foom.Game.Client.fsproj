@@ -1,0 +1,112 @@
+﻿<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{9E5C57CC-0DA0-4720-BC94-9FECC41D2188}</ProjectGuid>
+    <TargetProfile>netcore</TargetProfile>
+    <TargetFSharpCoreVersion>3.3.1.0</TargetFSharpCoreVersion>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Foom.Game.Client</RootNamespace>
+    <AssemblyName>Foom.Game.Client</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\build</OutputPath>
+    <DefineConstants>DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <PlatformTarget></PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\build</OutputPath>
+    <DefineConstants></DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <GenerateTailCalls>true</GenerateTailCalls>
+    <PlatformTarget></PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="FSharp.Core">
+      <HintPath>..\..\packages\FSharp.Core.4.0.0.1\lib\portable-net45+netcore45+wp8\FSharp.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics.Vectors">
+      <HintPath>..\..\packages\System.Numerics.Vectors.4.3.0\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Foom.Ecs\Foom.Ecs.fsproj">
+      <Project>{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}</Project>
+      <Name>Foom.Ecs</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Core\Foom.Game.Core.fsproj">
+      <Project>{7B655BE8-40D7-482B-8B43-05C5DBAA027B}</Project>
+      <Name>Foom.Game.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Assets\Foom.Game.Assets.fsproj">
+      <Project>{C41FC4BC-8B5A-4497-9765-FDEAD54749ED}</Project>
+      <Name>Foom.Game.Assets</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Level\Foom.Game.Level.fsproj">
+      <Project>{36E00779-B8EB-432A-B784-CDEB05E90D0B}</Project>
+      <Name>Foom.Game.Level</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Renderer\Foom.Game.Renderer.fsproj">
+      <Project>{181E47F5-8BF0-4AEC-B452-0A88D5BFD28F}</Project>
+      <Name>Foom.Game.Renderer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Sprite\Foom.Game.Sprite.fsproj">
+      <Project>{03FA0D75-22BB-40BC-A3EB-ABA52DD304B9}</Project>
+      <Name>Foom.Game.Sprite</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Wad\Foom.Game.Wad.fsproj">
+      <Project>{FD3F2622-9550-4BD7-8D63-5916151DF018}</Project>
+      <Name>Foom.Game.Wad</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Geometry\Foom.Geometry.fsproj">
+      <Project>{34AA5257-2F5B-4097-8250-1FD4956D1130}</Project>
+      <Name>Foom.Geometry</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Math\Foom.Math.fsproj">
+      <Project>{B94F520E-B150-45A7-ADA1-E2945BE9A743}</Project>
+      <Name>Foom.Math</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Network\Foom.Network.fsproj">
+      <Project>{A446D691-8F20-40BD-98AC-B5FB2EFD5D04}</Project>
+      <Name>Foom.Network</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Physics\Foom.Physics.fsproj">
+      <Project>{6DE9A674-F72C-4BDA-9120-E8EB97E7D5ED}</Project>
+      <Name>Foom.Physics</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Renderer\Foom.Renderer.fsproj">
+      <Project>{ED30B5EB-571D-4815-BE37-DDF7ED6198CC}</Project>
+      <Name>Foom.Renderer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Wad\Foom.Wad.fsproj">
+      <Project>{13CAB67A-5A00-401D-8CE2-032FFEA5FECE}</Project>
+      <Name>Foom.Wad</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Input\Foom.Input.fsproj">
+      <Project>{6DC85453-16AF-4402-A4B4-373336106451}</Project>
+      <Name>Foom.Input</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Items.fs" />
+    <Compile Include="Monsters.fs" />
+    <Compile Include="Decorations.fs" />
+    <Compile Include="ClientWorld.fs" />
+    <Compile Include="Player.fs" />
+    <Compile Include="Sky.fs" />
+    <Compile Include="Level.fs" />
+    <Compile Include="ClientState.fs" />
+    <Compile Include="ClientSystem.fs" />
+    <Compile Include="Client.fs" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
+</Project>

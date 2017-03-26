@@ -54,17 +54,16 @@ module Pipelines =
 
         }
 
-let init (world: World) =
-    let app = Backend.init ()
-    let gl = DesktopGL (app)
+let init (gl: IGL) (assetLoader: IAssetLoader) loadTextFile openWad exportTextures input (world: World) =
+   // let app = Backend.init ()
 
-    let assetLoader =
-        {
-            new IAssetLoader with
+    //let assetLoader =
+    //    {
+    //        new IAssetLoader with
 
-                member this.LoadTextureFile (assetPath) =
-                    new BitmapTextureFile (assetPath) :> TextureFile
-        }
+    //            member this.LoadTextureFile (assetPath) =
+    //                new BitmapTextureFile (assetPath) :> TextureFile
+    //    }
 
     let am = AssetManager (assetLoader)
     let renderSystem = 
@@ -75,7 +74,8 @@ let init (world: World) =
                 ("Sky", Pipelines.skyPipeline)
             ]
             gl
-            (fun filePath -> File.ReadAllText filePath |> System.Text.Encoding.UTF8.GetBytes)
+            loadTextFile
+           // (fun filePath -> File.ReadAllText filePath |> System.Text.Encoding.UTF8.GetBytes)
             am
            
 
@@ -83,16 +83,15 @@ let init (world: World) =
 
     let clientSubworld = world.CreateSubworld ()
     let clientWorld = ClientWorld.Create (clientSubworld, world.SpawnEntity ())
-    let clientSystemUpdate = ClientSystem.create app clientWorld am |> clientSubworld.AddBehavior
+    let clientSystemUpdate = ClientSystem.create openWad exportTextures clientWorld am |> clientSubworld.AddBehavior
 
     world.Publish (ClientSystem.LoadWadAndLevelRequested ("doom1.wad", "e1m3"))
    // world.Publish (ClientSystem.LoadWadAndLevelRequested ("doom2.wad", "map10"))
 
     let willQuit = ref false
-    let inputUpdate = world.AddBehavior (Player.preUpdate willQuit app)
+    let inputUpdate = world.AddBehavior (Player.preUpdate willQuit input)
 
     {
-        Window = app.Window
         AlwaysUpdate = fun () -> inputUpdate ()
         Update = fun x ->
             clientSystemUpdate x
