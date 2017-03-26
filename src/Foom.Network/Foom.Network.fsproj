@@ -48,6 +48,7 @@
     <Compile Include="Server.fs" />
     <Compile Include="Client.fs" />
     <None Include="packages.config" />
+    <Compile Include="IFilter.fs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
 </Project>
