@@ -52,9 +52,11 @@ type Server (udpServer: IUdpServer) =
         sendStream.Length <- 0
 
         match Network.lookup.TryGetValue typeof<'T> with
-        | true, (id, serialize, _) ->
+        | true, id ->
+            let pickler = Network.FindTypeById id
             sendWriter.WriteByte (byte id)
-            serialize (msg :> obj) sendWriter
+            pickler.serialize (msg :> obj) sendWriter
+
         | _ -> ()
 
         for i = 0 to clients.Count - 1 do

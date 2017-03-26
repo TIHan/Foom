@@ -4,14 +4,30 @@ open System
 open System.Collections.Generic
 open System.Reflection
 
-let private typeArray = ResizeArray<Type> ()
-let internal lookup = Dictionary<Type, int * (obj -> ByteWriter -> unit) * (obj -> ByteReader -> unit)> ()
+type Pickler =
+    {
+        type': Type
+        serialize: obj -> ByteWriter -> unit
+        deserialize: obj -> ByteReader -> unit
+        ctor: ByteReader -> obj
+    }
 
-let RegisterType<'T when 'T : (new : unit -> 'T)> (serialize: 'T -> ByteWriter -> unit, deserialize: 'T -> ByteReader -> unit) =
+let internal lookup = Dictionary<Type, int> ()
+let internal typeArray = ResizeArray<Pickler> ()
+
+let RegisterType<'T> (serialize: 'T -> ByteWriter -> unit, deserialize: 'T -> ByteReader -> unit, ctor: ByteReader -> 'T) =
     let t = typeof<'T>
 
-    lookup.Add (t, (typeArray.Count, (fun o x -> serialize (o :?> 'T) x), (fun o x -> deserialize (o :?> 'T) x)))
-    typeArray.Add t
+    let pickler =
+        {
+            type' = t
+            serialize = fun o x -> serialize (o :?> 'T) x
+            deserialize = fun o x -> deserialize (o :?> 'T) x
+            ctor = (fun reader -> (ctor reader) :> obj)
+        }
+
+    lookup.Add (t, typeArray.Count)
+    typeArray.Add pickler
 
 let FindTypeById id =
     typeArray.[id]

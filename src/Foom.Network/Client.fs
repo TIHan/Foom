@@ -6,7 +6,7 @@ open System.Collections.Generic
 [<Sealed>]
 type Client (udpClient: IUdpClient) =
 
-    let typeDeserializers = Array.init 1024 (fun _ -> Event<ByteReader> ())
+    let subscriptions = Array.init 1024 (fun _ -> Event<obj> ())
 
     let packetPool = PacketPool (64)
     let packetQueue = Queue<Packet> ()
@@ -37,9 +37,13 @@ type Client (udpClient: IUdpClient) =
 
                 let typeId = reader.ReadByte () |> int
 
-                if typeDeserializers.Length > typeId then
-                    typeDeserializers.[typeId].Trigger reader
-
+                if subscriptions.Length > typeId then
+                    let pickler = Network.FindTypeById typeId
+                    let msg = pickler.ctor reader
+                    pickler.deserialize msg reader
+                    subscriptions.[typeId].Trigger msg
+                else
+                    failwith "This shouldn't happen."
 
             | PacketType.ReliableOrdered ->
 
@@ -75,16 +79,13 @@ type Client (udpClient: IUdpClient) =
             udpClient.Send (packet.Raw, packet.Length) |> ignore
             packetPool.Recycle packet
 
-    member this.Subscribe<'T when 'T : (new : unit -> 'T)> f =
+    member this.Subscribe<'T> f =
         match Network.lookup.TryGetValue typeof<'T> with
-        | true, (id, _, deserialize) ->
-            let evt = typeDeserializers.[id]
+        | true, id ->
+            let evt = subscriptions.[id]
+            let pickler = Network.FindTypeById id
 
-            evt.Publish.Add (fun byteReader ->
-                let msg = new 'T ()
-                deserialize (msg :> obj) byteReader
-                f msg
-            )
+            evt.Publish.Add (fun msg -> f (msg :?> 'T))
         | _ -> ()
 
     member this.Update () =

@@ -16,7 +16,6 @@ type TestStruct =
         y: int
     }
 
-[<CLIMutable>]
 type TestMessage =
     {
         mutable a : int
@@ -31,7 +30,12 @@ type TestMessage =
         msg.a <- byteReader.ReadInt ()
         msg.b <- byteReader.ReadInt ()
 
-[<CLIMutable>]
+    static member Ctor _ =
+        {
+            a = 0
+            b = 0
+        }
+
 type TestMessage2 =
     {
         mutable c : int
@@ -46,11 +50,16 @@ type TestMessage2 =
         msg.c <- byteReader.ReadInt ()
         msg.d <- byteReader.ReadInt ()
 
+    static member Ctor _ =
+        {
+            c = 0
+            d = 0
+        }
+
 module TestMessage3 =
 
     let buffer = Array.zeroCreate<int> 65536
 
-[<CLIMutable>]
 type TestMessage3 =
     {
         mutable arr : int []
@@ -66,13 +75,19 @@ type TestMessage3 =
         msg.len <- byteReader.ReadInts (TestMessage3.buffer)
         msg.arr <- TestMessage3.buffer
 
+    static member Ctor _ =
+        {
+            arr = [||]
+            len = 0
+        }
+
 [<TestFixture>]
 type Test() = 
 
     do
-        Network.RegisterType (TestMessage.Serialize, TestMessage.Deserialize)
-        Network.RegisterType (TestMessage2.Serialize, TestMessage2.Deserialize)
-        Network.RegisterType (TestMessage3.Serialize, TestMessage3.Deserialize)
+        Network.RegisterType (TestMessage.Serialize, TestMessage.Deserialize, TestMessage.Ctor)
+        Network.RegisterType (TestMessage2.Serialize, TestMessage2.Deserialize, TestMessage2.Ctor)
+        Network.RegisterType (TestMessage3.Serialize, TestMessage3.Deserialize, TestMessage3.Ctor)
 
     [<Test>]
     member this.UdpWorks () : unit =
@@ -224,7 +239,7 @@ type Test() =
         )
 
 
-        clientV6.Subscribe<TestMessage3> (fun msg ->
+        client.Subscribe<TestMessage3> (fun msg ->
             endOfArray <- msg.arr.[msg.len - 1]
         )
 
@@ -234,20 +249,20 @@ type Test() =
 
         data.arr.[data.len - 1] <- 808
 
-        //let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
+        let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 
-        ////for i = 0 to 50 do
-        //for i = 0 to 10 do
-        //    server.Publish ({ a = 9898; b = 3456 })
-        //    server.Publish ({ c = 1337; d = 666 })
+        //for i = 0 to 50 do
+        for i = 0 to 10 do
+            server.Publish ({ a = 9898; b = 3456 })
+            server.Publish ({ c = 1337; d = 666 })
 
-        //server.Update ()
+        server.Update ()
 
-        //stopwatch.Stop ()
+        stopwatch.Stop ()
 
         let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 
-        for i = 0 to 0 do
+        for i = 0 to 20 do
             server.Publish data
 
         server.Update ()
@@ -257,7 +272,7 @@ type Test() =
         printfn "[Server] %f kB sent." (single server.BytesSentSinceLastUpdate / 1024.f)
         printfn "[Server] time taken: %A." stopwatch.Elapsed.TotalMilliseconds
 
-        //client.Update ()
+        client.Update ()
         clientV6.Update ()
 
         Assert.True (messageReceived)
