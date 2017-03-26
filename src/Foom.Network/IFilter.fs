@@ -23,10 +23,17 @@ type IQueue =
 type ElementContext =
     {
         [<DefaultValue>] mutable source: byte [] -> int -> int -> unit
-        packetPool : PacketPool
         queues : ResizeArray<IQueue>
         mutable nextListener : IObservable<Packet>
     }
+
+    member this.Send (data, startIndex, size) =
+        if obj.ReferenceEquals (this.source, null) |> not then
+            this.source data startIndex size
+     
+    member this.Flush () =
+        this.queues
+        |> Seq.iter (fun x -> x.Flush ())
 
 type Element = Element of (ElementContext -> unit)
 
@@ -80,6 +87,8 @@ module PipelineTest =
                     packet.CopyTo packet'
                     packets.Add packet'
 
+                packetPool.Recycle packet
+
 
             member x.Flush () =
                 packets
@@ -106,7 +115,7 @@ module PipelineTest =
                 context.nextListener <- q.Listen
         )
 
-    let sink f el =
+    let sink (packetPool : PacketPool) f el =
         SinkElement (fun context ->
             match el with
             | Element f -> f context
@@ -114,7 +123,7 @@ module PipelineTest =
             if context.nextListener <> null then
                 context.nextListener.Add (fun packet ->
                     f packet
-                    context.packetPool.Recycle packet
+                    packetPool.Recycle packet
                 )
                 context.nextListener <- null
         )
@@ -122,7 +131,6 @@ module PipelineTest =
     let build (sinkElement: SinkElement) =
         let context =
             {
-                packetPool = PacketPool 64
                 queues = ResizeArray ()
                 nextListener = null
             }
@@ -130,11 +138,11 @@ module PipelineTest =
         | SinkElement f -> f context
         context
 
-    let basicPipeline () =
+    let basicPipeline f =
         let packetPool = PacketPool 64
         let source = UnreliableSource packetPool
-        let packetQueue = PacketMerger packetPool
+        let merger = PacketMerger packetPool
 
         create source
-        |> addQueue packetQueue
-        |> sink (fun packet -> ())
+        |> addQueue merger
+        |> sink packetPool f
