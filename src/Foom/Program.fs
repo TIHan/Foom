@@ -15,10 +15,30 @@ open Foom.Export
 
 let world = World (65536)
 
+type NoInput () =
+
+    interface IInput with
+
+        member x.PollEvents () =
+            ()
+
+        member x.GetMousePosition () =
+            MousePosition ()
+
+        member x.GetState () =
+            { Events = [] }
+
+open OpenTK
+open OpenTK.Graphics
+
 let start (invoke: Task ref) =
+    let gameWindow = new GameWindow (1280, 720, GraphicsMode.Default, "Foom", GameWindowFlags.FixedWindow, DisplayDevice.Default, 3, 2, GraphicsContextFlags.Default)
     let app = Backend.init ()
-    let gl = OpenTKGL (app)
-    let input = DesktopInput (app.Window)
+   // let gl = DesktopGL (app)
+  //  let input = DesktopInput (app.Window)
+  //  let gameWindow = new GameWindow (1280, 720, GraphicsMode.Default, "Foom", GameWindowFlags.FixedWindow, DisplayDevice.Default, 3, 2, GraphicsContextFlags.Default)
+    let gl = OpenTKGL (fun () -> Backend.draw app)
+    let input = DesktopInput (app.Window)//NoInput ()
     let assetLoader =
         {
             new IAssetLoader with
@@ -35,6 +55,7 @@ let start (invoke: Task ref) =
             wad |> exportTextures
             wad |> exportSpriteTextures
         )
+
     let client = Client.init gl assetLoader loadTextFile openWad exportTextures input world
 
     let stopwatch = System.Diagnostics.Stopwatch ()
