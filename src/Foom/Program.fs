@@ -32,7 +32,7 @@ open OpenTK
 open OpenTK.Graphics
 
 let start (invoke: Task ref) =
-    let gameWindow = new GameWindow (1280, 720, GraphicsMode.Default, "Foom", GameWindowFlags.FixedWindow, DisplayDevice.Default, 3, 2, GraphicsContextFlags.Default)
+    let gameWindow = new GameWindow (1280, 720, GraphicsMode.Default, "Foommmmm", GameWindowFlags.FixedWindow, DisplayDevice.Default, 3, 2, GraphicsContextFlags.Default)
     let app = Backend.init ()
    // let gl = DesktopGL (app)
   //  let input = DesktopInput (app.Window)
