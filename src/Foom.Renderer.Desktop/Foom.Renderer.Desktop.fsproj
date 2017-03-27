@@ -109,8 +109,5 @@
     <Compile Include="DesktopGL.fs" />
     <Compile Include="OpenTKGL.fs" />
     <Content Include="packages.config" />
-    <None Include="OpenTK.dll.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 </Project>
