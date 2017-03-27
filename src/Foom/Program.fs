@@ -1,4 +1,9 @@
-﻿open System
+﻿#if __IOS__
+module Foom.Program
+#else
+#endif
+
+open System
 open System.IO
 open System.Diagnostics
 open System.Numerics
@@ -32,6 +37,10 @@ open OpenTK
 open OpenTK.Graphics
 
 let start (invoke: Task ref) =
+#if __IOS__
+    let gl = OpenTKGL (fun () -> ())
+    let input = NoInput ()
+#else
     let gameWindow = new GameWindow (1280, 720, GraphicsMode.Default, "Foommmmm", GameWindowFlags.FixedWindow, DisplayDevice.Default, 3, 2, GraphicsContextFlags.Default)
     let app = Backend.init ()
    // let gl = DesktopGL (app)
@@ -39,21 +48,31 @@ let start (invoke: Task ref) =
   //  let gameWindow = new GameWindow (1280, 720, GraphicsMode.Default, "Foom", GameWindowFlags.FixedWindow, DisplayDevice.Default, 3, 2, GraphicsContextFlags.Default)
     let gl = OpenTKGL (fun () -> Backend.draw app)
     let input = DesktopInput (app.Window)//NoInput ()
+#endif
     let assetLoader =
         {
             new IAssetLoader with
 
                 member this.LoadTextureFile (assetPath) =
+#if __IOS__
+                    new iOSTextureFile (assetPath) :> TextureFile
+#else
                     new BitmapTextureFile (assetPath) :> TextureFile
+#endif
+
         }
 
     let loadTextFile = (fun filePath -> File.ReadAllText filePath)
     let openWad = (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
     let exportTextures =
         (fun wad _ ->
+#if __IOS__
+            ()
+#else
             wad |> exportFlatTextures
             wad |> exportTextures
             wad |> exportSpriteTextures
+#endif
         )
 
     let client = Client.init gl assetLoader loadTextFile openWad exportTextures input world
@@ -87,7 +106,10 @@ let start (invoke: Task ref) =
                 printfn "FPS: %A" (int (1000. / stopwatch.Elapsed.TotalMilliseconds))
         )
 
+#if __IOS__
+#else
 [<EntryPoint>]
 let main argv =
     start (new Task (fun () -> ()) |> ref)
     0
+#endif

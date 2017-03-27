@@ -22,6 +22,8 @@ open Foom.Game.Level
 open Foom.Game.Wad
 open Foom.Game.Gameplay.Doom
 
+#if __IOS__
+#else
 let exportFlatTextures (wad: Wad) =
     wad
     |> Wad.iterFlatTextureName (fun name ->
@@ -132,3 +134,4 @@ let exportSpriteTextures (wad: Wad) =
             bmp.Dispose ()
         )
     )
+#endif

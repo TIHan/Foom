@@ -109,5 +109,6 @@
     <Compile Include="DesktopGL.fs" />
     <Compile Include="OpenTKGL.fs" />
     <Content Include="packages.config" />
+    <Compile Include="BitmapTextureFile.fs" />
   </ItemGroup>
 </Project>
