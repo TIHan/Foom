@@ -28,19 +28,9 @@ type ViewController (handle:IntPtr) =
 
         EAGLContext.SetCurrentContext context |> ignore
 
-        //GL.Oes.GenVertexArrays(1, out vertexArray);
-        //GL.Oes.BindVertexArray(vertexArray);
-
-        //GL.GenBuffers(1, out vertexBuffer);
-        //GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBuffer);
-        //GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(cubeVertexData.Length * sizeof(float)), cubeVertexData, BufferUsage.StaticDraw);
-
-        //GL.EnableVertexAttribArray((int)GLKVertexAttrib.Position);
-        //GL.VertexAttribPointer((int)GLKVertexAttrib.Position, 3, VertexAttribPointerType.Float, false, 24, new IntPtr(0));
-        //GL.EnableVertexAttribArray((int)GLKVertexAttrib.Normal);
-        //GL.VertexAttribPointer((int)GLKVertexAttrib.Normal, 3, VertexAttribPointerType.Float, false, 24, new IntPtr(12));
-
-        //GL.Oes.BindVertexArray(0);
+        let mutable vertexArray = 0
+        GL.GenVertexArrays (1, &vertexArray)
+        GL.BindVertexArray (vertexArray)
 
     override x.ShouldAutorotateToInterfaceOrientation (toInterfaceOrientation) =
         // Return true for supported orientations

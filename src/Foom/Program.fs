@@ -47,7 +47,7 @@ let start (invoke: Task ref) =
                     new BitmapTextureFile (assetPath) :> TextureFile
         }
 
-    let loadTextFile = (fun filePath -> File.ReadAllText filePath |> System.Text.Encoding.UTF8.GetBytes)
+    let loadTextFile = (fun filePath -> File.ReadAllText filePath)
     let openWad = (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
     let exportTextures =
         (fun wad _ ->

@@ -6,12 +6,66 @@ open System.Numerics
 open System.Collections.Generic
 open System.Runtime.InteropServices
 
+#if __IOS__
+open OpenTK.Graphics.ES30
+#else
 open OpenTK.Graphics.OpenGL
+#endif
 
 open FSharp.NativeInterop
 
 #nowarn "9"
 #nowarn "51"
+
+module OpenTKGL =
+
+    let loadShaders (vertexSource : string) (fragmentSource : string) : int =
+        let vertexShaderId = GL.CreateShader (ShaderType.VertexShader)
+        let fragmentShaderId = GL.CreateShader (ShaderType.FragmentShader)
+
+        let mutable result = 0
+        let mutable infoLogLength = 0
+
+        // Compile Vertex Shader
+        GL.ShaderSource (vertexShaderId, vertexSource)
+        GL.CompileShader (vertexShaderId)
+
+        // Check Vertex Shader
+        GL.GetShader (vertexShaderId, ShaderParameter.CompileStatus, &result)
+        GL.GetShader (vertexShaderId, ShaderParameter.InfoLogLength, &infoLogLength)
+        if infoLogLength > 0 then
+            let log = GL.GetShaderInfoLog (vertexShaderId)
+            printfn "%s" log
+
+        // Compile Fragment Shader
+        GL.ShaderSource (fragmentShaderId, fragmentSource)
+        GL.CompileShader (fragmentShaderId)
+
+        // Check Fragment Shader
+        GL.GetShader (fragmentShaderId, ShaderParameter.CompileStatus, &result)
+        GL.GetShader (fragmentShaderId, ShaderParameter.InfoLogLength, &infoLogLength)
+        if infoLogLength > 0 then
+            let log = GL.GetShaderInfoLog (fragmentShaderId)
+            printfn "%s" log
+
+
+        printfn "Linking program."
+        let programId = GL.CreateProgram ()
+        GL.AttachShader (programId, vertexShaderId)
+        GL.AttachShader (programId, fragmentShaderId)
+        GL.LinkProgram programId
+
+        // Check Program
+#if __IOS__
+#else
+        GL.GetProgram (programId, GetProgramParameterName.LinkStatus, &result)
+        GL.GetProgram (programId, GetProgramParameterName.InfoLogLength, &infoLogLength)
+#endif
+        if infoLogLength > 0 then
+            let log = GL.GetProgramInfoLog (programId)
+            printfn "%s" log
+        
+        programId
 
 type OpenTKGL (swapBuffers) =
 
@@ -21,17 +75,24 @@ type OpenTKGL (swapBuffers) =
             GL.BindBuffer (BufferTarget.ArrayBuffer, id)
 
         member this.CreateBuffer () =
-            GL.GenBuffer ()
+            let mutable id = 0
+            GL.GenBuffers (1, &id)
+            id
 
         member this.DeleteBuffer id =
-            GL.DeleteBuffer (uint32 id)
+            let mutable id = id
+            GL.DeleteBuffers (1, &id)
 
         member this.BufferData (data: Vector2 [], count : int, id) =
             let handle = GCHandle.Alloc (data, GCHandleType.Pinned)
             let addr = handle.AddrOfPinnedObject ()
 
             GL.BindBuffer (BufferTarget.ArrayBuffer, uint32 id)
+#if __IOS__
+            GL.BufferData (BufferTarget.ArrayBuffer, (nativeint count), data, BufferUsage.DynamicDraw)
+#else
             GL.BufferData (BufferTarget.ArrayBuffer, count, addr, BufferUsageHint.DynamicDraw)
+#endif
 
             handle.Free ()
 
@@ -40,7 +101,11 @@ type OpenTKGL (swapBuffers) =
             let addr = handle.AddrOfPinnedObject ()
 
             GL.BindBuffer (BufferTarget.ArrayBuffer, uint32 id)
+#if __IOS__
+            GL.BufferData (BufferTarget.ArrayBuffer, (nativeint count), data, BufferUsage.DynamicDraw)
+#else
             GL.BufferData (BufferTarget.ArrayBuffer, count, addr, BufferUsageHint.DynamicDraw)
+#endif
 
             handle.Free ()
 
@@ -49,7 +114,11 @@ type OpenTKGL (swapBuffers) =
             let addr = handle.AddrOfPinnedObject ()
 
             GL.BindBuffer (BufferTarget.ArrayBuffer, uint32 id)
+#if __IOS__
+            GL.BufferData (BufferTarget.ArrayBuffer, (nativeint count), data, BufferUsage.DynamicDraw)
+#else
             GL.BufferData (BufferTarget.ArrayBuffer, count, addr, BufferUsageHint.DynamicDraw)
+#endif
 
             handle.Free ()
 
@@ -64,7 +133,8 @@ type OpenTKGL (swapBuffers) =
 
             GL.BindTexture (TextureTarget.Texture2D, textureID)
 
-            GL.TexImage2D (TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, PixelFormat.Bgra, PixelType.UnsignedByte, data)
+            // GL.Brgba
+            GL.TexImage2D (TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, data)
 
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, int TextureMagFilter.Nearest)
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, int TextureMinFilter.Nearest)
@@ -75,7 +145,8 @@ type OpenTKGL (swapBuffers) =
 
         member this.SetSubTexture (xOffset, yOffset, width, height, data, textureId) =
             GL.BindTexture (TextureTarget.Texture2D, textureId)
-            GL.TexSubImage2D (TextureTarget.Texture2D, 0, xOffset, yOffset, width, height, PixelFormat.Bgra, PixelType.UnsignedByte, data)
+            // G.Bgra
+            GL.TexSubImage2D (TextureTarget.Texture2D, 0, xOffset, yOffset, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, data)
             GL.BindTexture (TextureTarget.Texture2D, 0)
 
         member this.DeleteTexture id =
@@ -85,7 +156,9 @@ type OpenTKGL (swapBuffers) =
             GL.BindFramebuffer (FramebufferTarget.Framebuffer, id)
 
         member this.CreateFramebuffer () =
-            GL.GenFramebuffer ()
+            let mutable id = 0
+            GL.GenFramebuffers (1, &id)
+            id
 
         member this.CreateFramebufferTexture (width, height, data) =
             let textureID = GL.GenTexture ()
@@ -102,15 +175,27 @@ type OpenTKGL (swapBuffers) =
             textureID
 
         member this.SetFramebufferTexture id =
+#if __IOS__
+            GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment0, TextureTarget.Texture2D, id, 0)
+            let mutable drawBuffers = DrawBufferMode.ColorAttachment0
+            GL.DrawBuffers (1, &drawBuffers)
+#else
             GL.FramebufferTexture (FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, id, 0)
             let mutable drawBuffers = DrawBuffersEnum.ColorAttachment0
             GL.DrawBuffers (1, &drawBuffers)
+#endif
 
         member this.CreateRenderbuffer (width, height) =
-            let depthrenderbuffer = GL.GenRenderbuffer ()
+            let mutable depthrenderbuffer = 0
+            GL.GenRenderbuffers (1, &depthrenderbuffer)
             GL.BindRenderbuffer (RenderbufferTarget.Renderbuffer, depthrenderbuffer)
+#if __IOS__
+            GL.RenderbufferStorage (RenderbufferTarget.Renderbuffer, RenderbufferInternalFormat.Depth32FStencil8, width, height)
+            GL.FramebufferRenderbuffer (FramebufferTarget.Framebuffer, FramebufferSlot.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, depthrenderbuffer)
+#else
             GL.RenderbufferStorage (RenderbufferTarget.Renderbuffer, RenderbufferStorage.Depth32fStencil8, width, height)
             GL.FramebufferRenderbuffer (FramebufferTarget.Framebuffer, FramebufferAttachment.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, depthrenderbuffer)
+#endif
             GL.BindRenderbuffer (RenderbufferTarget.Renderbuffer, 0)
             depthrenderbuffer
 
@@ -155,7 +240,11 @@ type OpenTKGL (swapBuffers) =
             GL.VertexAttribDivisor (locationId, divisor)
 
         member this.DrawTriangles (first, count) =
+#if __IOS__
+            GL.DrawArrays (BeginMode.Triangles, first, count)
+#else
             GL.DrawArrays (PrimitiveType.Triangles, first, count)
+#endif
 
         member this.DrawTrianglesInstanced (count, primcount) =
             GL.DrawArraysInstanced (PrimitiveType.Triangles, 0, count, primcount)
@@ -188,8 +277,8 @@ type OpenTKGL (swapBuffers) =
             GL.StencilFunc (StencilFunction.Equal, 1, 0xFF)
             GL.StencilMask (0x00)
 
-        member this.LoadProgram (vertexBytes, fragmentBytes) =
-            Backend.loadShaders vertexBytes fragmentBytes
+        member this.LoadProgram (vertexSource, fragmentSource) =
+            OpenTKGL.loadShaders vertexSource fragmentSource
 
         member this.UseProgram programId =
             GL.UseProgram programId

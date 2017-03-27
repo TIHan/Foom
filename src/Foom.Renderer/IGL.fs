@@ -90,7 +90,7 @@ type IGL =
     abstract Stencil2 : unit -> unit // this will change
 
 
-    abstract LoadProgram : vertexBytes: byte [] * fragmentBytes: byte [] -> int
+    abstract LoadProgram : vertexSource: string * fragmentSource: string -> int
 
     abstract UseProgram : programId: int -> unit
 
