@@ -23,8 +23,8 @@ type PacketHeader =
     {
         type'       : PacketType
         fragments   : byte
-        size        : uint16
         sequenceId  : uint16
+        size        : uint16
     }
 
 [<Sealed>]
@@ -45,14 +45,14 @@ type Packet () =
     member this.SequenceId 
         with get () =
             let originalPos = byteStream.Position
-            byteStream.Position <- 4
+            byteStream.Position <- 2
             let value = byteReader.ReadUInt16 ()
             byteStream.Position <- originalPos
             value
 
         and set value =
            let originalPos = byteStream.Position
-           byteStream.Position <- 4
+           byteStream.Position <- 2
            byteWriter.WriteUInt16 value
            byteStream.Position <- originalPos
 
