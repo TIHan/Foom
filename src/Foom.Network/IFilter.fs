@@ -139,6 +139,10 @@ type AckManager () =
                 if not acks.[i] then
                     f i ackTimes.[i]
 
+            for i = 0 to newestAck do
+                if not acks.[i] then
+                    f i ackTimes.[i]
+
     member x.Ack i =
         if not acks.[i] then
             copyPacketPool.Recycle copyPackets.[i]
