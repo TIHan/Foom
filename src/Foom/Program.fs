@@ -36,9 +36,9 @@ type NoInput () =
 open OpenTK
 open OpenTK.Graphics
 
-let start (invoke: Task ref) =
+let start f (invoke: Task ref) =
 #if __IOS__
-    let gl = OpenTKGL (fun () -> ())
+    let gl = OpenTKGL (f)
     let input = NoInput ()
 #else
     let gameWindow = new GameWindow (1280, 720, GraphicsMode.Default, "Foommmmm", GameWindowFlags.FixedWindow, DisplayDevice.Default, 3, 2, GraphicsContextFlags.Default)
@@ -110,6 +110,6 @@ let start (invoke: Task ref) =
 #else
 [<EntryPoint>]
 let main argv =
-    start (new Task (fun () -> ()) |> ref)
+    start id (new Task (fun () -> ()) |> ref)
     0
 #endif
