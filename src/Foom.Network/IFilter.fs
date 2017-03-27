@@ -126,7 +126,7 @@ type AckManager () =
     let pending = Queue ()
 
     member x.ForEachPending f =
-        if newestAck = oldestAck then
+        if newestAck = oldestAck && newestAck <> -1 then
             if not acks.[oldestAck] then
                 f oldestAck ackTimes.[oldestAck]
         
@@ -134,7 +134,8 @@ type AckManager () =
             for i = oldestAck to newestAck do
                 if not acks.[i] then
                     f i ackTimes.[i]
-        else
+
+        elif oldestAck < newestAck then
             for i = oldestAck to acks.Length - 1 do
                 if not acks.[i] then
                     f i ackTimes.[i]
