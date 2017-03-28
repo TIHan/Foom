@@ -32,7 +32,8 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
 
     member this.SendConnectionAccepted () =
         let packet = Packet ()
-        packet.SetData (PacketType.ConnectionAccepted, [||], 0, 0)
+        packet.SetData ([||], 0, 0)
+        packet.PacketType <- PacketType.ConnectionAccepted
         packetQueue.Enqueue packet
 
     member this.Update () =

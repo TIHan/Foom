@@ -12,7 +12,7 @@ type UnreliableChannel (packetPool : PacketPool) =
         if size > packet.LengthRemaining then
             failwith "Unreliable data is larger than what a new packet can hold. Consider using reliable sequenced."
 
-        packet.SetData (PacketType.Unreliable, data, startIndex, size)
+        packet.SetData (data, startIndex, size)
         queue.Enqueue packet
  
     member this.Flush f =

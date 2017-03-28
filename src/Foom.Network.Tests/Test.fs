@@ -397,7 +397,32 @@ type Test() =
         Assert.False (channelSender.HasPendingAcks)
 
 
+    [<Test>]
+    member x.FragmentSource () =
 
+        let test amount expected =
+            let packetPool = PacketPool 64
+            let source = FragmentSource.Create packetPool :> ISource
+
+            let mutable count = 0
+            source.Listen.Add (fun packet -> 
+                count <- count + 1
+                packetPool.Recycle packet
+            )
+
+            let arr = Array.zeroCreate<byte> amount
+
+            source.Send (arr, 0, arr.Length)
+
+            Assert.AreEqual (expected, count)
+
+        test 4096 4
+        test 4095 4
+        test 4097 5
+        test 100 1
+        test 200 1
+        test 1024 1
+        test 1025 2
 
 
  

@@ -30,7 +30,7 @@ type PacketHeader =
 [<Sealed>]
 type Packet () =
 
-    let byteStream = ByteStream (NetConstants.PacketSize)
+    let byteStream = ByteStream (NetConstants.PacketSize + sizeof<PacketHeader>)
     let byteWriter = ByteWriter (byteStream)
     let byteReader = ByteReader (byteStream)
 
@@ -40,7 +40,9 @@ type Packet () =
 
     member this.Raw = byteStream.Raw
 
-    member this.PacketType : PacketType = LanguagePrimitives.EnumOfValue (byteStream.Raw.[0])
+    member this.PacketType
+        with get () : PacketType = LanguagePrimitives.EnumOfValue (byteStream.Raw.[0])
+        and set (value : PacketType) = byteStream.Raw.[0] <- byte value
 
     member this.SequenceId 
         with get () =
@@ -58,11 +60,11 @@ type Packet () =
 
     member this.LengthRemaining = byteStream.Raw.Length - byteStream.Length
 
-    member this.SetData (packetType, bytes: byte [], startIndex: int, size: int) =
+    member this.SetData (bytes: byte [], startIndex: int, size: int) =
         this.Reset ()
 
         // setup header
-        byteWriter.Write { type' = packetType; sequenceId = 0us; fragments = 0uy; size = uint16 size }
+        byteWriter.Write { type' = PacketType.Unreliable; sequenceId = 0us; fragments = 0uy; size = uint16 size }
         byteWriter.WriteRawBytes (bytes, startIndex, size)
 
     member this.Merge (packet : Packet) =

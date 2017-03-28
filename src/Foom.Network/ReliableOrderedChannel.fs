@@ -41,11 +41,13 @@ type ReliableOrderedChannel (packetPool : PacketPool) =
 
     member this.SendData (data, startIndex, size, f) =
         let packet = packetPool.Get ()
-        packet.SetData (PacketType.ReliableOrdered, data, startIndex, size)
+        packet.SetData (data, startIndex, size)
+        packet.PacketType <- PacketType.ReliableOrdered
         packet.SequenceId <- nextId
 
         let copypacket = copyPacketPool.Get ()
-        copypacket.SetData (PacketType.ReliableOrdered, data, startIndex, size)
+        copypacket.SetData (data, startIndex, size)
+        copypacket.PacketType <- PacketType.ReliableOrdered
         copypacket.SequenceId <- nextId
 
         let id = int nextId
@@ -175,7 +177,8 @@ type ReliableOrderedChannelReceiver (packetPool : PacketPool) =
 
     member this.SendData (sequenceId, data, startIndex, size, f) =
         let packet = packetPool.Get ()
-        packet.SetData (PacketType.ReliableOrdered, data, startIndex, size)
+        packet.SetData (data, startIndex, size)
+        packet.PacketType <- PacketType.ReliableOrdered
         packet.SequenceId <- sequenceId
 
         if sequenceMoreRecent nextId sequenceId then
@@ -190,7 +193,8 @@ type ReliableOrderedChannelReceiver (packetPool : PacketPool) =
             packetPool.Recycle packet
 
             let copypacket = copyPacketPool.Get ()
-            copypacket.SetData (PacketType.ReliableOrdered, data, startIndex, size)
+            copypacket.SetData (data, startIndex, size)
+            copypacket.PacketType <- PacketType.ReliableOrdered
             copypacket.SequenceId <- sequenceId
 
             if sequenceMoreRecent sequenceId newestId then

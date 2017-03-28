@@ -23,7 +23,8 @@ type Client (udpClient: IUdpClient) =
 
         if udpClient.Connect (address, port) then
             let packet = packetPool.Get ()
-            packet.SetData (PacketType.ConnectionRequested, [||], 0, 0)
+            packet.SetData ([||], 0, 0)
+            packet.PacketType <- PacketType.ConnectionRequested
             packetQueue.Enqueue packet
 
     member private this.OnReceivePacket (packet: Packet) =

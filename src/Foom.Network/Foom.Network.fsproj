@@ -44,6 +44,8 @@
     <Compile Include="UnreliableChannel.fs" />
     <Compile Include="ReliableOrderedChannel.fs" />
     <Compile Include="IFilter.fs" />
+    <Compile Include="FragmentSource.fsi" />
+    <Compile Include="FragmentSource.fs" />
     <Compile Include="ConnectedClient.fs" />
     <Compile Include="Server.fs" />
     <Compile Include="Client.fs" />
