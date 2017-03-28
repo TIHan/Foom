@@ -36,7 +36,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ByteStream.fs" />
-    <Compile Include="IUdp.fs" />
     <Compile Include="Constants.fs" />
     <Compile Include="Network.fs" />
     <Compile Include="Packet.fs" />
@@ -44,8 +43,17 @@
     <Compile Include="UnreliableChannel.fs" />
     <Compile Include="ReliableOrderedChannel.fs" />
     <Compile Include="IFilter.fs" />
+    <Compile Include="UnreliableSource.fs" />
+    <Compile Include="PacketMerger.fs" />
+    <Compile Include="Sequencer.fs" />
+    <Compile Include="AckManager.fsi" />
+    <Compile Include="AckManager.fs" />
+    <Compile Include="AckSetter.fsi" />
+    <Compile Include="AckSetter.fs" />
     <Compile Include="FragmentSource.fsi" />
     <Compile Include="FragmentSource.fs" />
+    <Compile Include="IUdp.fs" />
+    <Compile Include="Pipelines.fs" />
     <Compile Include="ConnectedClient.fs" />
     <Compile Include="Server.fs" />
     <Compile Include="Client.fs" />

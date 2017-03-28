@@ -16,8 +16,8 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
     //let unreliableChannel = UnreliableChannel (packetPool)
 
     let unreliablePipeline = 
-        PipelineTest.basicPipeline (fun packet -> this.SendNow (packet.Raw, packet.Length))
-        |> PipelineTest.build
+        unreliablePipeline (fun packet -> this.SendNow (packet.Raw, packet.Length))
+        |> Pipeline.build
 
     // Queues
     let packetQueue = Queue<Packet> ()
