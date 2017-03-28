@@ -7,7 +7,7 @@ type Sequencer () =
     let mutable seqN = 0us
     let outputEvent = Event<Packet> ()
 
-    interface IPass with
+    interface IFilter with
 
         member val Listen : IObservable<Packet> = outputEvent.Publish :> IObservable<Packet>
 
@@ -15,3 +15,5 @@ type Sequencer () =
             packet.SequenceId <- seqN
             seqN <- seqN + 1us
             outputEvent.Trigger packet
+
+        member x.Process () = ()

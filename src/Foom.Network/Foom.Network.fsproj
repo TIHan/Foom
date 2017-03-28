@@ -40,9 +40,9 @@
     <Compile Include="Network.fs" />
     <Compile Include="Packet.fs" />
     <Compile Include="PacketPool.fs" />
-    <Compile Include="UnreliableChannel.fs" />
     <Compile Include="ReliableOrderedChannel.fs" />
-    <Compile Include="IFilter.fs" />
+    <Compile Include="Pipeline.fsi" />
+    <Compile Include="Pipeline.fs" />
     <Compile Include="UnreliableSource.fs" />
     <Compile Include="PacketMerger.fs" />
     <Compile Include="Sequencer.fs" />

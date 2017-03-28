@@ -8,7 +8,7 @@ type PacketMerger (packetPool : PacketPool) =
 
      let packets = ResizeArray<Packet> (packetPool.Amount)
 
-     interface IQueue with
+     interface IFilter with
 
         member val Listen : IObservable<Packet> = listenEvent.Publish :> IObservable<Packet>
 
@@ -34,7 +34,7 @@ type PacketMerger (packetPool : PacketPool) =
             packetPool.Recycle packet
 
 
-        member x.Flush () =
+        member x.Process () =
             packets
             |> Seq.iter (fun packet ->
                 listenEvent.Trigger packet

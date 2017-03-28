@@ -5,4 +5,4 @@ type AckSetter =
 
     new : AckManager -> AckSetter
 
-    interface IPass
+    interface IFilter

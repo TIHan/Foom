@@ -10,5 +10,8 @@ let unreliablePipeline f =
     let merger = PacketMerger packetPool
 
     create source
-    |> addQueue merger
-    |> sink packetPool f
+    |> filter merger
+    |> sink (fun packet ->
+        f packet
+        packetPool.Recycle packet
+    )
