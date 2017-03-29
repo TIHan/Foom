@@ -359,67 +359,51 @@ type Test() =
 
     [<Test>]
     member x.TestReceiver () =
-        let byteStream = ByteStream 1024
-        let byteWriter = ByteWriter byteStream
+        let byteStream = ByteStream (1024)
+        let byteWriter = ByteWriter (byteStream)
+        let byteReader = ByteReader (byteStream)
 
-        byteWriter.WriteInt (1357)
+        byteWriter.Write { x = 1234; y = 5678 }
 
-        // Test Receiver
-        let packetPoolSender = PacketPool 64
-        let channelSender = ReliableOrderedChannel packetPoolSender
+        let packetPool = PacketPool 64
+        let ackManager = AckManager ()
 
-        let packetPoolReceiver = PacketPool 64
-        let channelReceiver = ReliableOrderedChannelReceiver (packetPoolReceiver)
+        let mutable ackId = -1
 
-        for i = 1 to 10 do
-            channelSender.SendData (byteStream.Raw, 0, byteStream.Length, fun packet ->
+        let reliableOrderedReceiver = ReliableOrderedAckReceiver packetPool ackManager (fun i -> ackId <- int i)
 
-                channelReceiver.SendPacket (packet, fun packet ->
-                    channelSender.Ack packet.SequenceId
-                    packetPoolReceiver.Recycle packet
-                )
+        Assert.AreEqual (-1, ackId)
 
-                packetPoolSender.Recycle packet
-            )
+        let test seqN =
 
-        Assert.False (channelSender.HasPendingAcks)
+            let packet = packetPool.Get ()
 
+            packet.SetData (byteStream.Raw, 0, byteStream.Length)
+            packet.PacketType <- PacketType.ReliableOrdered
+            packet.SequenceId <- seqN
 
-        for i = 1 to 10 do
-            channelSender.SendData (byteStream.Raw, 0, byteStream.Length, fun packet ->
+            reliableOrderedReceiver.Send packet
+            reliableOrderedReceiver.Process packetPool.Recycle
 
-                // Let purposely miss a packet.
-                if i <> 5 then
-                    channelReceiver.SendPacket (packet, fun packet ->
-                        channelSender.Ack packet.SequenceId
-                        packetPoolReceiver.Recycle packet
-                    )
+        test 0us
+        Assert.AreEqual (0us, ackId)
+        test 1us
+        Assert.AreEqual (1us, ackId)
+        test 2us
+        Assert.AreEqual (2us, ackId)
 
-                packetPoolSender.Recycle packet
-            )
-
-        Assert.True (channelSender.HasPendingAcks)
-
-        channelSender.TryResend (fun packet ->
-
-            channelReceiver.SendPacket (packet, fun packet ->
-                channelSender.Ack packet.SequenceId
-                packetPoolReceiver.Recycle packet
-            )
-
-            packetPoolSender.Recycle packet
-        )
-
-        channelReceiver.TryProcess (fun packet ->
-            channelSender.Ack packet.SequenceId
-
-            // commenting this out might be bad
-           // packetPoolReceiver.Recycle packet
-        )
-
-
-        Assert.False (channelSender.HasPendingAcks)
-
+        test 10us
+        Assert.AreEqual (2us, ackId)
+        test 9us
+        test 8us
+        test 7us
+        Assert.AreEqual (2us, ackId)
+        test 6us
+        test 5us
+        test 4us
+        Assert.AreEqual (2us, ackId)
+        test 3us
+        Assert.AreEqual (10us, ackId)
 
     [<Test>]
     member x.FragmentSource () =

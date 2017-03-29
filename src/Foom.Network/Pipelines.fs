@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module internal Foom.Network.Pipelines
+module Foom.Network.Pipelines
 
 open System
 open System.Collections.Generic
@@ -35,7 +35,7 @@ let ReliableOrderedAckReceiver (packetPool : PacketPool) (ackManager : AckManage
             while queue.Count > 0 do
                 output (queue.Dequeue ())
 
-            ackManager.ForEachPending (fun seqId time copyPacket ->
+            ackManager.ForEachPending (fun seqId copyPacket ->
                 if int nextSeqId = seqId then
                     let packet = packetPool.Get ()
                     copyPacket.CopyTo packet
