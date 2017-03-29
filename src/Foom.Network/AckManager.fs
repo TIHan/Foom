@@ -35,6 +35,7 @@ type AckManager () =
 
     let mutable newestAck = -1
     let mutable oldestAck = -1
+    let mutable oldestTimeAck = DateTime ()
 
     let pending = Queue ()
 
@@ -67,13 +68,15 @@ type AckManager () =
 
             if oldestAck = i then
                 oldestAck <- -1
+                oldestTimeAck <- DateTime ()
 
             while oldestAck = -1 && pending.Count > 0 do
                 let j = pending.Dequeue ()
                 if not acks.[j] then
                     oldestAck <- j
+                    oldestTimeAck <- ackTimes.[j]
 
-    member x.Mark (packet : Packet) =
+    member x.MarkCopy (packet : Packet) =
         let i = int packet.SequenceId
         if acks.[i] then
             let dt = DateTime.UtcNow
@@ -86,6 +89,7 @@ type AckManager () =
 
             if oldestAck = -1 then
                 oldestAck <- i
+                oldestTimeAck <- DateTime.UtcNow
 
             if newestAck = -1 then
                 newestAck <- i

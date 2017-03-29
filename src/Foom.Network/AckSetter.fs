@@ -16,5 +16,5 @@ type AckSetter (ackManager : AckManager) =
         member x.Process output =
             while packets.Count > 0 do
                 let packet = packets.Dequeue ()
-                ackManager.Mark packet
+                ackManager.MarkCopy packet
 

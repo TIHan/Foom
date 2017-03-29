@@ -9,5 +9,7 @@ type AckManager =
 
     member Ack : int -> unit
 
-    member Mark : Packet -> unit
+    member MarkCopy : Packet -> unit
+
+    new : unit -> AckManager
 
