@@ -6,8 +6,8 @@ open System.Collections.Generic
 [<Sealed>]
 type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
 
-    let unreliablePipeline = 
-        unreliablePipeline (fun packet -> this.SendNow (packet.Raw, packet.Length))
+    let unreliableSender = 
+        unreliableSender (fun packet -> this.SendNow (packet.Raw, packet.Length))
 
     // Queues
     let packetQueue = Queue<Packet> ()
@@ -17,7 +17,7 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
             udpServer.Send (data, size, endPoint) |> ignore
 
     member this.Send (data, startIndex, size) =
-        unreliablePipeline.Send (data, startIndex, size)
+        unreliableSender.Send (data, startIndex, size)
 
     member this.SendConnectionAccepted () =
         let packet = Packet ()
@@ -31,4 +31,4 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
             let packet = packetQueue.Dequeue ()
             this.SendNow (packet.Raw, packet.Length)
 
-        unreliablePipeline.Process ()
+        unreliableSender.Process ()

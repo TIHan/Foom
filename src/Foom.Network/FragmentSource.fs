@@ -4,28 +4,22 @@ open System
 
 type FragmentSource =
     {
-        outputEvent : Event<Packet>
         packetPool  : PacketPool
     }
 
     interface ISource with
 
-        member x.Listen = listen x
-
-        member x.Send (data, startIndex, size) = send data startIndex size x
+        member x.Send (data, startIndex, size, output) = send data startIndex size output x
 
     static member Create packetPool =
         {
-            outputEvent = Event<Packet> ()
             packetPool = packetPool
         }
 
 [<AutoOpen>]
 module FragmentSourceHelpers =
 
-    let listen src = src.outputEvent.Publish :> IObservable<_>
-
-    let send data startIndex size src =
+    let send data startIndex size output src =
         let numberOfPackets = int <| Math.Ceiling (double size / double NetConstants.PacketSize)
 
         let mutable currentSize = size
@@ -37,5 +31,5 @@ module FragmentSourceHelpers =
             else
                 packet.SetData (data, startIndex + (NetConstants.PacketSize * i), NetConstants.PacketSize)
 
-            src.outputEvent.Trigger packet
+            output packet
             currentSize <- currentSize - NetConstants.PacketSize

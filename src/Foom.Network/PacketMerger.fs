@@ -4,13 +4,9 @@ open System
 
 type PacketMerger (packetPool : PacketPool) =
 
-     let listenEvent = Event<Packet> ()
-
      let packets = ResizeArray<Packet> (packetPool.Amount)
 
      interface IFilter with
-
-        member val Listen : IObservable<Packet> = listenEvent.Publish :> IObservable<Packet>
 
         member x.Send (packet : Packet) =
             if packets.Count > 0 then
@@ -34,9 +30,9 @@ type PacketMerger (packetPool : PacketPool) =
             packetPool.Recycle packet
 
 
-        member x.Process () =
+        member x.Process output =
             packets
             |> Seq.iter (fun packet ->
-                listenEvent.Trigger packet
+                output packet
             )
             packets.Clear ()

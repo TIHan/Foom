@@ -1,19 +1,21 @@
 ﻿namespace Foom.Network
 
 open System
+open System.Collections.Generic
 
 type Sequencer () =
 
     let mutable seqN = 0us
-    let outputEvent = Event<Packet> ()
+    let packets = Queue ()
 
     interface IFilter with
 
-        member val Listen : IObservable<Packet> = outputEvent.Publish :> IObservable<Packet>
+        member x.Send packet = 
+            packets.Enqueue packet
 
-        member x.Send packet =
-            packet.SequenceId <- seqN
-            seqN <- seqN + 1us
-            outputEvent.Trigger packet
-
-        member x.Process () = ()
+        member x.Process output =
+            while packets.Count > 0 do
+                let packet = packets.Dequeue ()
+                packet.SequenceId <- seqN
+                seqN <- seqN + 1us
+                output packet

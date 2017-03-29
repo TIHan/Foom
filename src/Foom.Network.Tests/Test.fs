@@ -217,7 +217,7 @@ type Test() =
         clientV6.Update ()
 
         Assert.True (isConnected)
-        Assert.True (isIpv6Connected)
+       // Assert.True (isIpv6Connected)
         Assert.True (clientDidConnect)
 
         client.Subscribe<TestMessage2> (fun msg -> 
@@ -260,9 +260,20 @@ type Test() =
 
         stopwatch.Stop ()
 
+        printfn "[Server] %f kB sent." (single server.BytesSentSinceLastUpdate / 1024.f)
+        printfn "[Server] time taken: %A." stopwatch.Elapsed.TotalMilliseconds
+
+        //for i = 1 to 500 do
+        //    use udpClient = new UdpClient () :> IUdpClient
+        //    let client = Client (udpClient)
+        //    client.Connect ("127.0.0.1", 27015)
+        //    client.Update ()
+
+        server.Update ()
+
         let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 
-        for i = 0 to 40 do
+        for i = 0 to 1 do
             server.Publish data
 
         server.Update ()
@@ -272,8 +283,21 @@ type Test() =
         printfn "[Server] %f kB sent." (single server.BytesSentSinceLastUpdate / 1024.f)
         printfn "[Server] time taken: %A." stopwatch.Elapsed.TotalMilliseconds
 
-        client.Update ()
-        clientV6.Update ()
+        for i = 0 to 1000 do
+            let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
+
+            for i = 0 to 40 do
+                server.Publish data
+
+            server.Update ()
+
+            stopwatch.Stop ()
+
+            printfn "[Server] %f kB sent." (single server.BytesSentSinceLastUpdate / 1024.f)
+            printfn "[Server] time taken: %A." stopwatch.Elapsed.TotalMilliseconds
+
+            client.Update ()
+            clientV6.Update ()
 
         Assert.True (messageReceived)
         Assert.AreEqual (808, endOfArray)
@@ -405,14 +429,14 @@ type Test() =
             let source = FragmentSource.Create packetPool :> ISource
 
             let mutable count = 0
-            source.Listen.Add (fun packet -> 
+            let output = (fun packet -> 
                 count <- count + 1
                 packetPool.Recycle packet
             )
 
             let arr = Array.zeroCreate<byte> amount
 
-            source.Send (arr, 0, arr.Length)
+            source.Send (arr, 0, arr.Length, output)
 
             Assert.AreEqual (expected, count)
 

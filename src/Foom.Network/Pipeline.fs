@@ -5,22 +5,18 @@ open System.Collections.Generic
 
 type ISource =
 
-    abstract Send : byte [] * startIndex: int * size: int -> unit
-
-    abstract Listen : IObservable<Packet>
+    abstract Send : byte [] * startIndex: int * size: int * (Packet -> unit) -> unit
 
 type IFilter =
 
     abstract Send : Packet -> unit
 
-    abstract Listen : IObservable<Packet>
-
-    abstract Process : unit -> unit
+    abstract Process : (Packet -> unit) -> unit
 
 type Pipeline =
     {
         [<DefaultValue>] mutable source: byte [] -> int -> int -> unit
-        filters : ResizeArray<IFilter>
+        actions : ResizeArray<unit -> unit>
         mutable nextListener : IObservable<Packet>
     }
 
@@ -29,8 +25,9 @@ type Pipeline =
             this.source data startIndex size
      
     member this.Process () =
-        this.filters
-        |> Seq.iter (fun x -> x.Process ())
+        for i = 0 to this.actions.Count - 1 do
+            let action = this.actions.[i]
+            action ()
 
 type Element = Element of (Pipeline -> unit)
 
@@ -38,25 +35,27 @@ module Pipeline =
 
     let create (src : ISource) =
         Element (fun context ->
-            context.source <- fun data startIndex size -> src.Send (data, startIndex, size)
-            context.nextListener <- src.Listen
+            let outputEvent = Event<Packet> ()
+            context.source <- fun data startIndex size -> src.Send (data, startIndex, size, outputEvent.Trigger)
+            context.nextListener <- outputEvent.Publish
         )
 
-    let filter (filter : IFilter) el =
+    let add (filter : IFilter) el =
         Element (fun context ->
             match el with
             | Element f -> f context
 
+            let outputEvent = Event<Packet> ()
             if context.nextListener <> null then
                 context.nextListener.Add filter.Send
-                context.filters.Add filter
-                context.nextListener <- filter.Listen
+                context.actions.Add (fun () -> filter.Process outputEvent.Trigger)
+                context.nextListener <- outputEvent.Publish
         )
 
     let sink f el =
         let context =
             {
-                filters = ResizeArray ()
+                actions = ResizeArray ()
                 nextListener = null
             }
 
@@ -64,9 +63,15 @@ module Pipeline =
         | Element f -> f context
 
         if context.nextListener <> null then
-            context.nextListener.Add (fun packet ->
-                f packet
-            )
+            if context.actions.Count > 0 then
+                context.nextListener.Add f
+            else
+                let queue = Queue ()
+                context.nextListener.Add queue.Enqueue
+                context.actions.Add (fun () ->
+                    while queue.Count > 0 do
+                        f (queue.Dequeue ())
+                )
             context.nextListener <- null
 
         context

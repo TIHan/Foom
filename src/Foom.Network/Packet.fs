@@ -34,6 +34,12 @@ type Packet () =
     let byteWriter = ByteWriter (byteStream)
     let byteReader = ByteReader (byteStream)
 
+    let setSize n =
+        let originalPos = byteStream.Position
+        byteStream.Position <- 4
+        byteWriter.WriteUInt16 (uint16 n)
+        byteStream.Position <- originalPos
+
     member this.Length 
         with get () = byteStream.Length
         and set value = byteStream.Length <- value
@@ -58,17 +64,36 @@ type Packet () =
            byteWriter.WriteUInt16 value
            byteStream.Position <- originalPos
 
+    member this.Size = this.Length - sizeof<PacketHeader>
+
     member this.LengthRemaining = byteStream.Raw.Length - byteStream.Length
 
-    member this.SetData (bytes: byte [], startIndex: int, size: int) =
+    member this.SetData (data : byte [], startIndex : int, size : int) =
         this.Reset ()
 
         // setup header
         byteWriter.Write { type' = PacketType.Unreliable; sequenceId = 0us; fragments = 0uy; size = uint16 size }
-        byteWriter.WriteRawBytes (bytes, startIndex, size)
+        byteWriter.WriteRawBytes (data, startIndex, size)
+
+        byteStream.Position <- 0
+
+    member this.Set (data, startIndex, size) =
+        this.Reset ()
+
+        byteWriter.WriteRawBytes (data, startIndex, size)
+        byteStream.Position <- 0
 
     member this.Merge (packet : Packet) =
+        let originalPos = byteStream.Position
+        byteStream.Position <- sizeof<PacketHeader>
+        byteWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.Size)
+        byteStream.Position <- originalPos
+        setSize this.Size
+
+    member this.Combine (packet : Packet) =
+        let originalPos = byteStream.Position
         byteWriter.WriteRawBytes (packet.Raw, 0, packet.Length)
+        byteStream.Position <- originalPos
 
     member this.Reset () =
         byteStream.Length <- 0

@@ -4,17 +4,13 @@ open System
 
 type ISource =
 
-    abstract Send : byte [] * startIndex: int * size: int -> unit
-
-    abstract Listen : IObservable<Packet>
+    abstract Send : byte [] * startIndex: int * size: int * (Packet -> unit) -> unit
 
 type IFilter =
 
     abstract Send : Packet -> unit
 
-    abstract Listen : IObservable<Packet>
-
-    abstract Process : unit -> unit
+    abstract Process : (Packet -> unit) -> unit
 
 [<Sealed; NoEquality; NoComparison>]
 type Pipeline =
@@ -30,6 +26,6 @@ module Pipeline =
 
     val create : ISource -> Element
 
-    val filter : IFilter -> Element -> Element
+    val add : IFilter -> Element -> Element
 
     val sink : (Packet -> unit) -> Element -> Pipeline

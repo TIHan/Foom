@@ -331,4 +331,6 @@ type ByteReader (byteStream: ByteStream) =
 
     member this.IsEndOfStream = byteStream.position = byteStream.length
 
+    member this.Position = byteStream.position
+
 

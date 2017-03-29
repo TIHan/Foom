@@ -1,17 +1,20 @@
 ﻿namespace Foom.Network
 
 open System
+open System.Collections.Generic
 
 [<Sealed>]
 type AckSetter (ackManager : AckManager) =
 
-    let outputEvent = Event<Packet> ()
+    let packets = Queue<Packet> ()
 
     interface IFilter with
 
-        member val Listen : IObservable<Packet> = outputEvent.Publish :> IObservable<Packet>
-
         member x.Send packet =
-            ackManager.Mark packet
+            packets.Enqueue packet
 
-        member x.Process () = ()
+        member x.Process output =
+            while packets.Count > 0 do
+                let packet = packets.Dequeue ()
+                ackManager.Mark packet
+

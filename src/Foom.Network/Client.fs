@@ -1,26 +1,29 @@
-﻿namespace Foom.Network
+﻿namespace rec Foom.Network
 
 open System
 open System.Collections.Generic
 
 [<Sealed>]
-type Client (udpClient: IUdpClient) =
+type Client (udpClient: IUdpClient) as this =
 
+    let receiveBuffer = Array.zeroCreate<byte> (NetConstants.PacketSize + sizeof<PacketHeader>)
     let subscriptions = Array.init 1024 (fun _ -> Event<obj> ())
 
-    let packetPool = PacketPool (64)
+    let packetPool = PacketPool 64
     let packetQueue = Queue<Packet> ()
 
     let mutable isConnected = false
-    let connected = Event<IUdpEndPoint> ()
+    let connectedEvent = Event<IUdpEndPoint> ()
+
+    // Pipelines
+    let basicReceiverPipeline = basicReceiver this.OnReceivePacket
 
     // Channels
     let reliableOrderedChannel = ReliableOrderedChannelReceiver (packetPool)
 
-    member val Connected = connected.Publish
+    member val Connected = connectedEvent.Publish
 
     member this.Connect (address, port) =
-
         if udpClient.Connect (address, port) then
             let packet = packetPool.Get ()
             packet.SetData ([||], 0, 0)
@@ -35,16 +38,17 @@ type Client (udpClient: IUdpClient) =
 
             match header.type' with
             | PacketType.Unreliable ->
+                let startingPos = reader.Position
+                while int header.size + startingPos > reader.Position do
+                    let typeId = reader.ReadByte () |> int
 
-                let typeId = reader.ReadByte () |> int
-
-                if subscriptions.Length > typeId then
-                    let pickler = Network.FindTypeById typeId
-                    let msg = pickler.ctor reader
-                    pickler.deserialize msg reader
-                    subscriptions.[typeId].Trigger msg
-                else
-                    failwith "This shouldn't happen."
+                    if subscriptions.Length > typeId then
+                        let pickler = Network.FindTypeById typeId
+                        let msg = pickler.ctor reader
+                        pickler.deserialize msg reader
+                        subscriptions.[typeId].Trigger msg
+                    else
+                        failwith "This shouldn't happen."
 
             | PacketType.ReliableOrdered ->
 
@@ -53,7 +57,7 @@ type Client (udpClient: IUdpClient) =
             | PacketType.ConnectionAccepted ->
 
                 isConnected <- true
-                connected.Trigger (udpClient.RemoteEndPoint)
+                connectedEvent.Trigger (udpClient.RemoteEndPoint)
 
             | _ -> ()
 
@@ -65,13 +69,13 @@ type Client (udpClient: IUdpClient) =
     member private this.Receive () =
 
         while udpClient.IsDataAvailable do
-            let packet = packetPool.Get ()
 
-            match udpClient.Receive (packet.Raw, 0, packet.Raw.Length) with
+            match udpClient.Receive (receiveBuffer, 0, receiveBuffer.Length) with
             | 0 -> ()
             | byteCount ->
-                packet.Length <- byteCount
-                this.OnReceivePacket packet
+                match LanguagePrimitives.EnumOfValue receiveBuffer.[0] with
+                | PacketType.ReliableOrdered -> ()
+                | _ -> basicReceiverPipeline.Send (receiveBuffer, 0, byteCount)
 
     member private this.Send () =
         while packetQueue.Count > 0 do
@@ -91,4 +95,7 @@ type Client (udpClient: IUdpClient) =
 
     member this.Update () =
         this.Receive ()
+
+        basicReceiverPipeline.Process ()
+
         this.Send ()
