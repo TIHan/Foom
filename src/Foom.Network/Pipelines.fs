@@ -45,6 +45,60 @@ let ReliableOrderedAckReceiver (packetPool : PacketPool) (ackManager : AckManage
                     output packet
             ) }
 
+let ReliableAckReceiver (packetPool : PacketPool) ack =
+
+    let queue = Queue<Packet> ()
+
+    { new IFilter with
+
+        member x.Send packet =
+            ack packet.SequenceId
+            queue.Enqueue packet
+
+        member x.Process output =
+            while queue.Count > 0 do
+                output (queue.Dequeue ()) 
+    }
+
+let ReliableSequencedAckReceiver (packetPool : PacketPool) ack =
+
+    let mutable recentFrom = 0us
+    let mutable recentTo = 0us
+    let queue = Queue<Packet> ()
+
+    { new IFilter with
+
+        member x.Send packet =
+
+            // A new message has been received.
+            if sequenceMoreRecent packet.SequenceId recentTo then
+
+                while queue.Count > 0 do
+                    packetPool.Recycle (queue.Dequeue ())
+
+                recentFrom <- packet.SequenceId
+                recentTo <- packet.SequenceId + uint16 packet.Fragments
+                queue.Enqueue packet
+
+            // The packet could be a fragment of the entire message.
+            elif sequenceMoreRecent packet.SequenceId recentFrom then
+                if packet.FragmentId > 0us || packet.Fragments > 0uy then
+                    queue.Enqueue packet
+                else
+                    failwith "shouldn't happen yet"
+                    packetPool.Recycle packet
+
+            else
+                packetPool.Recycle packet
+            
+        member x.Process output =
+            while queue.Count > 0 do
+                let packet = queue.Dequeue ()
+                ack packet.SequenceId
+                output packet
+    }
+
+
 let unreliableSender f =
     let packetPool = PacketPool 64
     let source = UnreliableSource packetPool

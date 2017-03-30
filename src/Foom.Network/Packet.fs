@@ -20,15 +20,13 @@ type PacketType =
     | ConnectionRequested = 8uy
     | ConnectionAccepted = 9uy
 
-
-
 [<Struct>]
 type PacketHeader =
-    {
-        type'       : PacketType
-        fragments   : byte
-        sequenceId  : uint16
-        size        : uint16
+    { type'         : PacketType
+      fragments     : byte
+      sequenceId    : uint16
+      size          : uint16
+      fragmentId    : uint16
     }
 
 [<Sealed>]
@@ -68,6 +66,28 @@ type Packet () =
            byteWriter.WriteUInt16 value
            byteStream.Position <- originalPos
 
+    member this.FragmentId 
+        with get () =
+            let originalPos = byteStream.Position
+            byteStream.Position <- 2
+            let value = byteReader.ReadUInt16 ()
+            byteStream.Position <- originalPos
+            value
+
+        and set value =
+           let originalPos = byteStream.Position
+           byteStream.Position <- 2
+           byteWriter.WriteUInt16 value
+           byteStream.Position <- originalPos
+
+    member this.Fragments
+        with get () =
+            let originalPos = byteStream.Position
+            byteStream.Position <- 1
+            let value = byteReader.ReadByte ()
+            byteStream.Position <- originalPos
+            value
+
     member this.Size = this.Length - sizeof<PacketHeader>
 
     member this.LengthRemaining = byteStream.Raw.Length - byteStream.Length
@@ -76,7 +96,7 @@ type Packet () =
         this.Reset ()
 
         // setup header
-        byteWriter.Write { type' = PacketType.Unreliable; sequenceId = 0us; fragments = 0uy; size = uint16 size }
+        byteWriter.Write { type' = PacketType.Unreliable; sequenceId = 0us; fragments = 0uy; size = uint16 size; fragmentId = 0us }
         byteWriter.WriteRawBytes (data, startIndex, size)
 
         byteStream.Position <- 0

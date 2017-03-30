@@ -403,6 +403,8 @@ type Test() =
         test 4us
         Assert.AreEqual (2us, ackId)
         test 3us
+        test 3us
+        test 2us
         Assert.AreEqual (10us, ackId)
 
     [<Test>]

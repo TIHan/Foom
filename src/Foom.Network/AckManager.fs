@@ -30,31 +30,31 @@ type AckManager () =
 
     let copyPacketPool = PacketPool (64)
     let copyPackets = Array.init 65536 (fun _ -> Unchecked.defaultof<Packet>)
-    let mutable acks = Array.init 65536 (fun _ -> true)
+    let acks = Array.init 65536 (fun _ -> true)
 
     let mutable newestAck = -1
     let mutable oldestAck = -1
 
-    let pending = Queue ()
-
     member x.ForEachPending f =
-        if newestAck = oldestAck && newestAck <> -1 then
-            if not acks.[oldestAck] then
-                f oldestAck copyPackets.[oldestAck]
-        
-        elif newestAck > oldestAck then
-            for i = oldestAck to newestAck do
-                if not acks.[i] then
-                    f i copyPackets.[i]
+        if oldestAck <> -1 then
 
-        elif oldestAck < newestAck then
-            for i = oldestAck to acks.Length - 1 do
-                if not acks.[i] then
-                    f i copyPackets.[i]
+            if newestAck = oldestAck then
+                if not acks.[oldestAck] then
+                    f oldestAck copyPackets.[oldestAck]
+            
+            elif newestAck > oldestAck then
+                for i = oldestAck to newestAck do
+                    if not acks.[i] then
+                        f i copyPackets.[i]
 
-            for i = 0 to newestAck do
-                if not acks.[i] then
-                    f i copyPackets.[i]
+            elif newestAck < oldestAck then
+                for i = oldestAck to acks.Length - 1 do
+                    if not acks.[i] then
+                        f i copyPackets.[i]
+
+                for i = 0 to newestAck do
+                    if not acks.[i] then
+                        f i copyPackets.[i]
 
     member x.Ack i =
         if not acks.[i] then
@@ -63,13 +63,27 @@ type AckManager () =
 
             acks.[i] <- true
 
-            if oldestAck = i then
+            if oldestAck = newestAck && oldestAck = i then
                 oldestAck <- -1
+                newestAck <- -1
 
-            while oldestAck = -1 && pending.Count > 0 do
-                let j = pending.Dequeue ()
-                if not acks.[j] then
-                    oldestAck <- j
+            elif oldestAck = i then
+                let mutable n = uint16 oldestAck
+                let mutable nextOldestAck = -1
+                while nextOldestAck = -1 do
+                    n <- n + 1us
+                    if not acks.[int n] then
+                        nextOldestAck <- int n
+                oldestAck <- nextOldestAck
+
+            elif newestAck = i then
+                let mutable n = uint16 oldestAck
+                let mutable nextNewestAck = -1
+                while nextNewestAck = -1 do
+                    n <- n - 1us
+                    if not acks.[int n] then
+                        nextNewestAck <- int n
+                newestAck <- nextNewestAck
 
     member x.MarkCopy (packet : Packet) =
         let i = int packet.SequenceId
@@ -89,5 +103,3 @@ type AckManager () =
                 newestAck <- i
             elif sequenceMoreRecent (uint16 i) (uint16 newestAck) then
                 newestAck <- i
-
-            pending.Enqueue i
