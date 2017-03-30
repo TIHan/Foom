@@ -4,7 +4,7 @@ open System
 open System.Collections.Generic
 
 [<Sealed>]
-type Client (udpClient: IUdpClient) as this =
+type Client (udpClient: IUdpClient) =
 
     let receiveBuffer = Array.zeroCreate<byte> (NetConstants.PacketSize + sizeof<PacketHeader>)
     let subscriptions = Array.init 1024 (fun _ -> Event<obj> ())
@@ -16,7 +16,9 @@ type Client (udpClient: IUdpClient) as this =
     let connectedEvent = Event<IUdpEndPoint> ()
 
     // Pipelines
-    let basicReceiverPipeline = basicReceiver this.OnReceivePacket
+    let receiveByteStream = ByteStream (1024 * 1024)
+    let receiverByteReader = ByteReader (receiveByteStream)
+    let basicReceiverPipeline = basicReceiver receiveByteStream
 
     // Channels
     let reliableOrderedChannel = ReliableOrderedChannelReceiver (packetPool)
@@ -30,10 +32,9 @@ type Client (udpClient: IUdpClient) as this =
             packet.PacketType <- PacketType.ConnectionRequested
             packetQueue.Enqueue packet
 
-    member private this.OnReceivePacket (packet: Packet) =
-        let reader = packet.Reader
+    member private this.OnReceive (reader : ByteReader) =
 
-        let rec onReceivePacket (reader : ByteReader) =
+        let rec onReceive (reader : ByteReader) =
             let header = reader.Read<PacketHeader> ()
 
             match header.type' with
@@ -61,12 +62,11 @@ type Client (udpClient: IUdpClient) as this =
 
             | _ -> ()
 
-            while not reader.IsEndOfStream do
-                onReceivePacket reader
-
-        onReceivePacket reader
+        while not reader.IsEndOfStream do
+            onReceive reader
 
     member private this.Receive () =
+        receiveByteStream.Length <- 0
 
         while udpClient.IsDataAvailable do
 
@@ -97,5 +97,9 @@ type Client (udpClient: IUdpClient) as this =
         this.Receive ()
 
         basicReceiverPipeline.Process ()
+
+        // Perform OnReceive after processing all incoming packets.
+        receiveByteStream.Position <- 0
+        this.OnReceive receiverByteReader
 
         this.Send ()

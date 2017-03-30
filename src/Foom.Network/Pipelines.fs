@@ -7,6 +7,26 @@ open System.Collections.Generic
 open Foom.Network
 open Foom.Network.Pipeline
 
+//let Defragment (packetPool : PacketPool) =
+
+//    let packets = Array.init 65536 (fun _ -> Unchecked.defaultof<Packet>)
+//    let queue = Queue<Packet> ()
+
+//    { new IFilter with
+
+//        member x.Send packet =
+//            if packet.Fragments = 0uy && packet.FragmentId = 0us then
+//                queue.Enqueue packet
+//            else
+
+
+//        member x.Process output =
+//            while queue.Count > 0 do
+//                let packet = queue.Dequeue ()
+//                ack packet.SequenceId
+//                output packet
+//    }
+
 let ReceiverSource (packetPool : PacketPool) =
 
     { new ISource with 
@@ -26,14 +46,15 @@ let ReliableOrderedAckReceiver (packetPool : PacketPool) (ackManager : AckManage
         member x.Send packet =
             if nextSeqId = packet.SequenceId then
                 queue.Enqueue packet
-                ack nextSeqId
                 nextSeqId <- nextSeqId + 1us
             else
                 ackManager.MarkCopy packet
 
         member x.Process output =
             while queue.Count > 0 do
-                output (queue.Dequeue ())
+                let packet = queue.Dequeue ()
+                ack packet.SequenceId
+                output packet
 
             ackManager.ForEachPending (fun seqId copyPacket ->
                 if int nextSeqId = seqId then
@@ -52,12 +73,13 @@ let ReliableAckReceiver (packetPool : PacketPool) ack =
     { new IFilter with
 
         member x.Send packet =
-            ack packet.SequenceId
             queue.Enqueue packet
 
         member x.Process output =
             while queue.Count > 0 do
-                output (queue.Dequeue ()) 
+                let packet = queue.Dequeue ()
+                ack packet.SequenceId
+                output packet
     }
 
 let ReliableSequencedAckReceiver (packetPool : PacketPool) ack =
@@ -111,13 +133,18 @@ let unreliableSender f =
         packetPool.Recycle packet
     )
 
-let basicReceiver f =
+let basicReceiver byteStream =
     let packetPool = PacketPool 64
     let source = ReceiverSource packetPool
+    let byteWriter = ByteWriter byteStream
 
     create source
     |> sink (fun packet ->
-        f packet
+        if packet.FragmentId > 0us then
+            byteWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.Size)
+        else
+            byteWriter.WriteRawBytes (packet.Raw, 0, packet.Length)
+
         packetPool.Recycle packet
     )
 
