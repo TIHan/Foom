@@ -94,6 +94,10 @@
       <Project>{6DC85453-16AF-4402-A4B4-373336106451}</Project>
       <Name>Foom.Input</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Collections\Foom.Collections.fsproj">
+      <Project>{C18C5AB4-4C69-4EA0-AE74-FEFBBD945C05}</Project>
+      <Name>Foom.Collections</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Items.fs" />

@@ -54,7 +54,7 @@ module Pipelines =
 
         }
 
-let init (gl: IGL) (assetLoader: IAssetLoader) loadTextFile openWad exportTextures input (world: World) =
+let init print (gl: IGL) (assetLoader: IAssetLoader) loadTextFile openWad exportTextures input (world: World) =
    // let app = Backend.init ()
 
     //let assetLoader =
@@ -89,7 +89,7 @@ let init (gl: IGL) (assetLoader: IAssetLoader) loadTextFile openWad exportTextur
    // world.Publish (ClientSystem.LoadWadAndLevelRequested ("doom2.wad", "map10"))
 
     let willQuit = ref false
-    let inputUpdate = world.AddBehavior (Player.preUpdate willQuit input)
+    let inputUpdate = world.AddBehavior (Player.preUpdate print willQuit input)
 
     {
         AlwaysUpdate = fun () -> inputUpdate ()

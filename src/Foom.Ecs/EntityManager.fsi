@@ -63,8 +63,8 @@ type EntityManager =
 [<AutoOpen>]
 module EntityPrototype =
 
-    [<Sealed>]
-    type EntityPrototype
+    [<Struct>]
+    type EntityPrototype = private EntityPrototype of (Entity -> EntityManager -> unit)
 
     [<Sealed>]
     type EntityPrototypeBuilder =

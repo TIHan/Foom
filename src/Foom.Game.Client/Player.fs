@@ -91,7 +91,7 @@ module Player =
                 )
             ]
 
-    let preUpdate (willQuit: bool ref) (input : IInput) =
+    let preUpdate (print : string -> unit) (willQuit: bool ref) (input : IInput) =
         Behavior.merge
             [
                 Behavior.update (fun () em ea ->
@@ -120,6 +120,14 @@ module Player =
 
                             | KeyPressed x when x = '\027' -> willQuit := true
 
+                            | MouseButtonPressed MouseButtonType.Left ->
+                                let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
+                                for i = 0 to 1000 do
+                                    //Foom.Game.Gameplay.Doom.ArmorBonus.spawnQuick transformComp.Position em |> ignore
+                                    Foom.Game.Gameplay.Doom.ArmorBonus.spawn transformComp.Position
+                                    |> em.Spawn
+                                stopwatch.Stop ()
+                                print (string stopwatch.Elapsed.TotalMilliseconds)
                             | x -> ()
                         )
                     )

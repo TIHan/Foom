@@ -428,6 +428,7 @@ and [<ReferenceEquality>] EntityManager =
 [<AutoOpen>]
 module EntityPrototype =
 
+    [<Struct>]
     type EntityPrototype = EntityPrototype of (Entity -> EntityManager -> unit)
 
     [<Sealed>]

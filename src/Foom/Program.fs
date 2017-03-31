@@ -75,7 +75,7 @@ let start f (invoke: Task ref) =
 #endif
         )
 
-    let client = Client.init gl assetLoader loadTextFile openWad exportTextures input world
+    let client = Client.init (printfn "%s") gl assetLoader loadTextFile openWad exportTextures input world
 
     let stopwatch = System.Diagnostics.Stopwatch ()
 
