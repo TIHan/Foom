@@ -308,13 +308,6 @@ and [<ReferenceEquality>] EntityManager =
 
             entity
 
-    member this.Spawn (entBuilder: EntityBuilder) =
-        match entBuilder with
-        | EntityBuilder f ->
-            let ent = this.Spawn ()
-            f ent this
-            ent
-
     member this.Destroy (entity: Entity) =
         if this.CurrentIterations > 0 then
             this.PendingQueue.Enqueue (fun () -> this.Destroy entity)
@@ -433,14 +426,28 @@ and [<ReferenceEquality>] EntityManager =
     member this.MaxNumberOfEntities = this.MaxEntityAmount - 1
 
 [<AutoOpen>]
-module EntityBuilderModule =
+module EntityPrototype =
 
-    let entity = EntityBuilder (fun _ _ -> ())
+    type EntityPrototype = EntityPrototype of (Entity -> EntityManager -> unit)
 
-    let (==>) (entBuilder: EntityBuilder) (comp: 'T when 'T :> Component) =
-        match entBuilder with
-        | EntityBuilder f ->
-            EntityBuilder (fun ent em ->
-                f ent em
-                em.Add<'T> (ent, comp)
+    [<Sealed>]
+    type EntityPrototypeBuilder () =
+
+        member x.Yield (a : 'T) = EntityPrototype (fun _ _ -> ())
+
+        member x.AddComponent (EntityPrototype x, [<ProjectionParameter>] f : unit -> #Component) =
+            EntityPrototype (
+                fun ent em ->
+                    x ent em
+                    em.Add (ent, f ())
             )
+
+    let entity = EntityPrototypeBuilder ()
+
+type EntityManager with
+
+    member x.Spawn (entProto : EntityPrototype) =
+        let ent = x.Spawn ()
+        match entProto with
+        | EntityPrototype f -> f ent x
+        ent

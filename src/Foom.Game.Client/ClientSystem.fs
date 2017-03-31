@@ -63,8 +63,8 @@ let loadWadAndLevelBehavior (clientWorld: ClientWorld) =
 
             clientWorld.DestroyEntities ()
 
-            em.Remove<WadComponent> clientWorld.Entity
-            em.Remove<LevelComponent> clientWorld.Entity
+            //em.Remove<WadComponent> clientWorld.Entity
+            //em.Remove<LevelComponent> clientWorld.Entity
 
             em.Add (clientWorld.Entity, WadComponent(evt.Wad))
             em.Add (clientWorld.Entity, LevelComponent(evt.Level))
@@ -115,6 +115,8 @@ let physicsSpriteBehavior (clientWorld: ClientWorld) =
 
                 spriteComp.LightLevel <- sector.lightLevel
                 transformComp.Position <- Vector3 (transformComp.Position.X, transformComp.Position.Y, single sector.floorHeight)
+            else
+                System.Diagnostics.Debug.WriteLine (String.Format ("Entity (Rigid Body), {0}, didn't spawn in a proper spot.", ent))
         } |> ignore
     )
 
@@ -165,6 +167,6 @@ let create openWad exportTextures (clientWorld: ClientWorld) am =
 
                addRigidBodyBehavior clientWorld
                physicsSpriteBehavior clientWorld
-             //  physicsUpdateBehavior clientWorld
+              // physicsUpdateBehavior clientWorld
             ]
         )

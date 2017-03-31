@@ -51,13 +51,9 @@ type EntityManager =
 
     member Add<'T when 'T :> Component> : Entity * 'T -> unit
 
-    member Remove<'T when 'T :> Component> : Entity -> unit
-
     // Entites
 
     member Spawn : unit -> Entity
-
-    member Spawn : EntityBuilder -> Entity
 
     /// Defers to destroy the specified Entity.
     member Destroy : Entity -> unit
@@ -65,9 +61,21 @@ type EntityManager =
     member MaxNumberOfEntities : int
 
 [<AutoOpen>]
-module EntityBuilderModule =
+module EntityPrototype =
 
-    val entity : EntityBuilder
+    [<Sealed>]
+    type EntityPrototype
 
-    val (==>) : EntityBuilder -> #Component -> EntityBuilder
+    [<Sealed>]
+    type EntityPrototypeBuilder =
+
+        member Yield : a : 'T -> EntityPrototype
+
+        [<CustomOperation ("add", MaintainsVariableSpace = true)>]
+        member AddComponent : EntityPrototype * [<ProjectionParameter>] f : (unit -> #Component) -> EntityPrototype
+
+    val entity : EntityPrototypeBuilder
  
+type EntityManager with
+
+    member Spawn : EntityPrototype -> Entity

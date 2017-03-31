@@ -36,7 +36,7 @@ type Triangle2D =
 
     // This isn't efficient yet.
     member tri.Intersects (aabb: AABB2D) =
-        let l0 = LineSegment2D (tri.P2, tri.P2)
+        let l0 = LineSegment2D (tri.P1, tri.P2)
         let l1 = LineSegment2D (tri.P2, tri.P3)
         let l2 = LineSegment2D (tri.P3, tri.P1)
 

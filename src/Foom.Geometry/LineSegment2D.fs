@@ -23,7 +23,7 @@ module LineSegment2D =
 
         let c = aabb.Center
         let e = aabb.Extents
-        let m = a + b * 0.5f
+        let m = (a + b) * 0.5f
         let d = b - m
         let m = m - c
 
