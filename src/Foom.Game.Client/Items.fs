@@ -17,7 +17,7 @@ module ArmorBonus =
     let spawn position =
         entity {
             add (TransformComponent (Matrix4x4.CreateTranslation (position)))
-            add (SpriteComponent ("World", texture, 255))
+            add (SpriteComponent (RenderGroup.World, texture, 255))
             add (SpriteAnimationComponent (TimeSpan.FromSeconds 1., [ 0; 1; 2; 3; 2; 1 ]))
             add (RigidBodyComponent (position, 20.f, 16.f))
         }
@@ -26,7 +26,7 @@ module ArmorBonus =
 
         let ent = em.Spawn ()
         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(position)))
-        em.Add (ent, SpriteComponent ("World", texture, 255))
+        em.Add (ent, SpriteComponent (RenderGroup.World, texture, 255))
         let interval = TimeSpan.FromSeconds(0.5)
         em.Add (ent, SpriteAnimationComponent (interval, [ 0; 1 ]))
         em.Add (ent, RigidBodyComponent(position, 20.f, 16.f))
@@ -40,7 +40,7 @@ module GreenArmor =
 
         let ent = em.Spawn ()
         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(position)))
-        em.Add (ent, SpriteComponent ("World", texture, 255))
+        em.Add (ent, SpriteComponent (RenderGroup.World, texture, 255))
         let interval = TimeSpan.FromSeconds(0.5)
         em.Add (ent, SpriteAnimationComponent (interval, [ 0; 1 ]))
         em.Add (ent, RigidBodyComponent(position, 20.f, 16.f))
@@ -54,7 +54,7 @@ module BlueArmor =
 
         let ent = em.Spawn ()
         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(position)))
-        em.Add (ent, SpriteComponent ("World", texture, 255))
+        em.Add (ent, SpriteComponent (RenderGroup.World, texture, 255))
         let interval = TimeSpan.FromSeconds(0.5)
         em.Add (ent, SpriteAnimationComponent (interval, [ 0; 1 ]))
         em.Add (ent, RigidBodyComponent(position, 20.f, 16.f))
@@ -68,7 +68,7 @@ module SoulSphere =
 
         let ent = em.Spawn ()
         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(position)))
-        em.Add (ent, SpriteComponent ("World", texture, 255))
+        em.Add (ent, SpriteComponent (RenderGroup.World, texture, 255))
         let interval = TimeSpan.FromSeconds(1.)
         em.Add (ent, SpriteAnimationComponent (interval, [ 0; 1; 2; 3; 2; 1 ]))
         em.Add (ent, RigidBodyComponent(position, 20.f, 16.f))

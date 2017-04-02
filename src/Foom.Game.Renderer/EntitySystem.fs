@@ -33,10 +33,10 @@ type MeshInfo =
         Mesh (this.Position, this.Uv, color)
 
 [<AbstractClass>]
-type BaseRenderComponent (pipelineName: string, texture: Texture, mesh: Mesh, extraResource: GpuResource) =
+type BaseRenderComponent (group : int, texture: Texture, mesh: Mesh, extraResource: GpuResource) =
     inherit Component ()
 
-    member val PipelineName = pipelineName
+    member val Group = group
 
     member val Texture = texture
 
@@ -45,14 +45,14 @@ type BaseRenderComponent (pipelineName: string, texture: Texture, mesh: Mesh, ex
     member val ExtraResource = extraResource
 
 [<AbstractClass>]
-type RenderComponent<'T when 'T :> GpuResource> (pipelineName, texturePath, mesh, extra: 'T) =
-    inherit BaseRenderComponent (pipelineName, texturePath, mesh, extra)
+type RenderComponent<'T when 'T :> GpuResource> (group, texturePath, mesh, extra: 'T) =
+    inherit BaseRenderComponent (group, texturePath, mesh, extra)
 
     member val Extra = extra
 
 [<Sealed>]
-type MeshRenderComponent (pipelineName, texture, meshInfo: MeshInfo) =
-    inherit RenderComponent<UnitResource> (pipelineName, texture, meshInfo.ToMesh (), UnitResource ())
+type MeshRenderComponent (group, texture, meshInfo: MeshInfo) =
+    inherit RenderComponent<UnitResource> (group, texture, meshInfo.ToMesh (), UnitResource ())
 
 let handleMeshRender (am: AssetManager) (renderer: Renderer) =
     Behavior.handleEvent (fun (evt: Foom.Ecs.Events.AnyComponentAdded) _ em ->
@@ -60,13 +60,13 @@ let handleMeshRender (am: AssetManager) (renderer: Renderer) =
             match em.TryGet (evt.Entity, evt.ComponentType) with
             | Some comp ->
                 let meshRendererComp = comp :?> BaseRenderComponent
-                let pipelineName = meshRendererComp.PipelineName
+                let group = meshRendererComp.Group
                 let texture = meshRendererComp.Texture
                 let mesh = meshRendererComp.Mesh
 
                 am.LoadTexture (texture)
 
-                renderer.TryAddMesh (pipelineName, texture.Buffer, mesh, meshRendererComp.ExtraResource) |> ignore
+                renderer.TryAddMesh (group, texture.Buffer, mesh, meshRendererComp.ExtraResource) |> ignore
             | _ -> ()
     )
 

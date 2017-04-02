@@ -99,7 +99,7 @@ type TextureMeshId =
 type Shader<'Input, 'Output> = Shader of 'Input * 'Output * ShaderProgram
 
 [<Sealed>]
-type SubPipeline (context: PipelineContext, pipeline: Pipeline<unit>) =
+type Group (context: GraphicsContext, pipeline: Pipeline<unit>) =
 
     let releases = ResizeArray<unit -> unit> ()
     let lookup = Dictionary<Type, Dictionary<int, Texture2DBuffer * CompactManager<Mesh * obj>>> ()
@@ -141,35 +141,35 @@ type SubPipeline (context: PipelineContext, pipeline: Pipeline<unit>) =
             lookup.[typ] <- dict
             dict
 
-and [<Sealed>] PipelineContext (gl: IGL, programCache: ProgramCache, subPipelines: (string * Pipeline<unit>) list) as this =
+and [<Sealed>] GraphicsContext (gl: IGL, programCache: ProgramCache, groups: (int * Pipeline<unit>) list) as this =
     
     let releases = ResizeArray<unit -> unit> ()
     let actions = ResizeArray<unit -> unit> ()
 
-    let subPipelines = 
-        let dict = Dictionary<string, SubPipeline> ()
-        subPipelines
-        |> List.iter (fun (key, value) -> dict.[key] <- SubPipeline (this, value))
+    let groups = 
+        let dict = Dictionary<int, Group> ()
+        groups
+        |> List.iter (fun (key, value) -> dict.[key] <- Group (this, value))
         dict
 
-    let subPipelineStack = Stack<SubPipeline> ()
+    let groupStack = Stack<Group> ()
 
     member val ProgramCache = programCache
 
-    member this.CurrentSubPipeline =
-        if subPipelineStack.Count = 0 then None
-        else Some (subPipelineStack.Peek ())
+    member this.CurrentGroup =
+        if groupStack.Count = 0 then None
+        else Some (groupStack.Peek ())
 
-    member this.UseSubPipeline (name) =
-        match subPipelines.TryGetValue (name) with
-        | true, subPipeline ->
+    member this.DrawGroup group =
+        match groups.TryGetValue (group) with
+        | true, group ->
 
-            subPipelineStack.Push (subPipeline)
+            groupStack.Push group
 
-            match subPipeline.Pipeline with
+            match group.Pipeline with
             | Pipeline f -> f this
 
-            subPipelineStack.Pop () |> ignore
+            groupStack.Pop () |> ignore
 
         | _ -> ()
 
@@ -179,10 +179,10 @@ and [<Sealed>] PipelineContext (gl: IGL, programCache: ProgramCache, subPipeline
     member this.AddAction action =
         actions.Add action
 
-    member this.TryAddMesh (subRenderer, texture, mesh, extra: GpuResource) =
-        match subPipelines.TryGetValue (subRenderer) with
-        | true, subPipeline ->
-            subPipeline.TryAddTextureMesh (texture, mesh, extra)
+    member this.TryAddMesh (group, texture, mesh, extra: GpuResource) =
+        match groups.TryGetValue (group) with
+        | true, group ->
+            group.TryAddTextureMesh (texture, mesh, extra)
         | _ -> None
 
     member this.Run () =
@@ -200,7 +200,7 @@ and [<Sealed>] PipelineContext (gl: IGL, programCache: ProgramCache, subPipeline
 
 
 
-and Pipeline<'a> = private Pipeline of (PipelineContext -> 'a)
+and Pipeline<'a> = private Pipeline of (GraphicsContext -> 'a)
 
 type PipelineBuilder () =
 
@@ -306,10 +306,10 @@ module Pipeline =
             return! shader.Run f
         }
 
-    let runSubPipeline name =
+    let drawGroup group =
         Pipeline (
             fun context ->
-                context.UseSubPipeline (name)
+                context.DrawGroup group
         )
 
     let runProgramWithMesh<'T, 'Input when 'Input :> MeshInput> name createInput init f =
@@ -335,10 +335,10 @@ module Pipeline =
 
                 let draw = (fun () -> program.Run RenderPass.Depth)
 
-                context.CurrentSubPipeline
-                |> Option.iter (fun subPipeline ->
+                context.CurrentGroup
+                |> Option.iter (fun group ->
 
-                    let lookup = subPipeline.GetLookup (t)
+                    let lookup = group.GetLookup (t)
 
                     context.AddAction (fun () ->
                         context.GL.UseProgram program.programId
@@ -429,7 +429,7 @@ module Final =
 
         member val Position = shaderProgram.CreateVertexAttributeVector3 ("position")
 
-    let finalPipeline worldPipeline (getTime: unit -> float32) (getPosition: unit -> Vector3Buffer) =
+    let pipeline worldPipeline (getTime: unit -> float32) (getPosition: unit -> Vector3Buffer) =
         pipeline {
             let! renderTexture = captureFrame 1280 720 worldPipeline
 
@@ -453,7 +453,7 @@ type Renderer =
         gl: IGL
         programCache: ProgramCache
 
-        finalPipeline: PipelineContext
+        context: GraphicsContext
         finalPositionBuffer: Vector3Buffer
 
         mutable time: float32
@@ -475,34 +475,34 @@ type Renderer =
 
         let positionBuffer = Buffer.createVector3 vertices
 
-        let finalPipelineContext = PipelineContext (gl, programCache, subPipelines)
+        let context = GraphicsContext (gl, programCache, subPipelines)
 
         let renderer =
             {
                 gl = gl
                 programCache = programCache
-                finalPipeline = finalPipelineContext
+                context = context
                 finalPositionBuffer = positionBuffer
                 time = 0.f
             }
 
-        Final.finalPipeline worldPipeline (fun () -> renderer.time) (fun () -> renderer.finalPositionBuffer)
-        |> run finalPipelineContext
+        Final.pipeline worldPipeline (fun () -> renderer.time) (fun () -> renderer.finalPositionBuffer)
+        |> run context
 
         renderer
 
-    member this.TryAddMesh (pipelineName: string, textureBuffer, mesh, extra: 'T) =
-        this.finalPipeline.TryAddMesh (pipelineName, textureBuffer, mesh, extra)
+    member this.TryAddMesh (group: int, textureBuffer, mesh, extra: 'T) =
+        this.context.TryAddMesh (group, textureBuffer, mesh, extra)
 
     member this.Draw (time: float32) view projection =
         this.time <- time
-        this.finalPipeline.Time <- time
-        this.finalPipeline.Projection <- projection
-        this.finalPipeline.View <- view
+        this.context.Time <- time
+        this.context.Projection <- projection
+        this.context.View <- view
 
         this.gl.EnableDepthTest ()
 
-        this.finalPipeline.Run ()
+        this.context.Run ()
 
         this.gl.DisableDepthTest ()
 

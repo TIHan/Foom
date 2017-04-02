@@ -12,9 +12,9 @@ open Foom.Game.Assets
 type SpriteComponent =
     inherit Component
 
-    new : pipelineName: string * texture: Texture * lightLevel: int -> SpriteComponent
+    new : group : int * texture: Texture * lightLevel: int -> SpriteComponent
 
-    member PipelineName : string
+    member Group : int
 
     member Texture : Texture
 

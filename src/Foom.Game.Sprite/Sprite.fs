@@ -68,8 +68,8 @@ module SpriteConstants =
 
 open SpriteConstants
 
-type SpriteRendererComponent (pipelineName, texture, lightLevel) =
-    inherit RenderComponent<SpriteBatch> (pipelineName, texture, Mesh (vertices, uv, createSpriteColor lightLevel), SpriteBatch ())
+type SpriteRendererComponent (group, texture, lightLevel) =
+    inherit RenderComponent<SpriteBatch> (group, texture, Mesh (vertices, uv, createSpriteColor lightLevel), SpriteBatch ())
 
     member val SpriteCount = 0 with get, set
 
@@ -80,10 +80,10 @@ type SpriteRendererComponent (pipelineName, texture, lightLevel) =
     member val UvOffsets : Vector4 [] = Array.zeroCreate 10000
 
 [<Sealed>]
-type SpriteComponent (pipelineName: string, texture: Texture, lightLevel: int) =
+type SpriteComponent (group : int, texture: Texture, lightLevel: int) =
     inherit Component ()
 
-    member val PipelineName = pipelineName
+    member val Group = group
 
     member val Texture = texture
 
@@ -104,7 +104,7 @@ module Sprite =
         )
 
     let update (am: AssetManager) : Behavior<float32 * float32> =
-        let lookup = Dictionary<string * Texture, Entity * SpriteRendererComponent> ()
+        let lookup = Dictionary<int * Texture, Entity * SpriteRendererComponent> ()
 
         Behavior.merge
             [
@@ -112,11 +112,11 @@ module Sprite =
                     am.LoadTexture (comp.Texture)
 
                     let _, rendererComp = 
-                        let key = (comp.PipelineName, comp.Texture)
+                        let key = (comp.Group, comp.Texture)
                         match lookup.TryGetValue (key) with
                         | true, x -> x
                         | _ ->
-                            let rendererComp = new SpriteRendererComponent(comp.PipelineName, comp.Texture, 255.f)
+                            let rendererComp = new SpriteRendererComponent(comp.Group, comp.Texture, 255.f)
 
                             let rendererEnt = em.Spawn ()
                             em.Add (rendererEnt, rendererComp)

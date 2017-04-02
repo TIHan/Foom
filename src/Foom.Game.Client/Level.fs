@@ -43,7 +43,7 @@ let runGlobalBatch (em: EntityManager) =
 
         let ent = em.Spawn ()
 
-        let pipelineName = if isSky then "Sky" else "World"
+        let group = if isSky then RenderGroup.Sky else RenderGroup.World
         let texture = 
             match levelMaterialCache.TryGetValue (texturePath) with
             | true, x -> x
@@ -61,7 +61,7 @@ let runGlobalBatch (em: EntityManager) =
                 Color = color |> Seq.toArray
             }
 
-        em.Add (ent, RendererSystem.MeshRenderComponent (pipelineName, texture, meshInfo))
+        em.Add (ent, RendererSystem.MeshRenderComponent (group, texture, meshInfo))
     )
 
 open System.Linq
@@ -274,7 +274,6 @@ let updates openWad exportTextures am (clientWorld: ClientWorld) =
                         let sector = sector :?> Foom.Game.Level.Sector
                         let pos = Vector3 (pos, single sector.floorHeight)
 
-                        let pipelineName = "World"
                         let texture = 
 
                             match levelMaterialCache.TryGetValue (texturePath) with
@@ -288,7 +287,7 @@ let updates openWad exportTextures am (clientWorld: ClientWorld) =
 
                         let ent = em.Spawn ()
                         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(pos)))
-                        em.Add (ent, SpriteComponent (pipelineName, texture, sector.lightLevel))
+                        em.Add (ent, SpriteComponent (RenderGroup.World, texture, sector.lightLevel))
                     | _ -> ()
 
                 | _ -> ()
@@ -319,7 +318,7 @@ let updates openWad exportTextures am (clientWorld: ClientWorld) =
                    // em.Add (skyEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), LayerMask.Layer0, ClearFlags.None, 1))
                    // em.Add (skyEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
 
-                    em.Add (skyEnt, SkyRendererComponent ("Sky", Texture (TextureKind.Single "milky2.jpg")))
+                    em.Add (skyEnt, SkyRendererComponent (RenderGroup.Sky, Texture (TextureKind.Single "milky2.jpg")))
 
                 | _ -> ()
             )

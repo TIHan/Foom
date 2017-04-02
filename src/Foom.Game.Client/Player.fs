@@ -126,6 +126,7 @@ module Player =
                                     //Foom.Game.Gameplay.Doom.ArmorBonus.spawnQuick transformComp.Position em |> ignore
                                     Foom.Game.Gameplay.Doom.ArmorBonus.spawn transformComp.Position
                                     |> em.Spawn
+                                    |> ignore
                                 stopwatch.Stop ()
                                 print (string stopwatch.Elapsed.TotalMilliseconds)
                             | x -> ()
