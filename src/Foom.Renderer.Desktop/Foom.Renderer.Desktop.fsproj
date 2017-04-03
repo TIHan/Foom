@@ -80,6 +80,9 @@
     <Reference Include="OpenTK">
       <HintPath>..\..\packages\OpenTK.2.0.0\lib\net20\OpenTK.dll</HintPath>
     </Reference>
+    <Reference Include="SkiaSharp">
+      <HintPath>..\..\packages\SkiaSharp.1.56.2\lib\net45\SkiaSharp.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Foom.Ecs\Foom.Ecs.fsproj">
@@ -109,6 +112,7 @@
     <Compile Include="DesktopGL.fs" />
     <Compile Include="OpenTKGL.fs" />
     <Content Include="packages.config" />
-    <Compile Include="BitmapTextureFile.fs" />
+    <Compile Include="SkiaTextureFile.fs" />
   </ItemGroup>
+  <Import Project="..\..\packages\SkiaSharp.1.56.2\build\net45\SkiaSharp.targets" Condition="Exists('..\..\packages\SkiaSharp.1.56.2\build\net45\SkiaSharp.targets')" />
 </Project>

@@ -57,7 +57,7 @@ let start f (invoke: Task ref) =
 #if __IOS__
                     new iOSTextureFile (assetPath) :> TextureFile
 #else
-                    new BitmapTextureFile (assetPath) :> TextureFile
+                    new SkiaTextureFile (assetPath) :> TextureFile
 #endif
 
         }
