@@ -95,6 +95,8 @@ module Player =
         Behavior.merge
             [
                 Behavior.update (fun () em ea ->
+                    let mutable spawnAlot = false
+                    let mutable pos = Vector3.Zero
                     em.ForEach<CameraComponent, TransformComponent, PlayerComponent> (fun ent cameraComp transformComp playerComp ->
 
                         input.PollEvents ()
@@ -121,17 +123,17 @@ module Player =
                             | KeyPressed x when x = '\027' -> willQuit := true
 
                             | MouseButtonPressed MouseButtonType.Left ->
-                                let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
-                                for i = 0 to 1000 do
-                                    //Foom.Game.Gameplay.Doom.ArmorBonus.spawnQuick transformComp.Position em |> ignore
-                                    Foom.Game.Gameplay.Doom.ArmorBonus.spawn transformComp.Position
-                                    |> em.Spawn
-                                    |> ignore
-                                stopwatch.Stop ()
-                                print (string stopwatch.Elapsed.TotalMilliseconds)
+                                spawnAlot <- true
+                                pos <- transformComp.Position
                             | x -> ()
                         )
                     )
+
+                    if spawnAlot then
+                        for i = 0 to 1000 do
+                            Foom.Game.Gameplay.Doom.ArmorBonus.spawn pos
+                            |> em.Spawn
+                            |> ignore
                 )
 
                 Behavior.update (fun () em ea ->

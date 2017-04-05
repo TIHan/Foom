@@ -25,8 +25,9 @@ open Events
 [<ReferenceEquality>]
 type EntityLookupData<'T when 'T :> Component> =
     {
-        ComponentAddedEvent: Event<ComponentAdded<'T>>
         ComponentRemovedEvent: Event<ComponentRemoved<'T>>
+
+        ComponentAddedTriggers : ResizeArray<'T -> unit>
 
         RemoveComponent: Entity -> unit
 
@@ -64,9 +65,6 @@ and [<ReferenceEquality>] EntityManager =
         EntitySpawnedEvent: Event<EntitySpawned>
         EntityDestroyedEvent: Event<EntityDestroyed>
 
-        AnyComponentAddedEvent: Event<AnyComponentAdded>
-        AnyComponentRemovedEvent: Event<AnyComponentRemoved>
-
         mutable CurrentIterations: int
         PendingQueue: Queue<unit -> unit>
     }
@@ -89,9 +87,6 @@ and [<ReferenceEquality>] EntityManager =
         let entitySpawnedEvent = eventManager.GetEvent<EntitySpawned> ()
         let entityDestroyedEvent = eventManager.GetEvent<EntityDestroyed> ()
 
-        let anyComponentAddedEvent = eventManager.GetEvent<AnyComponentAdded> ()
-        let anyComponentRemovedEvent = eventManager.GetEvent<AnyComponentRemoved> ()
-
         {
             EventAggregator = eventManager
             MaxEntityAmount = maxEntityAmount
@@ -103,8 +98,6 @@ and [<ReferenceEquality>] EntityManager =
             EntityRemovals = entityRemovals
             EntitySpawnedEvent = entitySpawnedEvent
             EntityDestroyedEvent = entityDestroyedEvent
-            AnyComponentAddedEvent = anyComponentAddedEvent
-            AnyComponentRemovedEvent = anyComponentRemovedEvent
             CurrentIterations = 0
             PendingQueue = Queue ()
         }
@@ -125,11 +118,29 @@ and [<ReferenceEquality>] EntityManager =
         match this.Lookup.TryGetValue(t, &data) with
         | true -> data :?> EntityLookupData<'T>
         | _ ->
+            let triggers = ResizeArray ()
+
+            let added = this.EventAggregator.GetComponentAddedEvent<'T> ()
+            triggers.Add (fun o -> added.Trigger o)
+
+            if t.GetTypeInfo().BaseType <> typeof<Component> then
+                let t = t.GetTypeInfo().BaseType
+                let mutable trigger = Unchecked.defaultof<obj -> unit>
+                if this.EventAggregator.TryGetComponentAddedTrigger (t, &trigger) then
+                    triggers.Add (fun o -> trigger o)
+
+                if t.GetTypeInfo().BaseType <> typeof<Component> then
+                    let t = t.GetTypeInfo().BaseType
+                    let mutable trigger = Unchecked.defaultof<obj -> unit>
+                    if this.EventAggregator.TryGetComponentAddedTrigger (t, &trigger) then
+                        triggers.Add (fun o -> trigger o)
+
             let factory t =
                 let data =
                     {
-                        ComponentAddedEvent = this.EventAggregator.GetComponentAddedEvent<'T> ()
                         ComponentRemovedEvent = this.EventAggregator.GetEvent<ComponentRemoved<'T>> ()
+
+                        ComponentAddedTriggers = triggers
 
                         RemoveComponent = fun entity -> this.Remove<'T> entity
 
@@ -253,8 +264,9 @@ and [<ReferenceEquality>] EntityManager =
                         data.Components.Add comp
                         data.Entities.Add entity
 
-                        this.AnyComponentAddedEvent.Trigger (AnyComponentAdded (entity, typeof<'T>))
-                        data.ComponentAddedEvent.Trigger (ComponentAdded (entity, comp))
+                        for i = 0 to data.ComponentAddedTriggers.Count - 1 do
+                            let f = data.ComponentAddedTriggers.[i]
+                            f comp
             else
                 Debug.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot add component, {1}", entity, typeof<'T>.Name))
 
@@ -279,7 +291,6 @@ and [<ReferenceEquality>] EntityManager =
                     if not (entity.Index.Equals swappingEntity.Index) then
                         data.IndexLookup.[swappingEntity.Index] <- index
 
-                    this.AnyComponentRemovedEvent.Trigger (AnyComponentRemoved (entity, typeof<'T>))
                     data.ComponentRemovedEvent.Trigger (ComponentRemoved<'T> (entity))
                 else
                     Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, does not exist on {1}", typeof<'T>.Name, entity))

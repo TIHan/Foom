@@ -44,14 +44,14 @@ module Behavior =
 
     let handleComponentAdded<'T, 'Update when 'T :> Component> (f: Entity -> 'T -> 'Update -> EntityManager -> unit) =
         Behavior (fun context ->
-            let queue = ConcurrentQueue<ComponentAdded<'T>> ()
-            context.EventAggregator.GetComponentAddedEvent().Publish.Add queue.Enqueue
+            let queue = ConcurrentQueue<'T> ()
+            context.EventAggregator.GetComponentAddedEvent<'T>().Publish.Add queue.Enqueue
 
             (fun updateData ->
-                let mutable item = Unchecked.defaultof<ComponentAdded<'T>>
+                let mutable item = Unchecked.defaultof<'T>
                 while queue.TryDequeue (&item) do
-                    if context.EntityManager.IsValid item.Entity then
-                        f item.Entity (item.Component) updateData context.EntityManager
+                    if context.EntityManager.IsValid item.Owner then
+                        f item.Owner item updateData context.EntityManager
             )
             |> context.Actions.Add
         )

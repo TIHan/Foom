@@ -82,28 +82,30 @@ let start f (invoke: Task ref) =
     GameLoop.start 30.
         client.AlwaysUpdate
         (fun time interval ->
+            stopwatch.Stop ()
             stopwatch.Reset ()
             stopwatch.Start ()
-
-            System.Threading.Thread.Sleep(1)
-            GC.Collect (0)
 
             (!invoke).RunSynchronously ()
             invoke := (new Task (fun () -> ()))
 
-            client.Update (
-                TimeSpan.FromTicks(time).TotalSeconds |> single, 
-                TimeSpan.FromTicks(interval).TotalSeconds |> single
-            )
+            let result = 
+                client.Update (
+                    TimeSpan.FromTicks(time).TotalSeconds |> single, 
+                    TimeSpan.FromTicks(interval).TotalSeconds |> single
+                )
 
+            stopwatch.Stop ()
+
+            //printfn "FPS: %A" (int (1000. / stopwatch.Elapsed.TotalMilliseconds))
+           // if stopwatch.Elapsed.TotalMilliseconds > 20. then
+            printfn "MS: %A" stopwatch.Elapsed.TotalMilliseconds
+
+            result
         )
         (fun currentTime t ->
             Client.draw (TimeSpan.FromTicks(currentTime).TotalSeconds |> single) t client client
 
-            if stopwatch.IsRunning then
-                stopwatch.Stop ()
-
-                printfn "FPS: %A" (int (1000. / stopwatch.Elapsed.TotalMilliseconds))
         )
 
 #if __IOS__

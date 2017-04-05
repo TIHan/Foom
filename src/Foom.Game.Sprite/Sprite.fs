@@ -69,15 +69,15 @@ module SpriteConstants =
 open SpriteConstants
 
 type SpriteRendererComponent (group, texture, lightLevel) =
-    inherit RenderComponent<SpriteBatch> (group, texture, Mesh (vertices, uv, createSpriteColor lightLevel), SpriteBatch ())
+    inherit MeshRendererComponent<SpriteBatch> (group, texture, Mesh (vertices, uv, createSpriteColor lightLevel), SpriteBatch ())
 
     member val SpriteCount = 0 with get, set
 
-    member val Positions : Vector3 [] = Array.zeroCreate 100000
+    member val Positions : Vector3 [] = Array.zeroCreate 1000000
 
-    member val LightLevels : Vector4 [] = Array.zeroCreate 100000
+    member val LightLevels : Vector4 [] = Array.zeroCreate 1000000
 
-    member val UvOffsets : Vector4 [] = Array.zeroCreate 10000
+    member val UvOffsets : Vector4 [] = Array.zeroCreate 100000
 
 [<Sealed>]
 type SpriteComponent (group : int, texture: Texture, lightLevel: int) =

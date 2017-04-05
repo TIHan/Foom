@@ -37,37 +37,12 @@ type Component () =
 
 type IEvent = interface end
 
-[<Sealed>]
-type ComponentAdded<'T when 'T :> Component> (ent: Entity, comp: 'T) = 
-
-    member val Entity = ent
-
-    member val Component = comp
-
 module Events =
 
     [<Sealed>]
     type ComponentRemoved<'T when 'T :> Component> (ent: Entity) = 
 
         member this.Entity = ent
-
-        interface IEvent
-
-    [<Sealed>]
-    type AnyComponentAdded (ent: Entity, compT: Type) =
-
-        member this.Entity = ent
-
-        member this.ComponentType = compT
-
-        interface IEvent
-
-    [<Sealed>]
-    type AnyComponentRemoved (ent: Entity, compT: Type) =
-
-        member this.Entity = ent
-
-        member this.ComponentType = compT
 
         interface IEvent
 
@@ -92,7 +67,7 @@ type EventAggregator  =
     {
         Lookup: ConcurrentDictionary<Type, obj>
 
-        ComponentAddedLookup: Dictionary<Type, obj>
+        ComponentAddedLookup: Dictionary<Type, obj * (obj -> unit)>
     }
 
     static member Create () =
@@ -112,12 +87,25 @@ type EventAggregator  =
 
     member this.GetComponentAddedEvent<'T when 'T :> Component> () =
         let t = typeof<'T>
-        let mutable o = null
+        let mutable o = Unchecked.defaultof<obj * (obj -> unit)>
         if (this.ComponentAddedLookup.TryGetValue (t, &o)) then
-            o :?> Event<ComponentAdded<'T>>
+            let (event, trigger) = o
+            (event :?> Event<'T>)
         else
-            let e = Event<ComponentAdded<'T>> ()
-            this.ComponentAddedLookup.[t] <- e :> obj
+            let e = Event<'T> ()
+            let trigger = (fun (o : obj) ->
+                match o with
+                | :? 'T as o -> e.Trigger o
+                | _ -> ()
+            )
+            this.ComponentAddedLookup.[t] <- (e :> obj, trigger)
             e
 
-    
+    member this.TryGetComponentAddedTrigger (t : Type, [<Out>] trigger : byref<obj -> unit>) =
+        let mutable o = Unchecked.defaultof<obj * (obj -> unit)>
+        if (this.ComponentAddedLookup.TryGetValue (t, &o)) then
+            let (_, trigger') = o
+            trigger <- trigger'
+            true
+        else
+            false

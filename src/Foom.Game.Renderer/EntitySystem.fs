@@ -33,7 +33,7 @@ type MeshInfo =
         Mesh (this.Position, this.Uv, color)
 
 [<AbstractClass>]
-type BaseRenderComponent (group : int, texture: Texture, mesh: Mesh, extraResource: GpuResource) =
+type BaseMeshRendererComponent (group, texture, mesh, extraResource: GpuResource) =
     inherit Component ()
 
     member val Group = group
@@ -45,32 +45,16 @@ type BaseRenderComponent (group : int, texture: Texture, mesh: Mesh, extraResour
     member val ExtraResource = extraResource
 
 [<AbstractClass>]
-type RenderComponent<'T when 'T :> GpuResource> (group, texturePath, mesh, extra: 'T) =
-    inherit BaseRenderComponent (group, texturePath, mesh, extra)
+type MeshRendererComponent<'T when 'T :> GpuResource> (group, texture, mesh, extra : 'T) =
+    inherit BaseMeshRendererComponent (group, texture, mesh, extra)
 
     member val Extra = extra
 
 [<Sealed>]
-type MeshRenderComponent (group, texture, meshInfo: MeshInfo) =
-    inherit RenderComponent<UnitResource> (group, texture, meshInfo.ToMesh (), UnitResource ())
+type MeshRendererComponent (group, texture, meshInfo : MeshInfo) =
+    inherit BaseMeshRendererComponent (group, texture, meshInfo.ToMesh (), UnitResource ())
 
-let handleMeshRender (am: AssetManager) (renderer: Renderer) =
-    Behavior.handleEvent (fun (evt: Foom.Ecs.Events.AnyComponentAdded) _ em ->
-        if typeof<BaseRenderComponent>.GetTypeInfo().IsAssignableFrom(evt.ComponentType.GetTypeInfo()) then
-            match em.TryGet (evt.Entity, evt.ComponentType) with
-            | Some comp ->
-                let meshRendererComp = comp :?> BaseRenderComponent
-                let group = meshRendererComp.Group
-                let texture = meshRendererComp.Texture
-                let mesh = meshRendererComp.Mesh
-
-                am.LoadTexture (texture)
-
-                renderer.TryAddMesh (group, texture.Buffer, mesh, meshRendererComp.ExtraResource) |> ignore
-            | _ -> ()
-    )
-
-let create worldPipeline subPipelines (gl: IGL) fileReadAllText am : Behavior<float32 * float32> =
+let create worldPipeline subPipelines (gl: IGL) fileReadAllText (am : AssetManager) : Behavior<float32 * float32> =
 
     // This should probably be on the camera itself :)
     let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
@@ -79,7 +63,15 @@ let create worldPipeline subPipelines (gl: IGL) fileReadAllText am : Behavior<fl
 
     Behavior.merge
         [
-            handleMeshRender am renderer
+            Behavior.handleComponentAdded (fun ent (comp : BaseMeshRendererComponent) _ _ ->
+                let group = comp.Group
+                let texture = comp.Texture
+                let mesh = comp.Mesh
+
+                am.LoadTexture (texture)
+
+                renderer.TryAddMesh (group, texture.Buffer, mesh, comp.ExtraResource) |> ignore
+            )
 
             Behavior.update (fun ((time, deltaTime): float32 * float32) em _ ->
 
