@@ -54,11 +54,7 @@ let start f (invoke: Task ref) =
             new IAssetLoader with
 
                 member this.LoadTextureFile (assetPath) =
-#if __IOS__
-                    new iOSTextureFile (assetPath) :> TextureFile
-#else
                     new SkiaTextureFile (assetPath) :> TextureFile
-#endif
 
         }
 
