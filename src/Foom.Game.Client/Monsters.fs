@@ -1,4 +1,4 @@
-﻿namespace Foom.Game.Gameplay.Doom
+namespace Foom.Game.Gameplay.Doom
 
 open System
 open System.Numerics
@@ -12,7 +12,7 @@ open Foom.Game.Sprite
 
 module ShotgunGuy =
 
-    let texture = Texture (TextureKind.Multi [ "SPOSA1.bmp"; "SPOSB1.bmp" ])
+    let texture = Texture (TextureKind.Multi [ "SPOSA1.png"; "SPOSB1.png" ])
 
     let spawn position (em: EntityManager) =
 

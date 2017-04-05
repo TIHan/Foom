@@ -1,4 +1,4 @@
-﻿namespace Foom.Game.Gameplay.Doom
+namespace Foom.Game.Gameplay.Doom
 
 open System
 open System.Numerics
@@ -12,7 +12,7 @@ open Foom.Game.Sprite
 
 module GibbedMarine =
 
-    let texture = Texture (TextureKind.Single "PLAYW0.bmp")
+    let texture = Texture (TextureKind.Single "PLAYW0.png")
 
     let spawn position (em: EntityManager) =
 

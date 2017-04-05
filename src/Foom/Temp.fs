@@ -2,62 +2,45 @@
 
 open System
 open System.IO
-open System.Numerics
-open System.Drawing
-open System.Collections.Generic
 
-open Foom.Ecs
-open Foom.Math
-open Foom.Physics
-open Foom.Renderer
-open Foom.Geometry
 open Foom.Wad
-open Foom.Client.Sky
-open Foom.Renderer.RendererSystem
 
-open Foom.Game.Core
-open Foom.Game.Assets
-open Foom.Game.Sprite
-open Foom.Game.Level
-open Foom.Game.Wad
-open Foom.Game.Gameplay.Doom
+open SkiaSharp
 
-#if __IOS__
-#else
+let savePng name (pixels : Pixel [,]) =
+    let mutable isTransparent = false
+
+    let width = Array2D.length1 pixels
+    let height = Array2D.length2 pixels
+
+    pixels
+    |> Array2D.iter (fun p ->
+        if p.Equals Pixel.Cyan then
+            isTransparent <- true
+    )
+
+    use bitmap = new SKBitmap (width, height, not isTransparent)
+    for i = 0 to width - 1 do
+        for j = 0 to height - 1 do
+            let pixel = pixels.[i, j]
+            if pixel = Pixel.Cyan then
+                bitmap.SetPixel (i, j, SKColor (0uy, 0uy, 0uy, 0uy))
+            else
+                bitmap.SetPixel (i, j, SKColor (pixel.R, pixel.G, pixel.B))
+
+    use image = SKImage.FromBitmap (bitmap)
+    use data = image.Encode ()
+    use fs = File.OpenWrite (name)
+
+    data.SaveTo (fs)
+
 let exportFlatTextures (wad: Wad) =
     wad
     |> Wad.iterFlatTextureName (fun name ->
         Wad.tryFindFlatTexture name wad
         |> Option.iter (fun tex ->
-            let width = Array2D.length1 tex.Data
-            let height = Array2D.length2 tex.Data
-
-            let mutable isTransparent = false
-
-            tex.Data
-            |> Array2D.iter (fun p ->
-                if p.Equals Pixel.Cyan then
-                    isTransparent <- true
-            )
-
-            let format =
-                if isTransparent then
-                    Imaging.PixelFormat.Format32bppArgb
-                else
-                    Imaging.PixelFormat.Format24bppRgb
-
-            let bmp = new Bitmap(width, height, format)
-
-            tex.Data
-            |> Array2D.iteri (fun i j pixel ->
-                if pixel = Pixel.Cyan then
-                    bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
-                else
-                    bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-            )
-
-            bmp.Save (tex.Name + "_flat.bmp")
-            bmp.Dispose ()
+            let name = tex.Name + "_flat.png"
+            savePng name tex.Data
         )
     )
 
@@ -66,35 +49,8 @@ let exportTextures (wad: Wad) =
     |> Wad.iterTextureName (fun name ->
         Wad.tryFindTexture name wad
         |> Option.iter (fun tex ->
-            let width = Array2D.length1 tex.Data
-            let height = Array2D.length2 tex.Data
-
-            let mutable isTransparent = false
-
-            tex.Data
-            |> Array2D.iter (fun p ->
-                if p.Equals Pixel.Cyan then
-                    isTransparent <- true
-            )
-
-            let format =
-                if isTransparent then
-                    Imaging.PixelFormat.Format32bppArgb
-                else
-                    Imaging.PixelFormat.Format24bppRgb
-
-            let bmp = new Bitmap(width, height, format)
-
-            tex.Data
-            |> Array2D.iteri (fun i j pixel ->
-                if pixel = Pixel.Cyan then
-                    bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
-                else
-                    bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-            )
-
-            bmp.Save (tex.Name + ".bmp")
-            bmp.Dispose ()
+            let name = tex.Name + ".png"
+            savePng name tex.Data
         )
     )
 
@@ -103,35 +59,7 @@ let exportSpriteTextures (wad: Wad) =
     |> Wad.iterSpriteTextureName (fun name ->
         Wad.tryFindSpriteTexture name wad
         |> Option.iter (fun tex ->
-            let width = Array2D.length1 tex.Data
-            let height = Array2D.length2 tex.Data
-
-            let mutable isTransparent = false
-
-            tex.Data
-            |> Array2D.iter (fun p ->
-                if p.Equals Pixel.Cyan then
-                    isTransparent <- true
-            )
-
-            let format =
-                if isTransparent then
-                    Imaging.PixelFormat.Format32bppArgb
-                else
-                    Imaging.PixelFormat.Format24bppRgb
-
-            let bmp = new Bitmap(width, height, format)
-
-            tex.Data
-            |> Array2D.iteri (fun i j pixel ->
-                if pixel = Pixel.Cyan then
-                    bmp.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
-                else
-                    bmp.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-            )
-
-            bmp.Save (tex.Name + ".bmp")
-            bmp.Dispose ()
+            let name = tex.Name + ".png"
+            savePng name tex.Data
         )
     )
-#endif

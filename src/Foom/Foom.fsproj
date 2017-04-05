@@ -167,6 +167,9 @@
     <Reference Include="OpenTK">
       <HintPath>..\..\packages\OpenTK.2.0.0\lib\net20\OpenTK.dll</HintPath>
     </Reference>
+    <Reference Include="SkiaSharp">
+      <HintPath>..\..\packages\SkiaSharp.1.56.2\lib\net45\SkiaSharp.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
@@ -175,4 +178,5 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <Import Project="..\..\packages\SkiaSharp.1.56.2\build\net45\SkiaSharp.targets" Condition="Exists('..\..\packages\SkiaSharp.1.56.2\build\net45\SkiaSharp.targets')" />
 </Project>

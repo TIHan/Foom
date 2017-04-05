@@ -62,13 +62,9 @@ let start f (invoke: Task ref) =
     let openWad = (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
     let exportTextures =
         (fun wad _ ->
-#if __IOS__
-            ()
-#else
             wad |> exportFlatTextures
             wad |> exportTextures
             wad |> exportSpriteTextures
-#endif
         )
 
     let client = Client.init (printfn "%s") gl assetLoader loadTextFile openWad exportTextures input world

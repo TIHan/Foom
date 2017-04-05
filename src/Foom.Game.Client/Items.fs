@@ -1,4 +1,4 @@
-﻿namespace Foom.Game.Gameplay.Doom
+namespace Foom.Game.Gameplay.Doom
 
 open System
 open System.Numerics
@@ -12,7 +12,7 @@ open Foom.Game.Sprite
 
 module ArmorBonus =
 
-    let texture = Texture (TextureKind.Multi [ "BON2A0.bmp"; "BON2B0.bmp"; "BON2C0.bmp"; "BON2D0.bmp" ])
+    let texture = Texture (TextureKind.Multi [ "BON2A0.png"; "BON2B0.png"; "BON2C0.png"; "BON2D0.png" ])
 
     let spawn position =
         entity {
@@ -24,7 +24,7 @@ module ArmorBonus =
 
 module GreenArmor =
 
-    let texture = Texture (TextureKind.Multi [ "ARM1A0.bmp"; "ARM1B0.bmp" ])
+    let texture = Texture (TextureKind.Multi [ "ARM1A0.png"; "ARM1B0.png" ])
 
     let spawn position (em: EntityManager) =
 
@@ -38,7 +38,7 @@ module GreenArmor =
 
 module BlueArmor =
 
-    let texture = Texture (TextureKind.Multi [ "ARM2A0.bmp"; "ARM2B0.bmp" ])
+    let texture = Texture (TextureKind.Multi [ "ARM2A0.png"; "ARM2B0.png" ])
 
     let spawn position (em: EntityManager) =
 
@@ -52,7 +52,7 @@ module BlueArmor =
 
 module SoulSphere =
 
-    let texture = Texture (TextureKind.Multi [ "SOULA0.bmp"; "SOULB0.bmp"; "SOULC0.bmp"; "SOULD0.bmp" ])
+    let texture = Texture (TextureKind.Multi [ "SOULA0.png"; "SOULB0.png"; "SOULC0.png"; "SOULD0.png" ])
 
     let spawn position (em: EntityManager) =
 

@@ -1,4 +1,4 @@
-﻿[<RequireQualifiedAccess>] 
+[<RequireQualifiedAccess>] 
 module Foom.Client.Level
 
 open System
@@ -81,7 +81,7 @@ let spawnMesh sector (vertices: IEnumerable<Vector3>) uv (texturePath: string) =
 let spawnSectorGeometryMesh sector (geo: SectorGeometry) wad =
     geo.TextureName
     |> Option.iter (fun textureName ->
-        let texturePath = textureName + "_flat.bmp"
+        let texturePath = textureName + "_flat.png"
         let t = loadTexture texturePath//new Bitmap(texturePath)
         spawnMesh sector geo.Vertices (SectorGeometry.createUV t.Width t.Height geo) texturePath
     )
@@ -91,12 +91,12 @@ let spawnWallPartMesh sector (part: WallPart) (vertices: Vector3 []) wad isSky =
         if not isSky then
             part.TextureName
             |> Option.iter (fun textureName ->
-                let texturePath = textureName + ".bmp"
+                let texturePath = textureName + ".png"
                 let t = loadTexture texturePath//new Bitmap(texturePath)
                 spawnMesh sector vertices (WallPart.createUV vertices t.Width t.Height part) texturePath
             )
         else
-            let texturePath = "F_SKY1" + "_flat.bmp"
+            let texturePath = "F_SKY1" + "_flat.png"
             let t = loadTexture texturePath//new Bitmap(texturePath)
             spawnMesh sector vertices (WallPart.createUV vertices t.Width t.Height part) texturePath
 
@@ -256,14 +256,14 @@ let updates openWad exportTextures am (clientWorld: ClientWorld) =
                     let mutable image = None
 
                     match thing.Type with
-                    | ThingType.HealthBonus -> image <- Some "BON1A0.bmp"
-                    | ThingType.DeadPlayer -> image <- Some "PLAYN0.bmp"
-                    | ThingType.Stimpack -> image <- Some "STIMA0.bmp"
-                    | ThingType.Medkit -> image <- Some "MEDIA0.bmp"
-                    | ThingType.Barrel -> image <- Some "BAR1A0.bmp"
-                    | ThingType.TallTechnoPillar -> image <- Some "ELECA0.bmp"
-                    | ThingType.Player1Start -> image <- Some "PLAYA1.bmp"
-                    | ThingType.AmmoClip -> image <- Some "CLIPA0.bmp"
+                    | ThingType.HealthBonus -> image <- Some "BON1A0.png"
+                    | ThingType.DeadPlayer -> image <- Some "PLAYN0.png"
+                    | ThingType.Stimpack -> image <- Some "STIMA0.png"
+                    | ThingType.Medkit -> image <- Some "MEDIA0.png"
+                    | ThingType.Barrel -> image <- Some "BAR1A0.png"
+                    | ThingType.TallTechnoPillar -> image <- Some "ELECA0.png"
+                    | ThingType.Player1Start -> image <- Some "PLAYA1.png"
+                    | ThingType.AmmoClip -> image <- Some "CLIPA0.png"
                     | _ -> ()
 
                     let pos = Vector2 (single thing.X, single thing.Y)
