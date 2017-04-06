@@ -38,6 +38,7 @@ type ViewController (handle:IntPtr) =
         let view = x.View :?> GLKView
         view.Context <- context
         view.DrawableDepthFormat <- GLKViewDrawableDepthFormat.Format24
+        view.DrawableStencilFormat <- GLKViewDrawableStencilFormat.Format8
 
         EAGLContext.SetCurrentContext context |> ignore
 
@@ -52,18 +53,8 @@ type ViewController (handle:IntPtr) =
 
         let view = x.View :?> GLKView
 
-        //GL.ClearColor (new Color4 (0.f, 1.f, 0.f, 1.f))
-        //GL.Clear (ClearBufferMask.ColorBufferBit)
-        //view.Display ()
-
-        //GL.ClearColor (new Color4 (0.f, 1.f, 0.f, 1.f))
-        //GL.Clear (ClearBufferMask.ColorBufferBit)
-        //view.Display ()
-
         let swapBuffers =
             fun () ->
-                GL.ClearColor (new Color4 (1.f, 0.f, 0.f, 1.f))
-                GL.Clear (ClearBufferMask.ColorBufferBit)
                 view.Display ()
 
         let (preUpdate, update, render) = Foom.Program.start swapBuffers (new Task (fun () -> ()) |> ref)

@@ -488,7 +488,8 @@ type Renderer =
                 time = 0.f
             }
 
-        Final.pipeline worldPipeline (fun () -> renderer.time) (fun () -> renderer.finalPositionBuffer)
+        // Commenting out the final pipeline that contains a framebuffer, it blows up on iOS due to dog fuck.
+        worldPipeline//Final.pipeline worldPipeline (fun () -> renderer.time) (fun () -> renderer.finalPositionBuffer)
         |> run context
 
         renderer
@@ -505,6 +506,7 @@ type Renderer =
         this.gl.EnableDepthTest ()
 
         this.context.Run ()
+
 
         this.gl.DisableDepthTest ()
 
