@@ -68,6 +68,8 @@ type ProgramCache (gl: IGL, fileReadAllText) =
             | _ ->
                 let vertexBytes = fileReadAllText (name + ".vert")//File.ReadAllText (name + ".vert") |> System.Text.Encoding.UTF8.GetBytes
                 let fragmentBytes = fileReadAllText (name + ".frag")//File.ReadAllText (name + ".frag") |> System.Text.Encoding.UTF8.GetBytes
+
+                System.Diagnostics.Debug.WriteLine ("Loading Shader " + name)
                 let programId = gl.LoadProgram (vertexBytes, fragmentBytes)//Backend.loadShaders vertexBytes fragmentBytes
 
                 cache.[name] <- programId

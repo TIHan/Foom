@@ -223,6 +223,12 @@
     <BundleResource Include="..\Foom.Game.Renderer\Fullscreen.vert">
       <Link>Resources\Fullscreen.vert</Link>
     </BundleResource>
+    <BundleResource Include="..\..\build\DOOM1.WAD">
+      <Link>Resources\DOOM1.WAD</Link>
+    </BundleResource>
+    <BundleResource Include="..\..\build\milky2.jpg">
+      <Link>Resources\milky2.jpg</Link>
+    </BundleResource>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.FSharp.targets" />
 </Project>

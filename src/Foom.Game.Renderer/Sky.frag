@@ -1,5 +1,7 @@
 ﻿#version 330 core
 
+precision highp float;
+
 uniform sampler2D uni_texture;
 
 in vec4 texCoords;

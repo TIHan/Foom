@@ -60,7 +60,7 @@ void main ()
     float uvX = (width / uTextureResolution.x) * in_uv.x + (offsetX / uTextureResolution.x);
     float uvY = (height / uTextureResolution.y) * in_uv.y + (offsetY / uTextureResolution.y);
 
-    uv = vec2 (uvX, uvY - (1 - height / uTextureResolution.y));
+    uv = vec2 (uvX, uvY - (1.0 - height / uTextureResolution.y));
 	color = in_color;
 	lightLevel = instance_lightLevel;
 }
