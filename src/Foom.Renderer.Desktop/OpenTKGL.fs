@@ -83,6 +83,16 @@ module OpenTKGL =
             printfn "GL ERROR: %A" errorCode
         #endif
 
+    let getMaxTextureSize () =
+        let mutable max = 0
+        GL.GetInteger (GetPName.MaxTextureSize, &max)
+        max
+
+    let checkTextureSize width height =
+        let maxTextureSize = getMaxTextureSize ()
+        if width > maxTextureSize || height > maxTextureSize then
+            printfn "GL WARNING: Texture dimension, (%i, %i), is bigger than max texture size, %i." width height maxTextureSize
+
 type OpenTKGL (swapBuffers) =
 
     interface IGL with
@@ -167,6 +177,8 @@ type OpenTKGL (swapBuffers) =
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureWrapT, int TextureWrapMode.Repeat)
             checkError ()
 
+            checkTextureSize width height
+
             GL.TexImage2D (TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, data)
             checkError ()
 
@@ -209,6 +221,8 @@ type OpenTKGL (swapBuffers) =
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureWrapT, int TextureWrapMode.ClampToEdge)
             checkError ()
 
+            checkTextureSize width height
+
             GL.TexImage2D (TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, data)
             checkError ()
 
@@ -217,25 +231,32 @@ type OpenTKGL (swapBuffers) =
         member this.SetFramebufferTexture id =
 #if __IOS__
             GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment0, TextureTarget.Texture2D, id, 0)
+            checkError ()
             let mutable drawBuffers = DrawBufferMode.ColorAttachment0
             GL.DrawBuffers (1, &drawBuffers)
+            checkError ()
 #else
             GL.FramebufferTexture (FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, id, 0)
             let mutable drawBuffers = DrawBuffersEnum.ColorAttachment0
             GL.DrawBuffers (1, &drawBuffers)
 #endif
-            checkError ()
 
         member this.CreateRenderbuffer (width, height) =
             let mutable depthrenderbuffer = 0
             GL.GenRenderbuffers (1, &depthrenderbuffer)
+            checkError ()
             GL.BindRenderbuffer (RenderbufferTarget.Renderbuffer, depthrenderbuffer)
+            checkError ()
 #if __IOS__
             GL.RenderbufferStorage (RenderbufferTarget.Renderbuffer, RenderbufferInternalFormat.Depth32FStencil8, width, height)
+            checkError ()
             GL.FramebufferRenderbuffer (FramebufferTarget.Framebuffer, FramebufferSlot.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, depthrenderbuffer)
+            checkError ()
 #else
             GL.RenderbufferStorage (RenderbufferTarget.Renderbuffer, RenderbufferStorage.Depth32fStencil8, width, height)
+            checkError ()
             GL.FramebufferRenderbuffer (FramebufferTarget.Framebuffer, FramebufferAttachment.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, depthrenderbuffer)
+            checkError ()
 #endif
             GL.BindRenderbuffer (RenderbufferTarget.Renderbuffer, 0)
             checkError ()
