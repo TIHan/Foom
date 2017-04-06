@@ -22,7 +22,7 @@
     <MtouchUseSGen>true</MtouchUseSGen>
     <MtouchUseRefCounting>true</MtouchUseRefCounting>
     <IOSDebuggerPort>56135</IOSDebuggerPort>
-    <MtouchLink>Full</MtouchLink>
+    <MtouchLink>SdkOnly</MtouchLink>
     <MtouchArch>x86_64</MtouchArch>
     <MtouchHttpClientHandler>HttpClientHandler</MtouchHttpClientHandler>
     <MtouchTlsProvider>Default</MtouchTlsProvider>
@@ -56,7 +56,7 @@
     <CodesignKey>iPhone Developer</CodesignKey>
     <MtouchUseSGen>true</MtouchUseSGen>
     <MtouchUseRefCounting>true</MtouchUseRefCounting>
-    <MtouchLink>Full</MtouchLink>
+    <MtouchLink>SdkOnly</MtouchLink>
     <MtouchArch>x86_64</MtouchArch>
     <MtouchHttpClientHandler>HttpClientHandler</MtouchHttpClientHandler>
     <MtouchTlsProvider>Default</MtouchTlsProvider>
@@ -98,27 +98,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />
-  </ItemGroup>
-  <ItemGroup>
-	<Compile Include="..\Foom\Temp.fs">
-      <Link>Temp.fs</Link>
-    </Compile>
-    <Compile Include="..\Foom\GameLoop.fs">
-      <Link>GameLoop.fs</Link>
-    </Compile>
-    <Compile Include="..\Foom\Program.fs">
-      <Link>Program.fs</Link>
-    </Compile>
-    <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\Contents.json" />
-    <ImageAsset Include="Assets.xcassets\Contents.json" />
-    <InterfaceDefinition Include="LaunchScreen.storyboard" />
-    <InterfaceDefinition Include="Main.storyboard" />
-    <None Include="Info.plist" />
-    <None Include="Entitlements.plist" />
-    <Compile Include="ViewController.fs" />
-    <Compile Include="AppDelegate.fs" />
-    <Compile Include="Main.fs" />
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Foom.Collections\Foom.Collections.fsproj">
@@ -193,6 +172,57 @@
       <Project>{13CAB67A-5A00-401D-8CE2-032FFEA5FECE}</Project>
       <Name>Foom.Wad</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Foom\Temp.fs">
+      <Link>Temp.fs</Link>
+    </Compile>
+    <Compile Include="..\Foom\GameLoop.fs">
+      <Link>GameLoop.fs</Link>
+    </Compile>
+    <Compile Include="..\Foom\Program.fs">
+      <Link>Program.fs</Link>
+    </Compile>
+    <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\Contents.json" />
+    <ImageAsset Include="Assets.xcassets\Contents.json" />
+    <InterfaceDefinition Include="LaunchScreen.storyboard" />
+    <InterfaceDefinition Include="Main.storyboard" />
+    <None Include="Info.plist" />
+    <None Include="Entitlements.plist" />
+    <Compile Include="ViewController.fs" />
+    <Compile Include="AppDelegate.fs" />
+    <Compile Include="Main.fs" />
+    <None Include="packages.config" />
+    <BundleResource Include="..\Foom.Game.Renderer\Sky.frag">
+      <Link>Resources\Sky.frag</Link>
+    </BundleResource>
+    <BundleResource Include="..\Foom.Game.Renderer\Sky.vert">
+      <Link>Resources\Sky.vert</Link>
+    </BundleResource>
+    <BundleResource Include="..\Foom.Game.Renderer\Sprite.frag">
+      <Link>Resources\Sprite.frag</Link>
+    </BundleResource>
+    <BundleResource Include="..\Foom.Game.Renderer\Sprite.vert">
+      <Link>Resources\Sprite.vert</Link>
+    </BundleResource>
+    <BundleResource Include="..\Foom.Game.Renderer\TextureMesh.frag">
+      <Link>Resources\TextureMesh.frag</Link>
+    </BundleResource>
+    <BundleResource Include="..\Foom.Game.Renderer\TextureMesh.vert">
+      <Link>Resources\TextureMesh.vert</Link>
+    </BundleResource>
+    <BundleResource Include="..\Foom.Game.Renderer\Wireframe.frag">
+      <Link>Resources\Wireframe.frag</Link>
+    </BundleResource>
+    <BundleResource Include="..\Foom.Game.Renderer\Wireframe.vert">
+      <Link>Resources\Wireframe.vert</Link>
+    </BundleResource>
+    <BundleResource Include="..\Foom.Game.Renderer\Fullscreen.frag">
+      <Link>Resources\Fullscreen.frag</Link>
+    </BundleResource>
+    <BundleResource Include="..\Foom.Game.Renderer\Fullscreen.vert">
+      <Link>Resources\Fullscreen.vert</Link>
+    </BundleResource>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.FSharp.targets" />
 </Project>

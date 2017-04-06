@@ -20,6 +20,10 @@ open FSharp.NativeInterop
 module OpenTKGL =
 
     let loadShaders (vertexSource : string) (fragmentSource : string) : int =
+#if __IOS__
+        let vertexSource = vertexSource.Replace ("#version 330 core", "#version 300 es")
+        let fragmentSource = fragmentSource.Replace ("#version 330 core", "#version 300 es")
+#endif
         let vertexShaderId = GL.CreateShader (ShaderType.VertexShader)
         let fragmentShaderId = GL.CreateShader (ShaderType.FragmentShader)
 
