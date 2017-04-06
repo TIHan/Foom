@@ -3,6 +3,7 @@
 open System
 
 open Foundation
+open CoreAnimation
 open UIKit
 open GLKit
 open OpenGLES
@@ -14,6 +15,16 @@ open System.Threading.Tasks
 [<Register ("ViewController")>]
 type ViewController (handle:IntPtr) =
     inherit UIViewController (handle)
+
+    let mutable PreUpdate = id
+
+    let mutable Update = (fun _ _ -> true)
+
+    let mutable Render = (fun _ _ -> ())
+
+    let mutable gameLoop = GameLoop.create 30.
+
+    let mutable displayLink = null
 
     override x.DidReceiveMemoryWarning () =
         // Releases the view if it doesn't have a superview.
@@ -34,25 +45,34 @@ type ViewController (handle:IntPtr) =
         GL.GenVertexArrays (1, &vertexArray)
         GL.BindVertexArray (vertexArray)
 
-        //while true do
         view.EnableSetNeedsDisplay <- false
-
-       // Foom.Program.start (fun () -> view.SetNeedsDisplay ()) (new Task (fun () -> ()) |> ref)
 
     override x.ViewDidAppear animating =
         base.ViewDidAppear animating
 
         let view = x.View :?> GLKView
 
-        GL.ClearColor (new Color4 (0.f, 1.f, 0.f, 1.f))
-        GL.Clear (ClearBufferMask.ColorBufferBit)
-        view.Display ()
+        //GL.ClearColor (new Color4 (0.f, 1.f, 0.f, 1.f))
+        //GL.Clear (ClearBufferMask.ColorBufferBit)
+        //view.Display ()
 
-        GL.ClearColor (new Color4 (0.f, 1.f, 0.f, 1.f))
-        GL.Clear (ClearBufferMask.ColorBufferBit)
-        view.Display ()
+        //GL.ClearColor (new Color4 (0.f, 1.f, 0.f, 1.f))
+        //GL.Clear (ClearBufferMask.ColorBufferBit)
+        //view.Display ()
 
-        //Foom.Program.start (fun () -> view.Display ()) (new Task (fun () -> ()) |> ref)
+        let swapBuffers =
+            fun () ->
+                GL.ClearColor (new Color4 (1.f, 0.f, 0.f, 1.f))
+                GL.Clear (ClearBufferMask.ColorBufferBit)
+                view.Display ()
+
+        let (preUpdate, update, render) = Foom.Program.start swapBuffers (new Task (fun () -> ()) |> ref)
+        PreUpdate <- preUpdate
+        Update <- update
+        Render <- render
+
+        displayLink <- CADisplayLink.Create (Action (fun () -> x.Tick ()))
+        displayLink.AddToRunLoop (NSRunLoop.Current, NSRunLoop.NSDefaultRunLoopMode)
 
     override x.ShouldAutorotateToInterfaceOrientation (toInterfaceOrientation) =
         // Return true for supported orientations
@@ -60,3 +80,6 @@ type ViewController (handle:IntPtr) =
            toInterfaceOrientation <> UIInterfaceOrientation.PortraitUpsideDown
         else
            true
+
+    member x.Tick () : unit =
+        gameLoop <- GameLoop.tick PreUpdate Update Render gameLoop

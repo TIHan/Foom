@@ -17,6 +17,7 @@ open FSharp.NativeInterop
 #nowarn "9"
 #nowarn "51"
 
+[<AutoOpen>]
 module OpenTKGL =
 
     let loadShaders (vertexSource : string) (fragmentSource : string) : int =
@@ -71,21 +72,35 @@ module OpenTKGL =
         
         programId
 
+    let checkError () =
+        #if __IOS__
+        let errorCode = GL.GetErrorCode ()// GetError ()
+        if errorCode <> ErrorCode.NoError then
+            printfn "GL ERROR: %A" errorCode
+        #else
+        let errorCode = GL.GetError ()
+        if errorCode <> ErrorCode.NoError then
+            printfn "GL ERROR: %A" errorCode
+        #endif
+
 type OpenTKGL (swapBuffers) =
 
     interface IGL with
 
         member this.BindBuffer id =
             GL.BindBuffer (BufferTarget.ArrayBuffer, id)
+            checkError ()
 
         member this.CreateBuffer () =
             let mutable id = 0
             GL.GenBuffers (1, &id)
+            checkError ()
             id
 
         member this.DeleteBuffer id =
             let mutable id = id
             GL.DeleteBuffers (1, &id)
+            checkError ()
 
         member this.BufferData (data: Vector2 [], count : int, id) =
             let handle = GCHandle.Alloc (data, GCHandleType.Pinned)
@@ -99,6 +114,7 @@ type OpenTKGL (swapBuffers) =
 #endif
 
             handle.Free ()
+            checkError ()
 
         member this.BufferData (data: Vector3 [], count : int, id) =
             let handle = GCHandle.Alloc (data, GCHandleType.Pinned)
@@ -112,6 +128,7 @@ type OpenTKGL (swapBuffers) =
 #endif
 
             handle.Free ()
+            checkError ()
 
         member this.BufferData (data: Vector4 [], count : int, id) =
             let handle = GCHandle.Alloc (data, GCHandleType.Pinned)
@@ -125,12 +142,15 @@ type OpenTKGL (swapBuffers) =
 #endif
 
             handle.Free ()
+            checkError ()
 
         member this.BindTexture id =
             GL.BindTexture (TextureTarget.Texture2D, id)
+            checkError ()
 
         member this.ActiveTexture number =
             GL.ActiveTexture (LanguagePrimitives.EnumOfValue (int TextureUnit.Texture0 + number))
+            checkError ()
 
         member this.CreateTexture (width : int, height : int, data : nativeint) =
             let textureID = GL.GenTexture ()
@@ -145,6 +165,8 @@ type OpenTKGL (swapBuffers) =
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureWrapS, int TextureWrapMode.Repeat)
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureWrapT, int TextureWrapMode.Repeat)
 
+            checkError ()
+
             textureID
 
         member this.SetSubTexture (xOffset, yOffset, width, height, data, textureId) =
@@ -152,16 +174,20 @@ type OpenTKGL (swapBuffers) =
             // G.Bgra
             GL.TexSubImage2D (TextureTarget.Texture2D, 0, xOffset, yOffset, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, data)
             GL.BindTexture (TextureTarget.Texture2D, 0)
+            checkError ()
 
         member this.DeleteTexture id =
             GL.DeleteTexture (uint32 id)
+            checkError ()
 
         member this.BindFramebuffer id =
             GL.BindFramebuffer (FramebufferTarget.Framebuffer, id)
+            checkError ()
 
         member this.CreateFramebuffer () =
             let mutable id = 0
             GL.GenFramebuffers (1, &id)
+            checkError ()
             id
 
         member this.CreateFramebufferTexture (width, height, data) =
@@ -176,6 +202,8 @@ type OpenTKGL (swapBuffers) =
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureWrapS, int TextureWrapMode.ClampToEdge)
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureWrapT, int TextureWrapMode.ClampToEdge)
 
+            checkError ()
+
             textureID
 
         member this.SetFramebufferTexture id =
@@ -188,6 +216,7 @@ type OpenTKGL (swapBuffers) =
             let mutable drawBuffers = DrawBuffersEnum.ColorAttachment0
             GL.DrawBuffers (1, &drawBuffers)
 #endif
+            checkError ()
 
         member this.CreateRenderbuffer (width, height) =
             let mutable depthrenderbuffer = 0
@@ -201,6 +230,7 @@ type OpenTKGL (swapBuffers) =
             GL.FramebufferRenderbuffer (FramebufferTarget.Framebuffer, FramebufferAttachment.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, depthrenderbuffer)
 #endif
             GL.BindRenderbuffer (RenderbufferTarget.Renderbuffer, 0)
+            checkError ()
             depthrenderbuffer
 
         member this.GetUniformLocation (programId, name) =
@@ -208,6 +238,7 @@ type OpenTKGL (swapBuffers) =
 
         member this.BindUniform (locationId, value : int) =
             GL.Uniform1 (locationId, value)
+            checkError ()
 
         member this.BindUniform (locationId, count, values: int []) =
             let handle = GCHandle.Alloc (values, GCHandleType.Pinned)
@@ -215,33 +246,41 @@ type OpenTKGL (swapBuffers) =
             let ptr : nativeptr<int> = addr |> NativePtr.ofNativeInt
             GL.Uniform1 (locationId, count, ptr)
             handle.Free ()
+            checkError ()
 
         member this.BindUniform (locationId, value : single) =
             GL.Uniform1 (locationId, value)
+            checkError ()
 
         member this.BindUniform (locationId, value : Vector2) =
             GL.Uniform2 (locationId, value.X, value.Y)
+            checkError ()
 
         member this.BindUniform (locationId, value : Vector4) =
             GL.Uniform4 (locationId, value.X, value.Y, value.Z, value.W)
+            checkError ()
 
         member this.BindUniform (locationId, value : Matrix4x4) =
             // there may be a bug here
             let mutable value = value
             let ptr : nativeptr<single> = &&value |> NativePtr.toNativeInt |> NativePtr.ofNativeInt
             GL.UniformMatrix4 (locationId, 1, false, ptr)
+            checkError ()
 
         member this.GetAttributeLocation (programId, name) =
             GL.GetAttribLocation (programId, name)
 
         member this.BindAttributePointerFloat32 (locationId, size) =
             GL.VertexAttribPointer (locationId, size, VertexAttribPointerType.Float, false, 0, 0)
+            checkError ()
 
         member this.EnableAttribute locationId =
             GL.EnableVertexAttribArray locationId
+            checkError ()
 
         member this.AttributeDivisor (locationId, divisor) =
             GL.VertexAttribDivisor (locationId, divisor)
+            checkError ()
 
         member this.DrawTriangles (first, count) =
 #if __IOS__
@@ -249,55 +288,70 @@ type OpenTKGL (swapBuffers) =
 #else
             GL.DrawArrays (PrimitiveType.Triangles, first, count)
 #endif
+            checkError ()
 
         member this.DrawTrianglesInstanced (count, primcount) =
             GL.DrawArraysInstanced (PrimitiveType.Triangles, 0, count, primcount)
+            checkError ()
 
         member this.EnableDepthMask () =
             GL.DepthMask true
+            checkError ()
 
         member this.DisableDepthMask () =
             GL.DepthMask false
+            checkError ()
 
         member this.EnableColorMask () =
             GL.ColorMask (true, true, true, true)
+            checkError ()
 
         member this.DisableColorMask () =
             GL.ColorMask (false, false, false, false)
+            checkError ()
 
         member this.EnableStencilTest () =
             GL.Enable (EnableCap.StencilTest)
+            checkError ()
 
         member this.DisableStencilTest () =
             GL.Disable (EnableCap.StencilTest)
+            checkError ()
 
         member this.Stencil1 () =
             GL.StencilFunc (StencilFunction.Always, 1, 0xFF)
             GL.StencilOp (StencilOp.Keep, StencilOp.Keep, StencilOp.Replace)
             GL.StencilMask 0xFF
             GL.Clear (ClearBufferMask.StencilBufferBit)
+            checkError ()
 
         member this.Stencil2 () =
             GL.StencilFunc (StencilFunction.Equal, 1, 0xFF)
             GL.StencilMask (0x00)
+            checkError ()
 
         member this.LoadProgram (vertexSource, fragmentSource) =
-            OpenTKGL.loadShaders vertexSource fragmentSource
+            loadShaders vertexSource fragmentSource
 
         member this.UseProgram programId =
             GL.UseProgram programId
+            checkError ()
 
         member this.EnableDepthTest () =
             GL.Enable (EnableCap.DepthTest)
             GL.DepthFunc (DepthFunction.Less)
             GL.Enable (EnableCap.CullFace)
+            checkError ()
 
         member this.DisableDepthTest () =
             GL.Disable (EnableCap.CullFace)
             GL.Disable (EnableCap.DepthTest)
+            checkError ()
 
         member this.Clear () =
             GL.Clear (ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit ||| ClearBufferMask.StencilBufferBit)
+            checkError ()
 
         member this.Swap () =
+            checkError ()
             swapBuffers ()
