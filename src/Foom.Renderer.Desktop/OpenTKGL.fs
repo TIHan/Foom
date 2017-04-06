@@ -156,23 +156,27 @@ type OpenTKGL (swapBuffers) =
             let textureID = GL.GenTexture ()
 
             GL.BindTexture (TextureTarget.Texture2D, textureID)
-
-            // GL.Brgba
-            GL.TexImage2D (TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, data)
+            checkError ()
 
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, int TextureMagFilter.Nearest)
+            checkError ()
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, int TextureMinFilter.Nearest)
+            checkError ()
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureWrapS, int TextureWrapMode.Repeat)
+            checkError ()
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureWrapT, int TextureWrapMode.Repeat)
+            checkError ()
 
+            GL.TexImage2D (TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, data)
             checkError ()
 
             textureID
 
         member this.SetSubTexture (xOffset, yOffset, width, height, data, textureId) =
             GL.BindTexture (TextureTarget.Texture2D, textureId)
-            // G.Bgra
+            checkError ()
             GL.TexSubImage2D (TextureTarget.Texture2D, 0, xOffset, yOffset, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, data)
+            checkError ()
             GL.BindTexture (TextureTarget.Texture2D, 0)
             checkError ()
 
@@ -194,14 +198,18 @@ type OpenTKGL (swapBuffers) =
             let textureID = GL.GenTexture ()
 
             GL.BindTexture (TextureTarget.Texture2D, textureID)
-
-            GL.TexImage2D (TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, PixelFormat.Rgb, PixelType.UnsignedByte, data)
+            checkError ()
 
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, int TextureMagFilter.Nearest)
+            checkError ()
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, int TextureMinFilter.Nearest)
+            checkError ()
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureWrapS, int TextureWrapMode.ClampToEdge)
+            checkError ()
             GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureWrapT, int TextureWrapMode.ClampToEdge)
+            checkError ()
 
+            GL.TexImage2D (TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, data)
             checkError ()
 
             textureID
