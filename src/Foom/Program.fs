@@ -71,8 +71,7 @@ let start f (invoke: Task ref) =
 
     let stopwatch = System.Diagnostics.Stopwatch ()
 
-    GameLoop.start 30.
-        client.AlwaysUpdate
+    let update =
         (fun time interval ->
             stopwatch.Stop ()
             stopwatch.Reset ()
@@ -95,15 +94,19 @@ let start f (invoke: Task ref) =
 
             result
         )
+
+    let render =
         (fun currentTime t ->
             Client.draw (TimeSpan.FromTicks(currentTime).TotalSeconds |> single) t client client
-
         )
+
+    (client.AlwaysUpdate, update, render)
 
 #if __IOS__
 #else
 [<EntryPoint>]
 let main argv =
-    start id (new Task (fun () -> ()) |> ref)
+    let (preUpdate, update, render) = start id (new Task (fun () -> ()) |> ref)
+    GameLoop.start 30. preUpdate update render
     0
 #endif

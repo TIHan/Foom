@@ -52,7 +52,7 @@ type ViewController (handle:IntPtr) =
         GL.Clear (ClearBufferMask.ColorBufferBit)
         view.Display ()
 
-        Foom.Program.start id (new Task (fun () -> ()) |> ref)
+        //Foom.Program.start (fun () -> view.Display ()) (new Task (fun () -> ()) |> ref)
 
     override x.ShouldAutorotateToInterfaceOrientation (toInterfaceOrientation) =
         // Return true for supported orientations
