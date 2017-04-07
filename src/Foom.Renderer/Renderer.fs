@@ -60,7 +60,6 @@ type ProgramCache (gl: IGL, fileReadAllText) =
     let cache = Dictionary<string, int> ()
 
     member this.CreateShaderProgram (name: string) =
-        let name = name.ToUpper()
 
         let programId =
             match cache.TryGetValue (name) with

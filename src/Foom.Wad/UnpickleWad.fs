@@ -138,7 +138,7 @@ module UnpickleWad =
         if String.IsNullOrWhiteSpace (name) || name = "-" then
             None
         else
-            Some name
+            Some (name.ToUpper())
 
     [<Literal>]
     let sidedefSize = 30
@@ -218,8 +218,8 @@ module UnpickleWad =
             { Id = sectorId
               FloorHeight = int floorHeight
               CeilingHeight = int ceilingHeight
-              FloorTextureName = floorTexName.Trim().Trim('\000')
-              CeilingTextureName = ceilingTexName.Trim().Trim('\000')
+              FloorTextureName = floorTexName.Trim().Trim('\000').ToUpper()
+              CeilingTextureName = ceilingTexName.Trim().Trim('\000').ToUpper()
               LightLevel = int lightLevel
               Type = enum<SectorType> (int typ)
               Tag = int tag
@@ -283,7 +283,7 @@ module UnpickleWad =
                     >>= fun (name, masked, width, height, patchCount) ->
                         u_array (int patchCount) uPatch |>> fun patches ->
                             {
-                                Name = name.Trim().Trim('\000') 
+                                Name = name.Trim().Trim('\000').ToUpper()
                                 IsMasked = if masked = 1 then true else false
                                 Width = int width
                                 Height = int height
@@ -302,7 +302,7 @@ module UnpickleWad =
                 u_array count (u_string 8) 
                 |>> fun names -> 
                     names 
-                    |> Array.map (fun name -> name.Trim().Trim('\000'))
+                    |> Array.map (fun name -> name.Trim().Trim('\000').ToUpper())
         )
 
     let uTexture : Unpickle<DoomPictureHeader> =

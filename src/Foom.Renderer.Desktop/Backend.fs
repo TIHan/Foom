@@ -79,6 +79,7 @@ module Backend =
         SDL_GL_SetAttribute (SDL_GL_CONTEXT_MAJOR_VERSION, 3);
         SDL_GL_SetAttribute (SDL_GL_CONTEXT_MINOR_VERSION, 2);
         SDL_GL_SetAttribute (SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        SDL_GL_SetAttribute (SDL_GL_STENCIL_SIZE, 8);
 
         app.GLContext = SDL_GL_CreateContext ((SDL_Window*)app.Window);
         SDL_GL_SetSwapInterval (1);

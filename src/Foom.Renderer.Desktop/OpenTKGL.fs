@@ -94,8 +94,9 @@ module OpenTKGL =
             printfn "GL WARNING: Texture dimension, (%i, %i), is bigger than max texture size, %i." width height maxTextureSize
 
     let checkFramebufferStatus () =
-        let status = GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) 
-        printfn "Framebuffer Status: %A" status
+        let status = GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer)
+        if status <> FramebufferErrorCode.FramebufferComplete then 
+            printfn "Framebuffer Status: %A" status
 
 type OpenTKGL (swapBuffers) =
 

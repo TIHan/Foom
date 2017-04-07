@@ -78,11 +78,12 @@
     <MtouchUseRefCounting>true</MtouchUseRefCounting>
     <MtouchFloat32>true</MtouchFloat32>
     <CodesignEntitlements>Entitlements.plist</CodesignEntitlements>
-    <MtouchLink>Full</MtouchLink>
+    <MtouchLink>SdkOnly</MtouchLink>
     <MtouchArch>ARM64</MtouchArch>
     <MtouchHttpClientHandler>HttpClientHandler</MtouchHttpClientHandler>
     <MtouchTlsProvider>Default</MtouchTlsProvider>
     <PlatformTarget></PlatformTarget>
+    <CodesignProvision></CodesignProvision>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -188,7 +189,6 @@
     <InterfaceDefinition Include="LaunchScreen.storyboard" />
     <InterfaceDefinition Include="Main.storyboard" />
     <None Include="Info.plist" />
-    <None Include="Entitlements.plist" />
     <Compile Include="ViewController.fs" />
     <Compile Include="AppDelegate.fs" />
     <Compile Include="Main.fs" />
@@ -208,9 +208,6 @@
     <BundleResource Include="..\Foom.Game.Renderer\TextureMesh.frag">
       <Link>Resources\TextureMesh.frag</Link>
     </BundleResource>
-    <BundleResource Include="..\Foom.Game.Renderer\TextureMesh.vert">
-      <Link>Resources\TextureMesh.vert</Link>
-    </BundleResource>
     <BundleResource Include="..\Foom.Game.Renderer\Wireframe.frag">
       <Link>Resources\Wireframe.frag</Link>
     </BundleResource>
@@ -229,6 +226,7 @@
     <BundleResource Include="..\..\build\milky2.jpg">
       <Link>Resources\milky2.jpg</Link>
     </BundleResource>
+    <None Include="Entitlements.plist" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.FSharp.targets" />
 </Project>

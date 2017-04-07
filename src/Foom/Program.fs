@@ -20,46 +20,32 @@ open Foom.Export
 
 let world = World (65536)
 
-type NoInput () =
-
-    interface IInput with
-
-        member x.PollEvents () =
-            ()
-
-        member x.GetMousePosition () =
-            MousePosition ()
-
-        member x.GetState () =
-            { Events = [] }
-
 open OpenTK
 open OpenTK.Graphics
 
-let start f (invoke: Task ref) =
 #if __IOS__
-    let gl = OpenTKGL (f)
-    let input = NoInput ()
-#else
-    let gameWindow = new GameWindow (1280, 720, GraphicsMode.Default, "Foommmmm", GameWindowFlags.FixedWindow, DisplayDevice.Default, 3, 2, GraphicsContextFlags.Default)
-    let app = Backend.init ()
-   // let gl = DesktopGL (app)
-  //  let input = DesktopInput (app.Window)
-  //  let gameWindow = new GameWindow (1280, 720, GraphicsMode.Default, "Foom", GameWindowFlags.FixedWindow, DisplayDevice.Default, 3, 2, GraphicsContextFlags.Default)
-    let gl = OpenTKGL (fun () -> Backend.draw app)
-    let input = DesktopInput (app.Window)//NoInput ()
+let documents = Environment.GetFolderPath (Environment.SpecialFolder.MyDocuments)
 #endif
+
+let start (input : IInput) (gl : IGL) (invoke: Task ref) =
     let assetLoader =
         {
             new IAssetLoader with
 
                 member this.LoadTextureFile (assetPath) =
+#if __IOS__
+                    try
+                        new SkiaTextureFile (Path.Combine (documents, assetPath)) :> TextureFile
+                    with | _ ->
+                        new SkiaTextureFile (assetPath) :> TextureFile
+#else
                     new SkiaTextureFile (assetPath) :> TextureFile
+#endif
 
         }
 
     let loadTextFile = (fun filePath -> File.ReadAllText filePath)
-    let openWad = (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
+    let openWad = (fun name -> System.IO.File.Open (name, FileMode.Open, FileAccess.Read) :> Stream)
     let exportTextures =
         (fun wad _ ->
             wad |> exportFlatTextures
@@ -106,7 +92,11 @@ let start f (invoke: Task ref) =
 #else
 [<EntryPoint>]
 let main argv =
-    let (preUpdate, update, render) = start id (new Task (fun () -> ()) |> ref)
+    let gameWindow = new GameWindow (1280, 720, GraphicsMode.Default, "Foommmmm", GameWindowFlags.FixedWindow, DisplayDevice.Default, 3, 2, GraphicsContextFlags.Default)
+    let app = Backend.init ()
+    let gl = OpenTKGL (fun () -> Backend.draw app)
+    let input = DesktopInput (app.Window)
+    let (preUpdate, update, render) = start input gl (new Task (fun () -> ()) |> ref)
     GameLoop.start 30. preUpdate update render
     0
 #endif
