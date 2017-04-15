@@ -21,7 +21,7 @@ open FSharp.NativeInterop
 module OpenTKGL =
 
     let loadShaders (vertexSource : string) (fragmentSource : string) : int =
-#if __IOS__
+#if __IOS__ || __ANDROID__
         let vertexSource = vertexSource.Replace ("#version 330 core", "#version 300 es")
         let fragmentSource = fragmentSource.Replace ("#version 330 core", "#version 300 es")
 #endif

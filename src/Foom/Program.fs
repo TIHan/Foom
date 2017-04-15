@@ -23,6 +23,11 @@ let world = World (65536)
 open OpenTK
 open OpenTK.Graphics
 
+#if __ANDROID__
+open Android.App
+open Android.Content.Res
+#endif
+
 #if __IOS__ || __ANDROID__
 let documents = Environment.GetFolderPath (Environment.SpecialFolder.MyDocuments)
 #endif
@@ -43,8 +48,17 @@ let start (input : IInput) (gl : IGL) (invoke: Task ref) =
 #endif
 
         }
-
+#if __ANDROID__
+    let assets = Android.App.Application.Context.Assets
+    let loadTextFile = (fun filePath -> 
+        let mutable content = ""
+        use sr = new StreamReader (assets.Open (filePath))
+        content <- sr.ReadToEnd ()
+        content
+    )
+#else
     let loadTextFile = (fun filePath -> File.ReadAllText filePath)
+#endif
     let openWad = (fun name -> System.IO.File.Open (name, FileMode.Open, FileAccess.Read) :> Stream)
     let exportTextures =
         (fun wad _ ->

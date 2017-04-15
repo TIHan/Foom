@@ -1,6 +1,7 @@
 ﻿namespace Foom.Droid
 
 open System
+open System.Threading.Tasks
 
 open Android.App
 open Android.Content
@@ -13,6 +14,9 @@ open Javax.Microedition.Khronos.Opengles;
 open OpenTK.Graphics
 open OpenTK.Graphics.ES30
 
+open Foom.Renderer
+open Foom.Input
+
 type Resources = Foom.Droid.Resource
 
 type GLRenderer (surfaceView: GLSurfaceView) =
@@ -20,18 +24,47 @@ type GLRenderer (surfaceView: GLSurfaceView) =
 
     let mutable vaoId = 0
 
+    let mutable PreUpdate = id
+
+    let mutable Update = (fun _ _ -> true)
+
+    let mutable Render = (fun _ _ -> ())
+
+    let mutable gameLoop = GameLoop.create 30.
+
+    let inputEvents = ResizeArray ()
+
     interface GLSurfaceView.IRenderer with
 
         member x.OnDrawFrame _ =
-            GL.Clear (ClearBufferMask.ColorBufferBit)
+            gameLoop <- GameLoop.tick PreUpdate Update Render gameLoop
 
         member x.OnSurfaceChanged (gl, width, height) =
             GL.Viewport (0, 0, width, height)
 
         member x.OnSurfaceCreated (gl, config) =
-            GL.ClearColor (Color4.Green)
             GL.GenVertexArrays (1, &vaoId)
             GL.BindVertexArray (vaoId)
+
+            let gl = OpenTKGL (fun () -> ())
+
+            let (preUpdate, update, render) = Foom.Program.start x gl (new Task (fun () -> ()) |> ref)
+            PreUpdate <- preUpdate
+            Update <- update
+            Render <- render
+
+    interface IInput with
+
+        member x.PollEvents () =
+            ()
+
+        member x.GetMousePosition () =
+            MousePosition ()
+
+        member x.GetState () =
+            let events = inputEvents |> Seq.toList
+            inputEvents.Clear ()
+            { Events = events }
 
 type GLView (context) as x =
     inherit RelativeLayout (context)
@@ -41,7 +74,7 @@ type GLView (context) as x =
 
     do
         surfaceView.SetEGLContextClientVersion (3)
-        surfaceView.SetEGLConfigChooser (8, 8, 8, 8, 16, 8)
+        surfaceView.SetEGLConfigChooser (8, 8, 8, 8, 24, 8)
         surfaceView.SetRenderer (renderer)
 
         x.AddView surfaceView

@@ -81,6 +81,36 @@
     <Compile Include="MainActivity.fs" />
     <AndroidAsset Include="Assets\AboutAssets.txt" />
     <None Include="packages.config" />
+    <AndroidAsset Include="..\Foom.Game.Renderer\Fullscreen.frag">
+      <Link>Assets\Fullscreen.frag</Link>
+    </AndroidAsset>
+    <AndroidAsset Include="..\Foom.Game.Renderer\Fullscreen.vert">
+      <Link>Assets\Fullscreen.vert</Link>
+    </AndroidAsset>
+    <AndroidAsset Include="..\Foom.Game.Renderer\Sky.frag">
+      <Link>Assets\Sky.frag</Link>
+    </AndroidAsset>
+    <AndroidAsset Include="..\Foom.Game.Renderer\Sky.vert">
+      <Link>Assets\Sky.vert</Link>
+    </AndroidAsset>
+    <AndroidAsset Include="..\Foom.Game.Renderer\Sprite.frag">
+      <Link>Assets\Sprite.frag</Link>
+    </AndroidAsset>
+    <AndroidAsset Include="..\Foom.Game.Renderer\Sprite.vert">
+      <Link>Assets\Sprite.vert</Link>
+    </AndroidAsset>
+    <AndroidAsset Include="..\Foom.Game.Renderer\TextureMesh.frag">
+      <Link>Assets\TextureMesh.frag</Link>
+    </AndroidAsset>
+    <AndroidAsset Include="..\Foom.Game.Renderer\TextureMesh.vert">
+      <Link>Assets\TextureMesh.vert</Link>
+    </AndroidAsset>
+    <AndroidAsset Include="..\Foom.Game.Renderer\Wireframe.frag">
+      <Link>Assets\Wireframe.frag</Link>
+    </AndroidAsset>
+    <AndroidAsset Include="..\Foom.Game.Renderer\Wireframe.vert">
+      <Link>Assets\Wireframe.vert</Link>
+    </AndroidAsset>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Foom.Collections\Foom.Collections.fsproj">
