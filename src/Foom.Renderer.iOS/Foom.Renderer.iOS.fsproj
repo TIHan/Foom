@@ -19,8 +19,6 @@
     <CodesignKey>iPhone Developer</CodesignKey>
     <MtouchDebug>true</MtouchDebug>
     <MtouchFastDev>true</MtouchFastDev>
-    <MtouchUseSGen>true</MtouchUseSGen>
-    <MtouchUseRefCounting>true</MtouchUseRefCounting>
     <IOSDebuggerPort>45669</IOSDebuggerPort>
     <PlatformTarget></PlatformTarget>
     <DeviceSpecificBuild>false</DeviceSpecificBuild>
@@ -36,8 +34,6 @@
     <DefineConstants>__IOS__</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <CodesignKey>iPhone Developer</CodesignKey>
-    <MtouchUseSGen>true</MtouchUseSGen>
-    <MtouchUseRefCounting>true</MtouchUseRefCounting>
     <MtouchLink>SdkOnly</MtouchLink>
     <GenerateTailCalls>true</GenerateTailCalls>
     <PlatformTarget></PlatformTarget>

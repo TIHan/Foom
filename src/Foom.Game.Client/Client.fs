@@ -85,7 +85,7 @@ let init print (gl: IGL) (assetLoader: IAssetLoader) loadTextFile openWad export
     let clientWorld = ClientWorld.Create (clientSubworld, world.SpawnEntity ())
     let clientSystemUpdate = ClientSystem.create openWad exportTextures clientWorld am |> clientSubworld.AddBehavior
 
-    world.Publish (ClientSystem.LoadWadAndLevelRequested ("DOOM1.WAD", "e1m8"))
+    world.Publish (ClientSystem.LoadWadAndLevelRequested ("DOOM1.WAD", "e1m1"))
    // world.Publish (ClientSystem.LoadWadAndLevelRequested ("doom2.wad", "map10"))
 
     let willQuit = ref false
