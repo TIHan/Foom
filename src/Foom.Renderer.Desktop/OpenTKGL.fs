@@ -6,7 +6,7 @@ open System.Numerics
 open System.Collections.Generic
 open System.Runtime.InteropServices
 
-#if __IOS__
+#if __IOS__ || __ANDROID__
 open OpenTK.Graphics.ES30
 #else
 open OpenTK.Graphics.OpenGL
@@ -61,7 +61,7 @@ module OpenTKGL =
         GL.LinkProgram programId
 
         // Check Program
-#if __IOS__
+#if __IOS__ || __ANDROID__
 #else
         GL.GetProgram (programId, GetProgramParameterName.LinkStatus, &result)
         GL.GetProgram (programId, GetProgramParameterName.InfoLogLength, &infoLogLength)
@@ -73,7 +73,7 @@ module OpenTKGL =
         programId
 
     let checkError () =
-        #if __IOS__
+        #if __IOS__ || __ANDROID__
         let errorCode = GL.GetErrorCode ()// GetError ()
         if errorCode <> ErrorCode.NoError then
             printfn "GL ERROR: %A" errorCode
@@ -122,7 +122,7 @@ type OpenTKGL (swapBuffers) =
             let addr = handle.AddrOfPinnedObject ()
 
             GL.BindBuffer (BufferTarget.ArrayBuffer, uint32 id)
-#if __IOS__
+#if __IOS__ || __ANDROID__
             GL.BufferData (BufferTarget.ArrayBuffer, (nativeint count), data, BufferUsage.DynamicDraw)
 #else
             GL.BufferData (BufferTarget.ArrayBuffer, count, addr, BufferUsageHint.DynamicDraw)
@@ -136,7 +136,7 @@ type OpenTKGL (swapBuffers) =
             let addr = handle.AddrOfPinnedObject ()
 
             GL.BindBuffer (BufferTarget.ArrayBuffer, uint32 id)
-#if __IOS__
+#if __IOS__ || __ANDROID__
             GL.BufferData (BufferTarget.ArrayBuffer, (nativeint count), data, BufferUsage.DynamicDraw)
 #else
             GL.BufferData (BufferTarget.ArrayBuffer, count, addr, BufferUsageHint.DynamicDraw)
@@ -150,7 +150,7 @@ type OpenTKGL (swapBuffers) =
             let addr = handle.AddrOfPinnedObject ()
 
             GL.BindBuffer (BufferTarget.ArrayBuffer, uint32 id)
-#if __IOS__
+#if __IOS__ || __ANDROID__
             GL.BufferData (BufferTarget.ArrayBuffer, (nativeint count), data, BufferUsage.DynamicDraw)
 #else
             GL.BufferData (BufferTarget.ArrayBuffer, count, addr, BufferUsageHint.DynamicDraw)
@@ -164,7 +164,12 @@ type OpenTKGL (swapBuffers) =
             checkError ()
 
         member this.ActiveTexture number =
+#if __ANDROID__
+            let textureUnit : TextureUnit = LanguagePrimitives.EnumOfValue (int TextureUnit.Texture0 + number)
+            GL.ActiveTexture textureUnit
+#else
             GL.ActiveTexture (LanguagePrimitives.EnumOfValue (int TextureUnit.Texture0 + number))
+#endif
             checkError ()
 
         member this.CreateTexture (width : int, height : int, data : nativeint) =
@@ -234,7 +239,7 @@ type OpenTKGL (swapBuffers) =
             textureID
 
         member this.SetFramebufferTexture id =
-#if __IOS__
+#if __IOS__ || __ANDROID__
             GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment0, TextureTarget.Texture2D, id, 0)
             checkError ()
             let mutable drawBuffers = DrawBufferMode.ColorAttachment0
@@ -252,7 +257,7 @@ type OpenTKGL (swapBuffers) =
             checkError ()
             GL.BindRenderbuffer (RenderbufferTarget.Renderbuffer, depthrenderbuffer)
             checkError ()
-#if __IOS__
+#if __IOS__ || __ANDROID__
             GL.RenderbufferStorage (RenderbufferTarget.Renderbuffer, RenderbufferInternalFormat.Depth32FStencil8, width, height)
             checkError ()
             GL.FramebufferRenderbuffer (FramebufferTarget.Framebuffer, FramebufferSlot.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, depthrenderbuffer)
@@ -317,7 +322,7 @@ type OpenTKGL (swapBuffers) =
             checkError ()
 
         member this.DrawTriangles (first, count) =
-#if __IOS__
+#if __IOS__ || __ANDROID__
             GL.DrawArrays (BeginMode.Triangles, first, count)
 #else
             GL.DrawArrays (PrimitiveType.Triangles, first, count)
