@@ -11,6 +11,10 @@ open SkiaSharp
 let documents = Environment.GetFolderPath (Environment.SpecialFolder.MyDocuments)
 #endif
 
+#if __ANDROID__
+let documents = Environment.GetFolderPath (Environment.SpecialFolder.Personal)
+#endif
+
 let savePng name (pixels : Pixel [,]) =
     let mutable isTransparent = false
 
@@ -34,7 +38,7 @@ let savePng name (pixels : Pixel [,]) =
 
     use image = SKImage.FromBitmap (bitmap)
     use data = image.Encode ()
-#if __IOS__
+#if __IOS__ || __ANDROID__
     use fs = File.OpenWrite (Path.Combine (documents, name))
 #else
     use fs = File.OpenWrite (name)

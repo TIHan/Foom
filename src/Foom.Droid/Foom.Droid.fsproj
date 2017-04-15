@@ -111,6 +111,12 @@
     <AndroidAsset Include="..\Foom.Game.Renderer\Wireframe.vert">
       <Link>Assets\Wireframe.vert</Link>
     </AndroidAsset>
+    <AndroidAsset Include="..\..\build\DOOM1.WAD">
+      <Link>Assets\DOOM1.WAD</Link>
+    </AndroidAsset>
+    <AndroidAsset Include="..\..\build\milky2.jpg">
+      <Link>Assets\milky2.jpg</Link>
+    </AndroidAsset>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Foom.Collections\Foom.Collections.fsproj">

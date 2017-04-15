@@ -28,17 +28,35 @@ open Android.App
 open Android.Content.Res
 #endif
 
-#if __IOS__ || __ANDROID__
+#if __IOS__
 let documents = Environment.GetFolderPath (Environment.SpecialFolder.MyDocuments)
 #endif
 
+#if __ANDROID__
+let documents = Environment.GetFolderPath (Environment.SpecialFolder.Personal)
+#endif
+
 let start (input : IInput) (gl : IGL) (invoke: Task ref) =
+#if __ANDROID__
+    let assets = Android.App.Application.Context.Assets
+#endif
+
     let assetLoader =
         {
             new IAssetLoader with
 
                 member this.LoadTextureFile (assetPath) =
 #if __IOS__ || __ANDROID__
+
+#if __ANDROID__
+                    try
+                        use stream = assets.Open (assetPath)
+                        let copyPath = Path.Combine (Environment.GetFolderPath (Environment.SpecialFolder.Personal), assetPath)
+                        use fs = File.Create (copyPath)
+                        stream.CopyTo (fs)
+                        fs.Dispose ()
+                    with | _ -> ()
+#endif
                     try
                         new SkiaTextureFile (Path.Combine (documents, assetPath)) :> TextureFile
                     with | _ ->
@@ -49,7 +67,6 @@ let start (input : IInput) (gl : IGL) (invoke: Task ref) =
 
         }
 #if __ANDROID__
-    let assets = Android.App.Application.Context.Assets
     let loadTextFile = (fun filePath -> 
         let mutable content = ""
         use sr = new StreamReader (assets.Open (filePath))
@@ -59,7 +76,19 @@ let start (input : IInput) (gl : IGL) (invoke: Task ref) =
 #else
     let loadTextFile = (fun filePath -> File.ReadAllText filePath)
 #endif
+
+#if __ANDROID__
+    let openWad = (fun name -> 
+        let copyPath = Path.Combine (Environment.GetFolderPath (Environment.SpecialFolder.Personal), name)
+        let fs = File.Create (copyPath)
+        use stream = assets.Open (name)
+        stream.CopyTo (fs)
+        fs.Dispose ()
+        File.Open (copyPath, FileMode.Open, FileAccess.Read) :> Stream
+    )
+#else
     let openWad = (fun name -> System.IO.File.Open (name, FileMode.Open, FileAccess.Read) :> Stream)
+#endif
     let exportTextures =
         (fun wad _ ->
             wad |> exportFlatTextures
