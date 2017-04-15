@@ -83,7 +83,7 @@ type GLView (context) as x =
     Label = "Foom", 
     MainLauncher = true, 
     Icon = "@mipmap/icon", 
-    ConfigurationChanges = ConfigChanges.KeyboardHidden, 
+    ConfigurationChanges = (ConfigChanges.KeyboardHidden ||| ConfigChanges.Keyboard ||| ConfigChanges.Orientation ||| ConfigChanges.ScreenSize), 
     ScreenOrientation = ScreenOrientation.SensorLandscape
 )>]
 type MainActivity () =
