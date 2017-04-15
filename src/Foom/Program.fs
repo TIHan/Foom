@@ -106,6 +106,8 @@ let start (input : IInput) (gl : IGL) (invoke: Task ref) =
             stopwatch.Reset ()
             stopwatch.Start ()
 
+            GC.Collect (0)
+
             (!invoke).RunSynchronously ()
             invoke := (new Task (fun () -> ()))
 

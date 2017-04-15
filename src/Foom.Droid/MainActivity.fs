@@ -1,4 +1,4 @@
-﻿namespace Foom.Droid
+﻿namespace rec Foom.Droid
 
 open System
 open System.Threading.Tasks
@@ -18,7 +18,7 @@ open OpenTK.Graphics.ES30
 open Foom.Renderer
 open Foom.Input
 
-type GLRenderer (surfaceView: GLSurfaceView) =
+type GLRenderer (surfaceView: GLSurfaceView, input) =
     inherit Java.Lang.Object ()
 
     let mutable vaoId = 0
@@ -30,8 +30,6 @@ type GLRenderer (surfaceView: GLSurfaceView) =
     let mutable Render = (fun _ _ -> ())
 
     let mutable gameLoop = GameLoop.create 30.
-
-    let inputEvents = ResizeArray ()
 
     interface GLSurfaceView.IRenderer with
 
@@ -47,10 +45,67 @@ type GLRenderer (surfaceView: GLSurfaceView) =
 
             let gl = OpenTKGL (fun () -> ())
 
-            let (preUpdate, update, render) = Foom.Program.start x gl (new Task (fun () -> ()) |> ref)
+            let (preUpdate, update, render) = Foom.Program.start input gl (new Task (fun () -> ()) |> ref)
             PreUpdate <- preUpdate
             Update <- update
             Render <- render
+
+type GLView (context) as x =
+    inherit RelativeLayout (context)
+
+    let surfaceView = new GLSurfaceView (context)
+    let renderer = new GLRenderer (surfaceView, x)
+
+    let mutable lastTouchX = 0.f
+    let mutable lastTouchY = 0.f
+
+    let inputEvents = ResizeArray ()
+
+    do
+        surfaceView.SetEGLContextClientVersion (3)
+        surfaceView.SetEGLConfigChooser (8, 8, 8, 8, 24, 8)
+        surfaceView.SetRenderer (renderer)
+        surfaceView.PreserveEGLContextOnPause <- true
+
+        x.AddView surfaceView
+
+        x.Touch.Add (fun args ->
+            let ev = args.Event
+            let touchX = ev.GetX ()
+            let touchY = ev.GetY ()
+
+            match args.Event.Action with
+
+            | MotionEventActions.Down ->
+                lastTouchX <- touchX
+                lastTouchY <- touchY
+
+            | MotionEventActions.Up ->
+                inputEvents.Add (KeyReleased ('w'))
+
+            | _ -> ()
+
+            if x.Width / 2 < int touchX then 
+                match args.Event.Action with
+
+                | MotionEventActions.Down ->
+                    inputEvents.Add (KeyPressed ('w'))
+
+                | MotionEventActions.Up ->
+                    inputEvents.Add (KeyReleased ('w'))
+
+                | _ -> ()
+
+            else
+                match args.Event.Action with
+
+                | MotionEventActions.Move ->
+                    let xrel = touchX - lastTouchX
+                    let yrel = touchY - lastTouchY
+                    inputEvents.Add (MouseMoved (0, 0, int xrel, int yrel))
+
+                | _ -> ()
+        )
 
     interface IInput with
 
@@ -64,20 +119,6 @@ type GLRenderer (surfaceView: GLSurfaceView) =
             let events = inputEvents |> Seq.toList
             inputEvents.Clear ()
             { Events = events }
-
-type GLView (context) as x =
-    inherit RelativeLayout (context)
-
-    let surfaceView = new GLSurfaceView (context)
-    let renderer = new GLRenderer (surfaceView)
-
-    do
-        surfaceView.SetEGLContextClientVersion (3)
-        surfaceView.SetEGLConfigChooser (8, 8, 8, 8, 24, 8)
-        surfaceView.SetRenderer (renderer)
-        surfaceView.PreserveEGLContextOnPause <- true
-
-        x.AddView surfaceView
 
 [<Activity (
     Label = "Foom", 
