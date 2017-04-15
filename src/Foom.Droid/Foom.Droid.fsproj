@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -24,7 +23,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG</DefineConstants>
+    <DefineConstants>DEBUG;__ANDROID__</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <AndroidLinkMode>None</AndroidLinkMode>
     <PlatformTarget></PlatformTarget>
@@ -35,7 +34,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release</OutputPath>
-    <DefineConstants></DefineConstants>
+    <DefineConstants>__ANDROID__</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <AndroidManagedSymbols>true</AndroidManagedSymbols>
     <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
@@ -55,6 +54,9 @@
       <HintPath>..\..\packages\Xamarin.Android.FSharp.ResourceProvider.1.0.0.13\lib\Xamarin.Android.FSharp.ResourceProvider.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="OpenTK-1.0" />
+    <Reference Include="SkiaSharp">
+      <HintPath>..\..\packages\SkiaSharp.1.57.0\lib\MonoAndroid\SkiaSharp.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\AboutResources.txt" />
@@ -67,9 +69,92 @@
     <AndroidResource Include="Resources\mipmap-xxxhdpi\Icon.png" />
     <None Include="Properties\AndroidManifest.xml" />
     <Compile Include="Properties\AssemblyInfo.fs" />
+    <Compile Include="..\Foom\Temp.fs">
+      <Link>Temp.fs</Link>
+    </Compile>
+    <Compile Include="..\Foom\GameLoop.fs">
+      <Link>GameLoop.fs</Link>
+    </Compile>
+    <Compile Include="..\Foom\Program.fs">
+      <Link>Program.fs</Link>
+    </Compile>
     <Compile Include="MainActivity.fs" />
     <AndroidAsset Include="Assets\AboutAssets.txt" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Foom.Collections\Foom.Collections.fsproj">
+      <Project>{C18C5AB4-4C69-4EA0-AE74-FEFBBD945C05}</Project>
+      <Name>Foom.Collections</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Ecs\Foom.Ecs.fsproj">
+      <Project>{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}</Project>
+      <Name>Foom.Ecs</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Assets\Foom.Game.Assets.fsproj">
+      <Project>{C41FC4BC-8B5A-4497-9765-FDEAD54749ED}</Project>
+      <Name>Foom.Game.Assets</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Client\Foom.Game.Client.fsproj">
+      <Project>{9E5C57CC-0DA0-4720-BC94-9FECC41D2188}</Project>
+      <Name>Foom.Game.Client</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Core\Foom.Game.Core.fsproj">
+      <Project>{7B655BE8-40D7-482B-8B43-05C5DBAA027B}</Project>
+      <Name>Foom.Game.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Level\Foom.Game.Level.fsproj">
+      <Project>{36E00779-B8EB-432A-B784-CDEB05E90D0B}</Project>
+      <Name>Foom.Game.Level</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Renderer\Foom.Game.Renderer.fsproj">
+      <Project>{181E47F5-8BF0-4AEC-B452-0A88D5BFD28F}</Project>
+      <Name>Foom.Game.Renderer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Sprite\Foom.Game.Sprite.fsproj">
+      <Project>{03FA0D75-22BB-40BC-A3EB-ABA52DD304B9}</Project>
+      <Name>Foom.Game.Sprite</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Wad\Foom.Game.Wad.fsproj">
+      <Project>{FD3F2622-9550-4BD7-8D63-5916151DF018}</Project>
+      <Name>Foom.Game.Wad</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Geometry\Foom.Geometry.fsproj">
+      <Project>{34AA5257-2F5B-4097-8250-1FD4956D1130}</Project>
+      <Name>Foom.Geometry</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Input\Foom.Input.fsproj">
+      <Project>{6DC85453-16AF-4402-A4B4-373336106451}</Project>
+      <Name>Foom.Input</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Math\Foom.Math.fsproj">
+      <Project>{B94F520E-B150-45A7-ADA1-E2945BE9A743}</Project>
+      <Name>Foom.Math</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Network\Foom.Network.fsproj">
+      <Project>{A446D691-8F20-40BD-98AC-B5FB2EFD5D04}</Project>
+      <Name>Foom.Network</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Physics\Foom.Physics.fsproj">
+      <Project>{6DE9A674-F72C-4BDA-9120-E8EB97E7D5ED}</Project>
+      <Name>Foom.Physics</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Pickler\Foom.Pickler.fsproj">
+      <Project>{4FC2B7B5-28CA-4322-84AB-49DDAD9613FC}</Project>
+      <Name>Foom.Pickler</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Renderer\Foom.Renderer.fsproj">
+      <Project>{ED30B5EB-571D-4815-BE37-DDF7ED6198CC}</Project>
+      <Name>Foom.Renderer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Renderer.Droid\Foom.Renderer.Droid.fsproj">
+      <Project>{3E4618C7-F2E3-4B61-AA85-2A6D575938A4}</Project>
+      <Name>Foom.Renderer.Droid</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Wad\Foom.Wad.fsproj">
+      <Project>{13CAB67A-5A00-401D-8CE2-032FFEA5FECE}</Project>
+      <Name>Foom.Wad</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.FSharp.targets" />
 </Project>

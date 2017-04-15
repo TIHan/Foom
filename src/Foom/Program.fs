@@ -1,4 +1,4 @@
-﻿#if __IOS__
+﻿#if __IOS__ || __ANDROID__
 module Foom.Program
 #else
 #endif
@@ -23,7 +23,7 @@ let world = World (65536)
 open OpenTK
 open OpenTK.Graphics
 
-#if __IOS__
+#if __IOS__ || __ANDROID__
 let documents = Environment.GetFolderPath (Environment.SpecialFolder.MyDocuments)
 #endif
 
@@ -33,7 +33,7 @@ let start (input : IInput) (gl : IGL) (invoke: Task ref) =
             new IAssetLoader with
 
                 member this.LoadTextureFile (assetPath) =
-#if __IOS__
+#if __IOS__ || __ANDROID__
                     try
                         new SkiaTextureFile (Path.Combine (documents, assetPath)) :> TextureFile
                     with | _ ->
@@ -88,7 +88,7 @@ let start (input : IInput) (gl : IGL) (invoke: Task ref) =
 
     (client.AlwaysUpdate, update, render)
 
-#if __IOS__
+#if __IOS__ || __ANDROID__
 #else
 [<EntryPoint>]
 let main argv =
