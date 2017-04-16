@@ -14,6 +14,7 @@ open Android.Content.PM
 open Javax.Microedition.Khronos.Opengles;
 open OpenTK.Graphics
 open OpenTK.Graphics.ES30
+open OpenTK.Platform.Android
 
 open Foom.Renderer
 open Foom.Input
@@ -120,6 +121,123 @@ type GLView (context) as x =
             inputEvents.Clear ()
             { Events = events }
 
+type GameLoopView (context, input) as this =
+    inherit AndroidGameView (context)
+
+    let mutable PreUpdate = id
+
+    let mutable Update = (fun _ _ -> true)
+
+    let mutable Render = (fun _ _ -> ())
+
+    let mutable gameLoop = GameLoop.create 30.
+
+    let mutable willSetViewport = true
+
+    let mutable isInit = false
+
+    do
+        this.AutoSetContextOnRenderFrame <- false
+        this.RenderOnUIThread <- false
+
+        this.Resize.Add (fun _ ->
+            willSetViewport <- true
+        )
+
+    override x.OnLoad e =
+        base.OnLoad e
+
+        x.Run ()
+
+    override x.CreateFrameBuffer () =
+        x.ContextRenderingApi <- GLVersion.ES3
+        x.GraphicsMode <- new AndroidGraphicsMode (ColorFormat (8, 8, 8, 8), 24, 8, 0, 0, false)
+        base.CreateFrameBuffer ()
+
+    override x.OnRenderFrame e =
+        base.OnRenderFrame e
+
+        if not isInit then
+            isInit <- true
+
+            let gl = OpenTKGL (fun () -> ())
+
+            let (preUpdate, update, render) = Foom.Program.start input gl (new Task (fun () -> ()) |> ref)
+            PreUpdate <- preUpdate
+            Update <- update
+            Render <- render
+
+        if willSetViewport then
+            willSetViewport <- false
+            GL.Viewport (0, 0, x.Width, x.Height)
+
+        gameLoop <- GameLoop.tick PreUpdate Update Render gameLoop
+
+        x.SwapBuffers ()
+
+type GameView (context) as this =
+    inherit RelativeLayout (context)
+
+    let mutable lastTouchX = 0.f
+    let mutable lastTouchY = 0.f
+
+    let inputEvents = ResizeArray ()
+
+    do
+        let gameLoopView = new GameLoopView (context, this)
+        this.AddView gameLoopView
+
+        this.Touch.Add (fun args ->
+            let ev = args.Event
+            let touchX = ev.GetX ()
+            let touchY = ev.GetY ()
+
+            match args.Event.Action with
+
+            | MotionEventActions.Down ->
+                lastTouchX <- touchX
+                lastTouchY <- touchY
+
+            | MotionEventActions.Up ->
+                inputEvents.Add (KeyReleased ('w'))
+
+            | _ -> ()
+
+            if this.Width / 2 < int touchX then 
+                match args.Event.Action with
+
+                | MotionEventActions.Down ->
+                    inputEvents.Add (KeyPressed ('w'))
+
+                | MotionEventActions.Up ->
+                    inputEvents.Add (KeyReleased ('w'))
+
+                | _ -> ()
+
+            else
+                match args.Event.Action with
+
+                | MotionEventActions.Move ->
+                    let xrel = touchX - lastTouchX
+                    let yrel = touchY - lastTouchY
+                    inputEvents.Add (MouseMoved (0, 0, int xrel, int yrel))
+
+                | _ -> ()
+        )
+
+    interface IInput with
+
+        member x.PollEvents () =
+            ()
+
+        member x.GetMousePosition () =
+            MousePosition ()
+
+        member x.GetState () =
+            let events = inputEvents |> Seq.toList
+            inputEvents.Clear ()
+            { Events = events }
+
 [<Activity (
     Label = "Foom", 
     MainLauncher = true, 
@@ -136,7 +254,7 @@ type MainActivity () =
 
         this.Window.SetFlags (WindowManagerFlags.KeepScreenOn, WindowManagerFlags.KeepScreenOn)
 
-        let glView = new GLView (this :> Context)
+        let glView = new GameView (this :> Context)
 
         let a = new Button (this)
         a.Text <- "YOOOPAC"
