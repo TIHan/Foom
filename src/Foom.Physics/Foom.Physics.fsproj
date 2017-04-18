@@ -69,7 +69,5 @@
     <Compile Include="PhysicsEngine.fs" />
     <Compile Include="PhysicsEngineComponent.fs" />
     <Content Include="packages.config" />
-    <None Include="any\netstandard1.6\FSharp.Core.sigdata" />
-    <None Include="any\netstandard1.6\FSharp.Core.optdata" />
   </ItemGroup>
 </Project>
