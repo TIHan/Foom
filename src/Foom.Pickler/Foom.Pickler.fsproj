@@ -36,17 +36,18 @@
     <DocumentationFile>bin\Release\Foom.Pickler.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="FSharp.Core">
-      <Name>FSharp.Core</Name>
-      <AssemblyName>FSharp.Core.dll</AssemblyName>
-      <HintPath>$(MSBuildExtensionsPath32)\..\Reference Assemblies\Microsoft\FSharp\.NETCore\$(TargetFSharpCoreVersion)\FSharp.Core.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Core.fs" />
     <Compile Include="Pickle.fs" />
     <Compile Include="Unpickle.fs" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.ValueTuple">
+      <HintPath>..\..\packages\System.ValueTuple.4.3.0\lib\portable-net40+sl4+win8+wp8\System.ValueTuple.dll</HintPath>
+    </Reference>
+    <Reference Include="FSharp.Core">
+      <HintPath>..\..\packages\FSharp.Core.4.1.12\lib\portable-net45+netcore45\FSharp.Core.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">12</MinimumVisualStudioVersion>

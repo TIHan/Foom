@@ -40,31 +40,6 @@
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
   <ItemGroup>
-    <Compile Include="Sidedef.fsi" />
-    <Compile Include="Sidedef.fs" />
-    <Compile Include="Linedef.fsi" />
-    <Compile Include="Linedef.fs" />
-    <Compile Include="Sector.fsi" />
-    <Compile Include="Sector.fs" />
-    <Compile Include="Thing.fsi" />
-    <Compile Include="Thing.fs" />
-    <Compile Include="Level.fsi" />
-    <Compile Include="Level.fs" />
-    <Compile Include="Pixel.fsi" />
-    <Compile Include="Pixel.fs" />
-    <Compile Include="UnpickleWad.fsi" />
-    <Compile Include="UnpickleWad.fs" />
-    <Compile Include="Wad.fsi" />
-    <Compile Include="Wad.fs" />
-    <Content Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="FSharp.Core">
-      <Name>FSharp.Core</Name>
-      <AssemblyName>FSharp.Core.dll</AssemblyName>
-      <HintPath>$(MSBuildExtensionsPath32)\..\Reference Assemblies\Microsoft\FSharp\.NETCore\$(TargetFSharpCoreVersion)\FSharp.Core.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <ProjectReference Include="..\Foom.Pickler\Foom.Pickler.fsproj">
       <Name>Foom.Pickler</Name>
       <Project>{4fc2b7b5-28ca-4322-84ab-49ddad9613fc}</Project>
@@ -82,6 +57,12 @@
       <HintPath>..\..\packages\System.Numerics.Vectors.4.3.0\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.ValueTuple">
+      <HintPath>..\..\packages\System.ValueTuple.4.3.0\lib\portable-net40+sl4+win8+wp8\System.ValueTuple.dll</HintPath>
+    </Reference>
+    <Reference Include="FSharp.Core">
+      <HintPath>..\..\packages\FSharp.Core.4.1.12\lib\portable-net45+netcore45\FSharp.Core.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
@@ -90,4 +71,25 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <ItemGroup>
+    <Compile Include="Sidedef.fsi" />
+    <Compile Include="Sidedef.fs" />
+    <Compile Include="Linedef.fsi" />
+    <Compile Include="Linedef.fs" />
+    <Compile Include="Sector.fsi" />
+    <Compile Include="Sector.fs" />
+    <Compile Include="Thing.fsi" />
+    <Compile Include="Thing.fs" />
+    <Compile Include="Level.fsi" />
+    <Compile Include="Level.fs" />
+    <Compile Include="Pixel.fsi" />
+    <Compile Include="Pixel.fs" />
+    <Compile Include="UnpickleWad.fsi" />
+    <Compile Include="UnpickleWad.fs" />
+    <Compile Include="Wad.fsi" />
+    <Compile Include="Wad.fs" />
+    <Content Include="packages.config" />
+    <None Include="any\netstandard1.6\FSharp.Core.sigdata" />
+    <None Include="any\netstandard1.6\FSharp.Core.optdata" />
+  </ItemGroup>
 </Project>

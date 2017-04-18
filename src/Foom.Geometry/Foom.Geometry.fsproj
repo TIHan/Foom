@@ -38,6 +38,22 @@
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
   <ItemGroup>
+    <ProjectReference Include="..\Foom.Math\Foom.Math.fsproj">
+      <Project>{B94F520E-B150-45A7-ADA1-E2945BE9A743}</Project>
+      <Name>Foom.Math</Name>
+    </ProjectReference>
+    <Reference Include="System.Numerics.Vectors">
+      <HintPath>..\..\packages\System.Numerics.Vectors.4.3.0\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.ValueTuple">
+      <HintPath>..\..\packages\System.ValueTuple.4.3.0\lib\portable-net40+sl4+win8+wp8\System.ValueTuple.dll</HintPath>
+    </Reference>
+    <Reference Include="FSharp.Core">
+      <HintPath>..\..\packages\FSharp.Core.4.1.12\lib\portable-net45+netcore45\FSharp.Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="AABB2D.fsi" />
     <Compile Include="AABB2D.fs" />
     <Compile Include="LineSegment2D.fsi" />
@@ -54,19 +70,5 @@
     <Compile Include="EarClipping.fs" />
     <Compile Include="SpatialHash2D.fs" />
     <Content Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="FSharp.Core">
-      <HintPath>$(MSBuildExtensionsPath32)\..\Reference Assemblies\Microsoft\FSharp\.NETCore\$(TargetFSharpCoreVersion)\FSharp.Core.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <ProjectReference Include="..\Foom.Math\Foom.Math.fsproj">
-      <Project>{B94F520E-B150-45A7-ADA1-E2945BE9A743}</Project>
-      <Name>Foom.Math</Name>
-    </ProjectReference>
-    <Reference Include="System.Numerics.Vectors">
-      <HintPath>..\..\packages\System.Numerics.Vectors.4.3.0\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
   </ItemGroup>
 </Project>
