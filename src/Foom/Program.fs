@@ -135,11 +135,15 @@ let start (input : IInput) (gl : IGL) (invoke: Task ref) =
 
 #if __IOS__ || __ANDROID__
 #else
+
 [<EntryPoint>]
 let main argv =
-    let gameWindow = new GameWindow (1280, 720, new GraphicsMode (ColorFormat (32), 24, 8, 0), "Foom", GameWindowFlags.FixedWindow, DisplayDevice.Default, 3, 2, GraphicsContextFlags.Default)
+    let gameWindow = new GameWindow (1280, 720, new GraphicsMode (ColorFormat (32), 24, 8, 0), "Foom", GameWindowFlags.Default, DisplayDevice.Default, 3, 2, GraphicsContextFlags.Default)
     let gl = OpenTKGL (fun () -> ())
     let input = DesktopInput (gameWindow)
+
+    gameWindow.VSync <- VSyncMode.Off
+    gameWindow.CursorVisible <- false
 
     let (preUpdate, update, render) = start input gl (new Task (fun () -> ()) |> ref)
 
@@ -147,6 +151,8 @@ let main argv =
     OpenTK.Graphics.OpenGL.GL.BindVertexArray vao
     let mutable gameLoop = GameLoop.create 30.
     gameWindow.RenderFrame.Add (fun _ ->
+        let bounds = gameWindow.Bounds
+     //   OpenTK.Input.Mouse.SetPosition (bounds.Left + bounds.Width / 2 |> float, bounds.Top + bounds.Height / 2 |> float)
         gameLoop <- GameLoop.tick preUpdate update render gameLoop
         gameWindow.SwapBuffers ()
     )

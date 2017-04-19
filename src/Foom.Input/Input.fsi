@@ -39,10 +39,12 @@ type MouseWheelEvent =
 
 [<Struct>]
 type MousePosition =
-    val X : int
-    val Y : int
-    val XRel : int
-    val YRel : int
+    {
+        x : int
+        y : int
+        xrel : int
+        yrel : int
+    }
 
 [<Struct>]
 type MouseMoveEvent =
