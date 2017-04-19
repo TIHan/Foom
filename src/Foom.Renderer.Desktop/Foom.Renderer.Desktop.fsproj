@@ -8,9 +8,9 @@
     <RootNamespace>Foom.Renderer.Desktop</RootNamespace>
     <AssemblyName>Foom.Renderer.Desktop</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
     <Name>Foom.Renderer.Desktop</Name>
-    <NuGetPackageImportStamp>e481a362</NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
   </PropertyGroup>
@@ -52,11 +52,35 @@
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
-  <Import Project="..\..\packages\Ferop.1.0.0-beta90001\build\Ferop.targets" Condition="Exists('..\..\packages\Ferop.1.0.0-beta90001\build\Ferop.targets')" />
+  <Import Project="..\Ferop\Ferop.targets" Condition="Exists('..\Ferop\Ferop.targets')" />
+  <Import Project="..\..\packages\SkiaSharp.1.57.0\build\net45\SkiaSharp.targets" Condition="Exists('..\..\packages\SkiaSharp.1.57.0\build\net45\SkiaSharp.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\packages\SkiaSharp.1.57.0\build\net45\SkiaSharp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\SkiaSharp.1.57.0\build\net45\SkiaSharp.targets'))" />
+  </Target>
   <ItemGroup>
-    <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <Compile Include="Backend.fs" />
+    <Compile Include="DesktopGL.fs" />
+    <Compile Include="OpenTKGL.fs" />
+    <Content Include="packages.config" />
+    <Compile Include="SkiaTextureFile.fs" />
+    <None Include="any\netstandard1.6\FSharp.Core.sigdata" />
+    <None Include="any\netstandard1.6\FSharp.Core.optdata" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Ferop\src\Ferop\Ferop.fsproj">
+      <Name>Ferop (Ferop\Ferop)</Name>
+      <Project>{88e06223-2026-42f8-be6d-b03e3ed3fe4b}</Project>
       <Private>True</Private>
+    </ProjectReference>
+    <Reference Include="FSharp.Core">
+      <HintPath>..\..\packages\FSharp.Core.4.1.12\lib\net45\FSharp.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="mscorlib" />
+    <Reference Include="SkiaSharp">
+      <HintPath>..\..\packages\SkiaSharp.1.57.0\lib\net45\SkiaSharp.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Collections.Immutable">
@@ -70,9 +94,6 @@
     </Reference>
     <Reference Include="System.Numerics" />
     <Reference Include="System.Drawing" />
-    <Reference Include="Ferop">
-      <HintPath>..\..\packages\Ferop.1.0.0-beta90001\lib\portable-net45+monoandroid10+monotouch10+xamarinios10\Ferop.dll</HintPath>
-    </Reference>
     <Reference Include="System.Numerics.Vectors">
       <HintPath>..\..\packages\System.Numerics.Vectors.4.3.0\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
       <Private>True</Private>
@@ -80,11 +101,9 @@
     <Reference Include="OpenTK">
       <HintPath>..\..\packages\OpenTK.2.0.0\lib\net20\OpenTK.dll</HintPath>
     </Reference>
-    <Reference Include="SkiaSharp">
-      <HintPath>..\..\packages\SkiaSharp.1.56.2\lib\net45\SkiaSharp.dll</HintPath>
+    <Reference Include="System.ValueTuple">
+      <HintPath>..\..\packages\System.ValueTuple.4.3.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Foom.Ecs\Foom.Ecs.fsproj">
       <Project>{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}</Project>
       <Name>Foom.Ecs</Name>
@@ -107,12 +126,4 @@
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Backend.fs" />
-    <Compile Include="DesktopGL.fs" />
-    <Compile Include="OpenTKGL.fs" />
-    <Content Include="packages.config" />
-    <Compile Include="SkiaTextureFile.fs" />
-  </ItemGroup>
-  <Import Project="..\..\packages\SkiaSharp.1.56.2\build\net45\SkiaSharp.targets" Condition="Exists('..\..\packages\SkiaSharp.1.56.2\build\net45\SkiaSharp.targets')" />
 </Project>
