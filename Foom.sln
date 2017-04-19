@@ -71,10 +71,6 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Droid", "src\Foom.Droi
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Renderer.Droid", "src\Foom.Renderer.Droid\Foom.Renderer.Droid.fsproj", "{3E4618C7-F2E3-4B61-AA85-2A6D575938A4}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Ferop", "Ferop", "{AF3952F6-E4CB-4A88-9FB7-E73CE59B308C}"
-EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Ferop", "src\Ferop\src\Ferop\Ferop.fsproj", "{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -621,26 +617,6 @@ Global
 		{3E4618C7-F2E3-4B61-AA85-2A6D575938A4}.Release|iPhoneSimulator.Build.0 = Release|Any CPU
 		{3E4618C7-F2E3-4B61-AA85-2A6D575938A4}.Release|x64.ActiveCfg = Release|Any CPU
 		{3E4618C7-F2E3-4B61-AA85-2A6D575938A4}.Release|x86.ActiveCfg = Release|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Debug|iPhone.ActiveCfg = Debug|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Debug|iPhone.Build.0 = Debug|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Debug|iPhoneSimulator.ActiveCfg = Debug|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Debug|iPhoneSimulator.Build.0 = Debug|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Debug|x64.Build.0 = Debug|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Debug|x86.Build.0 = Debug|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Release|iPhone.ActiveCfg = Release|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Release|iPhone.Build.0 = Release|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Release|iPhoneSimulator.ActiveCfg = Release|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Release|iPhoneSimulator.Build.0 = Release|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Release|x64.ActiveCfg = Release|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Release|x64.Build.0 = Release|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Release|x86.ActiveCfg = Release|Any CPU
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -674,6 +650,5 @@ Global
 		{5221813B-04B6-450F-9474-669F1E24D57B} = {3EB07B84-DC73-417F-82E6-0C9B7C07520B}
 		{737AFFC8-2768-4AB4-87C5-9BD1877547AE} = {3EB07B84-DC73-417F-82E6-0C9B7C07520B}
 		{3E4618C7-F2E3-4B61-AA85-2A6D575938A4} = {3EB07B84-DC73-417F-82E6-0C9B7C07520B}
-		{88E06223-2026-42F8-BE6D-B03E3ED3FE4B} = {AF3952F6-E4CB-4A88-9FB7-E73CE59B308C}
 	EndGlobalSection
 EndGlobal

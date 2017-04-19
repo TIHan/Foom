@@ -52,7 +52,6 @@
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
-  <Import Project="..\Ferop\Ferop.targets" Condition="Exists('..\Ferop\Ferop.targets')" />
   <Import Project="..\..\packages\SkiaSharp.1.57.0\build\net45\SkiaSharp.targets" Condition="Exists('..\..\packages\SkiaSharp.1.57.0\build\net45\SkiaSharp.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -61,20 +60,13 @@
     <Error Condition="!Exists('..\..\packages\SkiaSharp.1.57.0\build\net45\SkiaSharp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\SkiaSharp.1.57.0\build\net45\SkiaSharp.targets'))" />
   </Target>
   <ItemGroup>
-    <Compile Include="Backend.fs" />
-    <Compile Include="DesktopGL.fs" />
     <Compile Include="OpenTKGL.fs" />
-    <Content Include="packages.config" />
     <Compile Include="SkiaTextureFile.fs" />
+    <Content Include="packages.config" />
     <None Include="any\netstandard1.6\FSharp.Core.sigdata" />
     <None Include="any\netstandard1.6\FSharp.Core.optdata" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Ferop\src\Ferop\Ferop.fsproj">
-      <Name>Ferop (Ferop\Ferop)</Name>
-      <Project>{88e06223-2026-42f8-be6d-b03e3ed3fe4b}</Project>
-      <Private>True</Private>
-    </ProjectReference>
     <Reference Include="FSharp.Core">
       <HintPath>..\..\packages\FSharp.Core.4.1.12\lib\net45\FSharp.Core.dll</HintPath>
     </Reference>

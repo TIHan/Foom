@@ -101,32 +101,32 @@ module Player =
 
                         input.PollEvents ()
                         let inputState = input.GetState ()
+                        ()
+                        //inputState.Events
+                        //|> List.iter (function
+                        //    | MouseMoved (x, y, xrel, yrel) ->
+                        //        playerComp.Yaw <- playerComp.Yaw + (single xrel * -0.25f) * (float32 Math.PI / 180.f)
+                        //        playerComp.Pitch <- playerComp.Pitch + (single yrel * -0.25f) * (float32 Math.PI / 180.f)
 
-                        inputState.Events
-                        |> List.iter (function
-                            | MouseMoved (x, y, xrel, yrel) ->
-                                playerComp.Yaw <- playerComp.Yaw + (single xrel * -0.25f) * (float32 Math.PI / 180.f)
-                                playerComp.Pitch <- playerComp.Pitch + (single yrel * -0.25f) * (float32 Math.PI / 180.f)
+                        //    | KeyPressed x when x = 'w' -> playerComp.IsMovingForward <- true
+                        //    | KeyReleased x when x = 'w' -> playerComp.IsMovingForward <- false
 
-                            | KeyPressed x when x = 'w' -> playerComp.IsMovingForward <- true
-                            | KeyReleased x when x = 'w' -> playerComp.IsMovingForward <- false
-
-                            | KeyPressed x when x = 'a' -> playerComp.IsMovingLeft <- true
-                            | KeyReleased x when x = 'a' -> playerComp.IsMovingLeft <- false
+                        //    | KeyPressed x when x = 'a' -> playerComp.IsMovingLeft <- true
+                        //    | KeyReleased x when x = 'a' -> playerComp.IsMovingLeft <- false
  
-                            | KeyPressed x when x = 's' -> playerComp.IsMovingBackward <- true
-                            | KeyReleased x when x = 's' -> playerComp.IsMovingBackward <- false
+                        //    | KeyPressed x when x = 's' -> playerComp.IsMovingBackward <- true
+                        //    | KeyReleased x when x = 's' -> playerComp.IsMovingBackward <- false
 
-                            | KeyPressed x when x = 'd' -> playerComp.IsMovingRight <- true
-                            | KeyReleased x when x = 'd' -> playerComp.IsMovingRight <- false
+                        //    | KeyPressed x when x = 'd' -> playerComp.IsMovingRight <- true
+                        //    | KeyReleased x when x = 'd' -> playerComp.IsMovingRight <- false
 
-                            | KeyPressed x when x = '\027' -> willQuit := true
+                        //    | KeyPressed x when x = '\027' -> willQuit := true
 
-                            | MouseButtonPressed MouseButtonType.Left ->
-                                spawnAlot <- true
-                                pos <- transformComp.Position
-                            | x -> ()
-                        )
+                        //    | MouseButtonPressed MouseButtonType.Left ->
+                        //        spawnAlot <- true
+                        //        pos <- transformComp.Position
+                        //    | x -> ()
+                        //)
                     )
 
                     if spawnAlot then

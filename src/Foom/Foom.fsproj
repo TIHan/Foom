@@ -15,6 +15,8 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
     <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -70,9 +72,12 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="FSharp.Core">
+      <HintPath>..\..\packages\FSharp.Core.4.1.12\lib\net45\FSharp.Core.dll</HintPath>
+    </Reference>
     <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <Private>True</Private>
+    <Reference Include="SkiaSharp">
+      <HintPath>..\..\packages\SkiaSharp.1.57.0\lib\net45\SkiaSharp.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Collections.Immutable">
@@ -167,10 +172,17 @@
     <Reference Include="OpenTK">
       <HintPath>..\..\packages\OpenTK.2.0.0\lib\net20\OpenTK.dll</HintPath>
     </Reference>
-    <Reference Include="SkiaSharp">
-      <HintPath>..\..\packages\SkiaSharp.1.56.2\lib\net45\SkiaSharp.dll</HintPath>
+    <Reference Include="System.ValueTuple">
+      <HintPath>..\..\packages\System.ValueTuple.4.3.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <Import Project="..\..\packages\SkiaSharp.1.57.0\build\net45\SkiaSharp.targets" Condition="Exists('..\..\packages\SkiaSharp.1.57.0\build\net45\SkiaSharp.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\packages\SkiaSharp.1.57.0\build\net45\SkiaSharp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\SkiaSharp.1.57.0\build\net45\SkiaSharp.targets'))" />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
@@ -178,5 +190,4 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <Import Project="..\..\packages\SkiaSharp.1.56.2\build\net45\SkiaSharp.targets" Condition="Exists('..\..\packages\SkiaSharp.1.56.2\build\net45\SkiaSharp.targets')" />
 </Project>
