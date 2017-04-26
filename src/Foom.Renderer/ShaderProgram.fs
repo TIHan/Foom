@@ -83,12 +83,10 @@ type ShaderProgram =
 
     member this.Id = this.programId
 
-    member this.CreateUniform<'T> (name) =
+    member this.AddUniform<'T> (uni : Uniform<'T>) =
         let gl = this.gl
 
-        if this.isInitialized then failwithf "Cannot create uniform, %s. Shader already initialized." name
-
-        let uni = Uniform<'T> (name)
+        if this.isInitialized then failwithf "Cannot add uniform, %s. Shader already initialized." uni.Name
             
         let initUni =
             fun () ->
@@ -180,27 +178,14 @@ type ShaderProgram =
         this.binds.Add bind
         this.unbinds.Add unbind
 
-        uni
-
-    member this.CreateVertexAttribute<'T> (name) =
-        if this.isInitialized then failwithf "Cannot create vertex attribute, %s. Shader already initialized." name
-
-        let attrib = VertexAttribute<'T> (name, 0)
-
-        this.AddVertexAttribute attrib
-        attrib
-
-    member this.CreateInstanceAttribute<'T> (name) =
-        if this.isInitialized then failwithf "Cannot create instance attribute, %s. Shader already initialized." name
-
-        let attrib = InstanceAttribute<'T> (name)
-
+    member this.AddInstanceAttribute<'T> (attrib : InstanceAttribute<'T>) =
         this.drawOperation <- DrawOperation.Instanced
         this.AddVertexAttribute attrib.VertexAttribute
-        attrib
 
     member this.AddVertexAttribute<'T> (attrib: VertexAttribute<'T>) =
         let gl = this.gl
+
+        if this.isInitialized then failwithf "Cannot create vertex attribute, %s. Shader already initialized." attrib.Name
 
         let initAttrib =
             fun () ->
@@ -302,47 +287,47 @@ type ShaderProgram =
         this.binds.Add bind
         this.unbinds.Add unbind
 
-    member this.CreateUniformInt (name) =
-        this.CreateUniform<int> (name)
+    //member this.AddUniformInt (name) =
+    //    this.CreateUniform<int> (name)
 
-    member this.CreateUniformFloat (name) =
-        this.CreateUniform<float32> (name)
+    //member this.CreateUniformFloat (name) =
+    //    this.CreateUniform<float32> (name)
 
-    member this.CreateUniformVector2 (name) =
-        this.CreateUniform<Vector2> (name)
+    //member this.CreateUniformVector2 (name) =
+    //    this.CreateUniform<Vector2> (name)
 
-    member this.CreateUniformVector4 (name) =
-        this.CreateUniform<Vector4> (name)
+    //member this.CreateUniformVector4 (name) =
+    //    this.CreateUniform<Vector4> (name)
 
-    member this.CreateUniformMatrix4x4 (name) =
-        this.CreateUniform<Matrix4x4> (name)
+    //member this.CreateUniformMatrix4x4 (name) =
+    //    this.CreateUniform<Matrix4x4> (name)
 
-    member this.CreateUniformTexture2D (name) =
-        this.CreateUniform<Texture2DBuffer> (name)
+    //member this.CreateUniformTexture2D (name) =
+    //    this.CreateUniform<Texture2DBuffer> (name)
 
-    member this.CreateUniformTexture2DVarying (name) =
-        this.CreateUniform<Texture2DBuffer []> (name)
+    //member this.CreateUniformTexture2DVarying (name) =
+    //    this.CreateUniform<Texture2DBuffer []> (name)
 
-    member this.CreateUniformRenderTexture (name) =
-        this.CreateUniform<RenderTexture> (name)
+    //member this.CreateUniformRenderTexture (name) =
+    //    this.CreateUniform<RenderTexture> (name)
 
-    member this.CreateVertexAttributeVector2 (name) =
-        this.CreateVertexAttribute<Vector2Buffer> (name)
+    //member this.CreateVertexAttributeVector2 (name) =
+    //    this.CreateVertexAttribute<Vector2Buffer> (name)
 
-    member this.CreateVertexAttributeVector3 (name) =
-        this.CreateVertexAttribute<Vector3Buffer> (name)
+    //member this.CreateVertexAttributeVector3 (name) =
+    //    this.CreateVertexAttribute<Vector3Buffer> (name)
 
-    member this.CreateVertexAttributeVector4 (name) =
-        this.CreateVertexAttribute<Vector4Buffer> (name)
+    //member this.CreateVertexAttributeVector4 (name) =
+    //    this.CreateVertexAttribute<Vector4Buffer> (name)
 
-    member this.CreateInstanceAttributeVector2 (name) =
-        this.CreateInstanceAttribute<Vector2Buffer> (name)
+    //member this.CreateInstanceAttributeVector2 (name) =
+    //    this.CreateInstanceAttribute<Vector2Buffer> (name)
 
-    member this.CreateInstanceAttributeVector3 (name) =
-        this.CreateInstanceAttribute<Vector3Buffer> (name)
+    //member this.CreateInstanceAttributeVector3 (name) =
+    //    this.CreateInstanceAttribute<Vector3Buffer> (name)
 
-    member this.CreateInstanceAttributeVector4 (name) =
-        this.CreateInstanceAttribute<Vector4Buffer> (name)
+    //member this.CreateInstanceAttributeVector4 (name) =
+    //    this.CreateInstanceAttribute<Vector4Buffer> (name)
 
     member this.Unbind () =
         if not this.isUnbinded then

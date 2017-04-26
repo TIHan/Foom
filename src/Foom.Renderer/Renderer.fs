@@ -13,23 +13,30 @@ open Foom.Collections
 // *****************************************
 // *****************************************
 
-type Shader (shaderProgram : ShaderProgram) =
+type Shader (name) =
+
+    member val Name = name
     
-    member val Position = shaderProgram.CreateVertexAttributeVector3 ("position")
+    member val Position = VertexAttribute<Buffer<Vector3>> ("position", 0) //shaderProgram.CreateVertexAttributeVector3 ("position")
 
-    member val Uv = shaderProgram.CreateVertexAttributeVector2 ("in_uv")
+    member val Uv = VertexAttribute<Buffer<Vector2>> ("in_uv", 0)//shaderProgram.CreateVertexAttributeVector2 ("in_uv")
 
-    member val Color = shaderProgram.CreateVertexAttributeVector4 ("in_color")
+    member val Color = VertexAttribute<Buffer<Vector4>> ("in_color", 0) //shaderProgram.CreateVertexAttributeVector4 ("in_color")
 
-    member val Texture = shaderProgram.CreateUniformTexture2DVarying ("uni_texture")
+    member val Texture = Uniform<Texture2DBuffer> ("uni_texture")//shaderProgram.CreateUniformTexture2DVarying ("uni_texture")
 
-    member val View = shaderProgram.CreateUniformMatrix4x4 ("uni_view")
+    member val View = Uniform<Matrix4x4> ("uni_view")//shaderProgram.CreateUniformMatrix4x4 ("uni_view")
 
-    member val Projection = shaderProgram.CreateUniformMatrix4x4 ("uni_projection")
+    member val Projection = Uniform<Matrix4x4> ("uni_projection") //shaderProgram.CreateUniformMatrix4x4 ("uni_projection")
 
-    member val Time = shaderProgram.CreateUniformFloat ("uTime")
+    member val Time = Uniform<float32> ("uTime") //shaderProgram.CreateUniformFloat ("uTime")
 
-    member val TextureResolution = shaderProgram.CreateUniformVector2 ("uTextureResolution")
+    member val TextureResolution = Uniform<Vector2> ("uTextureResolution")//shaderProgram.CreateUniformVector2 ("uTextureResolution")
+
+    abstract Init : ShaderProgram -> unit
+
+    default this.Init (program : ShaderProgram) =
+        program.AddVertexAttribute this.Position
 
 type Material (texture, shader) =
 
