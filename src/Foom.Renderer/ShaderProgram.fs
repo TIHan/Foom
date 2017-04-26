@@ -54,7 +54,7 @@ type RenderPass =
 type ShaderProgram =
     {
         gl: IGL
-        programId: int
+        mutable programId: int
         mutable drawOperation: DrawOperation
         mutable isUnbinded: bool
         mutable isInitialized: bool
@@ -80,6 +80,8 @@ type ShaderProgram =
             instanceCount = -1
             activeTextureCount = 0
         }
+
+    member this.Id = this.programId
 
     member this.CreateUniform<'T> (name) =
         let gl = this.gl
