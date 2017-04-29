@@ -97,10 +97,17 @@ type SkyInput (program: ShaderProgram) =
 
     member val Model = program.CreateUniformMatrix4x4 ("uni_model")
 
+let shader = CreateShader "Sky" 2 ShaderPass.Stencil2 SkyInput
+
 type Sky () =
-    inherit GpuResource ()
+    inherit Mesh<SkyInput> (skyVertices, [||], [||])
 
     member val Model = Matrix4x4.CreateScale (100.f)
 
-type SkyRendererComponent (pipelineName, texture) =
-    inherit MeshRendererComponent<Sky> (pipelineName, texture, Mesh (skyVertices, [||], [||]), Sky())
+    override this.SetShaderInput input =
+        base.SetShaderInput input
+
+        input.Model.Set this.Model
+
+type SkyRendererComponent (texture) =
+    inherit MeshRendererComponent<SkyInput, Sky> (0, Material (shader, texture), Sky ())

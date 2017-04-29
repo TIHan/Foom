@@ -12,9 +12,9 @@ open Foom.Game.Assets
 type SpriteComponent =
     inherit Component
 
-    new : group : int * texture: Texture * lightLevel: int -> SpriteComponent
+    new : layer : int * texture: Texture * lightLevel: int -> SpriteComponent
 
-    member Group : int
+    member Layer : int
 
     member Texture : Texture
 
@@ -23,7 +23,5 @@ type SpriteComponent =
     member LightLevel : int with get, set
 
 module Sprite =
-
-    val pipeline : Pipeline<unit>
 
     val update : AssetManager -> Behavior<float32 * float32>

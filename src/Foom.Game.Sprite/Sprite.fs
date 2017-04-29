@@ -12,28 +12,8 @@ open Foom.Renderer.RendererSystem
 open Foom.Game.Assets
 open Foom.Game.Core
 
-[<Sealed>]
-type SpriteBatch () =
-    inherit GpuResource ()
-
-    member val Positions = Buffer.createVector3 [||]
-
-    member val LightLevels = Buffer.createVector4 [||]
-
-    member val UvOffsets = Buffer.createVector4 [||]
-   
-type SpriteInput (program: ShaderProgram) =
-    inherit MeshInput (program)
-
-    member val Center = program.CreateVertexAttributeVector3 ("in_center")
-
-    member val Positions = program.CreateInstanceAttributeVector3 ("instance_position")
-
-    member val LightLevels = program.CreateInstanceAttributeVector4 ("instance_lightLevel")
-
-    member val UvOffsets = program.CreateInstanceAttributeVector4 ("instance_uvOffset")
-
-module SpriteConstants =
+[<AutoOpen>]
+module SpriteHelpers =
 
     let createSpriteColor lightLevel =
         let color = Array.init 6 (fun _ -> Vector4 (255.f, lightLevel, lightLevel, lightLevel))
@@ -66,10 +46,35 @@ module SpriteConstants =
             Vector2 (0.f, 0.f * -1.f)
         |]
 
-open SpriteConstants
+type SpriteBatchInput (program: ShaderProgram) =
+    inherit MeshInput (program)
 
-type SpriteRendererComponent (group, texture, lightLevel) =
-    inherit MeshRendererComponent<SpriteBatch> (group, texture, Mesh (vertices, uv, createSpriteColor lightLevel), SpriteBatch ())
+    member val Center = program.CreateVertexAttributeVector3 ("in_center")
+
+    member val Positions = program.CreateInstanceAttributeVector3 ("instance_position")
+
+    member val LightLevels = program.CreateInstanceAttributeVector4 ("instance_lightLevel")
+
+    member val UvOffsets = program.CreateInstanceAttributeVector4 ("instance_uvOffset")
+
+type SpriteBatch (lightLevel) =
+    inherit Mesh<SpriteBatchInput> (vertices, uv, createSpriteColor lightLevel)
+
+    member val Positions = Buffer.createVector3 [||]
+
+    member val LightLevels = Buffer.createVector4 [||]
+
+    member val UvOffsets = Buffer.createVector4 [||]
+
+    override this.SetShaderInput input =
+        base.SetShaderInput input
+
+        input.Positions.Set this.Positions
+        input.LightLevels.Set this.LightLevels
+        input.UvOffsets.Set this.UvOffsets
+
+type SpriteBatchRendererComponent (layer, material, lightLevel) =
+    inherit MeshRendererComponent<SpriteBatchInput, SpriteBatch> (layer, material, SpriteBatch lightLevel)
 
     member val SpriteCount = 0 with get, set
 
@@ -80,10 +85,10 @@ type SpriteRendererComponent (group, texture, lightLevel) =
     member val UvOffsets : Vector4 [] = Array.zeroCreate 100000
 
 [<Sealed>]
-type SpriteComponent (group : int, texture: Texture, lightLevel: int) =
+type SpriteComponent (layer : int, texture: Texture, lightLevel: int) =
     inherit Component ()
 
-    member val Group = group
+    member val Layer = layer
 
     member val Texture = texture
 
@@ -91,20 +96,14 @@ type SpriteComponent (group : int, texture: Texture, lightLevel: int) =
 
     member val LightLevel = lightLevel with get, set
 
-    member val RendererComponent : SpriteRendererComponent = Unchecked.defaultof<SpriteRendererComponent> with get, set
+    member val RendererComponent : SpriteBatchRendererComponent = Unchecked.defaultof<SpriteBatchRendererComponent> with get, set
 
 module Sprite =
 
-    let pipeline =
-        Pipeline.runProgramWithMesh "Sprite" SpriteInput Pipeline.noOutput (fun (spriteBatch: SpriteBatch) input draw ->
-            input.Positions.Set spriteBatch.Positions
-            input.LightLevels.Set spriteBatch.LightLevels
-            input.UvOffsets.Set spriteBatch.UvOffsets
-            draw ()
-        )
+    let shader = CreateShader "Sprite" 0 ShaderPass.Depth SpriteBatchInput
 
     let update (am: AssetManager) : Behavior<float32 * float32> =
-        let lookup = Dictionary<int * Texture, Entity * SpriteRendererComponent> ()
+        let lookup = Dictionary<int * Texture, Entity * SpriteBatchRendererComponent> ()
 
         Behavior.merge
             [
@@ -112,11 +111,12 @@ module Sprite =
                     am.LoadTexture (comp.Texture)
 
                     let _, rendererComp = 
-                        let key = (comp.Group, comp.Texture)
+                        let key = (comp.Layer, comp.Texture)
                         match lookup.TryGetValue (key) with
                         | true, x -> x
                         | _ ->
-                            let rendererComp = new SpriteRendererComponent(comp.Group, comp.Texture, 255.f)
+                            let material = Material (shader, comp.Texture)
+                            let rendererComp = new SpriteBatchRendererComponent(comp.Layer, material, 255.f)
 
                             let rendererEnt = em.Spawn ()
                             em.Add (rendererEnt, rendererComp)
@@ -137,7 +137,7 @@ module Sprite =
                             rendererComp.Positions.[rendererComp.SpriteCount] <- transformComp.Position
                             rendererComp.LightLevels.[rendererComp.SpriteCount] <- Vector4 (c, c, c, 1.f)
 
-                            let frames = rendererComp.Texture.Frames
+                            let frames = rendererComp.Material.Texture.Frames
                             let frame = spriteComp.Frame
                             let frame = 
                                 if frame >= frames.Length then 0
@@ -150,10 +150,10 @@ module Sprite =
                 )
 
                 Behavior.update (fun _ em ea ->
-                    em.ForEach<SpriteRendererComponent> (fun _ rendererComp ->
-                        rendererComp.Extra.Positions.Set (rendererComp.Positions, rendererComp.SpriteCount)
-                        rendererComp.Extra.LightLevels.Set (rendererComp.LightLevels, rendererComp.SpriteCount)
-                        rendererComp.Extra.UvOffsets.Set (rendererComp.UvOffsets, rendererComp.SpriteCount)
+                    em.ForEach<SpriteBatchRendererComponent> (fun _ rendererComp ->
+                        rendererComp.Mesh.Positions.Set (rendererComp.Positions, rendererComp.SpriteCount)
+                        rendererComp.Mesh.LightLevels.Set (rendererComp.LightLevels, rendererComp.SpriteCount)
+                        rendererComp.Mesh.UvOffsets.Set (rendererComp.UvOffsets, rendererComp.SpriteCount)
                         rendererComp.SpriteCount <- 0
                     )
                 )

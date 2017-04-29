@@ -100,7 +100,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="RenderGroup.fs" />
     <Compile Include="Items.fs" />
     <Compile Include="Monsters.fs" />
     <Compile Include="Decorations.fs" />

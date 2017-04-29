@@ -7,16 +7,18 @@ open Foom.Ecs
 open Foom.Geometry
 
 [<Sealed>]
-type CameraComponent (projection) =
+type CameraComponent (projection : Matrix4x4) =
     inherit Component ()
 
     let mutable angle = Vector3 (0.f, 0.f, 0.f)
 
-    member val Projection : Matrix4x4 = projection with get, set
+    member val internal RenderCamera : RenderCamera option = None with get, set
 
     member val HeightOffset : single = 0.f with get, set
 
     member val HeightOffsetLerp : single = 0.f with get, set
+
+    member val Projection = projection with get, set
 
     member this.Angle
         with get () = angle

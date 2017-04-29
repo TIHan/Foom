@@ -12,11 +12,6 @@ type TextureKind =
 [<Sealed>]
 type Texture (kind: TextureKind) = 
 
-    let frameCount =
-        match kind with
-        | Single _ -> 1
-        | Multi xs -> xs.Length
-
     member val Kind = kind
 
     member val Buffer = Texture2DBuffer ()

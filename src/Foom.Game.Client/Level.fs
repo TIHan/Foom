@@ -32,7 +32,10 @@ let loadTexture path =
 
 let globalBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray * Vector4 ResizeArray> ()
 
-let levelMaterialCache = Dictionary<string, Texture> ()
+let StandardMeshShader = CreateShader "TextureMesh" 0 ShaderPass.Depth MeshInput
+let SkyMeshShader = CreateShader "TextureMesh" 1 ShaderPass.Stencil1 MeshInput
+
+let levelMaterialCache = Dictionary<string, Material<MeshInput>> ()
 
 let runGlobalBatch (em: EntityManager) =
     globalBatch
@@ -43,16 +46,20 @@ let runGlobalBatch (em: EntityManager) =
 
         let ent = em.Spawn ()
 
-        let group = if isSky then RenderGroup.Sky else RenderGroup.World
         let texture = 
             match levelMaterialCache.TryGetValue (texturePath) with
             | true, x -> x
             | _ ->
                 let texture = Texture (TextureKind.Single texturePath)
+                let shader = 
+                    if isSky then 
+                        SkyMeshShader 
+                    else 
+                        StandardMeshShader
+                let material = Material (shader, texture)
+                levelMaterialCache.[texturePath] <- material
 
-                levelMaterialCache.[texturePath] <- texture
-
-                texture
+                material
 
         let meshInfo : RendererSystem.MeshInfo =
             {
@@ -61,7 +68,7 @@ let runGlobalBatch (em: EntityManager) =
                 Color = color |> Seq.toArray
             }
 
-        em.Add (ent, RendererSystem.MeshRendererComponent (group, texture, meshInfo))
+        em.Add (ent, RendererSystem.MeshRendererComponent (0, texture, meshInfo))
     )
 
 open System.Linq
@@ -280,14 +287,14 @@ let updates openWad exportTextures am (clientWorld: ClientWorld) =
                             | true, x -> x
                             | _ ->
                                 let texture = Texture (TextureKind.Single texturePath)
+                                let material = Material (StandardMeshShader, texture)
+                                levelMaterialCache.[texturePath] <- material
 
-                                levelMaterialCache.[texturePath] <- texture
-
-                                texture
+                                material
 
                         let ent = em.Spawn ()
                         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(pos)))
-                        em.Add (ent, SpriteComponent (RenderGroup.World, texture, sector.lightLevel))
+                        em.Add (ent, SpriteComponent (0, texture.Texture, sector.lightLevel))
                     | _ -> ()
 
                 | _ -> ()
@@ -315,10 +322,8 @@ let updates openWad exportTextures am (clientWorld: ClientWorld) =
                     em.Add (cameraEnt, PlayerComponent ())
 
                     let skyEnt = em.Spawn ()
-                   // em.Add (skyEnt, CameraComponent (Matrix4x4.CreatePerspectiveFieldOfView (56.25f * 0.0174533f, ((16.f + 16.f * 0.25f) / 9.f), 16.f, 100000.f), LayerMask.Layer0, ClearFlags.None, 1))
-                   // em.Add (skyEnt, TransformComponent (Matrix4x4.CreateTranslation (position)))
-
-                    em.Add (skyEnt, SkyRendererComponent (RenderGroup.Sky, Texture (TextureKind.Single "milky2.jpg")))
+                    let texture = Texture (TextureKind.Single "milky2.jpg")
+                    em.Add (skyEnt, SkyRendererComponent texture)
 
                 | _ -> ()
             )

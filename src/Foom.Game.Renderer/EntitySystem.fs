@@ -33,44 +33,57 @@ type MeshInfo =
         Mesh (this.Position, this.Uv, color)
 
 [<AbstractClass>]
-type BaseMeshRendererComponent (group, texture, mesh, extraResource: GpuResource) =
-    inherit Component ()
+type BaseMaterial (shader, texture) =
 
-    member val Group = group
+    member val Shader = shader
 
     member val Texture = texture
 
-    member val Mesh = mesh
-
-    member val ExtraResource = extraResource
+[<Sealed>]
+type Material<'T when 'T :> MeshInput> (shader : Shader<'T>, texture) =
+    inherit BaseMaterial (shader :> BaseShader, texture)
 
 [<AbstractClass>]
-type MeshRendererComponent<'T when 'T :> GpuResource> (group, texture, mesh, extra : 'T) =
-    inherit BaseMeshRendererComponent (group, texture, mesh, extra)
+type BaseMeshRendererComponent (layer : int, material : BaseMaterial, mesh : BaseMesh) =
+    inherit Component ()
 
-    member val Extra = extra
+    member val Layer = layer
+
+    member val Material = material
+
+    member val BaseMesh = mesh
+
+[<AbstractClass>]
+type MeshRendererComponent<'T, 'U when 'T :> MeshInput and 'U :> Mesh<'T>> (group, material : Material<'T>, mesh : 'U) =
+    inherit BaseMeshRendererComponent (group, material, mesh)
+
+    member val Mesh = mesh
 
 [<Sealed>]
-type MeshRendererComponent (group, texture, meshInfo : MeshInfo) =
-    inherit BaseMeshRendererComponent (group, texture, meshInfo.ToMesh (), UnitResource ())
+type MeshRendererComponent (group, material, meshInfo : MeshInfo) =
+    inherit BaseMeshRendererComponent (group, material, meshInfo.ToMesh ())
 
-let create worldPipeline subPipelines (gl: IGL) fileReadAllText (am : AssetManager) : Behavior<float32 * float32> =
+let create (gl: IGL) fileReadAllText (am : AssetManager) : Behavior<float32 * float32> =
 
     // This should probably be on the camera itself :)
     let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
 
-    let renderer = Renderer.Create (gl, fileReadAllText, subPipelines, worldPipeline)
+    let renderer = Renderer.Create (gl, fileReadAllText)
 
     Behavior.merge
         [
+            Behavior.handleComponentAdded (fun ent (comp : CameraComponent) _ _ ->
+                comp.RenderCamera <- renderer.CreateCamera (Matrix4x4.Identity, comp.Projection) |> Some
+            )
+
             Behavior.handleComponentAdded (fun ent (comp : BaseMeshRendererComponent) _ _ ->
-                let group = comp.Group
-                let texture = comp.Texture
-                let mesh = comp.Mesh
+                let layer = comp.Layer
+                let material = comp.Material
+                let mesh = comp.BaseMesh
 
-                am.LoadTexture (texture)
+                am.LoadTexture (material.Texture)
 
-                renderer.TryAddMesh (group, texture.Buffer, mesh, comp.ExtraResource) |> ignore
+                renderer.AddMesh (layer, material.Shader, material.Texture.Buffer, mesh) |> ignore
             )
 
             Behavior.update (fun ((time, deltaTime): float32 * float32) em _ ->
@@ -96,11 +109,14 @@ let create worldPipeline subPipelines (gl: IGL) fileReadAllText (am : AssetManag
 
                     let invertedTransform = invertedTransform
 
-                    g_view <- invertedTransform
-                    g_projection <- projection
+                    match cameraComp.RenderCamera with
+                    | Some camera ->
+                        camera.View <- invertedTransform
+                        camera.Projection <- projection
+                    | _ -> ()
                 )
 
-                renderer.Draw time g_view g_projection
+                renderer.Draw time
 
                 gl.Swap ()
             )

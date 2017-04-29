@@ -18,6 +18,6 @@ module GibbedMarine =
 
         let ent = em.Spawn ()
         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(position)))
-        em.Add (ent, SpriteComponent (RenderGroup.World, texture, 255))
+        em.Add (ent, SpriteComponent (0, texture, 255))
         em.Add (ent, RigidBodyComponent(position, 1.f, 1.f))
         ent
