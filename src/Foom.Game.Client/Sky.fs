@@ -92,12 +92,12 @@ let skyVertices =
     vertices
     |> Array.rev
 
-type SkyInput (program: ShaderProgram) =
-    inherit MeshInput (program)
+type SkyInput (shaderInput) =
+    inherit MeshInput (shaderInput)
 
-    member val Model = program.CreateUniformMatrix4x4 ("uni_model")
+    member val Model = shaderInput.CreateUniformVar<Matrix4x4> ("uni_model")
 
-let shader = CreateShader "Sky" 2 ShaderPass.Stencil2 SkyInput
+let shader = CreateShader SkyInput 2 (CreateShaderPass (fun _ -> [ Stencil2 ]) "Sky")//CreateShader "Sky" 2 ShaderPass.Stencil2 SkyInput
 
 type Sky () =
     inherit Mesh<SkyInput> (skyVertices, [||], [||])

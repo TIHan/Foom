@@ -46,16 +46,16 @@ module SpriteHelpers =
             Vector2 (0.f, 0.f * -1.f)
         |]
 
-type SpriteBatchInput (program: ShaderProgram) =
-    inherit MeshInput (program)
+type SpriteBatchInput (shaderInput) =
+    inherit MeshInput (shaderInput)
 
-    member val Center = program.CreateVertexAttributeVector3 ("in_center")
+    member val Center = shaderInput.CreateVertexAttributeVar<Vector3Buffer> ("in_center")
 
-    member val Positions = program.CreateInstanceAttributeVector3 ("instance_position")
+    member val Positions = shaderInput.CreateInstanceAttributeVar<Vector3Buffer> ("instance_position")
 
-    member val LightLevels = program.CreateInstanceAttributeVector4 ("instance_lightLevel")
+    member val LightLevels = shaderInput.CreateInstanceAttributeVar<Vector4Buffer> ("instance_lightLevel")
 
-    member val UvOffsets = program.CreateInstanceAttributeVector4 ("instance_uvOffset")
+    member val UvOffsets = shaderInput.CreateInstanceAttributeVar<Vector4Buffer> ("instance_uvOffset")
 
 type SpriteBatch (lightLevel) =
     inherit Mesh<SpriteBatchInput> (vertices, uv, createSpriteColor lightLevel)
@@ -100,7 +100,7 @@ type SpriteComponent (layer : int, texture: Texture, lightLevel: int) =
 
 module Sprite =
 
-    let shader = CreateShader "Sprite" 0 ShaderPass.Depth SpriteBatchInput
+    let shader = CreateShader SpriteBatchInput 0 (CreateShaderPass (fun _ -> []) "Sprite")
 
     let update (am: AssetManager) : Behavior<float32 * float32> =
         let lookup = Dictionary<int * Texture, Entity * SpriteBatchRendererComponent> ()

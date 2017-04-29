@@ -32,8 +32,8 @@ let loadTexture path =
 
 let globalBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray * Vector4 ResizeArray> ()
 
-let StandardMeshShader = CreateShader "TextureMesh" 0 ShaderPass.Depth MeshInput
-let SkyMeshShader = CreateShader "TextureMesh" 1 ShaderPass.Stencil1 MeshInput
+let StandardMeshShader = CreateShader MeshInput 0 (CreateShaderPass (fun _ -> []) "TextureMesh")//CreateShader "TextureMesh" 0 ShaderPass.Depth MeshInput
+let SkyMeshShader = CreateShader MeshInput 1 (CreateShaderPass (fun _ -> [ Stencil1 ]) "TextureMesh")//CreateShader "TextureMesh" 1 ShaderPass.Stencil1 MeshInput
 
 let levelMaterialCache = Dictionary<string, Material<MeshInput>> ()
 

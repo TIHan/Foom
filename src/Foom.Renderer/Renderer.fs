@@ -48,6 +48,8 @@ type ShaderInput () =
 
     let programVars = ResizeArray ()
 
+    member val ProgramVars = programVars
+
     member this.CreateVar<'T> (defaultValue) = ShaderVar (defaultValue)
 
     member this.CreateUniformVar<'T> name =
@@ -55,10 +57,11 @@ type ShaderInput () =
 
         let f : ShaderProgram -> IDisposable =
             fun program ->
-                let input = program.CreateVertexAttribute<'T> name
+                let input = program.CreateUniform<'T> name
                 let subscription = var.Val.Subscribe input.Set
 
                 input.Set Unchecked.defaultof<'T>
+                input.IsDirty <- false
 
                 subscription
 
@@ -71,11 +74,10 @@ type ShaderInput () =
 
         let f : ShaderProgram -> IDisposable =
             fun program ->
-                let input = program.CreateUniform<'T> name
+                let input = program.CreateVertexAttribute<'T> name
                 let subscription = var.Val.Subscribe input.Set
 
                 input.Set Unchecked.defaultof<'T>
-                input.IsDirty <- false
 
                 subscription
 
@@ -105,43 +107,23 @@ type ShaderInput () =
 // *****************************************
 // *****************************************
 
-type MeshInput (shaderProgram : ShaderProgram) =
-    
-    member val Position = shaderProgram.CreateVertexAttributeVector3 ("position")
-
-    member val Uv = shaderProgram.CreateVertexAttributeVector2 ("in_uv")
-
-    member val Color = shaderProgram.CreateVertexAttributeVector4 ("in_color")
-
-    member val Texture = shaderProgram.CreateUniformTexture2DVarying ("uni_texture")
-
-    member val View = shaderProgram.CreateUniformMatrix4x4 ("uni_view")
-
-    member val Projection = shaderProgram.CreateUniformMatrix4x4 ("uni_projection")
-
-    member val Time = shaderProgram.CreateUniformFloat ("uTime")
-
-    member val TextureResolution = shaderProgram.CreateUniformVector2 ("uTextureResolution")
-
-type MeshInput2 (shaderInput : ShaderInput) =
+type MeshInput (shaderInput : ShaderInput) =
 
     member val Position = shaderInput.CreateVertexAttributeVar<Vector3Buffer> ("position")
 
-    //member val Position = shaderProgram.CreateVertexAttributeVector3 ("position")
+    member val Uv = shaderInput.CreateVertexAttributeVar<Vector2Buffer> ("in_uv")
 
-    //member val Uv = shaderProgram.CreateVertexAttributeVector2 ("in_uv")
+    member val Color = shaderInput.CreateVertexAttributeVar<Vector4Buffer> ("in_color")
 
-    //member val Color = shaderProgram.CreateVertexAttributeVector4 ("in_color")
+    member val Texture = shaderInput.CreateUniformVar<Texture2DBuffer []> ("uni_texture")
 
-    //member val Texture = shaderProgram.CreateUniformTexture2DVarying ("uni_texture")
+    member val View = shaderInput.CreateUniformVar<Matrix4x4> ("uni_view")
 
-    //member val View = shaderProgram.CreateUniformMatrix4x4 ("uni_view")
+    member val Projection = shaderInput.CreateUniformVar<Matrix4x4> ("uni_projection")
 
-    //member val Projection = shaderProgram.CreateUniformMatrix4x4 ("uni_projection")
+    member val Time = shaderInput.CreateUniformVar<float32> ("uTime")
 
-    //member val Time = shaderProgram.CreateUniformFloat ("uTime")
-
-    //member val TextureResolution = shaderProgram.CreateUniformVector2 ("uTextureResolution")
+    member val TextureResolution = shaderInput.CreateUniformVar<Vector2> ("uTextureResolution")
 
 type ShaderPassProperty =
     | Stencil1
@@ -153,16 +135,19 @@ type BaseShaderPass (shaderProgramName : string) =
 
     member val ShaderProgramName = shaderProgramName
 
-    member val CreatePropertiesBase : unit -> ShaderPassProperty list = fun () -> [] with get, set
+    member val CreateProperties : MeshInput -> ShaderPassProperty list = fun _ -> [] with get, set
 
     member val Program = None with get, set
 
-type ShaderPass2<'T when 'T :> MeshInput2> (createProperties : 'T -> ShaderPassProperty list, shaderProgramName)  =
+    member val Properties : ShaderPassProperty list = [] with get, set
+
+type ShaderPass<'T when 'T :> MeshInput> (createProperties : 'T -> ShaderPassProperty list, shaderProgramName) as this =
     inherit BaseShaderPass (shaderProgramName)
 
-    member val CreateProperties = createProperties
+    do
+        this.CreateProperties <- fun input -> createProperties (input :?> 'T)
 
-type BaseShader2 (order : int, pass : BaseShaderPass, createInput : ShaderInput -> MeshInput2) =
+type BaseShader (order : int, pass : BaseShaderPass, createInput : ShaderInput -> MeshInput) =
 
     member val internal Id = -1 with get, set
 
@@ -170,55 +155,24 @@ type BaseShader2 (order : int, pass : BaseShaderPass, createInput : ShaderInput 
 
     member val Pass = pass
 
-    member val CreateInput = createInput
-
-    member val Input : MeshInput option = None with get, set
-(*
-CreateShaderPass
-    (fun input ->
-         
-        [
-            Stencil1
-        ]
-    )
-    "Sky"
-CreateShader 
-    [
-    ]
-*)
-
-[<RequireQualifiedAccess>]
-type ShaderPass =
-    | Depth
-    | Stencil1
-    | Stencil2
-
-[<AbstractClass>]
-type BaseShader (name : string, order : int, pass : ShaderPass, createInput : ShaderProgram -> MeshInput) =
-
-    member val internal Id = -1 with get, set
-
-    member val Name = name
-
-    member val Order = order
-
-    member val Pass = pass
+    member val ShaderInput = ShaderInput ()
 
     member val CreateInput = createInput
-
-    member val Program = None with get, set
 
     member val Input : MeshInput option = None with get, set
 
 [<Sealed>]
-type Shader<'T when 'T :> MeshInput> (name, order, pass, createInput : ShaderProgram -> 'T) =
-    inherit BaseShader (name, order, pass, fun program -> createInput program :> MeshInput)
+type Shader<'T when 'T :> MeshInput> (order, pass, createInput : ShaderInput -> 'T) =
+    inherit BaseShader (order, pass, fun shaderInput -> createInput shaderInput :> MeshInput)
 
 [<AutoOpen>]
 module Shader =
 
-    let CreateShader name order pass f = 
-        Shader<_> (name, order, pass, f)
+    let CreateShaderPass createProps shaderProgramName =
+        ShaderPass<_> (createProps, shaderProgramName)
+
+    let CreateShader f order pass = 
+        Shader<_> (order, pass, f)
 
 [<AbstractClass>]
 type BaseMesh () =
@@ -352,7 +306,7 @@ type RenderLayer (gl : IGL) =
 
     member this.AddMesh (shader : BaseShader, texBuf : Texture2DBuffer, mesh : BaseMesh) =
         let program, input =
-            match shader.Program, shader.Input with
+            match shader.Pass.Program, shader.Input with
             | Some program, Some input -> program, input
             | _ -> failwith "this shouldn't happen"
 
@@ -387,19 +341,21 @@ type RenderLayer (gl : IGL) =
         |> Seq.iter (fun pair ->
             let (shader, lookup) = pair.Value
 
-            let program : ShaderProgram = shader.Program.Value
+            let program : ShaderProgram = shader.Pass.Program.Value
             let input = shader.Input.Value
 
-            match shader.Pass with
-            | ShaderPass.Stencil1 ->
-                gl.EnableStencilTest ()
-                gl.DisableColorMask ()
-                gl.DisableDepthMask ()
-                gl.Stencil1 ()
-            | ShaderPass.Stencil2 ->
-                gl.EnableStencilTest ()
-                gl.Stencil2 ()
-            | _ -> ()
+            shader.Pass.Properties
+            |> List.iter (function
+                | Stencil1 ->
+                    gl.EnableStencilTest ()
+                    gl.DisableColorMask ()
+                    gl.DisableDepthMask ()
+                    gl.Stencil1 ()
+                | Stencil2 ->
+                    gl.EnableStencilTest ()
+                    gl.Stencil2 ()
+                | _ -> ()
+            )
 
             gl.UseProgram program.Id
 
@@ -427,14 +383,16 @@ type RenderLayer (gl : IGL) =
 
             gl.UseProgram 0
 
-            match shader.Pass with
-            | ShaderPass.Stencil1 ->
-                gl.EnableDepthMask ()
-                gl.EnableColorMask ()
-                gl.DisableStencilTest ()
-            | ShaderPass.Stencil2 ->
-                gl.DisableStencilTest ()
-            | _ -> ()
+            shader.Pass.Properties
+            |> List.iter (function
+                | Stencil1 ->
+                    gl.EnableDepthMask ()
+                    gl.EnableColorMask ()
+                    gl.DisableStencilTest ()
+                | Stencil2 ->
+                    gl.DisableStencilTest ()
+                | _ -> ()
+            )
         )
 
 // *****************************************
@@ -480,11 +438,16 @@ type Renderer =
         renderer
 
     member this.AddMesh (layer : int, shader : BaseShader, texBuf : Texture2DBuffer, mesh : BaseMesh) =
-        match shader.Program, shader.Input with
+        match shader.Pass.Program, shader.Input with
         | None, None ->
-            let program = this.programCache.GetProgram shader.Name
-            let input = shader.CreateInput program
-            shader.Program <- Some program
+            let program = this.programCache.GetProgram shader.Pass.ShaderProgramName
+            let input = shader.CreateInput shader.ShaderInput
+
+            shader.ShaderInput.ProgramVars
+            |> Seq.iter (fun f -> f program |> ignore)
+
+            shader.Pass.Properties <- shader.Pass.CreateProperties input
+            shader.Pass.Program <- Some program
             shader.Input <- Some input
             shader.Id <- this.nextShaderId
             this.nextShaderId <- this.nextShaderId + 1

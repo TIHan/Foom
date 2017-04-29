@@ -27,7 +27,7 @@ let init print (gl: IGL) (assetLoader: IAssetLoader) loadTextFile openWad export
     let clientWorld = ClientWorld.Create (clientSubworld, world.SpawnEntity ())
     let clientSystemUpdate = ClientSystem.create openWad exportTextures clientWorld am |> clientSubworld.AddBehavior
 
-    world.Publish (ClientSystem.LoadWadAndLevelRequested ("DOOM.WAD", "e1m1"))
+    world.Publish (ClientSystem.LoadWadAndLevelRequested ("DOOM1.WAD", "e1m1"))
 
     let willQuit = ref false
     let inputUpdate = world.AddBehavior (Player.preUpdate print willQuit input)
