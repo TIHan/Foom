@@ -85,16 +85,16 @@ type SpriteBatchRendererComponent (layer, material, lightLevel) =
     member val UvOffsets : Vector4 [] = Array.zeroCreate 100000
 
 [<Sealed>]
-type SpriteComponent (layer : int, texture: Texture, lightLevel: int) =
+type SpriteComponent (layer : int, texture : Texture, lightLevel: int) =
     inherit Component ()
 
     member val Layer = layer
 
-    member val Texture = texture
-
     member val Frame = 0 with get, set
 
     member val LightLevel = lightLevel with get, set
+
+    member val Texture = texture
 
     member val RendererComponent : SpriteBatchRendererComponent = Unchecked.defaultof<SpriteBatchRendererComponent> with get, set
 
@@ -103,27 +103,25 @@ module Sprite =
     let shader = CreateShader SpriteBatchInput 0 (CreateShaderPass (fun _ -> []) "Sprite")
 
     let update (am: AssetManager) : Behavior<float32 * float32> =
-        let lookup = Dictionary<int * Texture, Entity * SpriteBatchRendererComponent> ()
+        let lookup = Dictionary<int * Texture, SpriteBatchRendererComponent> ()
 
         Behavior.merge
             [
                 Behavior.handleComponentAdded (fun ent (comp: SpriteComponent) _ em ->
-                    am.LoadTexture (comp.Texture)
-
-                    let _, rendererComp = 
+                    let rendererComp = 
                         let key = (comp.Layer, comp.Texture)
                         match lookup.TryGetValue (key) with
                         | true, x -> x
                         | _ ->
-                            let material = Material (shader, comp.Texture)
+                            let material = MaterialDescription (shader, comp.Texture)
                             let rendererComp = new SpriteBatchRendererComponent(comp.Layer, material, 255.f)
 
                             let rendererEnt = em.Spawn ()
                             em.Add (rendererEnt, rendererComp)
 
-                            lookup.[key] <- (rendererEnt, rendererComp)
+                            lookup.[key] <- rendererComp
 
-                            rendererEnt, rendererComp
+                            rendererComp
                         
                     comp.RendererComponent <- rendererComp
                 )
@@ -137,13 +135,16 @@ module Sprite =
                             rendererComp.Positions.[rendererComp.SpriteCount] <- transformComp.Position
                             rendererComp.LightLevels.[rendererComp.SpriteCount] <- Vector4 (c, c, c, 1.f)
 
-                            let frames = rendererComp.Material.Texture.Frames
-                            let frame = spriteComp.Frame
-                            let frame = 
-                                if frame >= frames.Length then 0
-                                else frame
+                            match rendererComp.Material with
+                            | Some material ->
+                                let frames = material.Texture.Frames
+                                let frame = spriteComp.Frame
+                                let frame = 
+                                    if frame >= frames.Length then 0
+                                    else frame
                                                  
-                            rendererComp.UvOffsets.[rendererComp.SpriteCount] <- frames.[frame]
+                                rendererComp.UvOffsets.[rendererComp.SpriteCount] <- frames.[frame]
+                            | _ -> ()
 
                             rendererComp.SpriteCount <- rendererComp.SpriteCount + 1
                     )

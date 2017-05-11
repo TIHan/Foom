@@ -39,16 +39,20 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
     <Reference Include="FSharp.Core">
-      <HintPath>..\..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>
+      <HintPath>..\..\packages\FSharp.Core.4.1.17\lib\net45\FSharp.Core.dll</HintPath>
     </Reference>
-    <Reference Include="Ferop">
-      <HintPath>..\..\packages\Ferop.1.0.0-beta90001\lib\portable-net45+monoandroid10+monotouch10+xamarinios10\Ferop.dll</HintPath>
+    <Reference Include="System.ValueTuple">
+      <HintPath>..\..\packages\System.ValueTuple.4.3.1\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Foom.Input\Foom.Input.fsproj">
       <Project>{6DC85453-16AF-4402-A4B4-373336106451}</Project>
       <Name>Foom.Input</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Ferop\src\Ferop\Ferop.fsproj">
+      <Project>{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}</Project>
+      <Name>Ferop</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -57,5 +61,4 @@
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(FSharpTargetsPath)" />
-  <Import Project="..\..\packages\Ferop.1.0.0-beta90001\build\Ferop.targets" Condition="Exists('..\..\packages\Ferop.1.0.0-beta90001\build\Ferop.targets')" />
 </Project>

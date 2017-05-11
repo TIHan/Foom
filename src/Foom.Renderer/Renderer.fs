@@ -165,15 +165,6 @@ type BaseShader (order : int, pass : BaseShaderPass, createInput : ShaderInput -
 type Shader<'T when 'T :> MeshInput> (order, pass, createInput : ShaderInput -> 'T) =
     inherit BaseShader (order, pass, fun shaderInput -> createInput shaderInput :> MeshInput)
 
-[<AutoOpen>]
-module Shader =
-
-    let CreateShaderPass createProps shaderProgramName =
-        ShaderPass<_> (createProps, shaderProgramName)
-
-    let CreateShader f order pass = 
-        Shader<_> (order, pass, f)
-
 [<AbstractClass>]
 type BaseMesh () =
 

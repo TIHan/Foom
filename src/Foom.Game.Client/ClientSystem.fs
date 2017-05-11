@@ -161,12 +161,15 @@ let create openWad exportTextures (clientWorld: ClientWorld) am =
             Level.updates openWad exportTextures am clientWorld
             @
             [
-               Player.fixedUpdate
-               SpriteAnimation.update
-               Sprite.update am
+                Player.fixedUpdate
 
-               addRigidBodyBehavior clientWorld
-               physicsSpriteBehavior clientWorld
-              // physicsUpdateBehavior clientWorld
+                addRigidBodyBehavior clientWorld
+                physicsSpriteBehavior clientWorld
+                // physicsUpdateBehavior clientWorld
+
+                RendererSystem.assetBehavior am (fun _ _ _ -> ())
+
+                SpriteAnimation.update
+                Sprite.update am
             ]
         )

@@ -1,6 +1,7 @@
 ﻿namespace Foom.Game.Assets
 
 open System.Numerics
+open System.Collections.Generic
 
 open Foom.Ecs
 open Foom.Renderer
@@ -18,12 +19,79 @@ type Texture (kind: TextureKind) =
 
     member val Frames : Vector4 [] = [||] with get, set
 
+type MeshInfo =
+    {
+        Position: Vector3 []
+        Uv: Vector2 []
+        Color: Vector4 []
+    }
+
+    member this.ToMesh () =
+        let color =
+            this.Color
+            |> Array.map (fun c ->
+                Vector4 (
+                    single c.X / 255.f,
+                    single c.Y / 255.f,
+                    single c.Z / 255.f,
+                    single c.W / 255.f)
+            )
+        Mesh (this.Position, this.Uv, color)
+
+[<AbstractClass>]
+type BaseMaterial (shader, texture) =
+
+    member val Shader = shader
+
+    member val Texture = texture
+
+[<Sealed>]
+type Material<'T when 'T :> MeshInput> (shader : Shader<'T>, texture) =
+    inherit BaseMaterial (shader :> BaseShader, texture)
+
+type IMaterialDescription =
+
+    abstract CreateMaterial : unit -> BaseMaterial
+
+[<ReferenceEquality>]
+type ShaderPassDescription<'T when 'T :> MeshInput> = ShaderPassDescription of createProperties : ('T -> ShaderPassProperty list) * shaderProgramName : string
+
+[<ReferenceEquality>]
+type ShaderDescription<'T when 'T :> MeshInput> = ShaderDescription of order : int * pass : ShaderPassDescription<'T> * createInput : (ShaderInput -> 'T)
+
+[<ReferenceEquality>]
+type MaterialDescription<'T when 'T :> MeshInput> = MaterialDescription of ShaderDescription<'T> * Texture with
+
+    interface IMaterialDescription with
+
+        member this.CreateMaterial () =
+            match this with
+            | MaterialDescription (shaderDesc, texture) ->
+                match shaderDesc with
+                | ShaderDescription (order, pass, createInput) ->
+                    match pass with
+                    | ShaderPassDescription (createProps, shaderProgramName) ->
+                        let shaderPass = ShaderPass (createProps, shaderProgramName)
+                        let shader = Shader (order, shaderPass, createInput)
+                        Material (shader, texture) :> BaseMaterial
+
+[<AutoOpen>]
+module RendererHelpers =
+
+    let CreateShaderPass createProps shaderProgramName =
+        ShaderPassDescription (createProps, shaderProgramName)
+
+    let CreateShader createInput order pass = 
+        ShaderDescription (order, pass, createInput)
+
 type IAssetLoader =
 
     abstract LoadTextureFile : assetPath: string -> TextureFile
 
 [<Sealed>]
 type AssetManager (assetLoader: IAssetLoader) =
+
+    let materialLookup = Dictionary<IMaterialDescription, BaseMaterial> ()
 
     member this.AssetLoader = assetLoader
 
@@ -62,3 +130,12 @@ type AssetManager (assetLoader: IAssetLoader) =
                     failwith "finish texture packing implementation"
                   
                 texture.Buffer.Set (textureFiles, maxWidth, maxHeight)
+
+    member this.GetMaterial materialDesc =
+        match materialLookup.TryGetValue (materialDesc) with
+        | true, material -> material
+        | _ ->
+            let material = materialDesc.CreateMaterial ()
+            this.LoadTexture material.Texture
+            materialLookup.Add (materialDesc, material)
+            material

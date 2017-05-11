@@ -35,7 +35,7 @@ let globalBatch = Dictionary<string, Vector3 ResizeArray * Vector2 ResizeArray *
 let StandardMeshShader = CreateShader MeshInput 0 (CreateShaderPass (fun _ -> []) "TextureMesh")//CreateShader "TextureMesh" 0 ShaderPass.Depth MeshInput
 let SkyMeshShader = CreateShader MeshInput 1 (CreateShaderPass (fun _ -> [ Stencil1 ]) "TextureMesh")//CreateShader "TextureMesh" 1 ShaderPass.Stencil1 MeshInput
 
-let levelMaterialCache = Dictionary<string, Material<MeshInput>> ()
+let levelMaterialCache = Dictionary<string, MaterialDescription<MeshInput>> ()
 
 let runGlobalBatch (em: EntityManager) =
     globalBatch
@@ -56,12 +56,12 @@ let runGlobalBatch (em: EntityManager) =
                         SkyMeshShader 
                     else 
                         StandardMeshShader
-                let material = Material (shader, texture)
+                let material = MaterialDescription (shader, texture)
                 levelMaterialCache.[texturePath] <- material
 
                 material
 
-        let meshInfo : RendererSystem.MeshInfo =
+        let meshInfo : MeshInfo =
             {
                 Position = vertices |> Seq.toArray
                 Uv = uv |> Seq.toArray
@@ -282,19 +282,21 @@ let updates openWad exportTextures am (clientWorld: ClientWorld) =
                         let pos = Vector3 (pos, single sector.floorHeight)
 
                         let texture = 
+                            let materialDesc =
+                                match levelMaterialCache.TryGetValue (texturePath) with
+                                | true, x -> x
+                                | _ ->
+                                    let texture = Texture (TextureKind.Single texturePath)
+                                    let material = MaterialDescription (StandardMeshShader, texture)
+                                    levelMaterialCache.[texturePath] <- material
 
-                            match levelMaterialCache.TryGetValue (texturePath) with
-                            | true, x -> x
-                            | _ ->
-                                let texture = Texture (TextureKind.Single texturePath)
-                                let material = Material (StandardMeshShader, texture)
-                                levelMaterialCache.[texturePath] <- material
-
-                                material
+                                    material
+                            match materialDesc with
+                            | MaterialDescription (_, texture) -> texture
 
                         let ent = em.Spawn ()
                         em.Add (ent, TransformComponent (Matrix4x4.CreateTranslation(pos)))
-                        em.Add (ent, SpriteComponent (0, texture.Texture, sector.lightLevel))
+                        em.Add (ent, SpriteComponent (0, texture, sector.lightLevel))
                     | _ -> ()
 
                 | _ -> ()

@@ -86,7 +86,10 @@
     <Reference Include="Xamarin.iOS" />
     <Reference Include="OpenTK-1.0" />
     <Reference Include="SkiaSharp">
-      <HintPath>..\..\packages\SkiaSharp.1.56.2\lib\XamariniOS\SkiaSharp.dll</HintPath>
+      <HintPath>..\..\packages\SkiaSharp.1.57.1\lib\XamariniOS\SkiaSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics.Vectors">
+      <HintPath>..\..\packages\System.Numerics.Vectors.4.3.0\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -184,7 +187,6 @@
     <Compile Include="ViewController.fs" />
     <Compile Include="AppDelegate.fs" />
     <Compile Include="Main.fs" />
-    <None Include="packages.config" />
     <BundleResource Include="..\Foom.Game.Renderer\Sky.frag">
       <Link>Resources\Sky.frag</Link>
     </BundleResource>
@@ -212,6 +214,9 @@
     <BundleResource Include="..\Foom.Game.Renderer\Fullscreen.vert">
       <Link>Resources\Fullscreen.vert</Link>
     </BundleResource>
+    <BundleResource Include="..\Foom.Game.Renderer\TextureMesh.vert">
+      <Link>Resources\TextureMesh.vert</Link>
+    </BundleResource>
     <BundleResource Include="..\..\build\DOOM1.WAD">
       <Link>Resources\DOOM1.WAD</Link>
     </BundleResource>
@@ -219,6 +224,7 @@
       <Link>Resources\milky2.jpg</Link>
     </BundleResource>
     <None Include="Entitlements.plist" />
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.FSharp.targets" />
 </Project>

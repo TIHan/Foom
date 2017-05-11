@@ -24,7 +24,7 @@
     <OutputPath>..\..\build\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DocumentationFile>..\..\build\Foom.XML</DocumentationFile>
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
@@ -35,7 +35,7 @@
     <OutputPath>..\..\build\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DocumentationFile>..\..\build\Foom.XML</DocumentationFile>
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
@@ -168,7 +168,7 @@
       <HintPath>..\..\packages\OpenTK.2.0.0\lib\net20\OpenTK.dll</HintPath>
     </Reference>
     <Reference Include="SkiaSharp">
-      <HintPath>..\..\packages\SkiaSharp.1.56.2\lib\net45\SkiaSharp.dll</HintPath>
+      <HintPath>..\..\packages\SkiaSharp.1.57.1\lib\net45\SkiaSharp.dll</HintPath>
     </Reference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
@@ -178,5 +178,5 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <Import Project="..\..\packages\SkiaSharp.1.56.2\build\net45\SkiaSharp.targets" Condition="Exists('..\..\packages\SkiaSharp.1.56.2\build\net45\SkiaSharp.targets')" />
+  <Import Project="..\..\packages\SkiaSharp.1.57.1\build\net45\SkiaSharp.targets" Condition="Exists('..\..\packages\SkiaSharp.1.57.1\build\net45\SkiaSharp.targets')" />
 </Project>

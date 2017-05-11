@@ -1,12 +1,11 @@
 ﻿namespace Ferop
 
 open System
+open System.IO
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 open System.Security
 open System.Reflection
-open Microsoft.Build.Framework
-open Microsoft.Build.Utilities
 open Mono.Cecil
 
 open Ferop
@@ -15,7 +14,6 @@ open Ferop.Core
 
 [<Serializable>]
 type internal Proxy () =
-    inherit MarshalByRefObject ()
 
     let hasAttribute (typ: Type) (typDef: TypeDefinition) =
         typDef.CustomAttributes
@@ -35,14 +33,16 @@ type internal Proxy () =
             |> Seq.exists (fun x -> x.AttributeType.FullName = typeof<FeropAttribute>.FullName))
         |> List.ofArray
 
-    member this.Execute (assemblyPath: string, references: string, targetDirectory: string) : unit = 
+    member this.Execute (assemblyPath: string, targetDirectory: string) : unit = 
         System.AppDomain.CurrentDomain.add_ReflectionOnlyAssemblyResolve (
             System.ResolveEventHandler (fun _ args ->
-                if (args.Name.Contains ("FSharp")) then
-                    Assembly.ReflectionOnlyLoad ("FSharp.Core, Version=4.4.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")
-                else
+                try
                     Assembly.ReflectionOnlyLoad (args.Name)
-            )
+                with
+                | _ ->
+                    let path = AssemblyName(args.Name).Name + ".dll"
+                    Assembly.ReflectionOnlyLoadFrom (Path.Combine (targetDirectory, path))
+            )            
         )
 
         let asmDef = AssemblyDefinition.ReadAssembly (assemblyPath)
@@ -179,18 +179,18 @@ type internal Proxy () =
         )
 
 
-        let load (x: string) = Assembly.ReflectionOnlyLoadFrom (x)
+        let load (x: string) = 
+            if String.IsNullOrWhiteSpace x |> not then
+                printfn "Loading assembly %s." x
+                Assembly.ReflectionOnlyLoadFrom (x)
+            else
+                null
         let asm = load (assemblyPath + "tmp")
 
-       // let refAsms =
-        references.Split(';')
-        |> Array.iter (fun x -> load x |> ignore)
-
-//        asm.GetReferencedAssemblies ()
-//        |> Array.filter (fun x -> not (refAsms |> Array.exists (fun y -> y.FullName = x.FullName)))
-//        |> Array.iter (fun x -> 
-//            try Assembly.ReflectionOnlyLoad x.FullName |> ignore
-//            with | _ -> ())
+        //asm.GetReferencedAssemblies ()
+        //|> Array.iter (fun x -> 
+            //try Assembly.ReflectionOnlyLoad x.FullName |> ignore
+            //with | _ -> ())
 
         let asmDef = AssemblyDefinition.ReadAssembly (assemblyPath + "tmp", ReaderParameters (ReadSymbols = true))  
 
@@ -259,41 +259,9 @@ type internal Proxy () =
 
             compileModule targetDirectory modul platform cgen)
 
-[<Serializable>]
-type public WeavingTask () =
-    inherit Task ()
+module Ferop =
 
-    [<Required>]
-    member val AssemblyPath : string = "" with get, set
-
-    [<Required>]
-    member val ProjectDirectory : string = "" with get, set
-
-    [<Required>]
-    member val TargetDirectory : string = "" with get, set
-
-    member val References : string = "" with get, set
-
-    override this.Execute () : bool =  
-        let currentAsm = Assembly.GetExecutingAssembly ()
-
-        let domaininfo = AppDomainSetup ()
-        domaininfo.ApplicationBase <- System.Environment.CurrentDirectory
-        let evidence = AppDomain.CurrentDomain.Evidence;
-        let appDomain = AppDomain.CreateDomain ("Ferop", evidence, domaininfo)
-
-        try
-            try
-                this.Log.LogMessage ("AppDomain Created.")
-                let proxy : Proxy = appDomain.CreateInstanceFromAndUnwrap (currentAsm.Location, typeof<Proxy>.FullName) :?> Proxy
-                this.Log.LogMessage ("Executing...")
-                proxy.Execute (this.AssemblyPath, this.References, this.TargetDirectory)
-                this.Log.LogMessage ("Done.")
-            with | ex ->
-                this.Log.LogMessage (ex.Message)
-                this.Log.LogMessage (ex.StackTrace)
-                raise ex
-        finally
-            AppDomain.Unload appDomain
-            this.Log.LogMessage ("AppDomain Unloaded.")            
+    let run (assemblyPath : string) : bool =  
+        let proxy = new Proxy ()
+        proxy.Execute (assemblyPath, (System.IO.Path.Combine (System.Environment.CurrentDirectory, System.IO.Path.GetDirectoryName assemblyPath)))
         true

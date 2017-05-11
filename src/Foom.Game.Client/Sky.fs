@@ -4,6 +4,7 @@ open System.Numerics
 
 open Foom.Renderer
 open Foom.Renderer.RendererSystem
+open Foom.Game.Assets
 
 let octahedron_vtx = 
     [|
@@ -110,4 +111,4 @@ type Sky () =
         input.Model.Set this.Model
 
 type SkyRendererComponent (texture) =
-    inherit MeshRendererComponent<SkyInput, Sky> (0, Material (shader, texture), Sky ())
+    inherit MeshRendererComponent<SkyInput, Sky> (0, MaterialDescription (shader, texture), Sky ())
