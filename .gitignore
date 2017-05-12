@@ -51,3 +51,4 @@ TestResults
 \bin
 \obj
 build
+.paket/paket.exe
