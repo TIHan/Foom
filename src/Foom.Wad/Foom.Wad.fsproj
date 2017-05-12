@@ -88,6 +88,6 @@
     <Compile Include="UnpickleWad.fs" />
     <Compile Include="Wad.fsi" />
     <Compile Include="Wad.fs" />
-    <Content Include="packages.config" />
+    <Content Include="paket.references" />
   </ItemGroup>
 </Project>

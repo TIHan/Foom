@@ -3,6 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{C0003D17-D6C0-447A-A250-96697CB4DBD9}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\paket.dependencies = ..\..\paket.dependencies
+	EndProjectSection
+EndProject
 Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Tests.PCL", "src\Foom.Tests.PCL\Foom.Tests.PCL.fsproj", "{FC68760A-CBBD-43B7-AE3E-7C0E527B6FDC}"
 EndProject
 Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "FeropiOS.Tests", "src\FeropiOS.Tests\FeropiOS.Tests.fsproj", "{97964A8D-EA1E-4CD7-8B48-A7F6CDD074BD}"

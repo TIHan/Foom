@@ -38,7 +38,7 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="Test.fs" />
-    <None Include="packages.config" />
+    <None Include="paket.references" />
     <Content Include="App.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

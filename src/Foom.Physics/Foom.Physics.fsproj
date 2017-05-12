@@ -68,6 +68,6 @@
     <Compile Include="PhysicsEngine.fsi" />
     <Compile Include="PhysicsEngine.fs" />
     <Compile Include="PhysicsEngineComponent.fs" />
-    <Content Include="packages.config" />
+    <Content Include="paket.references" />
   </ItemGroup>
 </Project>

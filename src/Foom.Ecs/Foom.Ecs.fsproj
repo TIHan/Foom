@@ -52,7 +52,7 @@
     <Compile Include="Behavior.fs" />
     <Compile Include="World.fsi" />
     <Compile Include="World.fs" />
-    <None Include="packages.config" />
+    <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.ValueTuple">

@@ -53,6 +53,6 @@
     <Compile Include="Mathf.fs" />
     <Compile Include="Math.fs" />
     <Compile Include="Vec2.fs" />
-    <Content Include="packages.config" />
+    <Content Include="paket.references" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,8 @@
+FSharp.Core
+System.Collections
+System.Globalization
+System.Numerics.Vectors
+System.Resources.ResourceManager
+System.Runtime
+System.Runtime.Extensions
+System.ValueTuple

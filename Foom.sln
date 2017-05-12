@@ -3,6 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{3D3330CA-D4E4-4B52-A1A0-2DE435C22A4A}"
+	ProjectSection(SolutionItems) = preProject
+		paket.dependencies = paket.dependencies
+	EndProjectSection
+EndProject
 Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Wad", "src\Foom.Wad\Foom.Wad.fsproj", "{13CAB67A-5A00-401D-8CE2-032FFEA5FECE}"
 EndProject
 Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Pickler", "src\Foom.Pickler\Foom.Pickler.fsproj", "{4FC2B7B5-28CA-4322-84AB-49DDAD9613FC}"

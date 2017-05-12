@@ -69,6 +69,6 @@
     <Compile Include="EarClipping.fsi" />
     <Compile Include="EarClipping.fs" />
     <Compile Include="SpatialHash2D.fs" />
-    <Content Include="packages.config" />
+    <Content Include="paket.references" />
   </ItemGroup>
 </Project>

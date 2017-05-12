@@ -39,7 +39,7 @@
     <Compile Include="Core.fs" />
     <Compile Include="Pickle.fs" />
     <Compile Include="Unpickle.fs" />
-    <None Include="packages.config" />
+    <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.ValueTuple">
