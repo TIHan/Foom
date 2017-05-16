@@ -26,6 +26,7 @@
     <MtouchTlsProvider>Default</MtouchTlsProvider>
     <PlatformTarget></PlatformTarget>
     <DeviceSpecificBuild>false</DeviceSpecificBuild>
+    <MtouchProfiling>true</MtouchProfiling>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|iPhone' ">
     <DebugType>pdbonly</DebugType>

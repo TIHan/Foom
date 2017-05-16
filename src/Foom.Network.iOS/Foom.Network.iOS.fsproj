@@ -30,6 +30,7 @@
     </MtouchHttpClientHandler>
     <MtouchTlsProvider>
     </MtouchTlsProvider>
+    <MtouchProfiling>true</MtouchProfiling>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
