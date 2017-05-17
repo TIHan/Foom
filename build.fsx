@@ -7,5 +7,9 @@ Target "Default" (fun _ ->
     trace "Hello World from FAKE"
 )
 
+Target "CustomTarget" (fun _ ->
+    trace "BEEF"
+)
+
 // start build
 RunTargetOrDefault "Default"
