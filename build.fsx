@@ -1,15 +1,18 @@
-// include Fake lib
 #r @"packages/FAKE/tools/FakeLib.dll"
+#r @"build/Ferop.dll"
+#r @"build/Ferop.Core.dll"
 open Fake
+open Ferop
 
-// Default target
 Target "Default" (fun _ ->
-    trace "Hello World from FAKE"
+    Ferop.run "build/Foom.Renderer.Desktop.dll" |> ignore
+    Ferop.run "build/Foom.Input.Desktop.dll" |> ignore
 )
 
-Target "CustomTarget" (fun _ ->
-    trace "BEEF"
+Target "Ferop" (fun _ ->
+    !! "src/Ferop/src/Ferop.Core/Ferop.Core.fsproj"
+    |> MSBuildDebug "build" "Build"
+    |> Log "FeropBuild-Output: "
 )
 
-// start build
 RunTargetOrDefault "Default"
