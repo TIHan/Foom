@@ -12,7 +12,7 @@ open Foom.Game.Sprite
 
 module ShotgunGuy =
 
-    let texture = Texture (TextureKind.Multi [ "SPOSA1.png"; "SPOSB1.png" ])
+    let texture = TextureKind.Multi [ "SPOSA1.png"; "SPOSB1.png" ]
 
     let spawn position (em: EntityManager) =
 

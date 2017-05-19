@@ -6,14 +6,13 @@ open System.Collections.Generic
 open Foom.Ecs
 open Foom.Renderer
 
+[<ReferenceEquality>]
 type TextureKind =
     | Single of assetPath: string
     | Multi of assetPaths: string list
 
 [<Sealed>]
-type Texture (kind: TextureKind) = 
-
-    member val Kind = kind
+type Texture () = 
 
     member val Buffer = Texture2DBuffer ()
 
@@ -39,7 +38,7 @@ type MeshInfo =
         Mesh (this.Position, this.Uv, color)
 
 [<AbstractClass>]
-type BaseMaterial (shader, texture) =
+type BaseMaterial (shader : BaseShader, texture : Texture) =
 
     member val Shader = shader
 
@@ -49,9 +48,10 @@ type BaseMaterial (shader, texture) =
 type Material<'T when 'T :> MeshInput> (shader : Shader<'T>, texture) =
     inherit BaseMaterial (shader :> BaseShader, texture)
 
-type IMaterialDescription =
+[<AbstractClass>]
+type MaterialDescription () =
 
-    abstract CreateMaterial : unit -> BaseMaterial
+    abstract CreateMaterial : (TextureKind -> Texture) -> BaseMaterial
 
 [<ReferenceEquality>]
 type ShaderPassDescription<'T when 'T :> MeshInput> = ShaderPassDescription of createProperties : ('T -> ShaderPassProperty list) * shaderProgramName : string
@@ -59,21 +59,22 @@ type ShaderPassDescription<'T when 'T :> MeshInput> = ShaderPassDescription of c
 [<ReferenceEquality>]
 type ShaderDescription<'T when 'T :> MeshInput> = ShaderDescription of order : int * pass : ShaderPassDescription<'T> * createInput : (ShaderInput -> 'T)
 
-[<ReferenceEquality>]
-type MaterialDescription<'T when 'T :> MeshInput> = MaterialDescription of ShaderDescription<'T> * Texture with
+[<Sealed>]
+type MaterialDescription<'T when 'T :> MeshInput> (shaderDesc : ShaderDescription<'T>, textureKind : TextureKind) =
+    inherit MaterialDescription ()
 
-    interface IMaterialDescription with
+    member this.ShaderDescription = shaderDesc
 
-        member this.CreateMaterial () =
-            match this with
-            | MaterialDescription (shaderDesc, texture) ->
-                match shaderDesc with
-                | ShaderDescription (order, pass, createInput) ->
-                    match pass with
-                    | ShaderPassDescription (createProps, shaderProgramName) ->
-                        let shaderPass = ShaderPass (createProps, shaderProgramName)
-                        let shader = Shader (order, shaderPass, createInput)
-                        Material (shader, texture) :> BaseMaterial
+    member this.TextureKind = textureKind
+
+    override this.CreateMaterial loadTexture =
+        match shaderDesc with
+        | ShaderDescription (order, pass, createInput) ->
+            match pass with
+            | ShaderPassDescription (createProps, shaderProgramName) ->
+                let shaderPass = ShaderPass (createProps, shaderProgramName)
+                let shader = Shader (order, shaderPass, createInput)
+                Material (shader, loadTexture textureKind) :> BaseMaterial
 
 [<AutoOpen>]
 module RendererHelpers =
@@ -91,14 +92,23 @@ type IAssetLoader =
 [<Sealed>]
 type AssetManager (assetLoader: IAssetLoader) =
 
-    let materialLookup = Dictionary<IMaterialDescription, BaseMaterial> ()
+    let materialLookup = Dictionary<MaterialDescription, BaseMaterial> ()
+    let textureKindCache = Dictionary<TextureKind, Texture> ()
 
     member this.AssetLoader = assetLoader
 
-    member this.LoadTexture (texture: Texture) =
+    member this.LoadTexture (textureKind: TextureKind) =
+        let texture =
+            match textureKindCache.TryGetValue textureKind with
+            | true, texture -> texture
+            | _ -> 
+                let texture = Texture ()
+                textureKindCache.Add (textureKind, texture)
+                texture
+
         if not texture.Buffer.HasData then
 
-            match texture.Kind with
+            match textureKind with
             | Single assetPath ->
 
                 let textureFile = assetLoader.LoadTextureFile assetPath
@@ -113,7 +123,7 @@ type AssetManager (assetLoader: IAssetLoader) =
 
                 let maxWidth = 1024
                 let maxHeight = 1024
-               
+                
                 let mutable xOffset = 0
 
                 let frames = Array.zeroCreate textureFiles.Length
@@ -128,14 +138,15 @@ type AssetManager (assetLoader: IAssetLoader) =
 
                 if xOffset > 1024 then
                     failwith "finish texture packing implementation"
-                  
+                    
                 texture.Buffer.Set (textureFiles, maxWidth, maxHeight)
+
+        texture
 
     member this.GetMaterial materialDesc =
         match materialLookup.TryGetValue (materialDesc) with
         | true, material -> material
         | _ ->
-            let material = materialDesc.CreateMaterial ()
-            this.LoadTexture material.Texture
+            let material = materialDesc.CreateMaterial this.LoadTexture
             materialLookup.Add (materialDesc, material)
             material

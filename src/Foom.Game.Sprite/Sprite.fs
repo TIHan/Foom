@@ -85,7 +85,7 @@ type SpriteBatchRendererComponent (layer, material, lightLevel) =
     member val UvOffsets : Vector4 [] = Array.zeroCreate 100000
 
 [<Sealed>]
-type SpriteComponent (layer : int, texture : Texture, lightLevel: int) =
+type SpriteComponent (layer : int, textureKind : TextureKind, lightLevel: int) =
     inherit Component ()
 
     member val Layer = layer
@@ -94,7 +94,7 @@ type SpriteComponent (layer : int, texture : Texture, lightLevel: int) =
 
     member val LightLevel = lightLevel with get, set
 
-    member val Texture = texture
+    member val TextureKind = textureKind
 
     member val RendererComponent : SpriteBatchRendererComponent = Unchecked.defaultof<SpriteBatchRendererComponent> with get, set
 
@@ -103,17 +103,17 @@ module Sprite =
     let shader = CreateShader SpriteBatchInput 0 (CreateShaderPass (fun _ -> []) "Sprite")
 
     let update (am: AssetManager) : Behavior<float32 * float32> =
-        let lookup = Dictionary<int * Texture, SpriteBatchRendererComponent> ()
+        let lookup = Dictionary<int * TextureKind, SpriteBatchRendererComponent> ()
 
         Behavior.merge
             [
                 Behavior.handleComponentAdded (fun ent (comp: SpriteComponent) _ em ->
                     let rendererComp = 
-                        let key = (comp.Layer, comp.Texture)
+                        let key = (comp.Layer, comp.TextureKind)
                         match lookup.TryGetValue (key) with
                         | true, x -> x
                         | _ ->
-                            let material = MaterialDescription (shader, comp.Texture)
+                            let material = MaterialDescription<SpriteBatchInput> (shader, comp.TextureKind)
                             let rendererComp = new SpriteBatchRendererComponent(comp.Layer, material, 255.f)
 
                             let rendererEnt = em.Spawn ()

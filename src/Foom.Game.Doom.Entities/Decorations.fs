@@ -12,7 +12,7 @@ open Foom.Game.Sprite
 
 module GibbedMarine =
 
-    let texture = Texture (TextureKind.Single "PLAYW0.png")
+    let texture = TextureKind.Single "PLAYW0.png"
 
     let spawn position (em: EntityManager) =
 

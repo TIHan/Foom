@@ -14,7 +14,7 @@ open Foom.Game.Assets
 open Foom.Game.Core
 
 [<AbstractClass>]
-type BaseMeshRendererComponent (layer : int, materialDesc : IMaterialDescription, mesh : BaseMesh) =
+type BaseMeshRendererComponent (layer : int, materialDesc : MaterialDescription, mesh : BaseMesh) =
     inherit Component ()
 
     member val Layer = layer
@@ -66,8 +66,6 @@ let create (gl: IGL) fileReadAllText (am : AssetManager) : Behavior<float32 * fl
     let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
 
     let renderer = Renderer.Create (gl, fileReadAllText)
-
-    let materialLookup = Dictionary<IMaterialDescription, BaseMaterial> ()
 
     Behavior.merge
         [

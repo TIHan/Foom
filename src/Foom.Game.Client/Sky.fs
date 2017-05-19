@@ -110,5 +110,5 @@ type Sky () =
 
         input.Model.Set this.Model
 
-type SkyRendererComponent (texture) =
-    inherit MeshRendererComponent<SkyInput, Sky> (0, MaterialDescription (shader, texture), Sky ())
+type SkyRendererComponent (textureKind : TextureKind) =
+    inherit MeshRendererComponent<SkyInput, Sky> (0, MaterialDescription<SkyInput> (shader, textureKind), Sky ())
