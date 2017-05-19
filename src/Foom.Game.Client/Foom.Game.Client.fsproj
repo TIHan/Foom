@@ -93,11 +93,12 @@
       <Project>{C18C5AB4-4C69-4EA0-AE74-FEFBBD945C05}</Project>
       <Name>Foom.Collections</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Game.Doom.Entities\Foom.Game.Doom.Entities.fsproj">
+      <Project>{CF95D6F5-5C58-4581-BBE2-436728979686}</Project>
+      <Name>Foom.Game.Doom.Entities</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Items.fs" />
-    <Compile Include="Monsters.fs" />
-    <Compile Include="Decorations.fs" />
     <Compile Include="ClientWorld.fs" />
     <Compile Include="Player.fs" />
     <Compile Include="Sky.fs" />

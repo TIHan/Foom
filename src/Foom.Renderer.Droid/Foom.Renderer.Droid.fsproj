@@ -54,9 +54,6 @@
     <Reference Include="mscorlib" />
     <Reference Include="Mono.Android" />
     <Reference Include="OpenTK-1.0" />
-    <Reference Include="System.Numerics.Vectors">
-      <HintPath>..\..\packages\System.Numerics.Vectors\lib\portable-net45+win8+wp8+wpa81\System.Numerics.Vectors.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\AboutResources.txt" />
