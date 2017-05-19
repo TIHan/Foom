@@ -167,7 +167,7 @@ let create openWad exportTextures (clientWorld: ClientWorld) am =
                 physicsSpriteBehavior clientWorld
                 // physicsUpdateBehavior clientWorld
 
-                RendererSystem.assetBehavior am (fun _ _ _ -> ())
+                RendererSystem.assetBehavior am
 
                 SpriteAnimation.update
                 Sprite.update am

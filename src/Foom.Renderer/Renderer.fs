@@ -428,7 +428,7 @@ type Renderer =
 
         renderer
 
-    member this.AddMesh (layer : int, shader : BaseShader, texBuf : Texture2DBuffer, mesh : BaseMesh) =
+    member this.AddMesh (layer : int, shader : Shader<'T>, texBuf : Texture2DBuffer, mesh : Mesh<'T>) =
         match shader.Pass.Program, shader.Input with
         | None, None ->
             let program = this.programCache.GetProgram shader.Pass.ShaderProgramName

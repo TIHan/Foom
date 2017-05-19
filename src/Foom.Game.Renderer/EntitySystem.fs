@@ -25,35 +25,39 @@ type BaseMeshRendererComponent (layer : int, materialDesc : IMaterialDescription
 
     member val Material = None with get, set
 
+    member this.LoadMaterial (am : AssetManager) =
+        match this.Material with
+        | None ->
+            let material = am.GetMaterial materialDesc
+            this.Material <- Some material
+        | _ -> ()
+
+    abstract member AddMesh : Renderer -> unit
+
 [<AbstractClass>]
-type MeshRendererComponent<'T, 'U when 'T :> MeshInput and 'U :> Mesh<'T>> (group, material : MaterialDescription<'T>, mesh : 'U) =
-    inherit BaseMeshRendererComponent (group, material, mesh)
+type MeshRendererComponent<'T, 'U when 'T :> MeshInput and 'U :> Mesh<'T>> (layer, materialDesc : MaterialDescription<'T>, mesh : 'U) =
+    inherit BaseMeshRendererComponent (layer, materialDesc, mesh)
 
     member val Mesh = mesh
 
+    override this.AddMesh renderer =
+        match this.Material with
+        | Some material ->
+            renderer.AddMesh (layer, material.Shader :?> Shader<'T>, material.Texture.Buffer, mesh) |> ignore
+        | _ -> ()
+
 [<Sealed>]
 type MeshRendererComponent (group, material : MaterialDescription<MeshInput>, meshInfo : MeshInfo) =
-    inherit BaseMeshRendererComponent (group, material, meshInfo.ToMesh ())
+    inherit MeshRendererComponent<MeshInput, Mesh<MeshInput>> (group, material, meshInfo.ToMesh ())
 
-let assetBehavior (am : AssetManager) f =
+let assetBehavior (am : AssetManager) =
     Behavior.handleComponentAdded (fun ent (comp : BaseMeshRendererComponent) _ _ ->
-        let layer = comp.Layer
-        let mesh = comp.BaseMesh
-
-        let material =
-            match comp.Material with
-            | None ->
-                let material = am.GetMaterial comp.MaterialDescription
-                comp.Material <- Some material
-                material
-            | Some material -> material
-
-        f layer material mesh
+        comp.LoadMaterial am
     )
 
-let private assetRenderBehavior (am : AssetManager) (renderer : Renderer) =
-    assetBehavior am (fun layer material mesh ->
-        renderer.AddMesh (layer, material.Shader, material.Texture.Buffer, mesh) |> ignore
+let assetRenderBehavior (renderer : Renderer) =
+    Behavior.handleComponentAdded (fun ent (comp : BaseMeshRendererComponent) _ _ ->
+        comp.AddMesh (renderer)
     )
 
 let create (gl: IGL) fileReadAllText (am : AssetManager) : Behavior<float32 * float32> =
@@ -67,7 +71,8 @@ let create (gl: IGL) fileReadAllText (am : AssetManager) : Behavior<float32 * fl
 
     Behavior.merge
         [
-            assetRenderBehavior am renderer
+            assetBehavior am
+            assetRenderBehavior renderer
 
             Behavior.handleComponentAdded (fun ent (comp : CameraComponent) _ _ ->
                 comp.RenderCamera <- renderer.CreateCamera (Matrix4x4.Identity, comp.Projection) |> Some
