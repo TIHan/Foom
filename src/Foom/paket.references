@@ -3,3 +3,4 @@ OpenTK.GLControl
 SkiaSharp
 System.Collections.Immutable
 System.Numerics.Vectors
+FSharp.Core

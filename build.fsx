@@ -4,15 +4,17 @@
 open Fake
 open Ferop
 
-Target "Default" (fun _ ->
-    Ferop.run "build/Foom.Renderer.Desktop.dll" |> ignore
-    Ferop.run "build/Foom.Input.Desktop.dll" |> ignore
+Target "DesktopDebug" (fun _ ->
+    MSBuildDebug "build" "Build" [ "src/Foom/Foom.fsproj" ] |> ignore
 )
 
 Target "Ferop" (fun _ ->
     !! "src/Ferop/src/Ferop.Core/Ferop.Core.fsproj"
     |> MSBuildDebug "build" "Build"
     |> Log "FeropBuild-Output: "
+
+    Ferop.run "build/Foom.Renderer.Desktop.dll" |> ignore
+    Ferop.run "build/Foom.Input.Desktop.dll" |> ignore
 )
 
-RunTargetOrDefault "Default"
+RunTargetOrDefault "DesktopDebug"
