@@ -66,6 +66,34 @@ let ReliableOrderedAckReceiver (packetPool : PacketPool) (ackManager : AckManage
                     output packet
             ) }
 
+module NewPipeline =
+
+    open NewPipeline
+
+    let ReliableOrderedAckReceiver (packetPool : PacketPool) (ackManager : AckManager) ack =
+        let mutable nextSeqId = 0us
+
+        Filter<Packet, Packet> (fun packet packets ->
+
+            ackManager.ForEachPending (fun seqId copyPacket ->
+                if int nextSeqId = seqId then
+                    let packet = packetPool.Get ()
+                    copyPacket.CopyTo packet
+                    ackManager.Ack seqId
+                    ack nextSeqId
+                    nextSeqId <- nextSeqId + 1us
+                    packets.Add packet
+            )
+
+            if nextSeqId = packet.SequenceId then
+                packets.Add packet
+                ack nextSeqId
+                nextSeqId <- nextSeqId + 1us
+            else
+                ackManager.MarkCopy packet
+                packetPool.Recycle packet
+        )
+
 let ReliableAckReceiver (packetPool : PacketPool) ack =
 
     let queue = Queue<Packet> ()

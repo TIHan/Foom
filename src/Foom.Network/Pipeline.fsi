@@ -2,6 +2,39 @@
 
 open System
 
+module NewPipeline =
+
+    [<Sealed>]
+    type Filter<'Input, 'Output> =
+
+        new : ('Input -> ResizeArray<'Output> -> unit) -> Filter<'Input, 'Output>
+
+        member Send : 'Input -> unit
+
+        member Process : ('Output -> unit) -> unit
+       
+    [<Sealed>]
+    type PipelineBuilder<'Input, 'Output>
+
+    [<Sealed>]
+    type Pipeline<'Input, 'Output> =
+
+        member Send : 'Input -> unit
+
+        member Process : unit -> unit
+
+        member Output : IEvent<'Output>
+
+    val createPipeline : Filter<'Input, 'Output> -> PipelineBuilder<'Input, 'Output>
+
+    val addFilter : Filter<'Output, 'NewOutput> -> PipelineBuilder<'Input, 'Output> -> PipelineBuilder<'Input, 'NewOutput>
+
+    val sink : ('Output -> unit) -> (PipelineBuilder<'Input, 'Output>) -> PipelineBuilder<'Input, 'Output>
+
+    val build : PipelineBuilder<'Input, 'Output> -> Pipeline<'Input, 'Output>
+
+    val PacketMerger : PacketPool -> Filter<Packet, Packet>
+
 type ISource =
 
     abstract Send : byte [] * startIndex: int * size: int * (Packet -> unit) -> unit

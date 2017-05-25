@@ -372,7 +372,7 @@ type Test() =
 
         let mutable ackId = -1
 
-        let reliableOrderedReceiver = ReliableOrderedAckReceiver packetPool ackManager (fun i -> ackId <- int i)
+        let reliableOrderedReceiver = NewPipeline.ReliableOrderedAckReceiver packetPool ackManager (fun i -> ackId <- int i)
 
         Assert.AreEqual (-1, ackId)
 
@@ -436,5 +436,25 @@ type Test() =
         test 1024 1
         test 1025 2
 
+    [<Test>]
+    member this.NewPipeline () =
 
- 
+        let filter1 = NewPipeline.Filter (fun (x : int) xs -> xs.Add (double x))
+        let filter2 = NewPipeline.Filter (fun (x : double) xs -> xs.Add(string (x + 1.0)))
+        let filter3 = NewPipeline.Filter (fun (x : string) xs -> xs.Add(System.Int32.Parse x))
+
+        let x = 1
+        let mutable y = 0
+        let pipeline =
+            NewPipeline.createPipeline filter1
+            |> NewPipeline.addFilter filter2
+            |> NewPipeline.addFilter filter3
+            |> NewPipeline.sink (fun x -> 
+                y <- x
+            )
+            |> NewPipeline.build
+
+        pipeline.Send x
+        pipeline.Process ()
+
+        Assert.AreEqual (x + 1, y)
