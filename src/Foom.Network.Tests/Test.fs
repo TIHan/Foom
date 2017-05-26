@@ -478,8 +478,14 @@ type Test() =
             |> Seq.iter (fun data ->
                 if packets.Count = 0 then
                     let packet = packetPool.Get ()
-                    packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
-                    packets.Add packet
+                    if packet.LengthRemaining >= data.size then
+                        packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
+                        packets.Add packet
+                    else
+                        let count = (data.size / packet.LengthRemaining) - (if data.size % packet.LengthRemaining > 0 then -1 else 0)
+                        let mutable startIndex = data.startIndex
+                        failwith "yopac"
+                    
                 else
                     let packet = packets.[packets.Count - 1]
                     if packet.LengthRemaining >= data.size then
@@ -514,6 +520,7 @@ type Test() =
 
         packets
         |> Seq.iter packetPool.Recycle
+        packets.Clear ()
 
         for i = 1 to 100 do
             pipeline.Send data1
@@ -521,4 +528,14 @@ type Test() =
 
         pipeline.Process ()
 
-        Assert.AreEqual (packets.Count, 26)
+        Assert.AreEqual (packets.Count, 25)
+
+        packets
+        |> Seq.iter packetPool.Recycle
+        packets.Clear ()
+
+        let data3 = { bytes = Array.zeroCreate 12800; startIndex = 0; size = 12800 }
+
+        pipeline.Send data3
+
+        pipeline.Process ()

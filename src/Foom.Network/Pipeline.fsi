@@ -20,6 +20,8 @@ module NewPipeline =
 
     val createPipeline : Filter<'Input, 'Output> -> PipelineBuilder<'Input, 'Output>
 
+   // val addQueue : PipelineBuilder<'Input, 'Output> -> PipelineBuilder<'Input, 'Output seq>
+
     val addFilter : Filter<'Output, 'NewOutput> -> PipelineBuilder<'Input, 'Output> -> PipelineBuilder<'Input, 'NewOutput>
 
     val sink : ('Output -> unit) -> (PipelineBuilder<'Input, 'Output>) -> PipelineBuilder<'Input, 'Output>
