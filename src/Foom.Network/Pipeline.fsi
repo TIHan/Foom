@@ -4,15 +4,8 @@ open System
 
 module NewPipeline =
 
-    [<Sealed>]
-    type Filter<'Input, 'Output> =
+    type Filter<'Input, 'Output> = Filter of ('Input seq -> ('Output -> unit) -> unit)
 
-        new : ('Input -> ResizeArray<'Output> -> unit) -> Filter<'Input, 'Output>
-
-        member Send : 'Input -> unit
-
-        member Process : ('Output -> unit) -> unit
-       
     [<Sealed>]
     type PipelineBuilder<'Input, 'Output>
 
@@ -33,7 +26,7 @@ module NewPipeline =
 
     val build : PipelineBuilder<'Input, 'Output> -> Pipeline<'Input, 'Output>
 
-    val PacketMerger : PacketPool -> Filter<Packet, Packet>
+    val mapFilter : ('a -> 'b) -> Filter<'a, 'b>
 
 type ISource =
 

@@ -73,7 +73,18 @@ module NewPipeline =
     let ReliableOrderedAckReceiver (packetPool : PacketPool) (ackManager : AckManager) ack =
         let mutable nextSeqId = 0us
 
-        Filter<Packet, Packet> (fun packet packets ->
+        Filter (fun (packets : Packet seq) callback ->
+
+            packets
+            |> Seq.iter (fun packet ->
+                if nextSeqId = packet.SequenceId then
+                    callback packet
+                    ack nextSeqId
+                    nextSeqId <- nextSeqId + 1us
+                else
+                    ackManager.MarkCopy packet
+                    packetPool.Recycle packet
+            )
 
             ackManager.ForEachPending (fun seqId copyPacket ->
                 if int nextSeqId = seqId then
@@ -82,16 +93,8 @@ module NewPipeline =
                     ackManager.Ack seqId
                     ack nextSeqId
                     nextSeqId <- nextSeqId + 1us
-                    packets.Add packet
+                    callback packet
             )
-
-            if nextSeqId = packet.SequenceId then
-                packets.Add packet
-                ack nextSeqId
-                nextSeqId <- nextSeqId + 1us
-            else
-                ackManager.MarkCopy packet
-                packetPool.Recycle packet
         )
 
 let ReliableAckReceiver (packetPool : PacketPool) ack =
@@ -186,3 +189,6 @@ let reliableOrderedReceiver ack f =
         f packet
         packetPool.Recycle packet
     )
+
+[<Struct>]
+type Data = { bytes : byte []; startIndex : int; size : int }

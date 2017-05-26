@@ -107,6 +107,12 @@ type Packet () =
         byteWriter.WriteRawBytes (data, startIndex, size)
         byteStream.Position <- 0
 
+    member this.WriteRawBytes (data, startIndex, size) =
+        if byteStream.Position = 0 then
+            byteWriter.Write Unchecked.defaultof<PacketHeader>
+
+        byteWriter.WriteRawBytes (data, startIndex, size)
+
     member this.Merge (packet : Packet) =
         let originalPos = byteStream.Position
         byteStream.Position <- sizeof<PacketHeader>

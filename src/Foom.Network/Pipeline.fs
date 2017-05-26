@@ -5,43 +5,7 @@ open System.Collections.Generic
 
 module NewPipeline =
 
-    [<Sealed>]
-    type Filter<'Input, 'Output> (f : 'Input -> ResizeArray<'Output> -> unit) =
-
-        let outputs = ResizeArray ()
-
-        member this.Send (input : 'Input) =
-            f input outputs
-
-        member this.Process (f : 'Output -> unit) =
-            for i = 0 to outputs.Count - 1 do
-                let output = outputs.[i]
-                f output
-
-            outputs.Clear ()
-
-    let PacketMerger (packetPool : PacketPool) =
-        Filter (fun (packet : Packet) (packets : ResizeArray<Packet>) ->
-            if packets.Count > 0 then
-
-                let mutable done' = false
-                for i = 0 to packets.Count - 1 do
-                    let packet' = packets.[i]
-                    if packet'.LengthRemaining > packet.Length && not done' then
-                        packet'.Merge packet
-                        done' <- true
-
-                if not done' then
-                    let packet' = packetPool.Get ()
-                    packet.CopyTo packet'
-                    packets.Add packet'
-            else
-                let packet' = packetPool.Get ()
-                packet.CopyTo packet'
-                packets.Add packet'
-
-            packetPool.Recycle packet
-        )
+    type Filter<'Input, 'Output> = Filter of ('Input seq -> ('Output -> unit) -> unit)
 
     type PipelineContext<'T> () =
 
@@ -68,11 +32,18 @@ module NewPipeline =
 
     let createPipeline (filter : Filter<'Input, 'Output>) : PipelineBuilder<'Input, 'Output> =
         PipelineBuilder (fun context ->
-            context.Send <- filter.Send |> Some
+            let processFilter =
+                match filter with
+                | Filter x -> x
+
+            let inputs = ResizeArray ()
+
+            context.Send <- inputs.Add |> Some
 
             let evt = Event<'Output> ()
             context.ProcessActions.Add(fun () ->
-                filter.Process (evt.Trigger)
+                processFilter inputs evt.Trigger
+                inputs.Clear ()
             )
             context.OutputEvent <- (evt :> obj) |> Some
         )
@@ -82,15 +53,20 @@ module NewPipeline =
             match pipeline with
             | PipelineBuilder f -> f context
 
+            let processFilter =
+                match filter with
+                | Filter x -> x
+
             let evt = context.OutputEvent.Value :?> Event<'Output>
 
+            let inputs = ResizeArray ()
             context.SubscribeActions.Add(fun () ->
-                evt.Publish.Add (filter.Send)
+                evt.Publish.Add inputs.Add
             )
 
             let evt = Event<'NewOutput> ()
             context.ProcessActions.Add(fun () ->
-                filter.Process (evt.Trigger)
+                processFilter inputs evt.Trigger
             )
             context.OutputEvent <- (evt :> obj) |> Some
         )
@@ -117,6 +93,11 @@ module NewPipeline =
             |> Seq.iter (fun f ->
                 f ()
             )
+        )
+
+    let mapFilter f =
+        Filter (fun xs callback ->
+            xs |> Seq.iter (fun x -> callback (f x))
         )
 
 type ISource =

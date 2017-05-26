@@ -376,6 +376,7 @@ type Test() =
 
         Assert.AreEqual (-1, ackId)
 
+        let inputs = ResizeArray ()
         let test seqN =
 
             let packet = packetPool.Get ()
@@ -384,8 +385,12 @@ type Test() =
             packet.PacketType <- PacketType.ReliableOrdered
             packet.SequenceId <- seqN
 
-            reliableOrderedReceiver.Send packet
-            reliableOrderedReceiver.Process packetPool.Recycle
+            inputs.Add packet
+
+            match reliableOrderedReceiver with
+            | NewPipeline.Filter processFilter -> processFilter inputs packetPool.Recycle
+
+            inputs.Clear ()
 
         test 0us
         Assert.AreEqual (0us, ackId)
@@ -439,9 +444,9 @@ type Test() =
     [<Test>]
     member this.NewPipeline () =
 
-        let filter1 = NewPipeline.Filter (fun (x : int) xs -> xs.Add (double x))
-        let filter2 = NewPipeline.Filter (fun (x : double) xs -> xs.Add(string (x + 1.0)))
-        let filter3 = NewPipeline.Filter (fun (x : string) xs -> xs.Add(System.Int32.Parse x))
+        let filter1 = NewPipeline.mapFilter (fun (x : int) -> double x)
+        let filter2 = NewPipeline.mapFilter (fun (x : double) -> string (x + 1.0))
+        let filter3 = NewPipeline.mapFilter (fun (x : string) -> System.Int32.Parse x)
 
         let x = 1
         let mutable y = 0
@@ -458,3 +463,62 @@ type Test() =
         pipeline.Process ()
 
         Assert.AreEqual (x + 1, y)
+
+    [<Test>]
+    member this.DataPipelineTest () =
+
+        let data1 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128 }
+        let data2 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128 }
+
+        let packetPool = PacketPool 64
+
+        let packets = ResizeArray ()
+        let filter1 = NewPipeline.Filter (fun data callback ->
+            data
+            |> Seq.iter (fun data ->
+                if packets.Count = 0 then
+                    let packet = packetPool.Get ()
+                    packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
+                    packets.Add packet
+                else
+                    let packet = packets.[packets.Count - 1]
+                    if packet.LengthRemaining >= data.size then
+                        packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
+                    else
+                        let packet = packetPool.Get ()
+                        if packet.LengthRemaining >= data.size then
+                            packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
+                        else
+                            failwith "too big"
+
+                        packets.Add packet
+            )
+
+            packets |> Seq.iter callback
+            packets.Clear ()
+        )
+
+        let packets = ResizeArray ()
+
+        let pipeline =
+            NewPipeline.createPipeline filter1
+            |> NewPipeline.sink packets.Add
+            |> NewPipeline.build
+
+        pipeline.Send data1
+        pipeline.Send data2
+
+        pipeline.Process ()
+
+        Assert.AreEqual (packets.Count, 1)
+
+        packets
+        |> Seq.iter packetPool.Recycle
+
+        for i = 1 to 100 do
+            pipeline.Send data1
+            pipeline.Send data2
+
+        pipeline.Process ()
+
+        Assert.AreEqual (packets.Count, 26)
