@@ -358,6 +358,58 @@ type Test() =
 
         Assert.False (channel.HasPendingAcks)
 
+    [<Test>]
+    member x.TestNewReliableOrderedChannel () =
+        let packetPool = PacketPool 64
+        let channel = ReliableOrderedChannel packetPool
+
+        let byteStream = ByteStream 1024
+        let byteWriter = ByteWriter byteStream
+
+        byteWriter.WriteInt (1357)
+
+        let queue = Queue ()
+
+        for i = 0 to 100000 do
+            for i = 0 to 27 do
+                channel.SendData (byteStream.Raw, 0, byteStream.Length, fun packet ->
+                  queue.Enqueue packet
+                )
+
+            while queue.Count > 0 do
+                let packet = queue.Dequeue ()
+                channel.Ack (packet.SequenceId)
+                packetPool.Recycle packet
+
+        Assert.False (channel.HasPendingAcks)
+
+
+        // Test Resending based on time.
+
+        for i = 1 to 2 do
+            channel.SendData (byteStream.Raw, 0, byteStream.Length, fun packet ->
+                packetPool.Recycle packet
+            )
+
+        Assert.True (channel.HasPendingAcks)
+
+        while queue.Count > 0 do
+            let packet = queue.Dequeue ()
+            channel.Ack (packet.SequenceId)
+            packetPool.Recycle packet
+
+        Assert.True (channel.HasPendingAcks)
+
+        channel.TryResend (fun packet ->
+            queue.Enqueue packet
+        )
+
+        while queue.Count > 0 do
+            let packet = queue.Dequeue ()
+            channel.Ack (packet.SequenceId)
+            packetPool.Recycle packet
+
+        Assert.False (channel.HasPendingAcks)
 
     [<Test>]
     member x.TestReceiver () =
@@ -413,33 +465,6 @@ type Test() =
         test 3us
         test 2us
         Assert.AreEqual (10us, ackId)
-
-    [<Test>]
-    member x.FragmentSource () =
-
-        let test amount expected =
-            let packetPool = PacketPool 64
-            let source = FragmentSource.Create packetPool :> ISource
-
-            let mutable count = 0
-            let output = (fun packet -> 
-                count <- count + 1
-                packetPool.Recycle packet
-            )
-
-            let arr = Array.zeroCreate<byte> amount
-
-            source.Send (arr, 0, arr.Length, output)
-
-            Assert.AreEqual (expected, count)
-
-        test 4096 4
-        test 4095 4
-        test 4097 5
-        test 100 1
-        test 200 1
-        test 1024 1
-        test 1025 2
 
     [<Test>]
     member this.NewPipeline () =

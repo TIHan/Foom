@@ -5,7 +5,6 @@ open System
 open System.Collections.Generic
 
 open Foom.Network
-open Foom.Network.Pipeline
 
 module NewPipeline =
 
@@ -74,6 +73,8 @@ let createMergeFilter (packetPool : PacketPool) =
             packets.Clear ()
         )
 
+
+
 let createClientReceiveFilter () =
     NewPipeline.Filter (fun (packets : Packet seq) callback ->
         packets |> Seq.iter callback
@@ -88,5 +89,7 @@ let basicReceiver packetPool =
     let receiveFilter = createClientReceiveFilter ()
     NewPipeline.createPipeline receiveFilter
     |> NewPipeline.build
+
+//let reliableOrderedPipeline packetPool =
 
 
