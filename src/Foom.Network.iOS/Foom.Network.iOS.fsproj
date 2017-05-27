@@ -49,6 +49,12 @@
     <MtouchTlsProvider>
     </MtouchTlsProvider>
   </PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.FSharp.targets" />
+  <ItemGroup>
+    <Compile Include="..\Foom.Network.Desktop\Network.fs">
+      <Link>Network.fs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Xml" />
@@ -56,20 +62,9 @@
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core" />
     <Reference Include="Xamarin.iOS" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Resources\" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Foom.Network\Foom.Network.fsproj">
       <Project>{A446D691-8F20-40BD-98AC-B5FB2EFD5D04}</Project>
       <Name>Foom.Network</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\Foom.Network.Desktop\Network.fs">
-      <Link>Network.fs</Link>
-    </Compile>
-  </ItemGroup>
-  <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.FSharp.targets" />
 </Project>

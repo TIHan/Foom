@@ -52,3 +52,4 @@ TestResults
 \obj
 build
 .paket/paket.exe
+.fake
