@@ -9,7 +9,7 @@ type Client (udpClient: IUdpClient) =
     let receiveBuffer = Array.zeroCreate<byte> (NetConstants.PacketSize + sizeof<PacketHeader>)
     let subscriptions = Array.init 1024 (fun _ -> Event<obj> ())
 
-    let packetPool = PacketPool 64
+    let packetPool = PacketPool 2048
     let packetQueue = Queue<Packet> ()
 
     let mutable isConnected = false
@@ -18,10 +18,17 @@ type Client (udpClient: IUdpClient) =
     // Pipelines
     let receiveByteStream = ByteStream (1024 * 1024)
     let receiverByteReader = ByteReader (receiveByteStream)
-    let basicReceiverPipeline = basicReceiver receiveByteStream
+    let receiverByteWriter = ByteWriter (receiveByteStream)
+    let basicReceiverPipeline = basicReceiver packetPool
 
     // Channels
     let reliableOrderedChannel = ReliableOrderedChannelReceiver (packetPool)
+
+    do
+        basicReceiverPipeline.Output.Add (fun packet ->
+            receiverByteWriter.WriteRawBytes (packet.Raw, 0, packet.Length)
+            packetPool.Recycle packet
+        )
 
     member val Connected = connectedEvent.Publish
 
@@ -69,13 +76,14 @@ type Client (udpClient: IUdpClient) =
         receiveByteStream.Length <- 0
 
         while udpClient.IsDataAvailable do
-
-            match udpClient.Receive (receiveBuffer, 0, receiveBuffer.Length) with
+            let packet = packetPool.Get ()
+            match udpClient.Receive (packet.Raw, 0, packet.Raw.Length) with
             | 0 -> ()
             | byteCount ->
-                match LanguagePrimitives.EnumOfValue receiveBuffer.[0] with
+                packet.Length <- byteCount
+                match packet.PacketType with
                 | PacketType.ReliableOrdered -> ()
-                | _ -> basicReceiverPipeline.Send (receiveBuffer, 0, byteCount)
+                | _ -> basicReceiverPipeline.Send (packet)
 
     member private this.Send () =
         while packetQueue.Count > 0 do

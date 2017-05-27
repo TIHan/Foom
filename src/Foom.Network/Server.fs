@@ -49,7 +49,7 @@ type Server (udpServer: IUdpServer) =
     member val BytesSentSinceLastUpdate = 0 with get, set
 
     member this.Publish<'T> (msg: 'T) =
-        sendStream.Length <- 0
+        let startIndex = sendStream.Position
 
         match Network.lookup.TryGetValue typeof<'T> with
         | true, id ->
@@ -57,12 +57,15 @@ type Server (udpServer: IUdpServer) =
             sendWriter.WriteByte (byte id)
             pickler.serialize (msg :> obj) sendWriter
 
+            let length = sendStream.Position - startIndex
+
+            for i = 0 to clients.Count - 1 do
+                clients.[i].Send (sendStream.Raw, startIndex, length)
+
         | _ -> ()
 
-        for i = 0 to clients.Count - 1 do
-            clients.[i].Send (sendStream.Raw, 0, sendStream.Length)
-
     member this.Update () =
+        sendStream.Length <- 0
         receive ()
         send ()
         this.BytesSentSinceLastUpdate <- udpServer.BytesSentSinceLastCall ()

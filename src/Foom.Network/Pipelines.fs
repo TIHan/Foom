@@ -7,26 +7,6 @@ open System.Collections.Generic
 open Foom.Network
 open Foom.Network.Pipeline
 
-//let Defragment (packetPool : PacketPool) =
-
-//    let packets = Array.init 65536 (fun _ -> Unchecked.defaultof<Packet>)
-//    let queue = Queue<Packet> ()
-
-//    { new IFilter with
-
-//        member x.Send packet =
-//            if packet.Fragments = 0uy && packet.FragmentId = 0us then
-//                queue.Enqueue packet
-//            else
-
-
-//        member x.Process output =
-//            while queue.Count > 0 do
-//                let packet = queue.Dequeue ()
-//                ack packet.SequenceId
-//                output packet
-//    }
-
 let ReceiverSource (packetPool : PacketPool) =
 
     { new ISource with 
@@ -151,33 +131,56 @@ let ReliableSequencedAckReceiver (packetPool : PacketPool) ack =
                 output packet
     }
 
+[<Struct>]
+type Data = { bytes : byte []; startIndex : int; size : int }
 
-let unreliableSender f =
-    let packetPool = PacketPool 64
-    let source = UnreliableSource packetPool
-    let merger = PacketMerger packetPool
+let createMergeFilter (packetPool : PacketPool) =
+        let packets = ResizeArray ()
+        NewPipeline.Filter (fun data callback ->
+            data
+            |> Seq.iter (fun data ->
+                if packets.Count = 0 then
+                    let packet = packetPool.Get ()
+                    if packet.LengthRemaining >= data.size then
+                        packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
+                        packets.Add packet
+                    else
+                        let count = (data.size / packet.LengthRemaining) - (if data.size % packet.LengthRemaining > 0 then -1 else 0)
+                        let mutable startIndex = data.startIndex
+                        failwith "yopac"
+                    
+                else
+                    let packet = packets.[packets.Count - 1]
+                    if packet.LengthRemaining >= data.size then
+                        packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
+                    else
+                        let packet = packetPool.Get ()
+                        if packet.LengthRemaining >= data.size then
+                            packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
+                        else
+                            failwith "too big"
 
-    create source
-    |> add merger
-    |> sink (fun packet ->
-        f packet
-        packetPool.Recycle packet
+                        packets.Add packet
+            )
+
+            packets |> Seq.iter callback
+            packets.Clear ()
+        )
+
+let createClientReceiveFilter () =
+    NewPipeline.Filter (fun (packets : Packet seq) callback ->
+        packets |> Seq.iter callback
     )
 
-let basicReceiver byteStream =
-    let packetPool = PacketPool 64
-    let source = ReceiverSource packetPool
-    let byteWriter = ByteWriter byteStream
+let unreliableSender packetPool =
+    let mergeFilter = createMergeFilter packetPool
+    NewPipeline.createPipeline mergeFilter
+    |> NewPipeline.build
 
-    create source
-    |> sink (fun packet ->
-        if packet.FragmentId > 0us then
-            byteWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.Size)
-        else
-            byteWriter.WriteRawBytes (packet.Raw, 0, packet.Length)
-
-        packetPool.Recycle packet
-    )
+let basicReceiver packetPool =
+    let receiveFilter = createClientReceiveFilter ()
+    NewPipeline.createPipeline receiveFilter
+    |> NewPipeline.build
 
 let reliableOrderedReceiver ack f =
     let packetPool = PacketPool 64
@@ -189,6 +192,3 @@ let reliableOrderedReceiver ack f =
         f packet
         packetPool.Recycle packet
     )
-
-[<Struct>]
-type Data = { bytes : byte []; startIndex : int; size : int }

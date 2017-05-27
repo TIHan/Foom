@@ -6,23 +6,29 @@ open System.Collections.Generic
 [<Sealed>]
 type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
 
-    let unreliableSender = 
-        unreliableSender (fun packet -> this.SendNow (packet.Raw, packet.Length))
+    let packetPool = PacketPool 1024
+    let unreliable = unreliableSender packetPool
 
-    // Queues
     let packetQueue = Queue<Packet> ()
+
+    do
+        unreliable.Output.Add (fun packet -> 
+            this.SendNow (packet.Raw, packet.Length)
+            packetPool.Recycle packet
+        )
 
     member this.SendNow (data : byte [], size) =
         if size > 0 && data.Length > 0 then
             udpServer.Send (data, size, endPoint) |> ignore
 
     member this.Send (data, startIndex, size) =
-        unreliableSender.Send (data, startIndex, size)
+        unreliable.Send { bytes = data; startIndex = startIndex; size = size }
 
     member this.SendConnectionAccepted () =
         let packet = Packet ()
         packet.SetData ([||], 0, 0)
         packet.PacketType <- PacketType.ConnectionAccepted
+
         packetQueue.Enqueue packet
 
     member this.Update () =
@@ -31,4 +37,4 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
             let packet = packetQueue.Dequeue ()
             this.SendNow (packet.Raw, packet.Length)
 
-        unreliableSender.Process ()
+        unreliable.Process ()
