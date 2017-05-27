@@ -65,7 +65,7 @@ type Server (udpServer: IUdpServer) =
         | _ -> ()
 
     member this.Update () =
-        sendStream.Length <- 0
         receive ()
         send ()
         this.BytesSentSinceLastUpdate <- udpServer.BytesSentSinceLastCall ()
+        sendStream.Length <- 0

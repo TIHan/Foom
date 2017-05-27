@@ -26,7 +26,7 @@ type Client (udpClient: IUdpClient) =
 
     do
         basicReceiverPipeline.Output.Add (fun packet ->
-            receiverByteWriter.WriteRawBytes (packet.Raw, 0, packet.Length)
+            receiverByteWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.Size)
             packetPool.Recycle packet
         )
 
@@ -42,38 +42,20 @@ type Client (udpClient: IUdpClient) =
     member private this.OnReceive (reader : ByteReader) =
 
         let rec onReceive (reader : ByteReader) =
-            let header = reader.Read<PacketHeader> ()
+            let typeId = reader.ReadByte () |> int
 
-            match header.type' with
-            | PacketType.Unreliable ->
-                let startingPos = reader.Position
-                while int header.size + startingPos > reader.Position do
-                    let typeId = reader.ReadByte () |> int
-
-                    if subscriptions.Length > typeId then
-                        let pickler = Network.FindTypeById typeId
-                        let msg = pickler.ctor reader
-                        pickler.deserialize msg reader
-                        subscriptions.[typeId].Trigger msg
-                    else
-                        failwith "This shouldn't happen."
-
-            | PacketType.ReliableOrdered ->
-
-                ()
-
-            | PacketType.ConnectionAccepted ->
-
-                isConnected <- true
-                connectedEvent.Trigger (udpClient.RemoteEndPoint)
-
-            | _ -> ()
+            if subscriptions.Length > typeId && typeId >= 0 then
+                let pickler = Network.FindTypeById typeId
+                let msg = pickler.ctor reader
+                pickler.deserialize msg reader
+                subscriptions.[typeId].Trigger msg
+            else
+                failwith "This shouldn't happen."
 
         while not reader.IsEndOfStream do
             onReceive reader
 
     member private this.Receive () =
-        receiveByteStream.Length <- 0
 
         while udpClient.IsDataAvailable do
             let packet = packetPool.Get ()
@@ -82,8 +64,16 @@ type Client (udpClient: IUdpClient) =
             | byteCount ->
                 packet.Length <- byteCount
                 match packet.PacketType with
-                | PacketType.ReliableOrdered -> ()
-                | _ -> basicReceiverPipeline.Send (packet)
+
+                | PacketType.ConnectionAccepted ->
+                    isConnected <- true
+                    connectedEvent.Trigger (udpClient.RemoteEndPoint)
+
+                | PacketType.Unreliable -> basicReceiverPipeline.Send (packet)
+
+                | _ -> failwithf "Unsupported packet type: %A" packet.PacketType
+
+        basicReceiverPipeline.Process ()
 
     member private this.Send () =
         while packetQueue.Count > 0 do
@@ -102,9 +92,9 @@ type Client (udpClient: IUdpClient) =
         | _ -> ()
 
     member this.Update () =
-        this.Receive ()
+        receiveByteStream.Length <- 0
 
-        basicReceiverPipeline.Process ()
+        this.Receive ()
 
         // Perform OnReceive after processing all incoming packets.
         receiveByteStream.Position <- 0
