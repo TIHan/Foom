@@ -3,34 +3,34 @@
 open System
 open System.Collections.Generic
 
-module NewPipeline =
+type Filter<'Input, 'Output> = Filter of ('Input seq -> ('Output -> unit) -> unit)
 
-    type Filter<'Input, 'Output> = Filter of ('Input seq -> ('Output -> unit) -> unit)
+type PipelineContext<'T> () =
 
-    type PipelineContext<'T> () =
+    member val Send : ('T -> unit) option = None with get, set
 
-        member val Send : ('T -> unit) option = None with get, set
+    member val OutputEvent = None with get, set
 
-        member val OutputEvent = None with get, set
+    member val SubscribeActions = ResizeArray<unit -> unit> ()
 
-        member val SubscribeActions = ResizeArray<unit -> unit> ()
+    member val ProcessActions = ResizeArray<unit -> unit> ()
 
-        member val ProcessActions = ResizeArray<unit -> unit> ()
+type PipelineBuilder<'Input, 'Output> = PipelineBuilder of (PipelineContext<'Input> -> unit)
 
-    type PipelineBuilder<'Input, 'Output> = PipelineBuilder of (PipelineContext<'Input> -> unit)
+[<Sealed>]
+type Pipeline<'Input, 'Output> (evt : Event<'Output>, send : 'Input -> unit, process' : unit -> unit) =
 
-    [<Sealed>]
-    type Pipeline<'Input, 'Output> (evt : Event<'Output>, send : 'Input -> unit, process' : unit -> unit) =
+    member this.Send input =
+        send input
 
-        member this.Send input =
-            send input
+    member this.Process () =
+        process' ()
 
-        member this.Process () =
-            process' ()
+    member this.Output = evt.Publish
 
-        member this.Output = evt.Publish
+module Pipeline =
 
-    let createPipeline (filter : Filter<'Input, 'Output>) : PipelineBuilder<'Input, 'Output> =
+    let create (filter : Filter<'Input, 'Output>) : PipelineBuilder<'Input, 'Output> =
         PipelineBuilder (fun context ->
             let processFilter =
                 match filter with

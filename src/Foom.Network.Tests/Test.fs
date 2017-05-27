@@ -424,7 +424,7 @@ type Test() =
 
         let mutable ackId = -1
 
-        let reliableOrderedReceiver = NewPipeline.ReliableOrderedAckReceiver packetPool ackManager (fun i -> ackId <- int i)
+        let reliableOrderedReceiver = ReliableOrderedAckReceiver packetPool ackManager (fun i -> ackId <- int i)
 
         Assert.AreEqual (-1, ackId)
 
@@ -440,7 +440,7 @@ type Test() =
             inputs.Add packet
 
             match reliableOrderedReceiver with
-            | NewPipeline.Filter processFilter -> processFilter inputs packetPool.Recycle
+            | Filter processFilter -> processFilter inputs packetPool.Recycle
 
             inputs.Clear ()
 
@@ -469,20 +469,20 @@ type Test() =
     [<Test>]
     member this.NewPipeline () =
 
-        let filter1 = NewPipeline.mapFilter (fun (x : int) -> double x)
-        let filter2 = NewPipeline.mapFilter (fun (x : double) -> string (x + 1.0))
-        let filter3 = NewPipeline.mapFilter (fun (x : string) -> System.Int32.Parse x)
+        let filter1 = Pipeline.mapFilter (fun (x : int) -> double x)
+        let filter2 = Pipeline.mapFilter (fun (x : double) -> string (x + 1.0))
+        let filter3 = Pipeline.mapFilter (fun (x : string) -> System.Int32.Parse x)
 
         let x = 1
         let mutable y = 0
         let pipeline =
-            NewPipeline.createPipeline filter1
-            |> NewPipeline.addFilter filter2
-            |> NewPipeline.addFilter filter3
-            |> NewPipeline.sink (fun x -> 
+            Pipeline.create filter1
+            |> Pipeline.addFilter filter2
+            |> Pipeline.addFilter filter3
+            |> Pipeline.sink (fun x -> 
                 y <- x
             )
-            |> NewPipeline.build
+            |> Pipeline.build
 
         pipeline.Send x
         pipeline.Process ()
@@ -498,7 +498,7 @@ type Test() =
         let packetPool = PacketPool 64
 
         let packets = ResizeArray ()
-        let filter1 = NewPipeline.Filter (fun data callback ->
+        let filter1 = Filter (fun data callback ->
             data
             |> Seq.iter (fun data ->
                 if packets.Count = 0 then
@@ -532,9 +532,9 @@ type Test() =
         let packets = ResizeArray ()
 
         let pipeline =
-            NewPipeline.createPipeline filter1
-            |> NewPipeline.sink packets.Add
-            |> NewPipeline.build
+            Pipeline.create filter1
+            |> Pipeline.sink packets.Add
+            |> Pipeline.build
 
         pipeline.Send data1
         pipeline.Send data2

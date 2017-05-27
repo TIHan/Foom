@@ -2,25 +2,23 @@
 
 open System
 
-module NewPipeline =
+type Filter<'Input, 'Output> = Filter of ('Input seq -> ('Output -> unit) -> unit)
 
-    type Filter<'Input, 'Output> = Filter of ('Input seq -> ('Output -> unit) -> unit)
+[<Sealed>]
+type PipelineBuilder<'Input, 'Output>
 
-    [<Sealed>]
-    type PipelineBuilder<'Input, 'Output>
+[<Sealed>]
+type Pipeline<'Input, 'Output> =
 
-    [<Sealed>]
-    type Pipeline<'Input, 'Output> =
+    member Send : 'Input -> unit
 
-        member Send : 'Input -> unit
+    member Process : unit -> unit
 
-        member Process : unit -> unit
+    member Output : IEvent<'Output>
 
-        member Output : IEvent<'Output>
+module Pipeline =
 
-    val createPipeline : Filter<'Input, 'Output> -> PipelineBuilder<'Input, 'Output>
-
-   // val addQueue : PipelineBuilder<'Input, 'Output> -> PipelineBuilder<'Input, 'Output seq>
+    val create : Filter<'Input, 'Output> -> PipelineBuilder<'Input, 'Output>
 
     val addFilter : Filter<'Output, 'NewOutput> -> PipelineBuilder<'Input, 'Output> -> PipelineBuilder<'Input, 'NewOutput>
 
