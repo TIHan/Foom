@@ -90,18 +90,21 @@ let createClientReceiveFilter () =
 
 let unreliableSender packetPool =
     let mergeFilter = createMergeFilter packetPool
-    Pipeline.create mergeFilter
+    Pipeline.create ()
+    |> Pipeline.addFilter mergeFilter
     |> Pipeline.build
 
 let basicReceiver packetPool =
     let receiveFilter = createClientReceiveFilter ()
-    Pipeline.create receiveFilter
+    Pipeline.create ()
+    |> Pipeline.addFilter receiveFilter
     |> Pipeline.build
 
 let reliableOrderedPipelineSender packetPool f =
     let mergeFilter = createMergeFilter packetPool
     let reliableOrderedFilter = createReliableOrderedFilter f
-    Pipeline.create mergeFilter
+    Pipeline.create ()
+    |> Pipeline.addFilter mergeFilter
     |> Pipeline.addFilter reliableOrderedFilter
     |> Pipeline.build
 

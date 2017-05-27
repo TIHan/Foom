@@ -18,7 +18,7 @@ type Pipeline<'Input, 'Output> =
 
 module Pipeline =
 
-    val create : Filter<'Input, 'Output> -> PipelineBuilder<'Input, 'Output>
+    val create : unit -> PipelineBuilder<'Input, 'Input>
 
     val addFilter : Filter<'Output, 'NewOutput> -> PipelineBuilder<'Input, 'Output> -> PipelineBuilder<'Input, 'NewOutput>
 

@@ -30,21 +30,10 @@ type Pipeline<'Input, 'Output> (evt : Event<'Output>, send : 'Input -> unit, pro
 
 module Pipeline =
 
-    let create (filter : Filter<'Input, 'Output>) : PipelineBuilder<'Input, 'Output> =
+    let create () : PipelineBuilder<'Input, 'Input> =
         PipelineBuilder (fun context ->
-            let processFilter =
-                match filter with
-                | Filter x -> x
-
-            let inputs = ResizeArray ()
-
-            context.Send <- inputs.Add |> Some
-
-            let evt = Event<'Output> ()
-            context.ProcessActions.Add(fun () ->
-                processFilter inputs evt.Trigger
-                inputs.Clear ()
-            )
+            let evt = Event<'Input> ()
+            context.Send <- evt.Trigger |> Some
             context.OutputEvent <- (evt :> obj) |> Some
         )
 
@@ -67,6 +56,7 @@ module Pipeline =
             let evt = Event<'NewOutput> ()
             context.ProcessActions.Add(fun () ->
                 processFilter inputs evt.Trigger
+                inputs.Clear ()
             )
             context.OutputEvent <- (evt :> obj) |> Some
         )

@@ -476,7 +476,8 @@ type Test() =
         let x = 1
         let mutable y = 0
         let pipeline =
-            Pipeline.create filter1
+            Pipeline.create ()
+            |> Pipeline.addFilter filter1
             |> Pipeline.addFilter filter2
             |> Pipeline.addFilter filter3
             |> Pipeline.sink (fun x -> 
@@ -532,7 +533,8 @@ type Test() =
         let packets = ResizeArray ()
 
         let pipeline =
-            Pipeline.create filter1
+            Pipeline.create ()
+            |> Pipeline.addFilter filter1
             |> Pipeline.sink packets.Add
             |> Pipeline.build
 
