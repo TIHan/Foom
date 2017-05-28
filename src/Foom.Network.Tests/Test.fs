@@ -439,8 +439,7 @@ type Test() =
 
             inputs.Add packet
 
-            match reliableOrderedReceiver with
-            | Filter processFilter -> processFilter inputs packetPool.Recycle
+            reliableOrderedReceiver inputs packetPool.Recycle
 
             inputs.Clear ()
 
@@ -469,17 +468,17 @@ type Test() =
     [<Test>]
     member this.NewPipeline () =
 
-        let filter1 = Pipeline.mapFilter (fun (x : int) -> double x)
-        let filter2 = Pipeline.mapFilter (fun (x : double) -> string (x + 1.0))
-        let filter3 = Pipeline.mapFilter (fun (x : string) -> System.Int32.Parse x)
+        let filter1 = Pipeline.map (fun (x : int) -> double x)
+        let filter2 = Pipeline.map (fun (x : double) -> string (x + 1.0))
+        let filter3 = Pipeline.map (fun (x : string) -> System.Int32.Parse x)
 
         let x = 1
         let mutable y = 0
         let pipeline =
             Pipeline.create ()
-            |> Pipeline.addFilter filter1
-            |> Pipeline.addFilter filter2
-            |> Pipeline.addFilter filter3
+            |> filter1
+            |> filter2
+            |> filter3
             |> Pipeline.sink (fun x -> 
                 y <- x
             )
@@ -499,7 +498,7 @@ type Test() =
         let packetPool = PacketPool 64
 
         let packets = ResizeArray ()
-        let filter1 = Filter (fun data callback ->
+        let filter1 = Pipeline.filter (fun data callback ->
             data
             |> Seq.iter (fun data ->
                 if packets.Count = 0 then
@@ -528,13 +527,14 @@ type Test() =
 
             packets |> Seq.iter callback
             packets.Clear ()
+
         )
 
         let packets = ResizeArray ()
 
         let pipeline =
             Pipeline.create ()
-            |> Pipeline.addFilter filter1
+            |> filter1
             |> Pipeline.sink packets.Add
             |> Pipeline.build
 

@@ -3,8 +3,6 @@
 open System
 open System.Collections.Generic
 
-type Filter<'Input, 'Output> = Filter of ('Input seq -> ('Output -> unit) -> unit)
-
 type PipelineContext<'T> () =
 
     member val Send : ('T -> unit) option = None with get, set
@@ -59,14 +57,10 @@ module Pipeline =
             context.OutputEvent <- (evt :> obj) |> Some
         )
 
-    let addFilter (filter : Filter<'Output, 'NewOutput>) (pipeline : PipelineBuilder<'Input, 'Output>) : PipelineBuilder<'Input, 'NewOutput> =
+    let filter (filter : ('Output seq -> ('NewOutput -> unit) -> unit)) (pipeline : PipelineBuilder<'Input, 'Output>) : PipelineBuilder<'Input, 'NewOutput> =
         PipelineBuilder (fun context ->
             match pipeline with
             | PipelineBuilder f -> f context
-
-            let processFilter =
-                match filter with
-                | Filter x -> x
 
             let evt = context.OutputEvent.Value :?> Event<'Output>
 
@@ -77,7 +71,7 @@ module Pipeline =
 
             let evt = Event<'NewOutput> ()
             context.ProcessActions.Add(fun () ->
-                processFilter inputs evt.Trigger
+                filter inputs evt.Trigger
                 inputs.Clear ()
             )
             context.OutputEvent <- (evt :> obj) |> Some
@@ -107,7 +101,8 @@ module Pipeline =
             )
         )
 
-    let mapFilter f =
-        Filter (fun xs callback ->
+    let map f pipeline =
+        pipeline
+        |> filter (fun xs callback ->
             xs |> Seq.iter (fun x -> callback (f x))
         )

@@ -9,7 +9,7 @@ open Foom.Network
 let ReliableOrderedAckReceiver (packetPool : PacketPool) (ackManager : AckManager) ack =
     let mutable nextSeqId = 0us
 
-    Filter (fun (packets : Packet seq) callback ->
+    fun (packets : Packet seq) callback ->
 
         packets
         |> Seq.iter (fun packet ->
@@ -31,48 +31,46 @@ let ReliableOrderedAckReceiver (packetPool : PacketPool) (ackManager : AckManage
                 nextSeqId <- nextSeqId + 1us
                 callback packet
         )
-    )
 
 [<Struct>]
 type Data = { bytes : byte []; startIndex : int; size : int }
 
 let createMergeFilter (packetPool : PacketPool) =
-        let packets = ResizeArray ()
-        Filter (fun data callback ->
-            data
-            |> Seq.iter (fun data ->
-                if packets.Count = 0 then
+    let packets = ResizeArray ()
+    fun data callback ->
+        data
+        |> Seq.iter (fun data ->
+            if packets.Count = 0 then
+                let packet = packetPool.Get ()
+                if packet.LengthRemaining >= data.size then
+                    packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
+                    packets.Add packet
+                else
+                    let count = (data.size / packet.LengthRemaining) - (if data.size % packet.LengthRemaining > 0 then -1 else 0)
+                    let mutable startIndex = data.startIndex
+                    failwith "yopac"
+                    
+            else
+                let packet = packets.[packets.Count - 1]
+                if packet.LengthRemaining >= data.size then
+                    packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
+                else
                     let packet = packetPool.Get ()
                     if packet.LengthRemaining >= data.size then
                         packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
-                        packets.Add packet
                     else
-                        let count = (data.size / packet.LengthRemaining) - (if data.size % packet.LengthRemaining > 0 then -1 else 0)
-                        let mutable startIndex = data.startIndex
-                        failwith "yopac"
-                    
-                else
-                    let packet = packets.[packets.Count - 1]
-                    if packet.LengthRemaining >= data.size then
-                        packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
-                    else
-                        let packet = packetPool.Get ()
-                        if packet.LengthRemaining >= data.size then
-                            packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
-                        else
-                            failwith "too big"
+                        failwith "too big"
 
-                        packets.Add packet
-            )
-
-            packets |> Seq.iter callback
-            packets.Clear ()
+                    packets.Add packet
         )
+
+        packets |> Seq.iter callback
+        packets.Clear ()
 
 let createReliableOrderedFilter f =
     let ackManager = AckManager ()
     let sequencer = Sequencer ()
-    Filter (fun (packets : Packet seq) callback ->
+    fun (packets : Packet seq) callback ->
         f ackManager
         packets
         |> Seq.iter (fun packet ->
@@ -81,30 +79,28 @@ let createReliableOrderedFilter f =
             ackManager.MarkCopy packet
             callback packet
         )
-    )
 
 let createClientReceiveFilter () =
-    Filter (fun (packets : Packet seq) callback ->
+    fun (packets : Packet seq) callback ->
         packets |> Seq.iter callback
-    )
 
 let unreliableSender packetPool =
     let mergeFilter = createMergeFilter packetPool
     Pipeline.create ()
-    |> Pipeline.addFilter mergeFilter
+    |> Pipeline.filter mergeFilter
     |> Pipeline.build
 
 let basicReceiver packetPool =
     let receiveFilter = createClientReceiveFilter ()
     Pipeline.create ()
-    |> Pipeline.addFilter receiveFilter
+    |> Pipeline.filter receiveFilter
     |> Pipeline.build
 
 let reliableOrderedPipelineSender packetPool f =
     let mergeFilter = createMergeFilter packetPool
     let reliableOrderedFilter = createReliableOrderedFilter f
     Pipeline.create ()
-    |> Pipeline.addFilter mergeFilter
-    |> Pipeline.addFilter reliableOrderedFilter
+    |> Pipeline.filter mergeFilter
+    |> Pipeline.filter reliableOrderedFilter
     |> Pipeline.build
 

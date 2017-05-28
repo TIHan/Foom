@@ -2,8 +2,6 @@
 
 open System
 
-type Filter<'Input, 'Output> = Filter of ('Input seq -> ('Output -> unit) -> unit)
-
 [<Sealed>]
 type PipelineBuilder<'Input, 'Output>
 
@@ -22,10 +20,10 @@ module Pipeline =
 
     val demux : ('a -> ('b -> unit) -> ('c -> unit) -> unit) -> PipelineBuilder<'Input, 'a> -> PipelineBuilder<'Input, ('b seq * 'c seq)>
 
-    val addFilter : Filter<'Output, 'NewOutput> -> PipelineBuilder<'Input, 'Output> -> PipelineBuilder<'Input, 'NewOutput>
+    val filter : ('Output seq -> ('NewOutput -> unit) -> unit) -> PipelineBuilder<'Input, 'Output> -> PipelineBuilder<'Input, 'NewOutput>
 
     val sink : ('Output -> unit) -> (PipelineBuilder<'Input, 'Output>) -> PipelineBuilder<'Input, 'Output>
 
     val build : PipelineBuilder<'Input, 'Output> -> Pipeline<'Input, 'Output>
 
-    val mapFilter : ('a -> 'b) -> Filter<'a, 'b>
+    val map : ('b -> 'c) -> PipelineBuilder<'a, 'b> -> PipelineBuilder<'a, 'c>
