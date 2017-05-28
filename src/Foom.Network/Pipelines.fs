@@ -96,11 +96,3 @@ let basicReceiver packetPool =
     |> Pipeline.filter receiveFilter
     |> Pipeline.build
 
-let reliableOrderedPipelineSender packetPool f =
-    let mergeFilter = createMergeFilter packetPool
-    let reliableOrderedFilter = createReliableOrderedFilter f
-    Pipeline.create ()
-    |> Pipeline.filter mergeFilter
-    |> Pipeline.filter reliableOrderedFilter
-    |> Pipeline.build
-

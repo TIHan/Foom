@@ -13,6 +13,8 @@ type PipelineContext<'T> () =
 
     member val ProcessActions = ResizeArray<unit -> unit> ()
 
+    member val CleanupActions = ResizeArray<unit -> unit> ()
+
 type PipelineBuilder<'Input, 'Output> = PipelineBuilder of (PipelineContext<'Input> -> unit)
 
 [<Sealed>]
@@ -51,10 +53,13 @@ module Pipeline =
             let evt = Event<_> ()
             context.ProcessActions.Add(fun () ->
                 evt.Trigger (inputs :> 'b seq, inputs2 :> 'c seq)
+            )
+            context.OutputEvent <- (evt :> obj) |> Some
+
+            context.CleanupActions.Add(fun () ->
                 inputs.Clear ()
                 inputs2.Clear ()
             )
-            context.OutputEvent <- (evt :> obj) |> Some
         )
 
     let filter (filter : ('Output seq -> ('NewOutput -> unit) -> unit)) (pipeline : PipelineBuilder<'Input, 'Output>) : PipelineBuilder<'Input, 'NewOutput> =
@@ -72,9 +77,12 @@ module Pipeline =
             let evt = Event<'NewOutput> ()
             context.ProcessActions.Add(fun () ->
                 filter inputs evt.Trigger
-                inputs.Clear ()
             )
             context.OutputEvent <- (evt :> obj) |> Some
+
+            context.CleanupActions.Add(fun () ->
+                inputs.Clear ()
+            )
         )
 
     let sink f (pipeline : PipelineBuilder<'Input, 'Output>) : PipelineBuilder<'Input, 'Output> =
@@ -96,6 +104,11 @@ module Pipeline =
 
         Pipeline (context.OutputEvent.Value :?> Event<'Output>, context.Send.Value, fun () -> 
             context.ProcessActions
+            |> Seq.iter (fun f ->
+                f ()
+            )
+
+            context.CleanupActions
             |> Seq.iter (fun f ->
                 f ()
             )
