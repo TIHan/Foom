@@ -153,7 +153,7 @@ type internal Proxy () =
 
                 let methAttrs = MethodAttributes.Public ||| MethodAttributes.HideBySig ||| MethodAttributes.SpecialName ||| MethodAttributes.RTSpecialName ||| MethodAttributes.Static;
                 let meth = new MethodDefinition(".cctor", methAttrs, voidType);
-
+                
                 exportedMeths
                 |> Seq.iteri (fun i emeth ->
                     let edel = exportedDels.[i]
@@ -177,7 +177,6 @@ type internal Proxy () =
 
             m.Write (assemblyPath + "tmp", WriterParameters (WriteSymbols = true))
         )
-
 
         let load (x: string) = 
             if String.IsNullOrWhiteSpace x |> not then
