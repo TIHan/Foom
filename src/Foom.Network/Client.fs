@@ -6,7 +6,6 @@ open System.Collections.Generic
 [<Sealed>]
 type Client (udpClient: IUdpClient) =
 
-    let receiveBuffer = Array.zeroCreate<byte> (NetConstants.PacketSize + sizeof<PacketHeader>)
     let subscriptions = Array.init 1024 (fun _ -> Event<obj> ())
 
     let packetPool = PacketPool 2048
@@ -15,14 +14,17 @@ type Client (udpClient: IUdpClient) =
     let mutable isConnected = false
     let connectedEvent = Event<IUdpEndPoint> ()
 
-    // Pipelines
     let receiveByteStream = ByteStream (1024 * 1024)
     let receiverByteReader = ByteReader (receiveByteStream)
     let receiverByteWriter = ByteWriter (receiveByteStream)
-    let basicReceiverPipeline = basicReceiver packetPool
+
+    // Pipelines
+
+    // Receiver
+    let receiverUnreliable = Receiver.createUnreliable ()
 
     do
-        basicReceiverPipeline.Output.Add (fun packet ->
+        receiverUnreliable.Output.Add (fun packet ->
             receiverByteWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.Size)
             packetPool.Recycle packet
         )
@@ -66,11 +68,11 @@ type Client (udpClient: IUdpClient) =
                     isConnected <- true
                     connectedEvent.Trigger (udpClient.RemoteEndPoint)
 
-                | PacketType.Unreliable -> basicReceiverPipeline.Send (packet)
+                | PacketType.Unreliable -> receiverUnreliable.Send (packet)
 
                 | _ -> failwithf "Unsupported packet type: %A" packet.PacketType
 
-        basicReceiverPipeline.Process ()
+        receiverUnreliable.Process ()
 
     member private this.Send () =
         while packetQueue.Count > 0 do

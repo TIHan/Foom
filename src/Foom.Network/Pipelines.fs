@@ -82,18 +82,6 @@ let createClientReceiveFilter () =
     fun (packets : Packet seq) callback ->
         packets |> Seq.iter callback
 
-let unreliableSender packetPool =
-    let mergeFilter = createMergeFilter packetPool
-    Pipeline.create ()
-    |> Pipeline.filter mergeFilter
-    |> Pipeline.build
-
-let basicReceiver packetPool =
-    let receiveFilter = createClientReceiveFilter ()
-    Pipeline.create ()
-    |> Pipeline.filter receiveFilter
-    |> Pipeline.build
-
 let reliableOrderedSender packetPool =
     let ackManager = AckManager ()
     let mergeFilter = createMergeFilter packetPool
@@ -102,3 +90,19 @@ let reliableOrderedSender packetPool =
     |> Pipeline.filter mergeFilter
     |> Pipeline.filter reliableOrderedFilter
     |> Pipeline.build
+
+module Sender =
+
+    let createUnreliable packetPool =
+        let mergeFilter = createMergeFilter packetPool
+        Pipeline.create ()
+        |> Pipeline.filter mergeFilter
+        |> Pipeline.build
+
+module Receiver =
+
+    let createUnreliable () =
+        let receiveFilter = createClientReceiveFilter ()
+        Pipeline.create ()
+        |> Pipeline.filter receiveFilter
+        |> Pipeline.build

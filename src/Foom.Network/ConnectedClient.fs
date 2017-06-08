@@ -7,12 +7,16 @@ open System.Collections.Generic
 type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
 
     let packetPool = PacketPool 1024
-    let unreliable = unreliableSender packetPool
 
     let packetQueue = Queue<Packet> ()
 
+    // Pipelines
+
+    // Senders
+    let senderUnreliable = Sender.createUnreliable packetPool
+
     do
-        unreliable.Output.Add (fun packet -> 
+        senderUnreliable.Output.Add (fun packet -> 
             this.SendNow (packet.Raw, packet.Length)
             packetPool.Recycle packet
         )
@@ -22,7 +26,7 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
             udpServer.Send (data, size, endPoint) |> ignore
 
     member this.Send (data, startIndex, size) =
-        unreliable.Send { bytes = data; startIndex = startIndex; size = size }
+        senderUnreliable.Send { bytes = data; startIndex = startIndex; size = size }
 
     member this.SendConnectionAccepted () =
         let packet = Packet ()
@@ -37,4 +41,4 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
             let packet = packetQueue.Dequeue ()
             this.SendNow (packet.Raw, packet.Length)
 
-        unreliable.Process ()
+        senderUnreliable.Process ()
