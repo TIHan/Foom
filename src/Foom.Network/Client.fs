@@ -21,9 +21,6 @@ type Client (udpClient: IUdpClient) =
     let receiverByteWriter = ByteWriter (receiveByteStream)
     let basicReceiverPipeline = basicReceiver packetPool
 
-    // Channels
-    let reliableOrderedChannel = ReliableOrderedChannelReceiver (packetPool)
-
     do
         basicReceiverPipeline.Output.Add (fun packet ->
             receiverByteWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.Size)

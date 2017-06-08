@@ -67,11 +67,9 @@ let createMergeFilter (packetPool : PacketPool) =
         packets |> Seq.iter callback
         packets.Clear ()
 
-let createReliableOrderedFilter f =
-    let ackManager = AckManager ()
+let createReliableOrderedFilter (ackManager : AckManager) =
     let sequencer = Sequencer ()
     fun (packets : Packet seq) callback ->
-        f ackManager
         packets
         |> Seq.iter (fun packet ->
             sequencer.Assign packet
@@ -96,3 +94,11 @@ let basicReceiver packetPool =
     |> Pipeline.filter receiveFilter
     |> Pipeline.build
 
+let reliableOrderedSender packetPool =
+    let ackManager = AckManager ()
+    let mergeFilter = createMergeFilter packetPool
+    let reliableOrderedFilter = createReliableOrderedFilter ackManager
+    Pipeline.create ()
+    |> Pipeline.filter mergeFilter
+    |> Pipeline.filter reliableOrderedFilter
+    |> Pipeline.build
