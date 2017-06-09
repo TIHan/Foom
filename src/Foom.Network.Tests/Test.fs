@@ -391,37 +391,8 @@ type Test() =
         let packetPool = PacketPool 64
 
         let packets = ResizeArray ()
-        let filter1 = Pipeline.filter (fun data callback ->
-            data
-            |> Seq.iter (fun data ->
-                if packets.Count = 0 then
-                    let packet = packetPool.Get ()
-                    if packet.LengthRemaining >= data.size then
-                        packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
-                        packets.Add packet
-                    else
-                        let count = (data.size / packet.LengthRemaining) - (if data.size % packet.LengthRemaining > 0 then -1 else 0)
-                        let mutable startIndex = data.startIndex
-                        failwith "yopac"
-                    
-                else
-                    let packet = packets.[packets.Count - 1]
-                    if packet.LengthRemaining >= data.size then
-                        packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
-                    else
-                        let packet = packetPool.Get ()
-                        if packet.LengthRemaining >= data.size then
-                            packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
-                        else
-                            failwith "too big"
-
-                        packets.Add packet
-            )
-
-            packets |> Seq.iter callback
-            packets.Clear ()
-
-        )
+        let mergeFilter = createMergeFilter packetPool
+        let filter1 = Pipeline.filter mergeFilter
 
         let packets = ResizeArray ()
 
