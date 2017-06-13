@@ -25,7 +25,7 @@ type Client (udpClient: IUdpClient) =
 
     do
         receiverUnreliable.Output.Add (fun packet ->
-            receiverByteWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.Size)
+            receiverByteWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.DataLength)
             packetPool.Recycle packet
         )
 

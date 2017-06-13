@@ -43,6 +43,10 @@ type Packet () =
         with get () = byteStream.Length
         and set value = byteStream.Length <- value
 
+    member this.DataLength = this.Length - sizeof<PacketHeader>
+
+    member this.DataLengthRemaining = byteStream.Raw.Length - byteStream.Length
+
     member this.Raw = byteStream.Raw
 
     member this.PacketType
@@ -84,10 +88,6 @@ type Packet () =
             let value = byteReader.ReadByte ()
             byteStream.Position <- originalPos
             value
-
-    member this.Size = this.Length - sizeof<PacketHeader>
-
-    member this.LengthRemaining = byteStream.Raw.Length - byteStream.Length
 
     member this.WriteRawBytes (data, startIndex, size) =
         if byteStream.Position = 0 then
