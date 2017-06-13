@@ -326,7 +326,7 @@ type Test() =
 
             let packet = packetPool.Get ()
 
-            packet.SetData (byteStream.Raw, 0, byteStream.Length)
+            packet.WriteRawBytes (byteStream.Raw, 0, byteStream.Length)
             packet.PacketType <- PacketType.ReliableOrdered
             packet.SequenceId <- seqN
 

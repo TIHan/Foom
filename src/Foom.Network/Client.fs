@@ -34,7 +34,6 @@ type Client (udpClient: IUdpClient) =
     member this.Connect (address, port) =
         if udpClient.Connect (address, port) then
             let packet = packetPool.Get ()
-            packet.SetData ([||], 0, 0)
             packet.PacketType <- PacketType.ConnectionRequested
             packetQueue.Enqueue packet
 

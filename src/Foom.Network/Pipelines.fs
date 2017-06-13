@@ -46,7 +46,7 @@ let createMergeFilter (packetPool : PacketPool) =
                     packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
                     packets.Add packet
                 else
-                    let count = (data.size / packet.LengthRemaining) - (if data.size % packet.LengthRemaining > 0 then -1 else 0)
+                    let count = (data.size / packet.LengthRemaining) + (if data.size % packet.LengthRemaining > 0 then 1 else 0)
                     let mutable startIndex = data.startIndex
                     failwith "yopac"
                     
