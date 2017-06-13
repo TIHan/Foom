@@ -327,7 +327,7 @@ type Test() =
             let packet = packetPool.Get ()
 
             packet.WriteRawBytes (byteStream.Raw, 0, byteStream.Length)
-            packet.PacketType <- PacketType.ReliableOrdered
+            packet.Type <- PacketType.ReliableOrdered
             packet.SequenceId <- seqN
 
             inputs.Add packet
@@ -383,6 +383,20 @@ type Test() =
         Assert.AreEqual (x + 1, y)
 
     [<Test>]
+    member this.TestPacket () =
+
+        let packet = Packet ()
+
+        packet.SequenceId <- 567us
+        packet.FragmentId <- 77us
+        packet.Type <- PacketType.ReliableAck
+
+        Assert.AreEqual (packet.SequenceId, 567us)
+        Assert.AreEqual (packet.FragmentId, 77us)
+        Assert.AreEqual (packet.Type, PacketType.ReliableAck)
+
+
+    [<Test>]
     member this.DataPipelineTest () =
 
         let data1 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128 }
@@ -425,8 +439,14 @@ type Test() =
         |> Seq.iter packetPool.Recycle
         packets.Clear ()
 
-        //let data3 = { bytes = Array.zeroCreate 12800; startIndex = 0; size = 12800 }
+        let data3 = { bytes = Array.zeroCreate 12800; startIndex = 0; size = 12800 }
 
-        //pipeline.Send data3
+        data3.bytes.[12800 - 1] <- 129uy
 
-        //pipeline.Process ()
+        pipeline.Send data3
+
+        pipeline.Process ()
+
+        let lastPacket = packets.[packets.Count - 1]
+
+        Assert.AreEqual (lastPacket.Raw.[lastPacket.Length - 1], 129uy)

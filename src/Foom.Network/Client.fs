@@ -34,7 +34,7 @@ type Client (udpClient: IUdpClient) =
     member this.Connect (address, port) =
         if udpClient.Connect (address, port) then
             let packet = packetPool.Get ()
-            packet.PacketType <- PacketType.ConnectionRequested
+            packet.Type <- PacketType.ConnectionRequested
             packetQueue.Enqueue packet
 
     member private this.OnReceive (reader : ByteReader) =
@@ -61,7 +61,7 @@ type Client (udpClient: IUdpClient) =
             | 0 -> ()
             | byteCount ->
                 packet.Length <- byteCount
-                match packet.PacketType with
+                match packet.Type with
 
                 | PacketType.ConnectionAccepted ->
                     isConnected <- true
@@ -69,7 +69,7 @@ type Client (udpClient: IUdpClient) =
 
                 | PacketType.Unreliable -> receiverUnreliable.Send (packet)
 
-                | _ -> failwithf "Unsupported packet type: %A" packet.PacketType
+                | _ -> failwithf "Unsupported packet type: %A" packet.Type
 
         receiverUnreliable.Process ()
 

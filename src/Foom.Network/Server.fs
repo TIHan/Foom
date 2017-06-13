@@ -15,7 +15,7 @@ type Server (udpServer: IUdpServer) =
     let clientConnected = Event<IUdpEndPoint> ()
 
     let onReceivePacket (packet : Packet) (endPoint: IUdpEndPoint) =
-        match packet.PacketType with
+        match packet.Type with
         | PacketType.ConnectionRequested ->
 
             let client = ConnectedClient (endPoint, udpServer)

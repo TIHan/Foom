@@ -48,7 +48,22 @@ let createMergeFilter (packetPool : PacketPool) =
                 else
                     let count = (data.size / packet.DataLengthRemaining) + (if data.size % packet.DataLengthRemaining > 0 then 1 else 0)
                     let mutable startIndex = data.startIndex
-                    failwith "yopac"
+
+                    packet.FragmentId <- uint16 count
+                    packet.WriteRawBytes (data.bytes, data.startIndex, packet.DataLengthRemaining)
+                    packets.Add packet
+
+                    for i = 1 to count - 1 do
+                        let packet = packetPool.Get ()
+                        packet.FragmentId <- uint16 (count - i)
+
+                        if i = (count - 1) then
+                            let startIndex = data.startIndex + (i * packet.DataLengthRemaining)
+                            packet.WriteRawBytes (data.bytes, startIndex, data.size - startIndex)
+                        else
+                            packet.WriteRawBytes (data.bytes, data.startIndex + (i * packet.DataLengthRemaining), packet.DataLengthRemaining)
+
+                        packets.Add packet 
                     
             else
                 let packet = packets.[packets.Count - 1]
@@ -73,7 +88,7 @@ let createReliableOrderedFilter (ackManager : AckManager) =
         packets
         |> Seq.iter (fun packet ->
             sequencer.Assign packet
-            packet.PacketType <- PacketType.ReliableOrdered
+            packet.Type <- PacketType.ReliableOrdered
             ackManager.MarkCopy packet
             callback packet
         )

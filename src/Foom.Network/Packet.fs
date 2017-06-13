@@ -23,10 +23,11 @@ type PacketType =
 [<Struct>]
 type PacketHeader =
     { type'         : PacketType
-      fragments     : byte
-      sequenceId    : uint16
-      size          : uint16
       fragmentId    : uint16
+      sequenceId    : uint16
+      pad0          : byte
+      pad1          : byte
+      pad2          : byte
     }
 
 [<Sealed>]
@@ -49,45 +50,37 @@ type Packet () =
 
     member this.Raw = byteStream.Raw
 
-    member this.PacketType
+    member this.Type
         with get () : PacketType = LanguagePrimitives.EnumOfValue (byteStream.Raw.[0])
         and set (value : PacketType) = byteStream.Raw.[0] <- byte value
 
     member this.SequenceId 
         with get () =
             let originalPos = byteStream.Position
-            byteStream.Position <- 2
+            byteStream.Position <- 3
             let value = byteReader.ReadUInt16 ()
             byteStream.Position <- originalPos
             value
 
         and set value =
            let originalPos = byteStream.Position
-           byteStream.Position <- 2
+           byteStream.Position <- 3
            byteWriter.WriteUInt16 value
            byteStream.Position <- originalPos
 
     member this.FragmentId 
         with get () =
             let originalPos = byteStream.Position
-            byteStream.Position <- 2
+            byteStream.Position <- 1
             let value = byteReader.ReadUInt16 ()
             byteStream.Position <- originalPos
             value
 
         and set value =
            let originalPos = byteStream.Position
-           byteStream.Position <- 2
+           byteStream.Position <- 1
            byteWriter.WriteUInt16 value
            byteStream.Position <- originalPos
-
-    member this.Fragments
-        with get () =
-            let originalPos = byteStream.Position
-            byteStream.Position <- 1
-            let value = byteReader.ReadByte ()
-            byteStream.Position <- originalPos
-            value
 
     member this.WriteRawBytes (data, startIndex, size) =
         if byteStream.Position = 0 then
