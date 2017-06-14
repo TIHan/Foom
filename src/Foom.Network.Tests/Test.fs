@@ -469,17 +469,32 @@ type Test() =
 
     [<Test>]
     member this.ReliableOrderedPipelines () =
-        let packetPool = PacketPool 64
+        let senderPacketPool = PacketPool 2048
 
-        let sender = Sender.createReliableOrdered packetPool
+        let sender = Sender.createReliableOrdered senderPacketPool
 
-        let packetPool = PacketPool 64
+        let receivePacketPool = PacketPool 2048
 
-        let receiver = Receiver.createReliableOrdered packetPool (fun ack -> ())
+        let receiver = Receiver.createReliableOrdered receivePacketPool (fun ack -> ())
 
         let packets = ResizeArray ()
 
-        sender.Output.Add receiver.Send
+        let mutable canSimulatePacketLoss = true
+
+        sender.Output.Add (fun packet ->
+            let receivePacket = receivePacketPool.Get ()
+            packet.CopyTo receivePacket
+
+            if canSimulatePacketLoss then
+                if int packet.SequenceId % 2 = 0 then
+                    receiver.Send receivePacket
+                else
+                    receivePacketPool.Recycle receivePacket
+            else
+                receiver.Send receivePacket
+
+            senderPacketPool.Recycle packet
+        )
 
         receiver.Output.Add packets.Add
 
@@ -498,7 +513,20 @@ type Test() =
 
         let lastPacket = packets.[packets.Count - 1]
 
+        Assert.AreNotEqual (lastPacket.Raw.[lastPacket.Length - 1], 129uy)
+
+        canSimulatePacketLoss <- false
+
+        // TODO: Add a way to resend packets
+
+        sender.Process ()
+        receiver.Process ()
+
+        let lastPacket = packets.[packets.Count - 1]
+
         Assert.AreEqual (lastPacket.Raw.[lastPacket.Length - 1], 129uy)
+
+
         
 
 
