@@ -6,32 +6,6 @@ open System.Collections.Generic
 
 open Foom.Network
 
-let ReliableOrderedAckReceiver (packetPool : PacketPool) (ackManager : AckManager) ack =
-    let mutable nextSeqId = 0us
-
-    fun (packets : Packet seq) callback ->
-
-        packets
-        |> Seq.iter (fun packet ->
-            if nextSeqId = packet.SequenceId then
-                callback packet
-                ack nextSeqId
-                nextSeqId <- nextSeqId + 1us
-            else
-                ackManager.MarkCopy packet
-                packetPool.Recycle packet
-        )
-
-        ackManager.ForEachPending (fun seqId copyPacket ->
-            if int nextSeqId = seqId then
-                let packet = packetPool.Get ()
-                copyPacket.CopyTo packet
-                ackManager.Ack seqId
-                ack nextSeqId
-                nextSeqId <- nextSeqId + 1us
-                callback packet
-        )
-
 [<Struct>]
 type Data = { bytes : byte []; startIndex : int; size : int }
 
@@ -94,7 +68,7 @@ let createReliableOrderedFilter (ackManager : AckManager) =
         |> Seq.iter (fun packet ->
             sequencer.Assign packet
             packet.Type <- PacketType.ReliableOrdered
-            ackManager.MarkCopy packet
+            ackManager.MarkCopy (packet, TimeSpan.Zero)
             callback packet
         )
 
@@ -114,7 +88,7 @@ let createReliableOrderedAckReceiveFilter (packetPool : PacketPool) (ackManager 
                 ack nextSeqId
                 nextSeqId <- nextSeqId + 1us
             else
-                ackManager.MarkCopy packet
+                ackManager.MarkCopy (packet, TimeSpan.Zero)
                 packetPool.Recycle packet
         )
 

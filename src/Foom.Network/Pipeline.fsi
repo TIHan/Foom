@@ -18,7 +18,7 @@ module Pipeline =
 
     val create : unit -> PipelineBuilder<'Input, 'Input>
 
-    val demux : ('a -> ('b -> unit) -> ('c -> unit) -> unit) -> PipelineBuilder<'Input, 'a> -> PipelineBuilder<'Input, ('b seq * 'c seq)>
+    val demux : (('b -> unit) -> ('c -> unit) -> 'a -> unit) -> PipelineBuilder<'Input, 'a> -> PipelineBuilder<'Input, ('b seq * 'c seq)>
 
     val filter : ('Output seq -> ('NewOutput -> unit) -> unit) -> PipelineBuilder<'Input, 'Output> -> PipelineBuilder<'Input, 'NewOutput>
 

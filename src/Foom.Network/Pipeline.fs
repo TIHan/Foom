@@ -37,7 +37,7 @@ module Pipeline =
             context.OutputEvent <- (evt :> obj) |> Some
         )
 
-    let demux (f :  ('a -> ('b -> unit) -> ('c -> unit) -> unit)) (pipeline : PipelineBuilder<'Input, 'a>) : PipelineBuilder<'Input, ('b seq * 'c seq)> =
+    let demux (f :  (('b -> unit) -> ('c -> unit) -> 'a -> unit)) (pipeline : PipelineBuilder<'Input, 'a>) : PipelineBuilder<'Input, ('b seq * 'c seq)> =
         PipelineBuilder (fun context ->
             match pipeline with
             | PipelineBuilder f -> f context
@@ -47,7 +47,7 @@ module Pipeline =
             let inputs = ResizeArray<'b> ()
             let inputs2 = ResizeArray<'c> ()
             context.SubscribeActions.Add(fun () ->
-                evt.Publish.Add (fun x -> f x inputs.Add inputs2.Add)
+                evt.Publish.Add (fun x -> f inputs.Add inputs2.Add x)
             )
 
             let evt = Event<_> ()

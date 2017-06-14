@@ -9,7 +9,7 @@ type AckManager =
 
     member Ack : int -> unit
 
-    member MarkCopy : Packet -> unit
+    member MarkCopy : Packet * TimeSpan -> unit
 
     new : unit -> AckManager
 

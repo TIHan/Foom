@@ -31,6 +31,7 @@ type AckManager () =
     let copyPacketPool = PacketPool (64)
     let copyPackets = Array.init 65536 (fun _ -> Unchecked.defaultof<Packet>)
     let acks = Array.init 65536 (fun _ -> true)
+    let ackTimes = Array.init 65536 (fun _ -> TimeSpan.Zero)
 
     let mutable newestAck = -1
     let mutable oldestAck = -1
@@ -85,7 +86,7 @@ type AckManager () =
                         nextNewestAck <- int n
                 newestAck <- nextNewestAck
 
-    member x.MarkCopy (packet : Packet) =
+    member x.MarkCopy (packet : Packet, time) =
         let i = int packet.SequenceId
         if acks.[i] then
             let packet' = copyPacketPool.Get ()
@@ -93,6 +94,7 @@ type AckManager () =
             copyPackets.[i] <- packet'
 
             acks.[i] <- false
+            ackTimes.[i] <- time
 
             if oldestAck = -1 then
                 oldestAck <- i

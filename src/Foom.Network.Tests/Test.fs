@@ -317,7 +317,7 @@ type Test() =
 
         let mutable ackId = -1
 
-        let reliableOrderedReceiver = ReliableOrderedAckReceiver packetPool ackManager (fun i -> ackId <- int i)
+        let reliableOrderedReceiver = createReliableOrderedAckReceiveFilter packetPool ackManager (fun i -> ackId <- int i)
 
         Assert.AreEqual (-1, ackId)
 
