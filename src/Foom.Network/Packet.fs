@@ -83,9 +83,6 @@ type Packet () =
            byteStream.Position <- originalPos
 
     member this.WriteRawBytes (data, startIndex, size) =
-        if byteStream.Position = 0 then
-            byteWriter.Write Unchecked.defaultof<PacketHeader>
-
         byteWriter.WriteRawBytes (data, startIndex, size)
 
     member this.Reset () =

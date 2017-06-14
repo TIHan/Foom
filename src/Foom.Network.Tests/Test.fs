@@ -439,6 +439,22 @@ type Test() =
         |> Seq.iter packetPool.Recycle
         packets.Clear ()
 
+    [<Test>]
+    member this.DataPipelineTestFragmented () =
+        let packetPool = PacketPool 64
+
+        let packets = ResizeArray ()
+        let mergeFilter = createMergeFilter packetPool
+        let filter1 = Pipeline.filter mergeFilter
+
+        let packets = ResizeArray ()
+
+        let pipeline =
+            Pipeline.create ()
+            |> filter1
+            |> Pipeline.sink packets.Add
+            |> Pipeline.build
+
         let data3 = { bytes = Array.zeroCreate 12800; startIndex = 0; size = 12800 }
 
         data3.bytes.[12800 - 1] <- 129uy
