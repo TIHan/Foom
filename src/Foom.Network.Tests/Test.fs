@@ -466,3 +466,39 @@ type Test() =
         let lastPacket = packets.[packets.Count - 1]
 
         Assert.AreEqual (lastPacket.Raw.[lastPacket.Length - 1], 129uy)
+
+    [<Test>]
+    member this.ReliableOrderedPipelines () =
+        let packetPool = PacketPool 64
+
+        let sender = Sender.createReliableOrdered packetPool
+
+        let packetPool = PacketPool 64
+
+        let receiver = Receiver.createReliableOrdered packetPool (fun ack -> ())
+
+        let packets = ResizeArray ()
+
+        sender.Output.Add receiver.Send
+
+        receiver.Output.Add packets.Add
+
+        let data1 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128 }
+        let data2 = { bytes = Array.zeroCreate 12800; startIndex = 0; size = 12800 }
+
+        data2.bytes.[12800 - 1] <- 129uy
+
+        for i = 1 to 100 do
+            sender.Send data1
+
+        sender.Send data2
+
+        sender.Process ()
+        receiver.Process ()
+
+        let lastPacket = packets.[packets.Count - 1]
+
+        Assert.AreEqual (lastPacket.Raw.[lastPacket.Length - 1], 129uy)
+        
+
+

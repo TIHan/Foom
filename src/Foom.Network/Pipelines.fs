@@ -35,6 +35,27 @@ let ReliableOrderedAckReceiver (packetPool : PacketPool) (ackManager : AckManage
 [<Struct>]
 type Data = { bytes : byte []; startIndex : int; size : int }
 
+let fragmentPackets (packetPool : PacketPool) (packets : ResizeArray<Packet>) (packet : Packet) (data : Data) =
+    let count = (data.size / packet.DataLengthRemaining) + (if data.size % packet.DataLengthRemaining > 0 then 1 else 0)
+    let mutable startIndex = data.startIndex
+
+    packet.FragmentId <- uint16 count
+    packet.WriteRawBytes (data.bytes, data.startIndex, packet.DataLengthRemaining)
+    packets.Add packet
+
+    for i = 1 to count - 1 do
+        let packet = packetPool.Get ()
+        packet.FragmentId <- uint16 (count - i)
+
+        if i = (count - 1) then
+            let startIndex = data.startIndex + (i * packet.DataLengthRemaining)
+            packet.WriteRawBytes (data.bytes, startIndex, data.size - startIndex)
+        else
+            packet.WriteRawBytes (data.bytes, data.startIndex + (i * packet.DataLengthRemaining), packet.DataLengthRemaining)
+
+        packets.Add packet 
+                    
+
 let createMergeFilter (packetPool : PacketPool) =
     let packets = ResizeArray ()
     fun data callback ->
@@ -46,24 +67,7 @@ let createMergeFilter (packetPool : PacketPool) =
                     packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
                     packets.Add packet
                 else
-                    let count = (data.size / packet.DataLengthRemaining) + (if data.size % packet.DataLengthRemaining > 0 then 1 else 0)
-                    let mutable startIndex = data.startIndex
-
-                    packet.FragmentId <- uint16 count
-                    packet.WriteRawBytes (data.bytes, data.startIndex, packet.DataLengthRemaining)
-                    packets.Add packet
-
-                    for i = 1 to count - 1 do
-                        let packet = packetPool.Get ()
-                        packet.FragmentId <- uint16 (count - i)
-
-                        if i = (count - 1) then
-                            let startIndex = data.startIndex + (i * packet.DataLengthRemaining)
-                            packet.WriteRawBytes (data.bytes, startIndex, data.size - startIndex)
-                        else
-                            packet.WriteRawBytes (data.bytes, data.startIndex + (i * packet.DataLengthRemaining), packet.DataLengthRemaining)
-
-                        packets.Add packet 
+                    fragmentPackets packetPool packets packet data
                     
             else
                 let packet = packets.[packets.Count - 1]
@@ -73,10 +77,11 @@ let createMergeFilter (packetPool : PacketPool) =
                     let packet = packetPool.Get ()
                     if packet.DataLengthRemaining >= data.size then
                         packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
+                        packets.Add packet
                     else
-                        failwith "too big"
+                        fragmentPackets packetPool packets packet data
 
-                    packets.Add packet
+                    
         )
 
         packets |> Seq.iter callback
@@ -96,6 +101,32 @@ let createReliableOrderedFilter (ackManager : AckManager) =
 let createClientReceiveFilter () =
     fun (packets : Packet seq) callback ->
         packets |> Seq.iter callback
+
+let createReliableOrderedAckReceiveFilter (packetPool : PacketPool) (ackManager : AckManager) ack =
+    let mutable nextSeqId = 0us
+
+    fun (packets : Packet seq) callback ->
+
+        packets
+        |> Seq.iter (fun packet ->
+            if nextSeqId = packet.SequenceId then
+                callback packet
+                ack nextSeqId
+                nextSeqId <- nextSeqId + 1us
+            else
+                ackManager.MarkCopy packet
+                packetPool.Recycle packet
+        )
+
+        ackManager.ForEachPending (fun seqId copyPacket ->
+            if int nextSeqId = seqId then
+                let packet = packetPool.Get ()
+                copyPacket.CopyTo packet
+                ackManager.Ack seqId
+                ack nextSeqId
+                nextSeqId <- nextSeqId + 1us
+                callback packet
+        )
 
 module Sender =
 
@@ -118,6 +149,14 @@ module Receiver =
 
     let createUnreliable () =
         let receiveFilter = createClientReceiveFilter ()
+        Pipeline.create ()
+        |> Pipeline.filter receiveFilter
+        |> Pipeline.build
+
+    let createReliableOrdered packetPool ack =
+        let ackManager = AckManager ()
+        let receiveFilter = createReliableOrderedAckReceiveFilter packetPool ackManager ack
+
         Pipeline.create ()
         |> Pipeline.filter receiveFilter
         |> Pipeline.build
