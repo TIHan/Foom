@@ -24,27 +24,6 @@ module AckManagerHelpers =
         (s2 > s1) &&
         (s2 - s1 > UInt16.MaxValue / 2us)
 
-    let iterPending (oldestAck : int) (newestAck : int) (acks : bool []) f =
-        if oldestAck <> -1 then
-
-            if newestAck = oldestAck then
-                if not acks.[oldestAck] then
-                    f oldestAck
-            
-            elif newestAck > oldestAck then
-                for i = oldestAck to newestAck do
-                    if not acks.[i] then
-                        f i
-
-            elif newestAck < oldestAck then
-                for i = oldestAck to acks.Length - 1 do
-                    if not acks.[i] then
-                        f i
-
-                for i = 0 to newestAck do
-                    if not acks.[i] then
-                        f i
-
     let getOldestAndNewestAck i (oldestAck : int) (newestAck : int) (acks : bool []) =
         if oldestAck = newestAck && oldestAck = i then
             struct (-1, -1)
@@ -70,6 +49,27 @@ module AckManagerHelpers =
         else
             struct (oldestAck, newestAck)
 
+    let iterPending (oldestAck : int) (newestAck : int) (acks : bool []) f =
+        if oldestAck <> -1 then
+
+            if newestAck = oldestAck then
+                if not acks.[oldestAck] then
+                    f oldestAck
+            
+            elif newestAck > oldestAck then
+                for i = oldestAck to newestAck do
+                    if not acks.[i] then
+                        f i
+
+            elif newestAck < oldestAck then
+                for i = oldestAck to acks.Length - 1 do
+                    if not acks.[i] then
+                        f i
+
+                for i = 0 to newestAck do
+                    if not acks.[i] then
+                        f i
+
 [<Sealed>]
 type AckManager (ackRetryTime : TimeSpan) =
 
@@ -81,11 +81,21 @@ type AckManager (ackRetryTime : TimeSpan) =
     let mutable newestAck = -1
     let mutable oldestAck = -1
 
-    member x.ForEachPending time f =
+    member x.Update time f =
         iterPending oldestAck newestAck acks (fun i -> 
             if time > ackTimes.[i] + ackRetryTime then
                 ackTimes.[i] <- ackTimes.[i] + ackRetryTime
                 f i copyPackets.[i]
+        )
+
+    member this.UpdateSequenced time f =
+        iterPending oldestAck newestAck acks (fun i ->
+            let packet = copyPackets.[i]
+            if newestAck <> i + int (if packet.FragmentId > 0us then packet.FragmentId - 1us else 0us) then
+                this.Ack i
+            else
+                if time > ackTimes.[i] + ackRetryTime then
+                    f i packet
         )
 
     member x.Ack i =

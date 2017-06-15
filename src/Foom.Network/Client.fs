@@ -21,12 +21,9 @@ type Client (udpClient: IUdpClient) =
     // Pipelines
 
     // Receiver
-    let receiverUnreliable = Receiver.createUnreliable ()
-
-    do
-        receiverUnreliable.Output.Add (fun packet ->
+    let receiverUnreliable = 
+        Receiver.createUnreliable packetPool (fun packet ->
             receiverByteWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.DataLength)
-            packetPool.Recycle packet
         )
 
     member val Connected = connectedEvent.Publish

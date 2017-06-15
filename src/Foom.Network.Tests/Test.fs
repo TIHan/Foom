@@ -378,7 +378,6 @@ type Test() =
             |> Pipeline.sink (fun x -> 
                 y <- x
             )
-            |> Pipeline.build
 
         pipeline.Send x
         pipeline.Process TimeSpan.Zero
@@ -416,7 +415,6 @@ type Test() =
             Pipeline.create ()
             |> mergeFilter
             |> Pipeline.sink packets.Add
-            |> Pipeline.build
 
         pipeline.Send data1
         pipeline.Send data2
@@ -454,7 +452,6 @@ type Test() =
             Pipeline.create ()
             |> mergeFilter
             |> Pipeline.sink packets.Add
-            |> Pipeline.build
 
         let data3 = { bytes = Array.zeroCreate 12800; startIndex = 0; size = 12800 }
 
@@ -471,35 +468,29 @@ type Test() =
     [<Test>]
     member this.ReliableOrderedPipelines () =
         let senderPacketPool = PacketPool 2048
-
-        let sender = Sender.createReliableOrdered senderPacketPool
-
         let receivePacketPool = PacketPool 2048
 
-        let receiver = Receiver.createReliableOrdered receivePacketPool (fun ack -> ())
+        let mutable valueToCheck = 0uy
 
-        let packets = ResizeArray ()
-
-        let stopwatch = Diagnostics.Stopwatch.StartNew ()
+        let receiver = Receiver.createReliableOrdered receivePacketPool (fun ack -> ()) (fun packet -> valueToCheck <- packet.Raw.[packet.Length - 1])
 
         let mutable canSimulatePacketLoss = true
 
-        sender.Output.Add (fun packet ->
-            let receivePacket = receivePacketPool.Get ()
-            packet.CopyTo receivePacket
+        let sender = 
+            Sender.createReliableOrdered senderPacketPool (fun packet ->
+                let receivePacket = receivePacketPool.Get ()
+                packet.CopyTo receivePacket
 
-            if canSimulatePacketLoss then
-                if int packet.SequenceId % 2 = 0 then
-                    receiver.Send receivePacket
+                if canSimulatePacketLoss then
+                    if int packet.SequenceId % 2 = 0 then
+                        receiver.Send receivePacket
+                    else
+                        receivePacketPool.Recycle receivePacket
                 else
-                    receivePacketPool.Recycle receivePacket
-            else
-                receiver.Send receivePacket
+                    receiver.Send receivePacket
+            )
 
-            senderPacketPool.Recycle packet
-        )
-
-        receiver.Output.Add packets.Add
+        let stopwatch = Diagnostics.Stopwatch.StartNew ()
 
         let data1 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128 }
         let data2 = { bytes = Array.zeroCreate 12800; startIndex = 0; size = 12800 }
@@ -514,9 +505,7 @@ type Test() =
         sender.Process stopwatch.Elapsed
         receiver.Process stopwatch.Elapsed
 
-        let lastPacket = packets.[packets.Count - 1]
-
-        Assert.AreNotEqual (lastPacket.Raw.[lastPacket.Length - 1], 129uy)
+        Assert.AreNotEqual (valueToCheck, 129uy)
 
         canSimulatePacketLoss <- false
 
@@ -524,9 +513,7 @@ type Test() =
         sender.Process stopwatch.Elapsed
         receiver.Process stopwatch.Elapsed
 
-        let lastPacket = packets.[packets.Count - 1]
-
-        Assert.AreEqual (lastPacket.Raw.[lastPacket.Length - 1], 129uy)
+        Assert.AreEqual (valueToCheck, 129uy)
 
 
         

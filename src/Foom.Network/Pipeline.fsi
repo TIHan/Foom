@@ -20,8 +20,6 @@ module Pipeline =
 
     val filter : (TimeSpan -> 'Output seq -> ('NewOutput -> unit) -> unit) -> PipelineBuilder<'Input, 'Output> -> PipelineBuilder<'Input, 'NewOutput>
 
-    val sink : ('Output -> unit) -> (PipelineBuilder<'Input, 'Output>) -> PipelineBuilder<'Input, 'Output>
-
-    val build : PipelineBuilder<'Input, 'Output> -> Pipeline<'Input, 'Output>
+    val sink : ('Output -> unit) -> (PipelineBuilder<'Input, 'Output>) -> Pipeline<'Input, 'Output>
 
     val map : ('b -> 'c) -> PipelineBuilder<'a, 'b> -> PipelineBuilder<'a, 'c>

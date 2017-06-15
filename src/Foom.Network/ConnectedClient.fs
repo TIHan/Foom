@@ -13,12 +13,9 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
     // Pipelines
 
     // Senders
-    let senderUnreliable = Sender.createUnreliable packetPool
-
-    do
-        senderUnreliable.Output.Add (fun packet -> 
+    let senderUnreliable = 
+        Sender.createUnreliable packetPool (fun packet -> 
             this.SendNow (packet.Raw, packet.Length)
-            packetPool.Recycle packet
         )
 
     member this.SendNow (data : byte [], size) =

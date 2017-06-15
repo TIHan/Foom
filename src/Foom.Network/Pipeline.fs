@@ -37,6 +37,26 @@ module Pipeline =
             context.OutputEvent <- (evt :> obj) |> Some
         )
 
+    let build (pipelineBuilder : PipelineBuilder<'Input, 'Output>) =
+        let context = PipelineContext ()
+        match pipelineBuilder with
+        | PipelineBuilder f -> f context
+
+        context.SubscribeActions
+        |> Seq.iter (fun f -> f ())
+
+        Pipeline (context.OutputEvent.Value :?> Event<'Output>, context.Send.Value, fun time -> 
+            context.ProcessActions
+            |> Seq.iter (fun f ->
+                f time
+            )
+
+            context.CleanupActions
+            |> Seq.iter (fun f ->
+                f ()
+            )
+        )
+
     let filter (filter : (TimeSpan -> 'Output seq -> ('NewOutput -> unit) -> unit)) (pipeline : PipelineBuilder<'Input, 'Output>) : PipelineBuilder<'Input, 'NewOutput> =
         PipelineBuilder (fun context ->
             match pipeline with
@@ -60,7 +80,7 @@ module Pipeline =
             )
         )
 
-    let sink f (pipeline : PipelineBuilder<'Input, 'Output>) : PipelineBuilder<'Input, 'Output> =
+    let sink f (pipeline : PipelineBuilder<'Input, 'Output>) : Pipeline<'Input, 'Output> =
         PipelineBuilder (fun context ->
             match pipeline with
             | PipelineBuilder f -> f context
@@ -68,26 +88,7 @@ module Pipeline =
             let evt = context.OutputEvent.Value :?> Event<'Output>
             evt.Publish.Add f
         )
-
-    let build (pipelineBuilder : PipelineBuilder<'Input, 'Output>) =
-        let context = PipelineContext ()
-        match pipelineBuilder with
-        | PipelineBuilder f -> f context
-
-        context.SubscribeActions
-        |> Seq.iter (fun f -> f ())
-
-        Pipeline (context.OutputEvent.Value :?> Event<'Output>, context.Send.Value, fun time -> 
-            context.ProcessActions
-            |> Seq.iter (fun f ->
-                f time
-            )
-
-            context.CleanupActions
-            |> Seq.iter (fun f ->
-                f ()
-            )
-        )
+        |> build
 
     let map f pipeline =
         pipeline

@@ -5,7 +5,9 @@ open System
 [<Sealed>]
 type AckManager =
 
-    member ForEachPending : TimeSpan -> (int -> Packet -> unit) -> unit
+    member Update : TimeSpan -> (int -> Packet -> unit) -> unit
+
+    member UpdateSequenced : TimeSpan -> (int -> Packet -> unit) -> unit
 
     member Ack : int -> unit
 
