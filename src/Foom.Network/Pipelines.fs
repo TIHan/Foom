@@ -32,7 +32,7 @@ let fragmentPackets (packetPool : PacketPool) (packets : ResizeArray<Packet>) (p
 
 let createMergeFilter (packetPool : PacketPool) =
     let packets = ResizeArray ()
-    fun data callback ->
+    Pipeline.filter (fun (time : TimeSpan) data callback ->
         data
         |> Seq.iter (fun data ->
             if packets.Count = 0 then
@@ -60,26 +60,12 @@ let createMergeFilter (packetPool : PacketPool) =
 
         packets |> Seq.iter callback
         packets.Clear ()
-
-let createReliableOrderedFilter (ackManager : AckManager) =
-    let sequencer = Sequencer ()
-    fun (packets : Packet seq) callback ->
-        packets
-        |> Seq.iter (fun packet ->
-            sequencer.Assign packet
-            packet.Type <- PacketType.ReliableOrdered
-            ackManager.MarkCopy (packet, TimeSpan.Zero)
-            callback packet
-        )
-
-let createClientReceiveFilter () =
-    fun (packets : Packet seq) callback ->
-        packets |> Seq.iter callback
+    )
 
 let createReliableOrderedAckReceiveFilter (packetPool : PacketPool) (ackManager : AckManager) ack =
     let mutable nextSeqId = 0us
 
-    fun (packets : Packet seq) callback ->
+    fun time (packets : Packet seq) callback ->
 
         packets
         |> Seq.iter (fun packet ->
@@ -88,11 +74,11 @@ let createReliableOrderedAckReceiveFilter (packetPool : PacketPool) (ackManager 
                 ack nextSeqId
                 nextSeqId <- nextSeqId + 1us
             else
-                ackManager.MarkCopy (packet, TimeSpan.Zero)
+                ackManager.MarkCopy (packet, time)
                 packetPool.Recycle packet
         )
 
-        ackManager.ForEachPending (fun seqId copyPacket ->
+        ackManager.ForEachPending time (fun seqId copyPacket ->
             if int nextSeqId = seqId then
                 let packet = packetPool.Get ()
                 copyPacket.CopyTo packet
@@ -104,31 +90,54 @@ let createReliableOrderedAckReceiveFilter (packetPool : PacketPool) (ackManager 
 
 module Sender =
 
+    let createReliableOrderedFilter (packetPool : PacketPool) (ackManager : AckManager) =
+        let sequencer = Sequencer ()
+        Pipeline.filter (fun time (packets : Packet seq) callback ->
+            packets
+            |> Seq.iter (fun packet ->
+                sequencer.Assign packet
+                packet.Type <- PacketType.ReliableOrdered
+                ackManager.MarkCopy (packet, time)
+                callback packet
+            )
+
+            ackManager.ForEachPending time (fun ack copyPacket ->
+                let packet = packetPool.Get ()
+                copyPacket.CopyTo packet
+                callback packet
+            )
+        )
+
     let createUnreliable packetPool =
         let mergeFilter = createMergeFilter packetPool
         Pipeline.create ()
-        |> Pipeline.filter mergeFilter
+        |> mergeFilter
         |> Pipeline.build
 
     let createReliableOrdered packetPool =
-        let ackManager = AckManager ()
+        let ackManager = AckManager (TimeSpan.FromSeconds 1.)
         let mergeFilter = createMergeFilter packetPool
-        let reliableOrderedFilter = createReliableOrderedFilter ackManager
+        let reliableOrderedFilter = createReliableOrderedFilter packetPool ackManager
         Pipeline.create ()
-        |> Pipeline.filter mergeFilter
-        |> Pipeline.filter reliableOrderedFilter
+        |> mergeFilter
+        |> reliableOrderedFilter
         |> Pipeline.build
 
 module Receiver =
 
+    let createClientReceiveFilter () =
+        Pipeline.filter (fun time (packets : Packet seq) callback ->
+            packets |> Seq.iter callback
+        )
+
     let createUnreliable () =
         let receiveFilter = createClientReceiveFilter ()
         Pipeline.create ()
-        |> Pipeline.filter receiveFilter
+        |> receiveFilter
         |> Pipeline.build
 
     let createReliableOrdered packetPool ack =
-        let ackManager = AckManager ()
+        let ackManager = AckManager (TimeSpan.FromSeconds 1.)
         let receiveFilter = createReliableOrderedAckReceiveFilter packetPool ackManager ack
 
         Pipeline.create ()

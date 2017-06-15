@@ -53,7 +53,7 @@ type Client (udpClient: IUdpClient) =
         while not reader.IsEndOfStream do
             onReceive reader
 
-    member private this.Receive () =
+    member private this.Receive time =
 
         while udpClient.IsDataAvailable do
             let packet = packetPool.Get ()
@@ -71,9 +71,9 @@ type Client (udpClient: IUdpClient) =
 
                 | _ -> failwithf "Unsupported packet type: %A" packet.Type
 
-        receiverUnreliable.Process ()
+        receiverUnreliable.Process time
 
-    member private this.Send () =
+    member private this.Send time =
         while packetQueue.Count > 0 do
 
             let packet = packetQueue.Dequeue ()
@@ -89,10 +89,10 @@ type Client (udpClient: IUdpClient) =
             evt.Publish.Add (fun msg -> f (msg :?> 'T))
         | _ -> ()
 
-    member this.Update () =
+    member this.Update time =
         receiveByteStream.Length <- 0
 
-        this.Receive ()
+        this.Receive time
 
         // Perform OnReceive after processing all incoming packets.
         receiveByteStream.Position <- 0

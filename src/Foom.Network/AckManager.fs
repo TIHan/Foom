@@ -26,7 +26,7 @@ module AcksInternal =
         (s2 - s1 > UInt16.MaxValue / 2us)
 
 [<Sealed>]
-type AckManager () =
+type AckManager (ackRetryTime : TimeSpan) =
 
     let copyPacketPool = PacketPool (64)
     let copyPackets = Array.init 65536 (fun _ -> Unchecked.defaultof<Packet>)
@@ -36,7 +36,12 @@ type AckManager () =
     let mutable newestAck = -1
     let mutable oldestAck = -1
 
-    member x.ForEachPending f =
+    member x.ForEachPending time f1 =
+        let inline f i packet =
+            if time > ackTimes.[i] + ackRetryTime then
+                ackTimes.[i] <- ackTimes.[i] + ackRetryTime
+                f1 i packet
+
         if oldestAck <> -1 then
 
             if newestAck = oldestAck then
@@ -63,6 +68,7 @@ type AckManager () =
             copyPackets.[i] <- Unchecked.defaultof<Packet>
 
             acks.[i] <- true
+            ackTimes.[i] <- TimeSpan.Zero
 
             if oldestAck = newestAck && oldestAck = i then
                 oldestAck <- -1

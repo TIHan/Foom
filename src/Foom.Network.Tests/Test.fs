@@ -209,11 +209,11 @@ type Test() =
 
         client.Connect ("127.0.0.1", 29015)
         clientV6.Connect ("::1", 29015)
-        client.Update ()
-        clientV6.Update ()
-        server.Update ()
-        client.Update ()
-        clientV6.Update ()
+        client.Update TimeSpan.Zero
+        clientV6.Update TimeSpan.Zero
+        server.Update TimeSpan.Zero
+        client.Update TimeSpan.Zero
+        clientV6.Update TimeSpan.Zero
 
        // Assert.True (isConnected)
        // Assert.True (isIpv6Connected)
@@ -255,7 +255,7 @@ type Test() =
             server.Publish ({ a = 9898; b = 3456 })
             server.Publish ({ c = 1337; d = 666 })
 
-        server.Update ()
+        server.Update TimeSpan.Zero
 
         stopwatch.Stop ()
 
@@ -268,14 +268,14 @@ type Test() =
         //    client.Connect ("127.0.0.1", 27015)
         //    client.Update ()
 
-        server.Update ()
+        server.Update TimeSpan.Zero
 
         let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 
         for i = 0 to 1 do
             server.Publish data
 
-        server.Update ()
+        server.Update TimeSpan.Zero
 
         stopwatch.Stop ()
 
@@ -288,12 +288,12 @@ type Test() =
             for i = 0 to 40 do
                 server.Publish data
 
-            server.Update ()
+            server.Update TimeSpan.Zero
 
             let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 
-            client.Update ()
-            clientV6.Update ()
+            client.Update TimeSpan.Zero
+            clientV6.Update TimeSpan.Zero
 
             stopwatch.Stop ()
 
@@ -313,13 +313,15 @@ type Test() =
         byteWriter.Write { x = 1234; y = 5678 }
 
         let packetPool = PacketPool 64
-        let ackManager = AckManager ()
+        let ackManager = AckManager (TimeSpan.FromSeconds 1.)
 
         let mutable ackId = -1
 
         let reliableOrderedReceiver = createReliableOrderedAckReceiveFilter packetPool ackManager (fun i -> ackId <- int i)
 
         Assert.AreEqual (-1, ackId)
+
+        let stopwatch = Diagnostics.Stopwatch.StartNew ()
 
         let inputs = ResizeArray ()
         let test seqN =
@@ -332,7 +334,7 @@ type Test() =
 
             inputs.Add packet
 
-            reliableOrderedReceiver inputs packetPool.Recycle
+            reliableOrderedReceiver stopwatch.Elapsed inputs packetPool.Recycle
 
             inputs.Clear ()
 
@@ -355,6 +357,7 @@ type Test() =
         Assert.AreEqual (2us, ackId)
         test 3us
         test 3us
+        Threading.Thread.Sleep (2000)
         test 2us
         Assert.AreEqual (10us, ackId)
 
@@ -378,7 +381,7 @@ type Test() =
             |> Pipeline.build
 
         pipeline.Send x
-        pipeline.Process ()
+        pipeline.Process TimeSpan.Zero
 
         Assert.AreEqual (x + 1, y)
 
@@ -406,20 +409,19 @@ type Test() =
 
         let packets = ResizeArray ()
         let mergeFilter = createMergeFilter packetPool
-        let filter1 = Pipeline.filter mergeFilter
 
         let packets = ResizeArray ()
 
         let pipeline =
             Pipeline.create ()
-            |> filter1
+            |> mergeFilter
             |> Pipeline.sink packets.Add
             |> Pipeline.build
 
         pipeline.Send data1
         pipeline.Send data2
 
-        pipeline.Process ()
+        pipeline.Process TimeSpan.Zero
 
         Assert.AreEqual (packets.Count, 1)
 
@@ -431,7 +433,7 @@ type Test() =
             pipeline.Send data1
             pipeline.Send data2
 
-        pipeline.Process ()
+        pipeline.Process TimeSpan.Zero
 
         Assert.AreEqual (packets.Count, 25)
 
@@ -445,13 +447,12 @@ type Test() =
 
         let packets = ResizeArray ()
         let mergeFilter = createMergeFilter packetPool
-        let filter1 = Pipeline.filter mergeFilter
 
         let packets = ResizeArray ()
 
         let pipeline =
             Pipeline.create ()
-            |> filter1
+            |> mergeFilter
             |> Pipeline.sink packets.Add
             |> Pipeline.build
 
@@ -461,7 +462,7 @@ type Test() =
 
         pipeline.Send data3
 
-        pipeline.Process ()
+        pipeline.Process TimeSpan.Zero
 
         let lastPacket = packets.[packets.Count - 1]
 
@@ -478,6 +479,8 @@ type Test() =
         let receiver = Receiver.createReliableOrdered receivePacketPool (fun ack -> ())
 
         let packets = ResizeArray ()
+
+        let stopwatch = Diagnostics.Stopwatch.StartNew ()
 
         let mutable canSimulatePacketLoss = true
 
@@ -508,8 +511,8 @@ type Test() =
 
         sender.Send data2
 
-        sender.Process ()
-        receiver.Process ()
+        sender.Process stopwatch.Elapsed
+        receiver.Process stopwatch.Elapsed
 
         let lastPacket = packets.[packets.Count - 1]
 
@@ -517,10 +520,9 @@ type Test() =
 
         canSimulatePacketLoss <- false
 
-        // TODO: Add a way to resend packets
-
-        sender.Process ()
-        receiver.Process ()
+        Threading.Thread.Sleep (2000)
+        sender.Process stopwatch.Elapsed
+        receiver.Process stopwatch.Elapsed
 
         let lastPacket = packets.[packets.Count - 1]
 

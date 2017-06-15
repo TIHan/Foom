@@ -39,9 +39,9 @@ type Server (udpServer: IUdpServer) =
                 recvPacket.Length <- byteCount
                 onReceivePacket recvPacket endPoint
 
-    let send () =
+    let send time =
         clients
-        |> Seq.iter (fun client -> client.Update ())
+        |> Seq.iter (fun client -> client.Update time)
 
     [<CLIEvent>]
     member val ClientConnected = clientConnected.Publish
@@ -64,8 +64,8 @@ type Server (udpServer: IUdpServer) =
 
         | _ -> ()
 
-    member this.Update () =
+    member this.Update time =
         receive ()
-        send ()
+        send time
         this.BytesSentSinceLastUpdate <- udpServer.BytesSentSinceLastCall ()
         sendStream.Length <- 0

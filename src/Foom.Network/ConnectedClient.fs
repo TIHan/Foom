@@ -34,10 +34,10 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
 
         packetQueue.Enqueue packet
 
-    member this.Update () =
+    member this.Update time =
 
         while packetQueue.Count > 0 do
             let packet = packetQueue.Dequeue ()
             this.SendNow (packet.Raw, packet.Length)
 
-        senderUnreliable.Process ()
+        senderUnreliable.Process time

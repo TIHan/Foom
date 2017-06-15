@@ -10,7 +10,7 @@ type Pipeline<'Input, 'Output> =
 
     member Send : 'Input -> unit
 
-    member Process : unit -> unit
+    member Process : TimeSpan -> unit
 
     member Output : IEvent<'Output>
 
@@ -18,9 +18,7 @@ module Pipeline =
 
     val create : unit -> PipelineBuilder<'Input, 'Input>
 
-    val demux : (('b -> unit) -> ('c -> unit) -> 'a -> unit) -> PipelineBuilder<'Input, 'a> -> PipelineBuilder<'Input, ('b seq * 'c seq)>
-
-    val filter : ('Output seq -> ('NewOutput -> unit) -> unit) -> PipelineBuilder<'Input, 'Output> -> PipelineBuilder<'Input, 'NewOutput>
+    val filter : (TimeSpan -> 'Output seq -> ('NewOutput -> unit) -> unit) -> PipelineBuilder<'Input, 'Output> -> PipelineBuilder<'Input, 'NewOutput>
 
     val sink : ('Output -> unit) -> (PipelineBuilder<'Input, 'Output>) -> PipelineBuilder<'Input, 'Output>
 
