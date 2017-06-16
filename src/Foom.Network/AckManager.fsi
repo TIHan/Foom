@@ -9,6 +9,8 @@ type AckManager =
 
     member UpdateSequenced : TimeSpan -> (int -> Packet -> unit) -> unit
 
+    member ForEachPending : (int -> Packet -> unit) -> unit
+
     member Ack : int -> unit
 
     member MarkCopy : Packet * TimeSpan -> unit

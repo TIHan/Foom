@@ -515,7 +515,9 @@ type Test() =
 
         Assert.AreEqual (valueToCheck, 129uy)
 
-
-        
-
+    [<Test>]
+    member this.ReliableSequenced () =
+        let senderPacketPool = PacketPool 2048
+        let receivePacketPool = PacketPool 2048
+        ()
 

@@ -98,6 +98,9 @@ type AckManager (ackRetryTime : TimeSpan) =
                     f i packet
         )
 
+    member this.ForEachPending f =
+        iterPending oldestAck newestAck acks (fun i -> f i copyPackets.[i])
+
     member x.Ack i =
         if not acks.[i] then
             copyPacketPool.Recycle copyPackets.[i]
