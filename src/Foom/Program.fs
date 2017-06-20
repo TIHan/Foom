@@ -138,9 +138,9 @@ let start (input : IInput) (gl : IGL) (invoke: Task ref) =
 [<EntryPoint>]
 let main argv =
     printfn "Foom - Initialized"
-    let gameWindow = new GameWindow (1280, 720, GraphicsMode.Default, "Foommmmm", GameWindowFlags.FixedWindow, DisplayDevice.Default, 3, 2, GraphicsContextFlags.Default)
+    //let gameWindow = new GameWindow (1280, 720, GraphicsMode.Default, "Foommmmm", GameWindowFlags.FixedWindow, DisplayDevice.Default, 3, 2, GraphicsContextFlags.Default)
     let app = Backend.init ()
-    let gl = OpenTKGL (fun () -> Backend.draw app)
+    let gl = DesktopGL (app)//OpenTKGL (fun () -> Backend.draw app)
     let input = DesktopInput (app.Window)
     let (preUpdate, update, render) = start input gl (new Task (fun () -> ()) |> ref)
     GameLoop.start 30. preUpdate update render

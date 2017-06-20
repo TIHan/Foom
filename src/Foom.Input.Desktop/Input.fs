@@ -11,9 +11,9 @@ open System.Runtime.InteropServices
 )>]
 [<GccLinux ("-I../include/SDL2", "-lSDL2")>]
 #if __64BIT__
-[<MsvcWin (""" /I ..\..\include\SDL2 /I ..\..\include ..\..\lib\win\x64\SDL2.lib ..\..\lib\win\x64\SDL2main.lib ..\..\lib\win\x64\glew32.lib opengl32.lib """)>]
+[<MsvcWin (""" /I ..\include\SDL2 /I ..\include ..\lib\win\x64\SDL2.lib ..\lib\win\x64\SDL2main.lib ..\lib\win\x64\glew32.lib opengl32.lib """)>]
 #else
-[<MsvcWin (""" /I ..\..\include\SDL2 /I ..\..\include ..\..\lib\win\x86\SDL2.lib ..\..\lib\win\x86\SDL2main.lib ..\..\lib\win\x86\glew32.lib opengl32.lib """)>]
+[<MsvcWin (""" /I ..\include\SDL2 /I ..\include ..\lib\win\x86\SDL2.lib ..\lib\win\x86\SDL2main.lib ..\lib\win\x86\glew32.lib opengl32.lib """)>]
 #endif
 [<Header ("""
 #include <stdio.h>

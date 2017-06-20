@@ -9,7 +9,7 @@ open Microsoft.Win32
 
 open Core
 
-let bat (is64bit: bool) =
+let bat (is64bit: bool) dir =
     let registryKeyPath = "SOFTWARE\\Microsoft\\VisualStudio\\SxS\\Vs7"
     let registryKeyPath64bit = "SOFTWARE\\Wow6432Node\\Microsoft\\VisualStudio\\SxS\\Vs7"
     let registryKey = 
@@ -31,22 +31,39 @@ let bat (is64bit: bool) =
 
     let vs = registryKey.GetValue (sprintf "%.1f" key) :?> string
 
-    let vcBin = Path.Combine (vs, "VC\\bin")
+    let vcBin = 
+        let path = Path.Combine (vs, "VC\\bin")
+        if Directory.Exists path then path
+        else Path.Combine (vs, "VC\\Auxiliary\\Build")
 
-    let vcBin64bit = Path.Combine (vs, "VC\\bin\\x86_amd64")
+    let vcBin64bit = 
+        let path = Path.Combine (vs, "VC\\bin\\x86_amd64")
+        if Directory.Exists path then path
+        else Path.Combine (vs, "VC\\Auxiliary\\Build")
 
     let vcvars32 = Path.Combine (vcBin, "vcvars32.bat")
     let vcvars64 = Path.Combine (vcBin64bit, "vcvarsx86_amd64.bat")
+
     let cl = "cl.exe"
-    let cl32bit = Path.Combine (vcBin, cl)
-    let cl64bit = Path.Combine (vcBin64bit, cl)
+
+    let cl32bit =
+        let path = Path.Combine (vcBin, cl)
+        if Directory.Exists path then path
+        else Path.Combine (Path.Combine (vs, "SDK\\ScopeCppSDK\\VC\\bin"), cl)
+
+    let cl64bit = 
+        let path = Path.Combine (vcBin64bit, cl)
+        if Directory.Exists path then path
+        else Path.Combine (Path.Combine (vs, "SDK\\ScopeCppSDK\\VC\\bin"), cl)
+
     let cl, vcvars =
         if is64bit
         then cl64bit, vcvars64
         else cl32bit, vcvars32          
     sprintf
         """call "%s"
-call "%s" %%*""" vcvars cl
+cd "%s"
+call "%s" %%*""" vcvars dir cl
 
 let makeDynamicLibraryPath path (modul: FeropModule) = Path.Combine (path, sprintf "%s.dll" modul.Name)
 
@@ -59,7 +76,7 @@ let makeMsvcStartInfo outputPath args = ProcessStartInfo (makeBatPath outputPath
 let findAllObjectFiles path = Directory.GetFiles (path, "*.obj") |> List.ofArray
 
 let writeBat outputPath is64bit = async {
-    File.WriteAllText (makeBatPath outputPath, bat is64bit) }
+    File.WriteAllText (makeBatPath outputPath, bat is64bit outputPath) }
 
 let startMsvc outputPath args = async {
     let pinfo = makeMsvcStartInfo outputPath args

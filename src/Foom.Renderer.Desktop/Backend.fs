@@ -37,9 +37,9 @@ type RenderColor =
 )>]
 [<GccLinux ("-I../include/SDL2", "-lSDL2")>]
 #if __64BIT__
-[<MsvcWin (""" /I ..\..\include\SDL2 /I ..\..\include ..\..\lib\win\x64\SDL2.lib ..\..\lib\win\x64\SDL2main.lib ..\..\lib\win\x64\glew32.lib opengl32.lib """)>]
+[<MsvcWin (""" /I ..\include\SDL2 /I ..\include ..\lib\win\x64\SDL2.lib ..\lib\win\x64\SDL2main.lib ..\lib\win\x64\glew32.lib opengl32.lib """)>]
 #else
-[<MsvcWin (""" /I ..\..\include\SDL2 /I ..\..\include ..\..\lib\win\x86\SDL2.lib ..\..\lib\win\x86\SDL2main.lib ..\..\lib\win\x86\glew32.lib opengl32.lib """)>]
+[<MsvcWin (""" /I ..\include\SDL2 /I ..\include ..\lib\win\x86\SDL2.lib ..\lib\win\x86\SDL2main.lib ..\lib\win\x86\glew32.lib opengl32.lib """)>]
 #endif
 [<Header ("""
 #include <stdio.h>
@@ -66,6 +66,12 @@ module Backend =
 
         Backend_Application app;
 
+        SDL_GL_SetAttribute (SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute (SDL_GL_CONTEXT_MINOR_VERSION, 2);
+        SDL_GL_SetAttribute (SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        SDL_GL_SetAttribute (SDL_GL_DEPTH_SIZE, 16);
+        SDL_GL_SetAttribute (SDL_GL_STENCIL_SIZE, 8);
+
         app.Window = 
             SDL_CreateWindow(
                 "Foom",
@@ -74,12 +80,8 @@ module Backend =
                 1280, 720,
                 SDL_WINDOW_OPENGL);
 
+       // SDL_SetWindowFullscreen(app.Window, SDL_WINDOW_FULLSCREEN);
         //SDL_SetRelativeMouseMode(1);
-
-        SDL_GL_SetAttribute (SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-        SDL_GL_SetAttribute (SDL_GL_CONTEXT_MINOR_VERSION, 2);
-        SDL_GL_SetAttribute (SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-        SDL_GL_SetAttribute (SDL_GL_STENCIL_SIZE, 8);
 
         app.GLContext = SDL_GL_CreateContext ((SDL_Window*)app.Window);
         SDL_GL_SetSwapInterval (1);
