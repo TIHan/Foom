@@ -161,6 +161,28 @@ module Sender =
             packetPool.Recycle packet
         )
 
+    let createReliableOrderedAck packetPool f =
+        let mergeFilter = createMergeFilter packetPool
+        Pipeline.create ()
+        |> mergeFilter
+        |> Pipeline.sink (fun packet ->
+            packet.Type <- PacketType.ReliableOrderedAck
+            f packet
+            packetPool.Recycle packet
+        )
+
+    let createReliableSequenced packetPool f =
+        let ackManager = AckManager (TimeSpan.FromSeconds 1.)
+        let mergeFilter = createMergeFilter packetPool
+        let reliableSequencedFilter = createReliableSequencedFilter packetPool ackManager
+        Pipeline.create ()
+        |> mergeFilter
+        |> reliableSequencedFilter
+        |> Pipeline.sink (fun packet ->
+            f packet
+            packetPool.Recycle packet
+        )
+
     let createReliableOrdered packetPool f =
         let ackManager = AckManager (TimeSpan.FromSeconds 1.)
         let mergeFilter = createMergeFilter packetPool
@@ -189,9 +211,9 @@ module Receiver =
             packetPool.Recycle packet
         )
 
-    let createReliableSequencedFilter packetPool ack f =
+    let createReliableSequenced packetPool ack f =
         let ackManager = AckManager (TimeSpan.FromSeconds 1.)
-        let receiveFilter = createReliableOrderedAckReceiveFilter packetPool ackManager ack
+        let receiveFilter = createReliableSequencedAckReceiveFilter packetPool ackManager ack
 
         Pipeline.create ()
         |> Pipeline.filter receiveFilter

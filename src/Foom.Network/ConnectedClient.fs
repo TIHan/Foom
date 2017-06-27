@@ -18,6 +18,11 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
             this.SendNow (packet.Raw, packet.Length)
         )
 
+    let senderReliableOrdered =
+        Sender.createReliableOrdered packetPool (fun packet ->
+            this.SendNow (packet.Raw, packet.Length)
+        )
+
     member this.SendNow (data : byte [], size) =
         if size > 0 && data.Length > 0 then
             udpServer.Send (data, size, endPoint) |> ignore
