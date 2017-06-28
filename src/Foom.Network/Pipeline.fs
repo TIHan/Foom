@@ -18,15 +18,13 @@ type PipelineContext<'T> () =
 type PipelineBuilder<'Input, 'Output> = PipelineBuilder of (PipelineContext<'Input> -> unit)
 
 [<Sealed>]
-type Pipeline<'Input, 'Output> (evt : Event<'Output>, send : 'Input -> unit, process' : TimeSpan -> unit) =
+type Pipeline<'Input> (send : 'Input -> unit, process' : TimeSpan -> unit) =
 
     member this.Send input =
         send input
 
     member this.Process time =
         process' time
-
-    member this.Output = evt.Publish
 
 module Pipeline =
 
@@ -45,7 +43,7 @@ module Pipeline =
         context.SubscribeActions
         |> Seq.iter (fun f -> f ())
 
-        Pipeline (context.OutputEvent.Value :?> Event<'Output>, context.Send.Value, fun time -> 
+        Pipeline (context.Send.Value, fun time -> 
             context.ProcessActions
             |> Seq.iter (fun f ->
                 f time
@@ -80,7 +78,7 @@ module Pipeline =
             )
         )
 
-    let sink f (pipeline : PipelineBuilder<'Input, 'Output>) : Pipeline<'Input, 'Output> =
+    let sink f (pipeline : PipelineBuilder<'Input, 'Output>) : Pipeline<'Input> =
         PipelineBuilder (fun context ->
             match pipeline with
             | PipelineBuilder f -> f context

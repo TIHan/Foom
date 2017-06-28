@@ -3,21 +3,19 @@
 open System
 open System.Collections.Generic
 
-type PeerFlow (f) =
+type DataFlow (input, output) =
+
+    let sendStream = ByteStream (1024 * 1024)
+    let sendWriter = ByteWriter (sendStream)
+
+    let receiveByteStream = ByteStream (1024 * 1024)
+    let receiverByteReader = ByteReader (receiveByteStream)
+    let receiverByteWriter = ByteWriter (receiveByteStream)
 
     let packetPool = PacketPool 1024
 
-    let receiverUnreliable =
-        Receiver.createUnreliable packetPool f
-
-    let receiverReliableOrdered =
-        Receiver.createReliableOrdered packetPool (fun _ -> ()) f
-
-    let senderUnreliable = 
-        Sender.createUnreliable packetPool f
-
-    let senderReliableOrdered =
-        Sender.createReliableOrdered packetPool f
+    let sender = Sender.create packetPool input
+    let receiver = Receiver.create packetPool (fun ack -> sender.Send { bytes = [||]; startIndex = 0; size = 0; packetType = PacketType.ReliableOrderedAck; ack = int ack }) output
 
     
 
@@ -46,7 +44,7 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
             udpServer.Send (data, size, endPoint) |> ignore
 
     member this.Send (data, startIndex, size) =
-        senderUnreliable.Send { bytes = data; startIndex = startIndex; size = size }
+        senderUnreliable.Send { bytes = data; startIndex = startIndex; size = size; packetType = PacketType.Unreliable; ack = 0 }
 
     member this.SendConnectionAccepted () =
         let packet = Packet ()

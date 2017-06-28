@@ -50,6 +50,13 @@ type Packet () =
 
     member this.Raw = byteStream.Raw
 
+    member this.Header =
+        let originalPos = byteStream.Position
+        byteStream.Position <- 0
+        let value = byteReader.Read<PacketHeader> ()
+        byteStream.Position <- originalPos
+        value
+
     member this.Type
         with get () : PacketType = LanguagePrimitives.EnumOfValue (byteStream.Raw.[0])
         and set (value : PacketType) = byteStream.Raw.[0] <- byte value
@@ -85,6 +92,9 @@ type Packet () =
     member this.WriteRawBytes (data, startIndex, size) =
         byteWriter.WriteRawBytes (data, startIndex, size)
 
+    member this.WriteInt (value) =
+        byteWriter.WriteInt value
+
     member this.Reset () =
         byteStream.Length <- 0
         byteWriter.Write Unchecked.defaultof<PacketHeader>
@@ -94,3 +104,12 @@ type Packet () =
     member this.CopyTo (packet : Packet) =
         Buffer.BlockCopy (this.Raw, 0, packet.Raw, 0, this.Length)
         packet.Length <- this.Length
+
+    member this.ReadAcks f =
+        let originalPos = byteStream.Position
+        if this.Type = PacketType.ReliableOrderedAck then
+            byteStream.Position <- sizeof<PacketHeader>
+            while this.DataLengthRemaining > 0 do
+                f (byteReader.ReadInt ())
+
+        byteStream.Position <- originalPos

@@ -7,7 +7,7 @@ open System.Collections.Generic
 open Foom.Network
 
 [<Struct>]
-type Data = { bytes : byte []; startIndex : int; size : int }
+type Data = { bytes : byte []; startIndex : int; size : int; packetType : PacketType; ack : int }
 
 let fragmentPackets (packetPool : PacketPool) (packets : ResizeArray<Packet>) (packet : Packet) (data : Data) =
     let count = (data.size / packet.DataLengthRemaining) + (if data.size % packet.DataLengthRemaining > 0 then 1 else 0)
@@ -61,6 +61,38 @@ let createMergeFilter (packetPool : PacketPool) =
         packets |> Seq.iter callback
         packets.Clear ()
     )
+
+let createMergeAckFilter (packetPool : PacketPool) =
+    let packets = ResizeArray ()
+    Pipeline.filter (fun (time : TimeSpan) data callback ->
+        data
+        |> Seq.iter (fun data ->
+            if packets.Count = 0 then
+                let packet = packetPool.Get ()
+                if packet.DataLengthRemaining >= sizeof<int> then
+                    packet.WriteInt (data.ack)
+                    packets.Add packet
+                else
+                    failwith "shouldn't happen"
+                    
+            else
+                let packet = packets.[packets.Count - 1]
+                if packet.DataLengthRemaining >= sizeof<int> then
+                    packet.WriteInt (data.ack)
+                else
+                    let packet = packetPool.Get ()
+                    if packet.DataLengthRemaining >= sizeof<int> then
+                        packet.WriteInt (data.ack)
+                        packets.Add packet
+                    else
+                        failwith "shouldn't happen"
+
+                    
+        )
+
+        packets |> Seq.iter callback
+        packets.Clear ()
+    )
    
 
 module Sender =
@@ -93,7 +125,7 @@ module Sender =
         )
 
     let createReliableOrderedAck packetPool f =
-        let mergeFilter = createMergeFilter packetPool
+        let mergeFilter = createMergeAckFilter packetPool
         Pipeline.create ()
         |> mergeFilter
         |> Pipeline.sink (fun packet ->
@@ -114,6 +146,20 @@ module Sender =
             packetPool.Recycle packet
         )
 
+    let create packetPool f =
+        let unreliable = createUnreliable packetPool f
+        let reliableOrdered = createReliableOrdered packetPool f
+        let reliableOrderedAck = createReliableOrderedAck packetPool f
+
+        Pipeline.create ()
+        |> Pipeline.sink (fun data ->
+            match data.packetType with
+            | PacketType.Unreliable -> unreliable.Send data
+            | PacketType.ReliableOrdered -> reliableOrdered.Send data
+            | PacketType.ReliableOrderedAck -> reliableOrderedAck.Send data
+            | _ -> ()
+        )
+
 module Receiver =
 
     let createClientReceiveFilter () =
@@ -129,13 +175,11 @@ module Receiver =
 
                 packets
                 |> Seq.iter (fun packet ->
-                    if nextSeqId = packet.SequenceId then
-                        callback packet
-                        ack nextSeqId
-                        nextSeqId <- nextSeqId + 1us
-                    else
-                        ackManager.MarkCopy (packet, time)
-                        packetPool.Recycle packet
+                    if packet.Type = PacketType.ReliableOrdered then
+                        if nextSeqId = packet.SequenceId then
+                            callback packet
+                            ack nextSeqId
+                            nextSeqId <- nextSeqId + 1us
                 )
 
                 ackManager.ForEachPending (fun seqId copyPacket ->
@@ -147,7 +191,7 @@ module Receiver =
                         nextSeqId <- nextSeqId + 1us
                         callback packet
                 )
-        Pipeline.filter f
+        f
 
     let createUnreliable (packetPool : PacketPool) f =
         let receiveFilter = createClientReceiveFilter ()
@@ -158,13 +202,27 @@ module Receiver =
             packetPool.Recycle packet
         )
 
-    let createReliableOrdered packetPool ack f =
-        let ackManager = AckManager (TimeSpan.FromSeconds 1.)
+    let createReliableOrdered packetPool (ackManager : AckManager) ack f =
         let receiveFilter = createReliableOrderedAckReceiveFilter packetPool ackManager ack
 
         Pipeline.create ()
-        |> receiveFilter
+        |> Pipeline.filter receiveFilter
         |> Pipeline.sink (fun packet ->
             f packet
             packetPool.Recycle packet
+        )
+
+    let create packetPool ack f =
+        let unreliable = createUnreliable packetPool f
+
+        let ackManager = AckManager (TimeSpan.FromSeconds 1.)
+        let reliableOrdered = createReliableOrdered packetPool ackManager ack f
+
+        Pipeline.create ()
+        |> Pipeline.sink (fun (packet : Packet) ->
+            match packet.Type with
+            | PacketType.Unreliable -> unreliable.Send packet
+            | PacketType.ReliableOrdered -> reliableOrdered.Send packet
+            | PacketType.ReliableOrderedAck -> packet.ReadAcks ackManager.Ack
+            | _ -> ()
         )
