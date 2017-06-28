@@ -3,6 +3,24 @@
 open System
 open System.Collections.Generic
 
+type PeerFlow (f) =
+
+    let packetPool = PacketPool 1024
+
+    let receiverUnreliable =
+        Receiver.createUnreliable packetPool f
+
+    let receiverReliableOrdered =
+        Receiver.createReliableOrdered packetPool (fun _ -> ()) f
+
+    let senderUnreliable = 
+        Sender.createUnreliable packetPool f
+
+    let senderReliableOrdered =
+        Sender.createReliableOrdered packetPool f
+
+    
+
 [<Sealed>]
 type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
 

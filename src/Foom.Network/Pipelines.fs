@@ -61,78 +61,9 @@ let createMergeFilter (packetPool : PacketPool) =
         packets |> Seq.iter callback
         packets.Clear ()
     )
-
-let createReliableSequencedAckReceiveFilter (packetPool : PacketPool) (ackManager : AckManager) ack =
-    let mutable nextSeqId = 0us
-
-    fun time (packets : Packet seq) callback ->
-
-        packets
-        |> Seq.iter (fun packet ->
-            if nextSeqId = packet.SequenceId then
-                callback packet
-                ack nextSeqId
-                nextSeqId <- nextSeqId + 1us
-            else
-                ackManager.MarkCopy (packet, time)
-                packetPool.Recycle packet
-        )
-
-        ackManager.ForEachPending (fun seqId copyPacket ->
-            if int nextSeqId = seqId then
-                let packet = packetPool.Get ()
-                copyPacket.CopyTo packet
-                ackManager.Ack seqId
-                ack nextSeqId
-                nextSeqId <- nextSeqId + 1us
-                callback packet
-        )
-
-let createReliableOrderedAckReceiveFilter (packetPool : PacketPool) (ackManager : AckManager) ack =
-    let mutable nextSeqId = 0us
-
-    fun time (packets : Packet seq) callback ->
-
-        packets
-        |> Seq.iter (fun packet ->
-            if nextSeqId = packet.SequenceId then
-                callback packet
-                ack nextSeqId
-                nextSeqId <- nextSeqId + 1us
-            else
-                ackManager.MarkCopy (packet, time)
-                packetPool.Recycle packet
-        )
-
-        ackManager.ForEachPending (fun seqId copyPacket ->
-            if int nextSeqId = seqId then
-                let packet = packetPool.Get ()
-                copyPacket.CopyTo packet
-                ackManager.Ack seqId
-                ack nextSeqId
-                nextSeqId <- nextSeqId + 1us
-                callback packet
-        )
+   
 
 module Sender =
-
-    let createReliableSequencedFilter (packetPool : PacketPool) (ackManager : AckManager) =
-        let sequencer = Sequencer ()
-        Pipeline.filter (fun time (packets : Packet seq) callback ->
-            packets
-            |> Seq.iter (fun packet ->
-                sequencer.Assign packet
-                packet.Type <- PacketType.ReliableSequenced
-                ackManager.MarkCopy (packet, time)
-                callback packet
-            )
-
-            ackManager.UpdateSequenced time (fun ack copyPacket ->
-                let packet = packetPool.Get ()
-                copyPacket.CopyTo packet
-                callback packet
-            )
-        )
 
     let createReliableOrderedFilter (packetPool : PacketPool) (ackManager : AckManager) =
         let sequencer = Sequencer ()
@@ -171,18 +102,6 @@ module Sender =
             packetPool.Recycle packet
         )
 
-    let createReliableSequenced packetPool f =
-        let ackManager = AckManager (TimeSpan.FromSeconds 1.)
-        let mergeFilter = createMergeFilter packetPool
-        let reliableSequencedFilter = createReliableSequencedFilter packetPool ackManager
-        Pipeline.create ()
-        |> mergeFilter
-        |> reliableSequencedFilter
-        |> Pipeline.sink (fun packet ->
-            f packet
-            packetPool.Recycle packet
-        )
-
     let createReliableOrdered packetPool f =
         let ackManager = AckManager (TimeSpan.FromSeconds 1.)
         let mergeFilter = createMergeFilter packetPool
@@ -202,21 +121,38 @@ module Receiver =
             packets |> Seq.iter callback
         )
 
+    let createReliableOrderedAckReceiveFilter (packetPool : PacketPool) (ackManager : AckManager) ack =
+        let mutable nextSeqId = 0us
+
+        let f =
+            fun time (packets : Packet seq) callback ->
+
+                packets
+                |> Seq.iter (fun packet ->
+                    if nextSeqId = packet.SequenceId then
+                        callback packet
+                        ack nextSeqId
+                        nextSeqId <- nextSeqId + 1us
+                    else
+                        ackManager.MarkCopy (packet, time)
+                        packetPool.Recycle packet
+                )
+
+                ackManager.ForEachPending (fun seqId copyPacket ->
+                    if int nextSeqId = seqId then
+                        let packet = packetPool.Get ()
+                        copyPacket.CopyTo packet
+                        ackManager.Ack seqId
+                        ack nextSeqId
+                        nextSeqId <- nextSeqId + 1us
+                        callback packet
+                )
+        Pipeline.filter f
+
     let createUnreliable (packetPool : PacketPool) f =
         let receiveFilter = createClientReceiveFilter ()
         Pipeline.create ()
         |> receiveFilter
-        |> Pipeline.sink (fun packet ->
-            f packet
-            packetPool.Recycle packet
-        )
-
-    let createReliableSequenced packetPool ack f =
-        let ackManager = AckManager (TimeSpan.FromSeconds 1.)
-        let receiveFilter = createReliableSequencedAckReceiveFilter packetPool ackManager ack
-
-        Pipeline.create ()
-        |> Pipeline.filter receiveFilter
         |> Pipeline.sink (fun packet ->
             f packet
             packetPool.Recycle packet
@@ -227,7 +163,7 @@ module Receiver =
         let receiveFilter = createReliableOrderedAckReceiveFilter packetPool ackManager ack
 
         Pipeline.create ()
-        |> Pipeline.filter receiveFilter
+        |> receiveFilter
         |> Pipeline.sink (fun packet ->
             f packet
             packetPool.Recycle packet
