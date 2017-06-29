@@ -180,6 +180,9 @@ module Receiver =
                             callback packet
                             ack nextSeqId
                             nextSeqId <- nextSeqId + 1us
+                        else
+                            ackManager.MarkCopy (packet, time)
+                            packetPool.Recycle packet
                 )
 
                 ackManager.ForEachPending (fun seqId copyPacket ->

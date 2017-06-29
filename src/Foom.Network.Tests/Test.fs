@@ -401,8 +401,8 @@ type Test() =
     [<Test>]
     member this.DataPipelineTest () =
 
-        let data1 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128 }
-        let data2 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128 }
+        let data1 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128; packetType = PacketType.Unreliable; ack = 0 }
+        let data2 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128; packetType = PacketType.Unreliable; ack = 0 }
 
         let packetPool = PacketPool 64
 
@@ -453,7 +453,7 @@ type Test() =
             |> mergeFilter
             |> Pipeline.sink packets.Add
 
-        let data3 = { bytes = Array.zeroCreate 12800; startIndex = 0; size = 12800 }
+        let data3 = { bytes = Array.zeroCreate 12800; startIndex = 0; size = 12800; packetType = PacketType.Unreliable; ack = 0 }
 
         data3.bytes.[12800 - 1] <- 129uy
 
@@ -472,7 +472,8 @@ type Test() =
 
         let mutable valueToCheck = 0uy
 
-        let receiver = Receiver.createReliableOrdered receivePacketPool (fun ack -> ()) (fun packet -> valueToCheck <- packet.Raw.[packet.Length - 1])
+        let ackManager = AckManager (TimeSpan.FromSeconds 1.)
+        let receiver = Receiver.createReliableOrdered receivePacketPool ackManager (fun ack -> ()) (fun packet -> valueToCheck <- packet.Raw.[packet.Length - 1])
 
         let mutable canSimulatePacketLoss = true
 
@@ -492,8 +493,8 @@ type Test() =
 
         let stopwatch = Diagnostics.Stopwatch.StartNew ()
 
-        let data1 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128 }
-        let data2 = { bytes = Array.zeroCreate 12800; startIndex = 0; size = 12800 }
+        let data1 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128; packetType = PacketType.Unreliable; ack = 0 }
+        let data2 = { bytes = Array.zeroCreate 12800; startIndex = 0; size = 12800; packetType = PacketType.Unreliable; ack = 0 }
 
         data2.bytes.[12800 - 1] <- 129uy
 
