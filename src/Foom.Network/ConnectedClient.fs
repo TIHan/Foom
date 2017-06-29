@@ -3,22 +3,6 @@
 open System
 open System.Collections.Generic
 
-type DataFlow (input, output) =
-
-    let sendStream = ByteStream (1024 * 1024)
-    let sendWriter = ByteWriter (sendStream)
-
-    let receiveByteStream = ByteStream (1024 * 1024)
-    let receiverByteReader = ByteReader (receiveByteStream)
-    let receiverByteWriter = ByteWriter (receiveByteStream)
-
-    let packetPool = PacketPool 1024
-
-    let sender = Sender.create packetPool input
-    let receiver = Receiver.create packetPool (fun ack -> sender.Send { bytes = [||]; startIndex = 0; size = 0; packetType = PacketType.ReliableOrderedAck; ack = int ack }) output
-
-    
-
 [<Sealed>]
 type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) as this =
 

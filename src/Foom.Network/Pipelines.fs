@@ -157,6 +157,10 @@ module Sender =
             | PacketType.Unreliable -> unreliable.Send data
             | PacketType.ReliableOrdered -> reliableOrdered.Send data
             | PacketType.ReliableOrderedAck -> reliableOrderedAck.Send data
+            | PacketType.ConnectionAccepted -> 
+                let packet = Packet ()
+                packet.Type <- PacketType.ConnectionAccepted
+                f packet
             | _ -> ()
         )
 
@@ -215,7 +219,10 @@ module Receiver =
             packetPool.Recycle packet
         )
 
-    let create packetPool ack f =
+    let create (sender : Pipeline<Data>) packetPool connected f =
+        let ack = (fun ack -> sender.Send { bytes = [||]; startIndex = 0; size = 0; packetType = PacketType.ReliableOrderedAck; ack = int ack })
+
+
         let unreliable = createUnreliable packetPool f
 
         let ackManager = AckManager (TimeSpan.FromSeconds 1.)
