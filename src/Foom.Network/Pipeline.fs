@@ -18,7 +18,9 @@ type PipelineContext<'T> () =
 type PipelineBuilder<'Input, 'Output> = PipelineBuilder of (PipelineContext<'Input> -> unit)
 
 [<Sealed>]
-type Pipeline<'Input> (send : 'Input -> unit, process' : TimeSpan -> unit) =
+type Pipeline<'Input> (context : PipelineContext<'Input>, send : 'Input -> unit, process' : TimeSpan -> unit) =
+
+    member this.Context = context
 
     member this.Send input =
         send input
@@ -43,7 +45,7 @@ module Pipeline =
         context.SubscribeActions
         |> Seq.iter (fun f -> f ())
 
-        Pipeline (context.Send.Value, fun time -> 
+        Pipeline (context, context.Send.Value, fun time -> 
             context.ProcessActions
             |> Seq.iter (fun f ->
                 f time
@@ -75,6 +77,38 @@ module Pipeline =
 
             context.CleanupActions.Add(fun () ->
                 inputs.Clear ()
+            )
+        )
+
+    let merge2 f (builder1 : PipelineBuilder<'Input, 'Output>) (builder2 : PipelineBuilder<'Input, 'Output>) : PipelineBuilder<'Input, 'Output> =
+        PipelineBuilder (fun context ->
+            let evt = Event<'Input> ()
+            context.Send <- evt.Trigger |> Some
+            context.OutputEvent <- (evt :> obj) |> Some
+
+            let p1 = builder1 |> build
+            let p2 = builder2 |> build
+
+            let outputEvt = Event<'Output> ()
+            context.SubscribeActions.Add (fun () ->
+                p1.Context.OutputEvent
+                |> Option.iter (fun e ->
+                    let e = e :?> Event<'Output>
+                    e.Publish.Add outputEvt.Trigger
+                )
+
+                p2.Context.OutputEvent
+                |> Option.iter (fun e ->
+                    let e = e :?> Event<'Output>
+                    e.Publish.Add outputEvt.Trigger
+                )
+
+                evt.Publish.Add (fun x -> f p1.Send p2.Send x)
+            )
+            context.OutputEvent <- (outputEvt :> obj) |> Some
+            context.ProcessActions.Add (fun time ->
+                p1.Process time
+                p2.Process time
             )
         )
 

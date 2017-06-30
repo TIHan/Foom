@@ -157,10 +157,6 @@ module Sender =
             | PacketType.Unreliable -> unreliable.Send data
             | PacketType.ReliableOrdered -> reliableOrdered.Send data
             | PacketType.ReliableOrderedAck -> reliableOrderedAck.Send data
-            | PacketType.ConnectionAccepted -> 
-                let packet = Packet ()
-                packet.Type <- PacketType.ConnectionAccepted
-                f packet
             | _ -> ()
         )
 
@@ -219,20 +215,36 @@ module Receiver =
             packetPool.Recycle packet
         )
 
-    let create (sender : Pipeline<Data>) packetPool connected f =
-        let ack = (fun ack -> sender.Send { bytes = [||]; startIndex = 0; size = 0; packetType = PacketType.ReliableOrderedAck; ack = int ack })
+    let createUnreliable2 (packetPool : PacketPool) =
+        let receiveFilter = createClientReceiveFilter ()
+        Pipeline.create ()
+        |> receiveFilter
 
-
-        let unreliable = createUnreliable packetPool f
-
-        let ackManager = AckManager (TimeSpan.FromSeconds 1.)
-        let reliableOrdered = createReliableOrdered packetPool ackManager ack f
+    let createReliableOrdered2 packetPool (ackManager : AckManager) ack =
+        let receiveFilter = createReliableOrderedAckReceiveFilter packetPool ackManager ack
 
         Pipeline.create ()
-        |> Pipeline.sink (fun (packet : Packet) ->
+        |> Pipeline.filter receiveFilter
+
+    let create (sender : Pipeline<Data>) packetPool f =
+        let ack = (fun ack -> sender.Send { bytes = [||]; startIndex = 0; size = 0; packetType = PacketType.ReliableOrderedAck; ack = int ack })
+
+        let unreliable = createUnreliable2 packetPool
+
+        let ackManager = AckManager (TimeSpan.FromSeconds 1.)
+        let reliableOrdered = createReliableOrdered2 packetPool ackManager ack
+
+        (unreliable, reliableOrdered)
+        ||> Pipeline.merge2 (fun sendUnreliable sendReliableOrdered packet ->
             match packet.Type with
-            | PacketType.Unreliable -> unreliable.Send packet
-            | PacketType.ReliableOrdered -> reliableOrdered.Send packet
-            | PacketType.ReliableOrderedAck -> packet.ReadAcks ackManager.Ack
-            | _ -> ()
+            | PacketType.Unreliable -> sendUnreliable packet
+            | PacketType.ReliableOrdered -> sendReliableOrdered packet
+            | PacketType.ReliableOrderedAck -> 
+                packet.ReadAcks ackManager.Ack
+                packetPool.Recycle packet
+            | _ -> packetPool.Recycle packet
+        )
+        |> Pipeline.sink (fun packet ->
+            f packet
+            packetPool.Recycle packet
         )

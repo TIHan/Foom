@@ -21,3 +21,5 @@ module Pipeline =
     val sink : ('Output -> unit) -> (PipelineBuilder<'Input, 'Output>) -> Pipeline<'Input>
 
     val map : ('b -> 'c) -> PipelineBuilder<'a, 'b> -> PipelineBuilder<'a, 'c>
+
+    val merge2 : (('Input -> unit) -> ('Input -> unit) -> 'Input -> unit) -> PipelineBuilder<'Input, 'Output> -> PipelineBuilder<'Input, 'Output> -> PipelineBuilder<'Input, 'Output>
