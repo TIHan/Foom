@@ -9,27 +9,6 @@ open Foom.Network
 [<Struct>]
 type Data = { bytes : byte []; startIndex : int; size : int; packetType : PacketType; ack : int }
 
-let fragmentPackets (packetPool : PacketPool) (packets : ResizeArray<Packet>) (packet : Packet) (data : Data) =
-    let count = (data.size / packet.DataLengthRemaining) + (if data.size % packet.DataLengthRemaining > 0 then 1 else 0)
-    let mutable startIndex = data.startIndex
-
-    packet.FragmentId <- uint16 count
-    packet.WriteRawBytes (data.bytes, data.startIndex, packet.DataLengthRemaining)
-    packets.Add packet
-
-    for i = 1 to count - 1 do
-        let packet = packetPool.Get ()
-        packet.FragmentId <- uint16 (count - i)
-
-        if i = (count - 1) then
-            let startIndex = data.startIndex + (i * packet.DataLengthRemaining)
-            packet.WriteRawBytes (data.bytes, startIndex, data.size - startIndex)
-        else
-            packet.WriteRawBytes (data.bytes, data.startIndex + (i * packet.DataLengthRemaining), packet.DataLengthRemaining)
-
-        packets.Add packet 
-                    
-
 let createMergeFilter (packetPool : PacketPool) =
     let packets = ResizeArray ()
     Pipeline.filter (fun (time : TimeSpan) data callback ->
@@ -41,7 +20,7 @@ let createMergeFilter (packetPool : PacketPool) =
                     packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
                     packets.Add packet
                 else
-                    fragmentPackets packetPool packets packet data
+                    packetPool.GetFromBytes (data.bytes, data.startIndex, data.size, packet, packets)
                     
             else
                 let packet = packets.[packets.Count - 1]
@@ -53,7 +32,7 @@ let createMergeFilter (packetPool : PacketPool) =
                         packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
                         packets.Add packet
                     else
-                        fragmentPackets packetPool packets packet data
+                        packetPool.GetFromBytes (data.bytes, data.startIndex, data.size, packet, packets)
 
                     
         )
