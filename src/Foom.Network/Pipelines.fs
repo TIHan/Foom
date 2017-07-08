@@ -13,29 +13,7 @@ let createMergeFilter (packetPool : PacketPool) =
     let packets = ResizeArray ()
     Pipeline.filter (fun (time : TimeSpan) data callback ->
         data
-        |> Seq.iter (fun data ->
-            if packets.Count = 0 then
-                let packet = packetPool.Get ()
-                if packet.DataLengthRemaining >= data.size then
-                    packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
-                    packets.Add packet
-                else
-                    packetPool.GetFromBytes (data.bytes, data.startIndex, data.size, packet, packets)
-                    
-            else
-                let packet = packets.[packets.Count - 1]
-                if packet.DataLengthRemaining >= data.size then
-                    packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
-                else
-                    let packet = packetPool.Get ()
-                    if packet.DataLengthRemaining >= data.size then
-                        packet.WriteRawBytes (data.bytes, data.startIndex, data.size)
-                        packets.Add packet
-                    else
-                        packetPool.GetFromBytes (data.bytes, data.startIndex, data.size, packet, packets)
-
-                    
-        )
+        |> Seq.iter (fun data -> packetPool.GetFromBytes (data.bytes, data.startIndex, data.size, packets))
 
         packets |> Seq.iter callback
         packets.Clear ()
