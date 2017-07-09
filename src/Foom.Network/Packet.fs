@@ -33,7 +33,9 @@ type PacketHeader =
 [<Sealed>]
 type Packet () =
 
-    let byteStream = ByteStream (NetConstants.PacketSize + sizeof<PacketHeader>)
+    let PacketSize = 1024
+
+    let byteStream = ByteStream (PacketSize + sizeof<PacketHeader>)
     let byteWriter = ByteWriter (byteStream)
     let byteReader = ByteReader (byteStream)
 

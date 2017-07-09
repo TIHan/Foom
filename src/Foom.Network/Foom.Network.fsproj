@@ -19,19 +19,21 @@
     <OutputPath>..\..\build</OutputPath>
     <DefineConstants>DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <PlatformTarget></PlatformTarget>
+    <PlatformTarget>
+    </PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <Optimize>true</Optimize>
     <OutputPath>..\..\build</OutputPath>
-    <DefineConstants></DefineConstants>
+    <DefineConstants>
+    </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <GenerateTailCalls>true</GenerateTailCalls>
-    <PlatformTarget></PlatformTarget>
+    <PlatformTarget>
+    </PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ByteStream.fs" />
-    <Compile Include="Constants.fs" />
     <Compile Include="Network.fs" />
     <Compile Include="Packet.fs" />
     <Compile Include="PacketPool.fs" />
