@@ -304,214 +304,214 @@ type Test() =
         Assert.True (messageReceived)
         Assert.AreEqual (808, endOfArray)
 
-    [<Test>]
-    member x.TestReceiver () =
-        let byteStream = ByteStream (1024)
-        let byteWriter = ByteWriter (byteStream)
-        let byteReader = ByteReader (byteStream)
+    //[<Test>]
+    //member x.TestReceiver () =
+    //    let byteStream = ByteStream (1024)
+    //    let byteWriter = ByteWriter (byteStream)
+    //    let byteReader = ByteReader (byteStream)
 
-        byteWriter.Write { x = 1234; y = 5678 }
+    //    byteWriter.Write { x = 1234; y = 5678 }
 
-        let packetPool = PacketPool 64
-        let ackManager = AckManager (TimeSpan.FromSeconds 1.)
+    //    let packetPool = PacketPool 64
+    //    let ackManager = AckManager (TimeSpan.FromSeconds 1.)
 
-        let mutable ackId = -1
+    //    let mutable ackId = -1
 
-        let reliableOrderedReceiver = Receiver.createReliableOrderedAckReceiveFilter packetPool ackManager (fun i -> ackId <- int i)
+    //    let reliableOrderedReceiver = Receiver.createReliableOrderedAckReceiveFilter packetPool ackManager (fun i -> ackId <- int i)
 
-        Assert.AreEqual (-1, ackId)
+    //    Assert.AreEqual (-1, ackId)
 
-        let stopwatch = Diagnostics.Stopwatch.StartNew ()
+    //    let stopwatch = Diagnostics.Stopwatch.StartNew ()
 
-        let inputs = ResizeArray ()
-        let test seqN =
+    //    let inputs = ResizeArray ()
+    //    let test seqN =
 
-            let packet = packetPool.Get ()
+    //        let packet = packetPool.Get ()
 
-            packet.WriteRawBytes (byteStream.Raw, 0, byteStream.Length)
-            packet.Type <- PacketType.ReliableOrdered
-            packet.SequenceId <- seqN
+    //        packet.WriteRawBytes (byteStream.Raw, 0, byteStream.Length)
+    //        packet.Type <- PacketType.ReliableOrdered
+    //        packet.SequenceId <- seqN
 
-            inputs.Add packet
+    //        inputs.Add packet
 
-            reliableOrderedReceiver stopwatch.Elapsed inputs packetPool.Recycle
+    //        reliableOrderedReceiver stopwatch.Elapsed inputs packetPool.Recycle
 
-            inputs.Clear ()
+    //        inputs.Clear ()
 
-        test 0us
-        Assert.AreEqual (0us, ackId)
-        test 1us
-        Assert.AreEqual (1us, ackId)
-        test 2us
-        Assert.AreEqual (2us, ackId)
+    //    test 0us
+    //    Assert.AreEqual (0us, ackId)
+    //    test 1us
+    //    Assert.AreEqual (1us, ackId)
+    //    test 2us
+    //    Assert.AreEqual (2us, ackId)
 
-        test 10us
-        Assert.AreEqual (2us, ackId)
-        test 9us
-        test 8us
-        test 7us
-        Assert.AreEqual (2us, ackId)
-        test 6us
-        test 5us
-        test 4us
-        Assert.AreEqual (2us, ackId)
-        test 3us
-        test 3us
-        Threading.Thread.Sleep (2000)
-        test 2us
-        Assert.AreEqual (10us, ackId)
+    //    test 10us
+    //    Assert.AreEqual (2us, ackId)
+    //    test 9us
+    //    test 8us
+    //    test 7us
+    //    Assert.AreEqual (2us, ackId)
+    //    test 6us
+    //    test 5us
+    //    test 4us
+    //    Assert.AreEqual (2us, ackId)
+    //    test 3us
+    //    test 3us
+    //    Threading.Thread.Sleep (2000)
+    //    test 2us
+    //    Assert.AreEqual (10us, ackId)
 
-    [<Test>]
-    member this.NewPipeline () =
+    //[<Test>]
+    //member this.NewPipeline () =
 
-        let filter1 = Pipeline.map (fun (x : int) -> double x)
-        let filter2 = Pipeline.map (fun (x : double) -> string (x + 1.0))
-        let filter3 = Pipeline.map (fun (x : string) -> System.Int32.Parse x)
+    //    let filter1 = Pipeline.map (fun (x : int) -> double x)
+    //    let filter2 = Pipeline.map (fun (x : double) -> string (x + 1.0))
+    //    let filter3 = Pipeline.map (fun (x : string) -> System.Int32.Parse x)
 
-        let x = 1
-        let mutable y = 0
-        let pipeline =
-            Pipeline.create ()
-            |> filter1
-            |> filter2
-            |> filter3
-            |> Pipeline.sink (fun x -> 
-                y <- x
-            )
+    //    let x = 1
+    //    let mutable y = 0
+    //    let pipeline =
+    //        Pipeline.create ()
+    //        |> filter1
+    //        |> filter2
+    //        |> filter3
+    //        |> Pipeline.sink (fun x -> 
+    //            y <- x
+    //        )
 
-        pipeline.Send x
-        pipeline.Process TimeSpan.Zero
+    //    pipeline.Send x
+    //    pipeline.Process TimeSpan.Zero
 
-        Assert.AreEqual (x + 1, y)
+    //    Assert.AreEqual (x + 1, y)
 
-    [<Test>]
-    member this.TestPacket () =
+    //[<Test>]
+    //member this.TestPacket () =
 
-        let packet = Packet ()
+    //    let packet = Packet ()
 
-        packet.SequenceId <- 567us
-        packet.FragmentId <- 77us
-        packet.Type <- PacketType.ReliableAck
+    //    packet.SequenceId <- 567us
+    //    packet.FragmentId <- 77us
+    //    packet.Type <- PacketType.ReliableAck
 
-        Assert.AreEqual (packet.SequenceId, 567us)
-        Assert.AreEqual (packet.FragmentId, 77us)
-        Assert.AreEqual (packet.Type, PacketType.ReliableAck)
+    //    Assert.AreEqual (packet.SequenceId, 567us)
+    //    Assert.AreEqual (packet.FragmentId, 77us)
+    //    Assert.AreEqual (packet.Type, PacketType.ReliableAck)
 
 
-    [<Test>]
-    member this.DataPipelineTest () =
+    //[<Test>]
+    //member this.DataPipelineTest () =
 
-        let data1 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128; packetType = PacketType.Unreliable; ack = 0 }
-        let data2 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128; packetType = PacketType.Unreliable; ack = 0 }
+    //    let data1 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128; packetType = PacketType.Unreliable; ack = 0 }
+    //    let data2 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128; packetType = PacketType.Unreliable; ack = 0 }
 
-        let packetPool = PacketPool 64
+    //    let packetPool = PacketPool 64
 
-        let packets = ResizeArray ()
-        let mergeFilter = createMergeFilter packetPool
+    //    let packets = ResizeArray ()
+    //    let mergeFilter = createMergeFilter packetPool
 
-        let packets = ResizeArray ()
+    //    let packets = ResizeArray ()
 
-        let pipeline =
-            Pipeline.create ()
-            |> mergeFilter
-            |> Pipeline.sink packets.Add
+    //    let pipeline =
+    //        Pipeline.create ()
+    //        |> mergeFilter
+    //        |> Pipeline.sink packets.Add
 
-        pipeline.Send data1
-        pipeline.Send data2
+    //    pipeline.Send data1
+    //    pipeline.Send data2
 
-        pipeline.Process TimeSpan.Zero
+    //    pipeline.Process TimeSpan.Zero
 
-        Assert.AreEqual (packets.Count, 1)
+    //    Assert.AreEqual (packets.Count, 1)
 
-        packets
-        |> Seq.iter packetPool.Recycle
-        packets.Clear ()
+    //    packets
+    //    |> Seq.iter packetPool.Recycle
+    //    packets.Clear ()
 
-        for i = 1 to 100 do
-            pipeline.Send data1
-            pipeline.Send data2
+    //    for i = 1 to 100 do
+    //        pipeline.Send data1
+    //        pipeline.Send data2
 
-        pipeline.Process TimeSpan.Zero
+    //    pipeline.Process TimeSpan.Zero
 
-        Assert.AreEqual (packets.Count, 25)
+    //    Assert.AreEqual (packets.Count, 25)
 
-        packets
-        |> Seq.iter packetPool.Recycle
-        packets.Clear ()
+    //    packets
+    //    |> Seq.iter packetPool.Recycle
+    //    packets.Clear ()
 
-    [<Test>]
-    member this.DataPipelineTestFragmented () =
-        let packetPool = PacketPool 64
+    //[<Test>]
+    //member this.DataPipelineTestFragmented () =
+    //    let packetPool = PacketPool 64
 
-        let packets = ResizeArray ()
-        let mergeFilter = createMergeFilter packetPool
+    //    let packets = ResizeArray ()
+    //    let mergeFilter = createMergeFilter packetPool
 
-        let packets = ResizeArray ()
+    //    let packets = ResizeArray ()
 
-        let pipeline =
-            Pipeline.create ()
-            |> mergeFilter
-            |> Pipeline.sink packets.Add
+    //    let pipeline =
+    //        Pipeline.create ()
+    //        |> mergeFilter
+    //        |> Pipeline.sink packets.Add
 
-        let data3 = { bytes = Array.zeroCreate 12800; startIndex = 0; size = 12800; packetType = PacketType.Unreliable; ack = 0 }
+    //    let data3 = { bytes = Array.zeroCreate 12800; startIndex = 0; size = 12800; packetType = PacketType.Unreliable; ack = 0 }
 
-        data3.bytes.[12800 - 1] <- 129uy
+    //    data3.bytes.[12800 - 1] <- 129uy
 
-        pipeline.Send data3
+    //    pipeline.Send data3
 
-        pipeline.Process TimeSpan.Zero
+    //    pipeline.Process TimeSpan.Zero
 
-        let lastPacket = packets.[packets.Count - 1]
+    //    let lastPacket = packets.[packets.Count - 1]
 
-        Assert.AreEqual (lastPacket.Raw.[lastPacket.Length - 1], 129uy)
+    //    Assert.AreEqual (lastPacket.Raw.[lastPacket.Length - 1], 129uy)
 
-    [<Test>]
-    member this.ReliableOrderedPipelines () =
-        let senderPacketPool = PacketPool 2048
-        let receivePacketPool = PacketPool 2048
+    //[<Test>]
+    //member this.ReliableOrderedPipelines () =
+    //    let senderPacketPool = PacketPool 2048
+    //    let receivePacketPool = PacketPool 2048
 
-        let mutable valueToCheck = 0uy
+    //    let mutable valueToCheck = 0uy
 
-        let ackManager = AckManager (TimeSpan.FromSeconds 1.)
-        let receiver = Receiver.createReliableOrdered receivePacketPool ackManager (fun ack -> ()) (fun packet -> valueToCheck <- packet.Raw.[packet.Length - 1])
+    //    let ackManager = AckManager (TimeSpan.FromSeconds 1.)
+    //    let receiver = Receiver.createReliableOrdered receivePacketPool ackManager (fun ack -> ()) (fun packet -> valueToCheck <- packet.Raw.[packet.Length - 1])
 
-        let mutable canSimulatePacketLoss = true
+    //    let mutable canSimulatePacketLoss = true
 
-        let sender = 
-            Sender.createReliableOrdered senderPacketPool (fun packet ->
-                let receivePacket = receivePacketPool.Get ()
-                packet.CopyTo receivePacket
+    //    let sender = 
+    //        Sender.createReliableOrdered senderPacketPool (fun packet ->
+    //            let receivePacket = receivePacketPool.Get ()
+    //            packet.CopyTo receivePacket
 
-                if canSimulatePacketLoss then
-                    if int packet.SequenceId % 2 = 0 then
-                        receiver.Send receivePacket
-                    else
-                        receivePacketPool.Recycle receivePacket
-                else
-                    receiver.Send receivePacket
-            )
+    //            if canSimulatePacketLoss then
+    //                if int packet.SequenceId % 2 = 0 then
+    //                    receiver.Send receivePacket
+    //                else
+    //                    receivePacketPool.Recycle receivePacket
+    //            else
+    //                receiver.Send receivePacket
+    //        )
 
-        let stopwatch = Diagnostics.Stopwatch.StartNew ()
+    //    let stopwatch = Diagnostics.Stopwatch.StartNew ()
 
-        let data1 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128; packetType = PacketType.Unreliable; ack = 0 }
-        let data2 = { bytes = Array.zeroCreate 12800; startIndex = 0; size = 12800; packetType = PacketType.Unreliable; ack = 0 }
+    //    let data1 = { bytes = Array.zeroCreate 128; startIndex = 0; size = 128; packetType = PacketType.Unreliable; ack = 0 }
+    //    let data2 = { bytes = Array.zeroCreate 12800; startIndex = 0; size = 12800; packetType = PacketType.Unreliable; ack = 0 }
 
-        data2.bytes.[12800 - 1] <- 129uy
+    //    data2.bytes.[12800 - 1] <- 129uy
 
-        for i = 1 to 100 do
-            sender.Send data1
+    //    for i = 1 to 100 do
+    //        sender.Send data1
 
-        sender.Send data2
+    //    sender.Send data2
 
-        sender.Process stopwatch.Elapsed
-        receiver.Process stopwatch.Elapsed
+    //    sender.Process stopwatch.Elapsed
+    //    receiver.Process stopwatch.Elapsed
 
-        Assert.AreNotEqual (valueToCheck, 129uy)
+    //    Assert.AreNotEqual (valueToCheck, 129uy)
 
-        canSimulatePacketLoss <- false
+    //    canSimulatePacketLoss <- false
 
-        Threading.Thread.Sleep (2000)
-        sender.Process stopwatch.Elapsed
-        receiver.Process stopwatch.Elapsed
+    //    Threading.Thread.Sleep (2000)
+    //    sender.Process stopwatch.Elapsed
+    //    receiver.Process stopwatch.Elapsed
 
-        Assert.AreEqual (valueToCheck, 129uy)
+    //    Assert.AreEqual (valueToCheck, 129uy)

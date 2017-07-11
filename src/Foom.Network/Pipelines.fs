@@ -81,40 +81,36 @@ module Sender =
             packetPool.Recycle packet
         )
 
-    let createReliableOrderedAck packetPool f =
-        let mergeFilter = createMergeAckFilter packetPool
+    let createUnreliable2 packetPool =
+        let mergeFilter = createMergeFilter packetPool
         Pipeline.create ()
         |> mergeFilter
-        |> Pipeline.sink (fun packet ->
-            packet.Type <- PacketType.ReliableOrderedAck
-            f packet
-            packetPool.Recycle packet
-        )
 
-    let createReliableOrdered packetPool f =
+    let createReliableOrdered packetPool =
         let ackManager = AckManager (TimeSpan.FromSeconds 1.)
         let mergeFilter = createMergeFilter packetPool
         let reliableOrderedFilter = createReliableOrderedFilter packetPool ackManager
         Pipeline.create ()
         |> mergeFilter
         |> reliableOrderedFilter
+
+    let create packetPool f =
+        let unreliable = createUnreliable2 packetPool
+        let reliableOrdered = createReliableOrdered packetPool
+
+        (unreliable, reliableOrdered)
+        ||> Pipeline.merge2 (fun sendUnreliable sendReliableOrdered data ->
+            match data.packetType with
+            | PacketType.Unreliable -> sendUnreliable data
+            | PacketType.ConnectionAccepted
+            | PacketType.ConnectionRequested -> sendUnreliable data
+            | PacketType.ReliableOrdered -> sendReliableOrdered data
+
+            | _ -> ()
+        )
         |> Pipeline.sink (fun packet ->
             f packet
             packetPool.Recycle packet
-        )
-
-    let create packetPool f =
-        let unreliable = createUnreliable packetPool f
-        let reliableOrdered = createReliableOrdered packetPool f
-        let reliableOrderedAck = createReliableOrderedAck packetPool f
-
-        Pipeline.create ()
-        |> Pipeline.sink (fun data ->
-            match data.packetType with
-            | PacketType.Unreliable -> unreliable.Send data
-            | PacketType.ReliableOrdered -> reliableOrdered.Send data
-            | PacketType.ReliableOrderedAck -> reliableOrderedAck.Send data
-            | _ -> ()
         )
 
 module Receiver =
@@ -215,8 +211,7 @@ module Receiver =
             match packet.Type with
             | PacketType.Unreliable -> sendUnreliable packet
 
-            | PacketType.ReliableOrdered
-            | PacketType.ReliableOrderedAck -> sendReliableOrdered packet
+            | PacketType.ReliableOrdered -> sendReliableOrdered packet
 
             | _ -> packetPool.Recycle packet
         )

@@ -60,7 +60,7 @@ type Server (udpServer: IUdpServer) =
             let length = sendStream.Position - startIndex
 
             for i = 0 to clients.Count - 1 do
-                clients.[i].Send (sendStream.Raw, startIndex, length)
+                clients.[i].Send (sendStream.Raw, startIndex, length, PacketType.Unreliable)
 
         | _ -> ()
 
