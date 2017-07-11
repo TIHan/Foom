@@ -26,13 +26,13 @@ let RegisterType<'T> (serialize: 'T -> ByteWriter -> unit, deserialize: 'T -> By
             ctor = (fun reader -> (ctor reader) :> obj)
         }
 
-    lookup.Add (t, typeArray.Count)
+    lookup.Add (t, typeArray.Count + 1)
     typeArray.Add pickler
 
 let FindTypeById id =
-    if id >= typeArray.Count then
+    if id >= typeArray.Count + 1 then
         failwithf "oh shit %A" id
-    typeArray.[id]
+    typeArray.[id - 1]
 
 type ConnectionRequested () = class end
 type ConnectionAccepted () = class end
