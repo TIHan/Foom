@@ -3,7 +3,7 @@
 open System
 open System.Collections.Generic
 
-type DataFlow (send) =
+type DataFlow (send, receive) =
 
     let packetPool = PacketPool 1024
 
@@ -77,6 +77,9 @@ type DataFlow (send) =
 
     member this.Update time =
         receiveByteStream.Length <- 0
+
+        while receive packetPool receiver.Send do ()
+
         receiver.Process time
         receiveByteStream.Position <- 0
 
@@ -86,7 +89,10 @@ type DataFlow (send) =
 
 [<Sealed>]
 type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) =
-    inherit DataFlow (fun packet -> udpServer.Send (packet.Raw, packet.Length, endPoint) |> ignore)
+    inherit DataFlow (
+        (fun packet -> udpServer.Send (packet.Raw, packet.Length, endPoint) |> ignore),
+        (fun _ _ -> false)
+    )
 
     member this.SendConnectionAccepted () =
         let packet = Packet ()
