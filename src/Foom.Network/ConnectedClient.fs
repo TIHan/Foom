@@ -22,12 +22,14 @@ type Peer (udp : Udp) =
     let receiverByteReader = ByteReader (receiveByteStream)
     let receiverByteWriter = ByteWriter (receiveByteStream)
 
-    let unreliableChan = UnreliableChannel (packetPool, fun bytes size -> 
+    let send = fun bytes size -> 
         match udp with
         | Udp.Client client -> client.Send (bytes, size) |> ignore
         | Udp.ServerWithEndPoint (server, endPoint) -> server.Send (bytes, size, endPoint) |> ignore
         | _ -> failwith "should not happen"
-    )
+
+    let unreliableChan = UnreliableChannel (packetPool, send)
+    let reliableOrderedChan = ReliableOrderedChannel (packetPool, send)
 
     member private this.OnReceive (reader : ByteReader) =
 
