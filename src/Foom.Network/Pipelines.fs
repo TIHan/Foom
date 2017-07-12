@@ -6,8 +6,71 @@ open System.Collections.Generic
 
 open Foom.Network
 
+[<AbstractClass>]
+type Channel () =
+
+    abstract Send : byte [] * startIndex : int * size : int -> unit
+
+    abstract Update : TimeSpan -> unit
+
+[<Sealed>]
+type DataMerger (packetPool : PacketPool) =
+
+    let data = ResizeArray ()
+
+    member this.Send (bytes, startIndex, size) =
+        data.Add (struct (bytes, startIndex, size))
+
+    member this.Update mergedPackets =
+        for i = 0 to data.Count - 1 do
+            let struct (bytes, startIndex, size) = data.[i]
+            packetPool.GetFromBytes (bytes, startIndex, size, mergedPackets)
+        data.Clear ()
+
+[<Sealed>]
+type UnreliableChannel (packetPool : PacketPool, send) =
+    inherit Channel ()
+
+    let dataMerger = DataMerger packetPool
+    let mergedPackets = ResizeArray ()
+
+    override this.Send (bytes, startIndex, size) =
+        dataMerger.Send (bytes, startIndex, size)
+
+    override this.Update time =
+        dataMerger.Update mergedPackets
+
+        let packets = mergedPackets
+        for i = 0 to packets.Count - 1 do
+            let packet = packets.[i]
+            send packet.Raw packet.Length
+            packetPool.Recycle packet
+        packets.Clear ()
+                
+[<Sealed>]
+type ReliableOrderedChannel (packetPool : PacketPool, send) =
+    inherit Channel ()
+
+    let dataMerger = DataMerger packetPool
+    let mergedPackets = ResizeArray ()
+
+    override this.Send (bytes, startIndex, size) =
+        dataMerger.Send (bytes, startIndex, size)
+
+    override this.Update time =
+        dataMerger.Update mergedPackets
+
+        let packets = mergedPackets
+        for i = 0 to packets.Count - 1 do
+            let packet = packets.[i]
+            send (packet.Raw, packet.Length)
+            packetPool.Recycle packet
+        packets.Clear ()
+
 [<Struct>]
 type Data = { bytes : byte []; startIndex : int; size : int; packetType : PacketType; ack : int }
+
+    
 
 let createMergeFilter (packetPool : PacketPool) =
     let packets = ResizeArray ()

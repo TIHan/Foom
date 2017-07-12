@@ -90,7 +90,9 @@ type DataFlow (send) =
 [<Sealed>]
 type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) =
 
-    let flow = DataFlow (fun packet -> udpServer.Send (packet.Raw, packet.Length, endPoint) |> ignore)
+    let packetPool = PacketPool 1024
+
+    let unreliableChan = UnreliableChannel (packetPool, fun bytes size -> udpServer.Send (bytes, size, endPoint) |> ignore)
 
     member this.SendConnectionAccepted () =
         let packet = Packet ()
@@ -99,8 +101,8 @@ type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) =
         udpServer.Send (packet.Raw, packet.Length, endPoint) |> ignore
 
     member this.Send (bytes, startIndex, size, packetType) =
-        flow.Send (bytes, startIndex, size, packetType)
+        unreliableChan.Send (bytes, startIndex, size)
 
     member this.Update time =
-        flow.Update (time, fun _ _ -> false)
+        unreliableChan.Update time
         
