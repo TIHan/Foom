@@ -6,7 +6,7 @@ open System.Collections.Generic
 [<Sealed>]
 type Client (udpClient: IUdpClient) =
 
-    let flow = DataFlow (fun packet -> udpClient.Send (packet.Raw, packet.Length) |> ignore)
+    let peer = Peer (Udp.Client udpClient)
 
     let mutable isConnected = false
     let connectedEvent = Event<IUdpEndPoint> ()
@@ -21,20 +21,7 @@ type Client (udpClient: IUdpClient) =
             udpClient.Send (packet.Raw, packet.Length) |> ignore
 
     member this.Subscribe<'T> f =
-        flow.Subscribe<'T> f
+        peer.Subscribe<'T> f
 
     member this.Update time =
-        flow.Update (time, fun packetPool send -> 
-            if udpClient.IsDataAvailable then
-                let packet = packetPool.Get ()
-                let byteCount = udpClient.Receive (packet.Raw, 0, packet.Raw.Length)
-                if byteCount > 0 then
-                    packet.Length <- byteCount
-                    send packet
-                    true
-                else
-                    packetPool.Recycle packet
-                    false
-            else
-                false
-        )
+        peer.Update time
