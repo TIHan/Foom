@@ -7,14 +7,14 @@ open System.Net.Sockets
 open System.Collections.Generic
 open System.Runtime.InteropServices
 
-[<Sealed>]
-type UdpEndPoint (ipEndPoint: IPEndPoint) =
-        
-    member this.IPEndPoint = ipEndPoint
+type UdpEndPoint =
+    {
+        ipEndPoint : IPEndPoint
+    }
 
     interface IUdpEndPoint with
 
-        member this.IPAddress = ipEndPoint.Address.ToString ()
+        member this.IPAddress = this.ipEndPoint.Address.ToString ()
 
 [<RequireQualifiedAccess>]
 module UdpConstants =
@@ -148,9 +148,9 @@ type UdpClient () =
                 failwith "Remote End Point is invalid because we haven't tried to connect."
 
             if isIpV6 then
-                UdpEndPoint (this.UdpClientV6.Client.RemoteEndPoint :?> IPEndPoint) :> IUdpEndPoint
+                { ipEndPoint = this.UdpClientV6.Client.RemoteEndPoint :?> IPEndPoint } :> IUdpEndPoint
             else
-                UdpEndPoint (this.UdpClient.Client.RemoteEndPoint :?> IPEndPoint) :> IUdpEndPoint
+                { ipEndPoint = this.UdpClient.Client.RemoteEndPoint :?> IPEndPoint } :> IUdpEndPoint
 
         member this.Receive (buffer, offset, size) =
             if not isConnected then
@@ -206,7 +206,7 @@ type UdpServer (port) =
                 match this.UdpClient.Client.ReceiveFrom (buffer, offset, size, SocketFlags.None, &endPoint) with
                 | 0 -> 0
                 | byteCount ->
-                    remoteEP <- UdpEndPoint (endPoint :?> IPEndPoint)
+                    remoteEP <- { ipEndPoint = endPoint :?> IPEndPoint }
                     byteCount
 
             elif this.UdpClientV6.Available > 0 then
@@ -217,7 +217,7 @@ type UdpServer (port) =
                 match this.UdpClientV6.Client.ReceiveFrom (buffer, offset, size, SocketFlags.None, &endPoint) with
                 | 0 -> 0
                 | byteCount ->
-                    remoteEP <- UdpEndPoint (endPoint :?> IPEndPoint)
+                    remoteEP <- { ipEndPoint = endPoint :?> IPEndPoint }
                     byteCount
 
             else 0
@@ -226,15 +226,15 @@ type UdpServer (port) =
             match remoteEP with
             | :? UdpEndPoint as remoteEP -> 
 
-                if remoteEP.IPEndPoint.AddressFamily = AddressFamily.InterNetwork then
-                    let actualSize = this.UdpClient.Send (buffer, size, remoteEP.IPEndPoint)
+                if remoteEP.ipEndPoint.AddressFamily = AddressFamily.InterNetwork then
+                    let actualSize = this.UdpClient.Send (buffer, size, remoteEP.ipEndPoint)
                     if actualSize <> size then
                         printfn "[UdpServer] ActualSize: %A. Size: %A." actualSize size
                     bytesSentSinceLastCall <- bytesSentSinceLastCall + actualSize
                     actualSize
 
-                elif remoteEP.IPEndPoint.AddressFamily = AddressFamily.InterNetworkV6 then
-                    let actualSize = this.UdpClientV6.Send (buffer, size, remoteEP.IPEndPoint)
+                elif remoteEP.ipEndPoint.AddressFamily = AddressFamily.InterNetworkV6 then
+                    let actualSize = this.UdpClientV6.Send (buffer, size, remoteEP.ipEndPoint)
                     if actualSize <> size then
                         printfn "[UdpServer] ActualSize: %A. Size: %A." actualSize size
                     bytesSentSinceLastCall <- bytesSentSinceLastCall + actualSize
