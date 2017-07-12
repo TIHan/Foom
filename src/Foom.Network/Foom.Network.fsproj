@@ -37,8 +37,6 @@
     <Compile Include="Network.fs" />
     <Compile Include="Packet.fs" />
     <Compile Include="PacketPool.fs" />
-    <Compile Include="Pipeline.fsi" />
-    <Compile Include="Pipeline.fs" />
     <Compile Include="Sequencer.fs" />
     <Compile Include="AckManager.fsi" />
     <Compile Include="AckManager.fs" />
