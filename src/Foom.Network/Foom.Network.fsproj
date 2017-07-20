@@ -42,7 +42,7 @@
     <Compile Include="AckManager.fs" />
     <Compile Include="IUdp.fs" />
     <Compile Include="Channels.fs" />
-    <Compile Include="ConnectedClient.fs" />
+    <Compile Include="Peer.fs" />
     <Compile Include="Server.fs" />
     <Compile Include="Client.fs" />
     <None Include="paket.references" />

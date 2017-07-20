@@ -22,6 +22,11 @@ type Peer (udp : Udp) =
     let receiverByteReader = ByteReader (receiveByteStream)
     let receiverByteWriter = ByteWriter (receiveByteStream)
 
+    let peerLookup = Dictionary<IUdpEndPoint, Peer> ()
+
+    let peerConnected = Event<IUdpEndPoint> ()
+
+    // Senders
     let send = fun bytes size -> 
         match udp with
         | Udp.Client client -> client.Send (bytes, size) |> ignore
@@ -31,25 +36,41 @@ type Peer (udp : Udp) =
     let unreliableChan = UnreliableChannel (packetPool, send)
     let reliableOrderedChan = ReliableOrderedChannel (packetPool, send)
 
-    let peerLookup = Dictionary<IUdpEndPoint, Peer> ()
-
-    let peerConnected = Event<IUdpEndPoint> ()
-
+    let senders =
+        [|
+            unreliableChan :> Channel
+            reliableOrderedChan :> Channel
+        |]
 
     // Receivers
+    let unreliableReceiver = UnreliableReceiver (packetPool, fun packet endPoint ->
+        receiverByteWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.DataLength)
+    )
+
     let connectionRequestedReceiver = ConnectionRequestedReceiver (packetPool, fun packet endPoint ->
         match udp with
         | Udp.Server udpServer ->
             let peer = Peer (Udp.ServerWithEndPoint (udpServer, endPoint))
 
             peerLookup.Add (endPoint, peer)
+
+            let packet = Packet ()
+            packet.Type <- PacketType.ConnectionAccepted
+            udpServer.Send (packet.Raw, packet.Length, endPoint) |> ignore
+
             peerConnected.Trigger endPoint
         | _ -> ()
     )
 
+    let connectionAcceptedReceiver = ConnectionAcceptedReceiver (packetPool, fun endPoint ->
+        peerConnected.Trigger endPoint
+    )
+
     let receivers =
         [|
-            connectionRequestedReceiver
+            connectionRequestedReceiver :> Receiver
+            connectionAcceptedReceiver :> Receiver
+            unreliableReceiver :> Receiver
         |]
 
     member private this.OnReceive (reader : ByteReader) =
@@ -67,6 +88,17 @@ type Peer (udp : Udp) =
 
         while not reader.IsEndOfStream do
             onReceive reader
+
+    member this.PeerConnected = peerConnected.Publish
+
+    member this.Connect (address, port) =
+        match udp with
+        | Udp.Client udpClient ->
+            if udpClient.Connect (address, port) then
+                let packet = Packet ()
+                packet.Type <- PacketType.ConnectionRequested
+                udpClient.Send (packet.Raw, packet.Length) |> ignore
+        | _ -> failwith "Clients can only connect."
 
     member this.Subscribe<'T> f =
         match Network.lookup.TryGetValue typeof<'T> with
@@ -99,7 +131,7 @@ type Peer (udp : Udp) =
 
             let size = sendStream.Position - startIndex
 
-            unreliableChan.Send (sendStream.Raw, startIndex, size)
+            this.Send (sendStream.Raw, startIndex, size, packetType)
 
         | _ -> ()
 
@@ -109,62 +141,66 @@ type Peer (udp : Udp) =
     member this.SendReliableOrdered<'T> (msg : 'T) =
         this.Send<'T> (msg, PacketType.ReliableOrdered)
 
-    member this.ReceivePacket (packet : Packet) =
-        receiverByteWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.DataLength)
+    member this.ReceivePacket (time, packet : Packet, endPoint : IUdpEndPoint) =
+        match peerLookup.TryGetValue endPoint with
+        | true, peer -> peer.ReceivePacket (time, packet, endPoint)
+        | _ ->
 
-    member this.ReceivePacket (packet : Packet, endPoint : IUdpEndPoint) =
-        receiverByteWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.DataLength)
+            match packet.Type with
+
+            | PacketType.ConnectionRequested ->
+                connectionRequestedReceiver.Receive (time, packet, endPoint)
+
+            | PacketType.ConnectionAccepted ->
+                connectionAcceptedReceiver.Receive (time, packet, endPoint)
+
+            | PacketType.Unreliable ->
+                unreliableReceiver.Receive (time, packet, endPoint)
+
+            | _ -> packetPool.Recycle packet
 
     member this.Update time =
         receiveByteStream.Length <- 0
 
         match udp with
         | Udp.Client client ->
-            if client.IsDataAvailable then
+
+            while client.IsDataAvailable do
                 let packet = packetPool.Get ()
                 let byteCount = client.Receive (packet.Raw, 0, packet.Raw.Length)
                 if byteCount > 0 then
                     packet.Length <- byteCount
-                    this.ReceivePacket packet
+                    this.ReceivePacket (time, packet, client.RemoteEndPoint)
                 else
                     packetPool.Recycle packet
+
         | Udp.Server server ->
 
-            if server.IsDataAvailable then
+            while server.IsDataAvailable do
                 let packet = packetPool.Get ()
                 let mutable endPoint = Unchecked.defaultof<IUdpEndPoint>
                 let byteCount = server.Receive (packet.Raw, 0, packet.Raw.Length, &endPoint)
                 if byteCount > 0 then
                     packet.Length <- byteCount
-                    this.ReceivePacket (packet, endPoint)
+                    this.ReceivePacket (time, packet, endPoint)
                 else
                     packetPool.Recycle packet
 
         | Udp.ServerWithEndPoint _ -> ()
 
-        receiveByteStream.Position <- 0
-
         receivers
         |> Array.iter (fun receiver -> receiver.Update time)
 
+        receiveByteStream.Position <- 0
         this.OnReceive receiverByteReader
 
-        unreliableChan.Update time
+        senders
+        |> Array.iter (fun sender -> sender.Update time)
 
-[<Sealed>]
-type ConnectedClient (endPoint: IUdpEndPoint, udpServer: IUdpServer) =
+        peerLookup
+        |> Seq.iter (fun pair ->
+            let peer = pair.Value
+            peer.Update time
+        )
 
-    let peer = Peer (Udp.ServerWithEndPoint (udpServer, endPoint))
-
-    member this.SendConnectionAccepted () =
-        let packet = Packet ()
-        packet.Type <- PacketType.ConnectionAccepted
-
-        udpServer.Send (packet.Raw, packet.Length, endPoint) |> ignore
-
-    member this.Send (bytes, startIndex, size, packetType) =
-        peer.Send (bytes, startIndex, size, packetType)
-
-    member this.Update time =
-        peer.Update time
-        
+        sendStream.Length <- 0

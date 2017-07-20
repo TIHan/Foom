@@ -91,6 +91,21 @@ type Receiver () =
 
     abstract Update : TimeSpan -> unit
 
+type ConnectionAcceptedReceiver (packetPool : PacketPool, receive) =
+    inherit Receiver ()
+
+    let queue = Queue<Packet * IUdpEndPoint> ()
+
+    override this.Receive (_, packet, endPoint) =
+        System.Diagnostics.Debug.Assert (packet.Type = PacketType.ConnectionAccepted)
+        queue.Enqueue (packet, endPoint)
+
+    override this.Update _ =
+        while queue.Count <> 0 do
+            let packet, endPoint = queue.Dequeue ()
+            receive endPoint
+            packetPool.Recycle packet
+
 type ConnectionRequestedReceiver (packetPool : PacketPool, receive) =
     inherit Receiver ()
 
@@ -98,6 +113,21 @@ type ConnectionRequestedReceiver (packetPool : PacketPool, receive) =
 
     override this.Receive (_, packet, endPoint) =
         System.Diagnostics.Debug.Assert (packet.Type = PacketType.ConnectionRequested)
+        queue.Enqueue (packet, endPoint)
+
+    override this.Update _ =
+        while queue.Count <> 0 do
+            let packet, endPoint = queue.Dequeue ()
+            receive packet endPoint
+            packetPool.Recycle packet
+
+type UnreliableReceiver (packetPool : PacketPool, receive) =
+    inherit Receiver ()
+
+    let queue = Queue<Packet * IUdpEndPoint> ()
+
+    override this.Receive (_, packet, endPoint) =
+        System.Diagnostics.Debug.Assert (packet.Type = PacketType.Unreliable)
         queue.Enqueue (packet, endPoint)
 
     override this.Update _ =

@@ -215,9 +215,9 @@ type Test() =
         client.Update TimeSpan.Zero
         clientV6.Update TimeSpan.Zero
 
-       // Assert.True (isConnected)
-       // Assert.True (isIpv6Connected)
-       // Assert.True (clientDidConnect)
+        Assert.True (isConnected)
+        Assert.True (isIpv6Connected)
+        Assert.True (clientDidConnect)
 
         client.Subscribe<TestMessage2> (fun msg -> 
             messageReceived <- true
@@ -242,7 +242,7 @@ type Test() =
             endOfArray <- msg.arr.[msg.len - 1]
         )
 
-        server.Publish ({ a = 9898; b = 3456 })
+        server.PublishUnreliable ({ a = 9898; b = 3456 })
 
         let data = { arr = Array.zeroCreate 200; len = 200 }
 
@@ -252,8 +252,8 @@ type Test() =
 
         //for i = 0 to 50 do
         for i = 0 to 10 do
-            server.Publish ({ a = 9898; b = 3456 })
-            server.Publish ({ c = 1337; d = 666 })
+            server.PublishUnreliable ({ a = 9898; b = 3456 })
+            server.PublishUnreliable ({ c = 1337; d = 666 })
 
         server.Update TimeSpan.Zero
 
@@ -273,7 +273,7 @@ type Test() =
         let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
 
         for i = 0 to 1 do
-            server.Publish data
+            server.PublishUnreliable data
 
         server.Update TimeSpan.Zero
 
@@ -286,7 +286,7 @@ type Test() =
 
 
             for i = 0 to 40 do
-                server.Publish data
+                server.PublishUnreliable data
 
             server.Update TimeSpan.Zero
 
