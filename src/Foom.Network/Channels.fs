@@ -87,9 +87,24 @@ type ReliableOrderedChannel (packetPool : PacketPool, send) =
 [<AbstractClass>]
 type Receiver () =
 
-    abstract Receive : TimeSpan * Packet -> unit
+    abstract Receive : TimeSpan * Packet * IUdpEndPoint -> unit
 
     abstract Update : TimeSpan -> unit
+
+type ConnectionRequestedReceiver (packetPool : PacketPool, receive) =
+    inherit Receiver ()
+
+    let queue = Queue<Packet * IUdpEndPoint> ()
+
+    override this.Receive (_, packet, endPoint) =
+        System.Diagnostics.Debug.Assert (packet.Type = PacketType.ConnectionRequested)
+        queue.Enqueue (packet, endPoint)
+
+    override this.Update _ =
+        while queue.Count <> 0 do
+            let packet, endPoint = queue.Dequeue ()
+            receive packet endPoint
+            packetPool.Recycle packet
 
 type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
     inherit Receiver ()
@@ -98,7 +113,7 @@ type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
 
     let mutable nextSeqId = 0us
 
-    override this.Receive (time, packet) =
+    override this.Receive (time, packet, _) =
         if packet.Type = PacketType.ReliableOrdered then
             if nextSeqId = packet.SequenceId then
                 receive packet

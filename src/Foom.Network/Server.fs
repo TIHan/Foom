@@ -6,7 +6,6 @@ open System.Collections.Generic
 [<Sealed>]
 type Server (udpServer: IUdpServer) =
 
-    let recvPacket = Packet ()
     let sendStream = ByteStream (1024 * 1024 * 2)
     let sendWriter = ByteWriter (sendStream)
 
@@ -14,30 +13,42 @@ type Server (udpServer: IUdpServer) =
 
     let clientConnected = Event<IUdpEndPoint> ()
 
-    let onReceivePacket (packet : Packet) (endPoint: IUdpEndPoint) =
-        match packet.Type with
-        | PacketType.ConnectionRequested ->
+    // Packet Pool
+    let packetPool = PacketPool 1024
 
-            let client = ConnectedClient (endPoint, udpServer)
+    // Receivers
+    let connectionRequestedReceiver = ConnectionRequestedReceiver (packetPool, fun packet endPoint ->
+        let client = ConnectedClient (endPoint, udpServer)
 
-            clients.Add client
+        clients.Add client
 
-            client.SendConnectionAccepted ()
+        client.SendConnectionAccepted ()
 
-            clientConnected.Trigger endPoint
+        clientConnected.Trigger endPoint
+    )
 
-        | _ -> ()
+    let receivers =
+        [|
+            connectionRequestedReceiver
+        |]
 
-    let receive () =
+    let receive time =
         while udpServer.IsDataAvailable do
-            recvPacket.Reset ()
+            let packet = packetPool.Get ()
 
             let mutable endPoint = Unchecked.defaultof<IUdpEndPoint>
-            match udpServer.Receive (recvPacket.Raw, 0, recvPacket.Raw.Length, &endPoint) with
+            match udpServer.Receive (packet.Raw, 0, packet.Raw.Length, &endPoint) with
             | 0 -> ()
             | byteCount ->
-                recvPacket.Length <- byteCount
-                onReceivePacket recvPacket endPoint
+                packet.Length <- byteCount
+                
+                match packet.Type with
+                | PacketType.ConnectionRequested ->
+                    connectionRequestedReceiver.Receive (time, packet, endPoint)
+                | _ -> failwith "Packet type not supported."
+
+        receivers
+        |> Array.iter (fun receiver -> receiver.Update time)
 
     let send time =
         clients
@@ -65,7 +76,7 @@ type Server (udpServer: IUdpServer) =
         | _ -> ()
 
     member this.Update time =
-        receive ()
+        receive time
         send time
         this.BytesSentSinceLastUpdate <- udpServer.BytesSentSinceLastCall ()
         sendStream.Length <- 0

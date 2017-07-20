@@ -33,9 +33,3 @@ let FindTypeById id =
     if id >= typeArray.Count + 1 then
         failwithf "oh shit %A" id
     typeArray.[id - 1]
-
-type ConnectionRequested () = class end
-type ConnectionAccepted () = class end
-
-RegisterType<ConnectionRequested> ((fun msg writer -> ()), (fun msg reader -> ()), fun _ -> ConnectionRequested ())
-RegisterType<ConnectionAccepted> ((fun msg writer -> ()), (fun msg reader -> ()), fun _ -> ConnectionAccepted ())

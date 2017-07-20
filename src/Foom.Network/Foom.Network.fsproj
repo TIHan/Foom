@@ -40,8 +40,8 @@
     <Compile Include="Sequencer.fs" />
     <Compile Include="AckManager.fsi" />
     <Compile Include="AckManager.fs" />
-    <Compile Include="Channels.fs" />
     <Compile Include="IUdp.fs" />
+    <Compile Include="Channels.fs" />
     <Compile Include="ConnectedClient.fs" />
     <Compile Include="Server.fs" />
     <Compile Include="Client.fs" />
