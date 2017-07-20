@@ -31,6 +31,27 @@ type Peer (udp : Udp) =
     let unreliableChan = UnreliableChannel (packetPool, send)
     let reliableOrderedChan = ReliableOrderedChannel (packetPool, send)
 
+    let peerLookup = Dictionary<IUdpEndPoint, Peer> ()
+
+    let peerConnected = Event<IUdpEndPoint> ()
+
+
+    // Receivers
+    let connectionRequestedReceiver = ConnectionRequestedReceiver (packetPool, fun packet endPoint ->
+        match udp with
+        | Udp.Server udpServer ->
+            let peer = Peer (Udp.ServerWithEndPoint (udpServer, endPoint))
+
+            peerLookup.Add (endPoint, peer)
+            peerConnected.Trigger endPoint
+        | _ -> ()
+    )
+
+    let receivers =
+        [|
+            connectionRequestedReceiver
+        |]
+
     member private this.OnReceive (reader : ByteReader) =
 
         let rec onReceive (reader : ByteReader) =
@@ -57,7 +78,15 @@ type Peer (udp : Udp) =
         | _ -> ()
 
     member this.Send (bytes, startIndex, size, packetType) =
-        unreliableChan.Send (bytes, startIndex, size)
+        match udp with
+        | Udp.Server _ ->
+            peerLookup
+            |> Seq.iter (fun pair ->
+                let peer = pair.Value
+                peer.Send (bytes, startIndex, size, packetType)
+            )
+        | _ ->
+            unreliableChan.Send (bytes, startIndex, size)
 
     member private this.Send<'T> (msg : 'T, packetType) =
         let startIndex = sendStream.Position
@@ -114,6 +143,9 @@ type Peer (udp : Udp) =
         | Udp.ServerWithEndPoint _ -> ()
 
         receiveByteStream.Position <- 0
+
+        receivers
+        |> Array.iter (fun receiver -> receiver.Update time)
 
         this.OnReceive receiverByteReader
 
