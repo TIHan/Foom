@@ -326,72 +326,95 @@ type Test() =
         Threading.Thread.Sleep 100
         client.Update TimeSpan.Zero
 
-        for i = 1 to 100 do
-            // Start
+        //for i = 1 to 100 do
+            //// Start
 
-            for i = 0 to 100 do
-                server.PublishUnreliable ({ a = 1 + i; b = 2 + i })
+            //for i = 0 to 100 do
+            //    server.PublishUnreliable ({ a = 1 + i; b = 2 + i })
 
-            server.Update TimeSpan.Zero
-            Threading.Thread.Sleep 100
-            client.Update TimeSpan.Zero
+            //server.Update TimeSpan.Zero
+            //Threading.Thread.Sleep 100
+            //client.Update TimeSpan.Zero
 
-            Assert.AreEqual (2 + 100, value)
+            //Assert.AreEqual (2 + 100, value)
 
-            // Reset
+            //// Reset
 
-            value <- 0
-            Assert.AreEqual (0, value)
+            //value <- 0
+            //Assert.AreEqual (0, value)
 
-            // Start
+            //// Start
 
-            server.CanForcePacketLoss <- true
-            for i = 0 to 50 do
-                server.PublishUnreliable ({ a = 1 + i; b = 2 + i })
+            //server.CanForcePacketLoss <- true
+            //for i = 0 to 50 do
+            //    server.PublishUnreliable ({ a = 1 + i; b = 2 + i })
 
-            server.Update TimeSpan.Zero
-            Threading.Thread.Sleep 100
-            client.Update TimeSpan.Zero
+            //server.Update TimeSpan.Zero
+            //Threading.Thread.Sleep 100
+            //client.Update TimeSpan.Zero
 
-            server.CanForcePacketLoss <- false
-            for i = 51 to 100 do
-                server.PublishUnreliable ({ a = 1 + i; b = 2 + i })
+            //server.CanForcePacketLoss <- false
+            //for i = 51 to 100 do
+            //    server.PublishUnreliable ({ a = 1 + i; b = 2 + i })
 
-            server.Update TimeSpan.Zero
-            Threading.Thread.Sleep 100
-            client.Update TimeSpan.Zero
+            //server.Update TimeSpan.Zero
+            //Threading.Thread.Sleep 100
+            //client.Update TimeSpan.Zero
 
-            Assert.AreEqual (2 + 100, value)
+            //Assert.AreEqual (2 + 100, value)
 
-            // Reset
+            //// Reset
 
-            value <- 0
-            Assert.AreEqual (0, value)
+            //value <- 0
+            //Assert.AreEqual (0, value)
 
-            // Start
+            //// Start
 
-            server.CanForcePacketLoss <- true
-            for i = 0 to 50 do
-                server.PublishReliableOrdered ({ a = 1 + i; b = 2 + i })
+            //server.CanForcePacketLoss <- true
+            //for i = 0 to 50 do
+            //    server.PublishReliableOrdered ({ a = 1 + i; b = 2 + i })
 
-            server.Update TimeSpan.Zero
-            Threading.Thread.Sleep 100
-            client.Update TimeSpan.Zero
+            //server.Update TimeSpan.Zero
+            //Threading.Thread.Sleep 100
+            //client.Update TimeSpan.Zero
 
-            server.CanForcePacketLoss <- false
-            for i = 51 to 100 do
-                server.PublishReliableOrdered ({ a = 1 + i; b = 2 + i })
+            //server.CanForcePacketLoss <- false
+            //for i = 51 to 100 do
+            //    server.PublishReliableOrdered ({ a = 1 + i; b = 2 + i })
 
-            server.Update TimeSpan.Zero
-            Threading.Thread.Sleep 100
-            client.Update TimeSpan.Zero
+            //server.Update TimeSpan.Zero
+            //Threading.Thread.Sleep 100
+            //client.Update TimeSpan.Zero
 
-            Assert.AreEqual (0, value)
+            //Assert.AreEqual (0, value)
 
-            server.Update (TimeSpan.FromSeconds 2.)
-            Threading.Thread.Sleep 100
-            client.Update (TimeSpan.FromSeconds 2.)
+            //server.Update (TimeSpan.FromSeconds 2.)
+            //Threading.Thread.Sleep 100
+            //client.Update (TimeSpan.FromSeconds 2.)
 
-            Assert.AreEqual (2 + 100, value)
+            //Assert.AreEqual (2 + 100, value)
 
-           
+        // Fragmentation Test
+
+        let mutable firstValue = 0
+        let mutable lastValue = 0
+
+        client.Subscribe<TestMessage3> (fun msg ->
+            firstValue <- msg.arr.[0]
+            lastValue <- msg.arr.[1023]
+        )
+
+        let data = { arr = Array.zeroCreate 1024; len = 1024 }
+        data.arr.[0] <- 1234
+        data.arr.[1023] <- 5678
+
+        server.PublishReliableOrdered data
+
+        server.Update TimeSpan.Zero
+        Threading.Thread.Sleep 100
+        client.Update TimeSpan.Zero
+
+        Assert.AreEqual (1234, firstValue)
+        Assert.AreEqual (5678, lastValue)
+
+

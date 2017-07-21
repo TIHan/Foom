@@ -73,7 +73,7 @@ module AckManagerHelpers =
 [<Sealed>]
 type AckManager (ackRetryTime : TimeSpan) =
 
-    let copyPacketPool = PacketPool (64)
+    let copyPacketPool = PacketPool (256)
     let copyPackets = Array.init 65536 (fun _ -> Unchecked.defaultof<Packet>)
     let acks = Array.init 65536 (fun _ -> true)
     let ackTimes = Array.init 65536 (fun _ -> TimeSpan.Zero)
