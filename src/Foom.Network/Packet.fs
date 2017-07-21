@@ -94,8 +94,8 @@ type Packet () =
     member this.WriteRawBytes (data, startIndex, size) =
         byteWriter.WriteRawBytes (data, startIndex, size)
 
-    member this.WriteInt (value) =
-        byteWriter.WriteInt value
+    //member this.WriteInt (value) =
+        //byteWriter.WriteInt value
 
     member this.Reset () =
         byteStream.Length <- 0
@@ -111,7 +111,7 @@ type Packet () =
         let originalPos = byteStream.Position
         if this.Type = PacketType.ReliableOrderedAck then
             byteStream.Position <- sizeof<PacketHeader>
-            while this.DataLengthRemaining > 0 do
-                f (byteReader.ReadInt ())
+            while byteStream.Position < byteStream.Length do
+                f (byteReader.ReadUInt16 ())
 
         byteStream.Position <- originalPos

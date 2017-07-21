@@ -5,13 +5,13 @@ open System
 [<Sealed>]
 type AckManager =
 
-    member Update : TimeSpan -> (int -> Packet -> unit) -> unit
+    member Update : TimeSpan -> (uint16 -> Packet -> unit) -> unit
 
-    member UpdateSequenced : TimeSpan -> (int -> Packet -> unit) -> unit
+    member UpdateSequenced : TimeSpan -> (uint16 -> Packet -> unit) -> unit
 
-    member ForEachPending : (int -> Packet -> unit) -> unit
+    member ForEachPending : (uint16 -> Packet -> unit) -> unit
 
-    member Ack : int -> unit
+    member Ack : uint16 -> unit
 
     member MarkCopy : Packet * TimeSpan -> unit
 

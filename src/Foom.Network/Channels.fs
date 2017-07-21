@@ -84,6 +84,26 @@ type ReliableOrderedChannel (packetPool : PacketPool, send) =
     member this.Ack ack =
         ackManager.Ack ack
 
+type ReliableOrderedAckSender (packetPool : PacketPool, send) =
+    inherit Channel ()
+
+    let dataMerger = DataMerger packetPool
+    let mergedPackets = ResizeArray ()
+
+    override this.Send (bytes, startIndex, size) =
+        dataMerger.Send (bytes, startIndex, size)
+
+    override this.Update time =
+        dataMerger.Update mergedPackets
+
+        let packets = mergedPackets
+        for i = 0 to packets.Count - 1 do
+            let packet = packets.[i]
+            packet.Type <- PacketType.ReliableOrderedAck
+            send packet.Raw packet.Length
+            packetPool.Recycle packet
+        packets.Clear ()
+
 [<AbstractClass>]
 type Receiver () =
 
@@ -140,13 +160,14 @@ type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
     inherit Receiver ()
 
     let ackManager = AckManager (TimeSpan.FromSeconds 1.)
+    let packetQueue = Queue<Packet> ()
 
     let mutable nextSeqId = 0us
 
     override this.Receive (time, packet, _) =
         if packet.Type = PacketType.ReliableOrdered then
             if nextSeqId = packet.SequenceId then
-                receive packet
+                packetQueue.Enqueue packet
                 sendAck nextSeqId
                 nextSeqId <- nextSeqId + 1us
             else
@@ -154,14 +175,20 @@ type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
                 packetPool.Recycle packet
 
     override this.Update time =
+        while packetQueue.Count <> 0 do
+            let packet = packetQueue.Dequeue ()
+            receive packet
+            packetPool.Recycle packet
+
         ackManager.ForEachPending (fun seqId copyPacket ->
-            if int nextSeqId = seqId then
+            if nextSeqId = seqId then
                 let packet = packetPool.Get ()
                 copyPacket.CopyTo packet
                 ackManager.Ack seqId
                 sendAck nextSeqId
                 nextSeqId <- nextSeqId + 1us
                 receive packet
+                packetPool.Recycle packet
         )
 
 

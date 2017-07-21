@@ -7,7 +7,7 @@ type PacketPool (poolAmount) =
 
     let pool = Stack (Array.init poolAmount (fun _ -> Packet ()))
 
-    member this.Amount = poolAmount
+    member this.Count = pool.Count
 
     member this.Get () = pool.Pop ()
 

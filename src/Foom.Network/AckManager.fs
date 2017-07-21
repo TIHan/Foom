@@ -85,23 +85,25 @@ type AckManager (ackRetryTime : TimeSpan) =
         iterPending oldestAck newestAck acks (fun i -> 
             if time > ackTimes.[i] + ackRetryTime then
                 ackTimes.[i] <- ackTimes.[i] + ackRetryTime
-                f i copyPackets.[i]
+                f (uint16 i) copyPackets.[i]
         )
 
     member this.UpdateSequenced time f =
         iterPending oldestAck newestAck acks (fun i ->
             let packet = copyPackets.[i]
             if newestAck <> i + int (if packet.FragmentId > 0us then packet.FragmentId - 1us else 0us) then
-                this.Ack i
+                this.Ack (uint16 i)
             else
                 if time > ackTimes.[i] + ackRetryTime then
-                    f i packet
+                    f (uint16 i) packet
         )
 
     member this.ForEachPending f =
-        iterPending oldestAck newestAck acks (fun i -> f i copyPackets.[i])
+        iterPending oldestAck newestAck acks (fun i -> f (uint16 i) copyPackets.[i])
 
-    member x.Ack i =
+    member x.Ack (i : uint16) =
+        let i = int i
+
         if not acks.[i] then
             copyPacketPool.Recycle copyPackets.[i]
             copyPackets.[i] <- Unchecked.defaultof<Packet>

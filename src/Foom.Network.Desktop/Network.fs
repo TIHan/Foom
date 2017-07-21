@@ -227,14 +227,22 @@ type UdpServer (port) =
             | :? UdpEndPoint as remoteEP -> 
 
                 if remoteEP.ipEndPoint.AddressFamily = AddressFamily.InterNetwork then
-                    let actualSize = this.UdpClient.Send (buffer, size, remoteEP.ipEndPoint)
+                    let actualSize = 
+                        if (this :> IUdpServer).CanForceDataLoss then
+                            size
+                        else
+                            this.UdpClient.Send (buffer, size, remoteEP.ipEndPoint)
                     if actualSize <> size then
                         printfn "[UdpServer] ActualSize: %A. Size: %A." actualSize size
                     bytesSentSinceLastCall <- bytesSentSinceLastCall + actualSize
                     actualSize
 
                 elif remoteEP.ipEndPoint.AddressFamily = AddressFamily.InterNetworkV6 then
-                    let actualSize = this.UdpClientV6.Send (buffer, size, remoteEP.ipEndPoint)
+                    let actualSize = 
+                        if (this :> IUdpServer).CanForceDataLoss then
+                            size
+                        else
+                            this.UdpClientV6.Send (buffer, size, remoteEP.ipEndPoint)
                     if actualSize <> size then
                         printfn "[UdpServer] ActualSize: %A. Size: %A." actualSize size
                     bytesSentSinceLastCall <- bytesSentSinceLastCall + actualSize
@@ -247,3 +255,5 @@ type UdpServer (port) =
             let count = bytesSentSinceLastCall
             bytesSentSinceLastCall <- 0
             count
+
+        member val CanForceDataLoss = false with get, set

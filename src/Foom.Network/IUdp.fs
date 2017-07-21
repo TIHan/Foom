@@ -37,3 +37,5 @@ type IUdpServer =
     abstract Send : byte [] * size: int * IUdpEndPoint -> int
 
     abstract BytesSentSinceLastCall : unit -> int
+
+    abstract CanForceDataLoss : bool with get, set

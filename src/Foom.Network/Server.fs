@@ -6,7 +6,7 @@ open System.Collections.Generic
 [<Sealed>]
 type Server (udpServer: IUdpServer) =
 
-    let peer = Peer (Udp.Server udpServer)
+    let peer = Peer (Udp.Server udpServer, PacketPool 1024)
 
     [<CLIEvent>]
     member val ClientConnected = peer.PeerConnected
@@ -16,6 +16,13 @@ type Server (udpServer: IUdpServer) =
     member this.PublishUnreliable<'T> (msg: 'T) =
         peer.SendUnreliable (msg)
 
+    member this.PublishReliableOrdered<'T> (msg : 'T) =
+        peer.SendReliableOrdered (msg)
+
     member this.Update time =
         peer.Update time
         this.BytesSentSinceLastUpdate <- udpServer.BytesSentSinceLastCall ()
+
+    member this.CanForcePacketLoss 
+        with get () = udpServer.CanForceDataLoss
+        and set value = udpServer.CanForceDataLoss <- value

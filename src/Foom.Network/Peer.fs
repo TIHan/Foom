@@ -9,9 +9,7 @@ type Udp =
     | Server of IUdpServer
     | ServerWithEndPoint of IUdpServer * IUdpEndPoint
 
-type Peer (udp : Udp) =
-
-    let packetPool = PacketPool 1024
+type Peer (udp : Udp, packetPool : PacketPool) as this =
 
     let subscriptions = Array.init 1024 (fun _ -> Event<obj> ())
 
@@ -34,12 +32,16 @@ type Peer (udp : Udp) =
         | _ -> failwith "should not happen"
 
     let unreliableChan = UnreliableChannel (packetPool, send)
+
     let reliableOrderedChan = ReliableOrderedChannel (packetPool, send)
+
+    let reliableOrderedAckSender = ReliableOrderedAckSender (packetPool, send)
 
     let senders =
         [|
             unreliableChan :> Channel
             reliableOrderedChan :> Channel
+            reliableOrderedAckSender :> Channel
         |]
 
     // Receivers
@@ -47,10 +49,21 @@ type Peer (udp : Udp) =
         receiverByteWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.DataLength)
     )
 
+    let reliableOrderedReceiver = 
+        ReliableOrderedReceiver (packetPool, 
+            (fun ack -> 
+                let startIndex = sendStream.Position
+                sendWriter.WriteUInt16 ack
+                let size = sendStream.Position - startIndex
+                this.Send (sendStream.Raw, startIndex, size, PacketType.ReliableOrderedAck)
+            ), fun packet ->
+                receiverByteWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.DataLength)
+       )
+
     let connectionRequestedReceiver = ConnectionRequestedReceiver (packetPool, fun packet endPoint ->
         match udp with
         | Udp.Server udpServer ->
-            let peer = Peer (Udp.ServerWithEndPoint (udpServer, endPoint))
+            let peer = Peer (Udp.ServerWithEndPoint (udpServer, endPoint), packetPool)
 
             peerLookup.Add (endPoint, peer)
 
@@ -71,6 +84,7 @@ type Peer (udp : Udp) =
             connectionRequestedReceiver :> Receiver
             connectionAcceptedReceiver :> Receiver
             unreliableReceiver :> Receiver
+            reliableOrderedReceiver :> Receiver
         |]
 
     member private this.OnReceive (reader : ByteReader) =
@@ -118,7 +132,18 @@ type Peer (udp : Udp) =
                 peer.Send (bytes, startIndex, size, packetType)
             )
         | _ ->
-            unreliableChan.Send (bytes, startIndex, size)
+
+            match packetType with
+            | PacketType.Unreliable ->
+                unreliableChan.Send (bytes, startIndex, size)
+
+            | PacketType.ReliableOrdered ->
+                reliableOrderedChan.Send (bytes, startIndex, size)
+
+            | PacketType.ReliableOrderedAck ->
+                reliableOrderedAckSender.Send (bytes, startIndex, size)
+
+            | _ -> failwith "packet type not supported"
 
     member private this.Send<'T> (msg : 'T, packetType) =
         let startIndex = sendStream.Position
@@ -157,7 +182,14 @@ type Peer (udp : Udp) =
             | PacketType.Unreliable ->
                 unreliableReceiver.Receive (time, packet, endPoint)
 
-            | _ -> packetPool.Recycle packet
+            | PacketType.ReliableOrdered ->
+                reliableOrderedReceiver.Receive (time, packet, endPoint)
+
+            | PacketType.ReliableOrderedAck ->
+                packet.ReadAcks reliableOrderedChan.Ack
+                packetPool.Recycle packet
+
+            | _ -> failwith "Packet type not supported."
 
     member this.Update time =
         receiveByteStream.Length <- 0
@@ -204,3 +236,6 @@ type Peer (udp : Udp) =
         )
 
         sendStream.Length <- 0
+
+        if packetPool.Count <> 1024 then
+            failwithf "packet pool didn't go back to normal, 1024 <> %A." packetPool.Count
