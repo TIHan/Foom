@@ -165,14 +165,15 @@ type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
     let mutable nextSeqId = 0us
 
     override this.Receive (time, packet, _) =
-        if packet.Type = PacketType.ReliableOrdered then
-            if nextSeqId = packet.SequenceId then
-                packetQueue.Enqueue packet
-                sendAck nextSeqId
-                nextSeqId <- nextSeqId + 1us
-            else
-                ackManager.MarkCopy (packet, time)
-                packetPool.Recycle packet
+        System.Diagnostics.Debug.Assert (packet.Type = PacketType.ReliableOrdered)
+        if nextSeqId = packet.SequenceId then
+            packetQueue.Enqueue packet
+            ackManager.Ack nextSeqId
+            sendAck nextSeqId
+            nextSeqId <- nextSeqId + 1us
+        else
+            ackManager.MarkCopy (packet, time)
+            packetPool.Recycle packet
 
     override this.Update time =
         while packetQueue.Count <> 0 do
@@ -184,7 +185,7 @@ type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
             if nextSeqId = seqId then
                 let packet = packetPool.Get ()
                 copyPacket.CopyTo packet
-                ackManager.Ack seqId
+                ackManager.Ack nextSeqId
                 sendAck nextSeqId
                 nextSeqId <- nextSeqId + 1us
                 receive packet
