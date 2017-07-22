@@ -166,10 +166,10 @@ type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
 
     override this.Receive (time, packet, _) =
         System.Diagnostics.Debug.Assert (packet.Type = PacketType.ReliableOrdered)
+        sendAck packet.SequenceId
         if nextSeqId = packet.SequenceId then
             packetQueue.Enqueue packet
             ackManager.Ack nextSeqId
-            sendAck nextSeqId
             nextSeqId <- nextSeqId + 1us
         else
             ackManager.MarkCopy (packet, time)
@@ -181,12 +181,12 @@ type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
             receive packet
             packetPool.Recycle packet
 
+        // FIXME: this peice is broken
         ackManager.ForEachPending (fun seqId copyPacket ->
             if nextSeqId = seqId then
                 let packet = packetPool.Get ()
                 copyPacket.CopyTo packet
                 ackManager.Ack nextSeqId
-                sendAck nextSeqId
                 nextSeqId <- nextSeqId + 1us
                 receive packet
                 packetPool.Recycle packet

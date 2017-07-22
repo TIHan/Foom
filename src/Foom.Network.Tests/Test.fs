@@ -405,7 +405,7 @@ type Test() =
                 values.[i] <- msg.arr.[i]
         )
 
-        let data = { arr = Array.init testSize (fun i -> i); len = testSize }
+        let data = { arr = Array.init testSize (fun i -> i + 1); len = testSize }
 
         server.PublishReliableOrdered data
 
@@ -415,13 +415,30 @@ type Test() =
         Threading.Thread.Sleep 100
         client.Update TimeSpan.Zero
 
-       // udpServer.CanForceDataLossEveryOtherCall <- false
+        values
+        |> Array.iteri (fun i v -> Assert.AreNotEqual (i + 1, v))
 
         server.Update (TimeSpan.FromSeconds 2.)
         Threading.Thread.Sleep 100
         client.Update (TimeSpan.FromSeconds 2.)
 
         values
-        |> Array.iteri (fun i v -> Assert.AreEqual (i, v))
+        |> Array.iteri (fun i v -> Assert.AreNotEqual (i + 1, v))
+
+        udpServer.CanForceDataLossEveryOtherCall <- false
+
+        server.Update (TimeSpan.FromSeconds 2.)
+        Threading.Thread.Sleep 100
+        client.Update (TimeSpan.FromSeconds 2.)
+
+        values
+        |> Array.iteri (fun i v -> Assert.AreNotEqual (i + 1, v))
+
+        server.Update (TimeSpan.FromSeconds 10.)
+        Threading.Thread.Sleep 100
+        client.Update (TimeSpan.FromSeconds 10.)
+
+        values
+        |> Array.iteri (fun i v -> Assert.AreEqual (i + 1, v))
 
 
