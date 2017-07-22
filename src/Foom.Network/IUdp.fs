@@ -39,3 +39,5 @@ type IUdpServer =
     abstract BytesSentSinceLastCall : unit -> int
 
     abstract CanForceDataLoss : bool with get, set
+
+    abstract CanForceDataLossEveryOtherCall : bool with get, set

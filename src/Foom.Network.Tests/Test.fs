@@ -396,25 +396,32 @@ type Test() =
 
         // Fragmentation Test
 
-        let mutable firstValue = 0
-        let mutable lastValue = 0
+        let testSize = 4096 * 4
+
+        let values = Array.zeroCreate testSize
 
         client.Subscribe<TestMessage3> (fun msg ->
-            firstValue <- msg.arr.[0]
-            lastValue <- msg.arr.[1023]
+            for i = 0 to msg.len - 1 do
+                values.[i] <- msg.arr.[i]
         )
 
-        let data = { arr = Array.zeroCreate 1024; len = 1024 }
-        data.arr.[0] <- 1234
-        data.arr.[1023] <- 5678
+        let data = { arr = Array.init testSize (fun i -> i); len = testSize }
 
         server.PublishReliableOrdered data
+
+        udpServer.CanForceDataLossEveryOtherCall <- true
 
         server.Update TimeSpan.Zero
         Threading.Thread.Sleep 100
         client.Update TimeSpan.Zero
 
-        Assert.AreEqual (1234, firstValue)
-        Assert.AreEqual (5678, lastValue)
+       // udpServer.CanForceDataLossEveryOtherCall <- false
+
+        server.Update (TimeSpan.FromSeconds 2.)
+        Threading.Thread.Sleep 100
+        client.Update (TimeSpan.FromSeconds 2.)
+
+        values
+        |> Array.iteri (fun i v -> Assert.AreEqual (i, v))
 
 

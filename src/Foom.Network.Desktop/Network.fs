@@ -194,6 +194,8 @@ type UdpServer (port) =
 
     let mutable bytesSentSinceLastCall = 0
 
+    let mutable dataLossEveryOtherCall = false
+
     interface IUdpServer with
 
         member this.Receive (buffer, offset, size, [<Out>] remoteEP: byref<IUdpEndPoint>) =
@@ -228,23 +230,25 @@ type UdpServer (port) =
 
                 if remoteEP.ipEndPoint.AddressFamily = AddressFamily.InterNetwork then
                     let actualSize = 
-                        if (this :> IUdpServer).CanForceDataLoss then
+                        if (this :> IUdpServer).CanForceDataLoss || (dataLossEveryOtherCall && (this :> IUdpServer).CanForceDataLossEveryOtherCall) then
                             size
                         else
                             this.UdpClient.Send (buffer, size, remoteEP.ipEndPoint)
                     if actualSize <> size then
                         printfn "[UdpServer] ActualSize: %A. Size: %A." actualSize size
                     bytesSentSinceLastCall <- bytesSentSinceLastCall + actualSize
+                    dataLossEveryOtherCall <- not dataLossEveryOtherCall
                     actualSize
 
                 elif remoteEP.ipEndPoint.AddressFamily = AddressFamily.InterNetworkV6 then
                     let actualSize = 
-                        if (this :> IUdpServer).CanForceDataLoss then
+                        if (this :> IUdpServer).CanForceDataLoss || (dataLossEveryOtherCall && (this :> IUdpServer).CanForceDataLossEveryOtherCall) then
                             size
                         else
                             this.UdpClientV6.Send (buffer, size, remoteEP.ipEndPoint)
                     if actualSize <> size then
                         printfn "[UdpServer] ActualSize: %A. Size: %A." actualSize size
+                    dataLossEveryOtherCall <- not dataLossEveryOtherCall
                     bytesSentSinceLastCall <- bytesSentSinceLastCall + actualSize
                     actualSize
                 else
@@ -257,3 +261,5 @@ type UdpServer (port) =
             count
 
         member val CanForceDataLoss = false with get, set
+
+        member val CanForceDataLossEveryOtherCall = false with get, set
