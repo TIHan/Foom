@@ -303,7 +303,7 @@ type Test() =
 
         Assert.True (messageReceived)
         Assert.AreEqual (808, endOfArray)
-    
+
     [<Test>]
     member this.ReliableOrdered () : unit =
         use udpClient = new UdpClient () :> IUdpClient
@@ -326,75 +326,95 @@ type Test() =
         Threading.Thread.Sleep 100
         client.Update TimeSpan.Zero
 
-        //for i = 1 to 100 do
-            //// Start
+        for i = 1 to 100 do
+            // Start
 
-            //for i = 0 to 100 do
-            //    server.PublishUnreliable ({ a = 1 + i; b = 2 + i })
+            for i = 0 to 100 do
+                server.PublishUnreliable ({ a = 1 + i; b = 2 + i })
 
-            //server.Update TimeSpan.Zero
-            //Threading.Thread.Sleep 100
-            //client.Update TimeSpan.Zero
+            server.Update TimeSpan.Zero
+            Threading.Thread.Sleep 100
+            client.Update TimeSpan.Zero
 
-            //Assert.AreEqual (2 + 100, value)
+            Assert.AreEqual (2 + 100, value)
 
-            //// Reset
+            // Reset
 
-            //value <- 0
-            //Assert.AreEqual (0, value)
+            value <- 0
+            Assert.AreEqual (0, value)
 
-            //// Start
+            // Start
 
-            //server.CanForcePacketLoss <- true
-            //for i = 0 to 50 do
-            //    server.PublishUnreliable ({ a = 1 + i; b = 2 + i })
+            server.CanForcePacketLoss <- true
+            for i = 0 to 50 do
+                server.PublishUnreliable ({ a = 1 + i; b = 2 + i })
 
-            //server.Update TimeSpan.Zero
-            //Threading.Thread.Sleep 100
-            //client.Update TimeSpan.Zero
+            server.Update TimeSpan.Zero
+            Threading.Thread.Sleep 100
+            client.Update TimeSpan.Zero
 
-            //server.CanForcePacketLoss <- false
-            //for i = 51 to 100 do
-            //    server.PublishUnreliable ({ a = 1 + i; b = 2 + i })
+            server.CanForcePacketLoss <- false
+            for i = 51 to 100 do
+                server.PublishUnreliable ({ a = 1 + i; b = 2 + i })
 
-            //server.Update TimeSpan.Zero
-            //Threading.Thread.Sleep 100
-            //client.Update TimeSpan.Zero
+            server.Update TimeSpan.Zero
+            Threading.Thread.Sleep 100
+            client.Update TimeSpan.Zero
 
-            //Assert.AreEqual (2 + 100, value)
+            Assert.AreEqual (2 + 100, value)
 
-            //// Reset
+            // Reset
 
-            //value <- 0
-            //Assert.AreEqual (0, value)
+            value <- 0
+            Assert.AreEqual (0, value)
 
-            //// Start
+            // Start
 
-            //server.CanForcePacketLoss <- true
-            //for i = 0 to 50 do
-            //    server.PublishReliableOrdered ({ a = 1 + i; b = 2 + i })
+            server.CanForcePacketLoss <- true
+            for i = 0 to 50 do
+                server.PublishReliableOrdered ({ a = 1 + i; b = 2 + i })
 
-            //server.Update TimeSpan.Zero
-            //Threading.Thread.Sleep 100
-            //client.Update TimeSpan.Zero
+            server.Update TimeSpan.Zero
+            Threading.Thread.Sleep 100
+            client.Update TimeSpan.Zero
 
-            //server.CanForcePacketLoss <- false
-            //for i = 51 to 100 do
-            //    server.PublishReliableOrdered ({ a = 1 + i; b = 2 + i })
+            server.CanForcePacketLoss <- false
+            for i = 51 to 100 do
+                server.PublishReliableOrdered ({ a = 1 + i; b = 2 + i })
 
-            //server.Update TimeSpan.Zero
-            //Threading.Thread.Sleep 100
-            //client.Update TimeSpan.Zero
+            server.Update TimeSpan.Zero
+            Threading.Thread.Sleep 100
+            client.Update TimeSpan.Zero
 
-            //Assert.AreEqual (0, value)
+            Assert.AreEqual (0, value)
 
-            //server.Update (TimeSpan.FromSeconds 2.)
-            //Threading.Thread.Sleep 100
-            //client.Update (TimeSpan.FromSeconds 2.)
+            server.Update (TimeSpan.FromSeconds 2.)
+            Threading.Thread.Sleep 100
+            client.Update (TimeSpan.FromSeconds 2.)
 
-            //Assert.AreEqual (2 + 100, value)
+            Assert.AreEqual (2 + 100, value)
+    
+    [<Test>]
+    member this.ReliableOrderedFragmentation () : unit =
+        use udpClient = new UdpClient () :> IUdpClient
+        use udpServer = new UdpServer (29015) :> IUdpServer
 
-        // Fragmentation Test
+        let client = Client (udpClient)
+        let mutable value = 0
+        client.Subscribe<TestMessage> (fun msg ->
+            value <- msg.b
+        )
+
+
+        let server = Server (udpServer)
+
+        client.Connect ("127.0.0.1", 29015)
+
+        client.Update TimeSpan.Zero
+        Threading.Thread.Sleep 100
+        server.Update TimeSpan.Zero
+        Threading.Thread.Sleep 100
+        client.Update TimeSpan.Zero
 
         let testSize = 4096 * 4
 
@@ -434,11 +454,17 @@ type Test() =
         values
         |> Array.iteri (fun i v -> Assert.AreNotEqual (i + 1, v))
 
+        Assert.AreEqual (server.PacketPoolMaxCount, server.PacketPoolCount)
+        Assert.AreNotEqual (client.PacketPoolMaxCount, client.PacketPoolCount)
+
         server.Update (TimeSpan.FromSeconds 10.)
         Threading.Thread.Sleep 100
         client.Update (TimeSpan.FromSeconds 10.)
 
         values
         |> Array.iteri (fun i v -> Assert.AreEqual (i + 1, v))
+
+        Assert.AreEqual (server.PacketPoolMaxCount, server.PacketPoolCount)
+        Assert.AreEqual (client.PacketPoolMaxCount, client.PacketPoolCount)
 
 

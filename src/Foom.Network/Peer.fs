@@ -237,5 +237,5 @@ type Peer (udp : Udp, packetPool : PacketPool) as this =
 
         sendStream.Length <- 0
 
-        if packetPool.Count <> 1024 then
-            failwithf "packet pool didn't go back to normal, 1024 <> %A." packetPool.Count
+       // if packetPool.Count <> 1024 then
+         //   failwithf "packet pool didn't go back to normal, 1024 <> %A." packetPool.Count

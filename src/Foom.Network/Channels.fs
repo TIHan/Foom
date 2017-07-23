@@ -160,67 +160,30 @@ type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
     inherit Receiver ()
 
     let ackManager = AckManager (TimeSpan.FromSeconds 1.)
-    let packetQueue = Queue<Packet> ()
+    let fragmentAssembler = FragmentAssembler ()
 
     let mutable nextSeqId = 0us
 
     override this.Receive (time, packet, _) =
         System.Diagnostics.Debug.Assert (packet.Type = PacketType.ReliableOrdered)
         sendAck packet.SequenceId
-        if nextSeqId = packet.SequenceId then
-            packetQueue.Enqueue packet
-            ackManager.Ack nextSeqId
-            nextSeqId <- nextSeqId + 1us
-        else
-            ackManager.MarkCopy (packet, time)
-            packetPool.Recycle packet
+        ackManager.MarkCopy (packet, time)
+        packetPool.Recycle packet
 
     override this.Update time =
-        while packetQueue.Count <> 0 do
-            let packet = packetQueue.Dequeue ()
-            receive packet
-            packetPool.Recycle packet
-
-        // FIXME: this peice is broken
         ackManager.ForEachPending (fun seqId copyPacket ->
             if nextSeqId = seqId then
                 let packet = packetPool.Get ()
                 copyPacket.CopyTo packet
                 ackManager.Ack nextSeqId
                 nextSeqId <- nextSeqId + 1us
-                receive packet
-                packetPool.Recycle packet
+
+                if packet.IsFragmented then
+                    fragmentAssembler.Mark (packet, fun packet ->
+                        receive packet
+                        packetPool.Recycle packet
+                    )
+                else
+                    receive packet
+                    packetPool.Recycle packet
         )
-
-
-//let createMergeAckFilter (packetPool : PacketPool) =
-//    let packets = ResizeArray ()
-//    Pipeline.filter (fun (time : TimeSpan) data callback ->
-//        data
-//        |> Seq.iter (fun data ->
-//            if packets.Count = 0 then
-//                let packet = packetPool.Get ()
-//                if packet.DataLengthRemaining >= sizeof<int> then
-//                    packet.WriteInt (data.ack)
-//                    packets.Add packet
-//                else
-//                    failwith "shouldn't happen"
-                    
-//            else
-//                let packet = packets.[packets.Count - 1]
-//                if packet.DataLengthRemaining >= sizeof<int> then
-//                    packet.WriteInt (data.ack)
-//                else
-//                    let packet = packetPool.Get ()
-//                    if packet.DataLengthRemaining >= sizeof<int> then
-//                        packet.WriteInt (data.ack)
-//                        packets.Add packet
-//                    else
-//                        failwith "shouldn't happen"
-
-                    
-//        )
-
-//        packets |> Seq.iter callback
-//        packets.Clear ()
-//    )

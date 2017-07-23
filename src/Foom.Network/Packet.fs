@@ -22,9 +22,10 @@ type PacketType =
 
 [<Struct>]
 type PacketHeader =
-    { type'         : PacketType
-      fragmentId    : uint16
-      sequenceId    : uint16
+    { type'         : PacketType // 1 byte
+      sequenceId    : uint16 // 2 bytes
+      fragmentId    : byte
+      fragmentCount : byte
       pad0          : byte
       pad1          : byte
       pad2          : byte
@@ -33,7 +34,7 @@ type PacketHeader =
 [<Sealed>]
 type Packet () =
 
-    let PacketSize = 1024
+    static let PacketSize = 1024
 
     let byteStream = ByteStream (PacketSize + sizeof<PacketHeader>)
     let byteWriter = ByteWriter (byteStream)
@@ -66,20 +67,6 @@ type Packet () =
     member this.SequenceId 
         with get () =
             let originalPos = byteStream.Position
-            byteStream.Position <- 3
-            let value = byteReader.ReadUInt16 ()
-            byteStream.Position <- originalPos
-            value
-
-        and set value =
-           let originalPos = byteStream.Position
-           byteStream.Position <- 3
-           byteWriter.WriteUInt16 value
-           byteStream.Position <- originalPos
-
-    member this.FragmentId 
-        with get () =
-            let originalPos = byteStream.Position
             byteStream.Position <- 1
             let value = byteReader.ReadUInt16 ()
             byteStream.Position <- originalPos
@@ -91,11 +78,36 @@ type Packet () =
            byteWriter.WriteUInt16 value
            byteStream.Position <- originalPos
 
+    member this.FragmentId 
+        with get () =
+            let originalPos = byteStream.Position
+            byteStream.Position <- 3
+            let value = byteReader.ReadByte ()
+            byteStream.Position <- originalPos
+            value
+
+        and set value =
+           let originalPos = byteStream.Position
+           byteStream.Position <- 3
+           byteWriter.WriteByte value
+           byteStream.Position <- originalPos
+
+    member this.FragmentCount
+        with get () =
+            let originalPos = byteStream.Position
+            byteStream.Position <- 4
+            let value = byteReader.ReadByte ()
+            byteStream.Position <- originalPos
+            value
+
+        and set value =
+           let originalPos = byteStream.Position
+           byteStream.Position <- 4
+           byteWriter.WriteByte value
+           byteStream.Position <- originalPos
+
     member this.WriteRawBytes (data, startIndex, size) =
         byteWriter.WriteRawBytes (data, startIndex, size)
-
-    //member this.WriteInt (value) =
-        //byteWriter.WriteInt value
 
     member this.Reset () =
         byteStream.Length <- 0
@@ -115,3 +127,5 @@ type Packet () =
                 f (byteReader.ReadUInt16 ())
 
         byteStream.Position <- originalPos
+
+    member this.IsFragmented = this.FragmentId > 0uy

@@ -91,7 +91,7 @@ type AckManager (ackRetryTime : TimeSpan) =
     member this.UpdateSequenced time f =
         iterPending oldestAck newestAck acks (fun i ->
             let packet = copyPackets.[i]
-            if newestAck <> i + int (if packet.FragmentId > 0us then packet.FragmentId - 1us else 0us) then
+            if newestAck <> i + int (if packet.FragmentId > 0uy then packet.FragmentId - 1uy else 0uy) then
                 this.Ack (uint16 i)
             else
                 if time > ackTimes.[i] + ackRetryTime then

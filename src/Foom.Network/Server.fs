@@ -6,7 +6,8 @@ open System.Collections.Generic
 [<Sealed>]
 type Server (udpServer: IUdpServer) =
 
-    let peer = Peer (Udp.Server udpServer, PacketPool 1024)
+    let packetPool = PacketPool 1024
+    let peer = Peer (Udp.Server udpServer, packetPool)
 
     [<CLIEvent>]
     member val ClientConnected = peer.PeerConnected
@@ -26,3 +27,7 @@ type Server (udpServer: IUdpServer) =
     member this.CanForcePacketLoss 
         with get () = udpServer.CanForceDataLoss
         and set value = udpServer.CanForceDataLoss <- value
+
+    member this.PacketPoolCount = packetPool.Count
+
+    member this.PacketPoolMaxCount = packetPool.MaxCount
