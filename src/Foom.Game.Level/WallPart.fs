@@ -15,7 +15,6 @@ type WallPart =
         TextureOffsetX: int
         TextureOffsetY: int
         TextureName: string option
-        Vertices: Vector3 []
         TextureAlignment: TextureAlignment
     }
 

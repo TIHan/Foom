@@ -27,7 +27,6 @@ module WadLevel =
             TextureOffsetX = sidedef.OffsetX
             TextureOffsetY = sidedef.OffsetY
             TextureName = texName
-            Vertices = [||]
             TextureAlignment =
                 match section with
                 | Upper ->
