@@ -135,7 +135,7 @@ module LinedefTracer =
 
                 visit linedef tracer, true
 
-    let run sectorId level = 
+    let run sectorId (level : Level) = 
         let rec f  (polygons: LinedefPolygon list) (originalTracer: LinedefTracer) (tracer: LinedefTracer) =
             match tryVisitNextLinedef tracer with
             | tracer, true -> f polygons originalTracer tracer
@@ -185,8 +185,8 @@ module LinedefTracer =
                         f polygons tracer tracer
 
         let linedefs = ResizeArray ()
-        (sectorId, level)
-        ||> Level.iterWallBySectorId (fun x ->
+        sectorId
+        |> level.ForEachWallBySectorId (fun x ->
             let canUseLinedef =
                 if (x.FrontSide.IsSome && x.BackSide.IsSome && x.FrontSide.Value.SectorId = sectorId && x.BackSide.Value.SectorId = sectorId) then
                     false

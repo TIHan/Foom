@@ -109,10 +109,18 @@ module WadLevel =
         let walls = toWalls level
         let sectors = toSectors level
 
-        Level.create walls sectors
+        let level = Level ()
+
+        walls
+        |> Seq.iter level.AddWall
+
+        sectors
+        |> Seq.iter level.AddSector
+
+        level
 
     let createSectorGeometry sectorId (level: Foom.Game.Level.Level) = 
-        match level |> Foom.Game.Level.Level.tryGetSector sectorId with
+        match level.TryGetSector sectorId with
         | None -> Seq.empty
         | Some sector ->
 

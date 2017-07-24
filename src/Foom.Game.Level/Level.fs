@@ -6,94 +6,80 @@ open System.Collections.Generic
 open Foom.Ecs
 open Foom.Geometry
 
-type Level =
-    {
-        walls: Wall ResizeArray
-        wallLookup: Dictionary<int, int ResizeArray>
-        sectors: Sector ResizeArray
-    } 
-
 [<Sealed>]
-type LevelComponent (level: Level) =
-    inherit Component ()
+type Level () =
 
-    member val Level = level
+    let walls = ResizeArray<Wall> ()
+    let wallLookup = Dictionary<int, ResizeArray<int>> ()
+    let sectors = ResizeArray<Sector> ()
 
-[<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
-module Level =
+    member this.AddWall (wall : Wall) =
+        let index = walls.Count
 
-    let create (walls: Wall seq) (sectors: Sector seq) =
+        walls.Add wall
 
-        let wallLookup = Dictionary ()
+        wall.FrontSide
+        |> Option.iter (fun frontSide ->
+            let sectorId = frontSide.SectorId
 
-        walls
-        |> Seq.iteri (fun i x ->
-            x.FrontSide
-            |> Option.iter (fun frontSide ->
-                let sectorId = frontSide.SectorId
+            let arr =
+                match wallLookup.TryGetValue sectorId with
+                | false, _ ->
+                    let arr = ResizeArray ()
+                    wallLookup.Add(sectorId, arr)
+                    arr
+                | _, arr -> arr
 
-                let arr =
-                    match wallLookup.TryGetValue sectorId with
-                    | false, _ ->
-                        let arr = ResizeArray ()
-                        wallLookup.Add(sectorId, arr)
-                        arr
-                    | _, arr -> arr
-
-                arr.Add (i)
-            )
-
-            x.BackSide
-            |> Option.iter (fun frontSide ->
-                let sectorId = frontSide.SectorId
-
-                let arr =
-                    match wallLookup.TryGetValue sectorId with
-                    | false, _ ->
-                        let arr = ResizeArray ()
-                        wallLookup.Add(sectorId, arr)
-                        arr
-                    | _, arr -> arr
-
-                arr.Add (i)
-            )
+            arr.Add (index)
         )
 
-        {
-            walls = ResizeArray (walls)
-            wallLookup = wallLookup
-            sectors = ResizeArray (sectors)
-        }
+        wall.BackSide
+        |> Option.iter (fun frontSide ->
+            let sectorId = frontSide.SectorId
 
-    let iterWall f level =
-        level.walls |> Seq.iter f
+            let arr =
+                match wallLookup.TryGetValue sectorId with
+                | false, _ ->
+                    let arr = ResizeArray ()
+                    wallLookup.Add(sectorId, arr)
+                    arr
+                | _, arr -> arr
 
-    let iterWallBySectorId f sectorId level =
-        level.wallLookup.[sectorId]
+            arr.Add (index)
+        )
+
+    member this.AddSector (sector : Sector) =
+        sectors.Add sector
+
+    member this.ForEachWall f =
+        walls |> Seq.iter f
+
+    member this.ForEachWallBySectorId f sectorId =
+        wallLookup.[sectorId]
         |> Seq.iter (fun wallId ->
-            f level.walls.[wallId]
+            f walls.[wallId]
         )
 
-    let getSector index level =
-        level.sectors.[index]
+    member this.GetSector index =
+        sectors.[index]
 
-    let tryGetSector index level =
-        level.sectors
+    member this.TryGetSector index =
+        sectors
         |> Seq.tryItem index
-
-    let iteriSector f level =
-        level.sectors
+    
+    member this.ForEachSector f =
+        sectors
         |> Seq.iteri f
 
-    let getSectorCount level = level.sectors.Count
+    member this.SectorCount = sectors.Count
 
-    let lightLevelBySectorId sectorId (level: Level) =
-        let sector = level.sectors.[sectorId]
+    member this.LightLevelBySectorId sectorId =
+        let sector = sectors.[sectorId]
         let lightLevel = sector.lightLevel
         if lightLevel > 255 then 255uy
         else byte lightLevel
 
-    let createWallGeometry (wall: Wall) (level: Level) : (Vector3 [] * Vector3 [] * Vector3 []) * (Vector3 [] * Vector3 [] * Vector3 [])  =
+    member this.CreateWallGeometry (wall : Wall) : (Vector3 [] * Vector3 [] * Vector3 []) * (Vector3 [] * Vector3 [] * Vector3 []) =
         let seg = wall.Segment
         let a = seg.A
         let b = seg.B
@@ -104,8 +90,8 @@ module Level =
         |> Option.iter (fun frontSide ->
             wall.BackSide
             |> Option.iter (fun backSide ->
-                let frontSideSector = level |> getSector frontSide.SectorId
-                let backSideSector = level |> getSector backSide.SectorId
+                let frontSideSector = this.GetSector frontSide.SectorId
+                let backSideSector = this.GetSector backSide.SectorId
 
                 if frontSideSector.ceilingHeight > backSideSector.ceilingHeight then
 
@@ -128,12 +114,12 @@ module Level =
         let mutable middleFront = [||]
         wall.FrontSide
         |> Option.iter (fun frontSide ->
-            let frontSideSector = level |> getSector frontSide.SectorId
+            let frontSideSector = this.GetSector frontSide.SectorId
 
             let floorHeight, ceilingHeight =
                 match wall.BackSide with
                 | Some backSide ->
-                    let backSideSector = level |> getSector backSide.SectorId
+                    let backSideSector = this.GetSector backSide.SectorId
 
                     (
                         (
@@ -171,8 +157,8 @@ module Level =
         |> Option.iter (fun frontSide ->
             wall.BackSide
             |> Option.iter (fun backSide ->
-                let frontSideSector = level |> getSector frontSide.SectorId
-                let backSideSector = level |> getSector backSide.SectorId
+                let frontSideSector = this.GetSector frontSide.SectorId
+                let backSideSector = this.GetSector backSide.SectorId
 
                 if frontSideSector.floorHeight < backSideSector.floorHeight then
 
@@ -197,8 +183,8 @@ module Level =
         |> Option.iter (fun backSide ->
             wall.FrontSide
             |> Option.iter (fun frontSide ->
-                let backSideSector = level |> getSector backSide.SectorId
-                let frontSideSector = level |> getSector frontSide.SectorId
+                let backSideSector = this.GetSector backSide.SectorId
+                let frontSideSector = this.GetSector frontSide.SectorId
 
                 if frontSideSector.ceilingHeight < backSideSector.ceilingHeight then
 
@@ -221,12 +207,12 @@ module Level =
         let mutable middleBack = [||]
         wall.BackSide
         |> Option.iter (fun backSide ->
-            let backSideSector = level |> getSector backSide.SectorId
+            let backSideSector = this.GetSector backSide.SectorId
 
             let floorHeight, ceilingHeight =
                 match wall.FrontSide with
                 | Some frontSide ->
-                    let frontSideSector = level |> getSector frontSide.SectorId
+                    let frontSideSector = this.GetSector frontSide.SectorId
 
                     (
                         (
@@ -263,8 +249,8 @@ module Level =
         |> Option.iter (fun backSide ->
             wall.FrontSide
             |> Option.iter (fun frontSide ->
-                let backSideSector = level |> getSector backSide.SectorId
-                let frontSideSector = level |> getSector frontSide.SectorId
+                let backSideSector = this.GetSector backSide.SectorId
+                let frontSideSector = this.GetSector frontSide.SectorId
 
                 if frontSideSector.floorHeight > backSideSector.floorHeight then
 
@@ -287,3 +273,10 @@ module Level =
             (upperFront, middleFront, lowerFront),
             (upperBack, middleBack, lowerBack)
         )
+
+
+[<Sealed>]
+type LevelComponent (level: Level) =
+    inherit Component ()
+
+    member val Level = level

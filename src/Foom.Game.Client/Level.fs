@@ -107,10 +107,10 @@ let spawnWallPartMesh sector (part: WallPart) (vertices: Vector3 []) wad isSky =
             let t = loadTexture texturePath//new Bitmap(texturePath)
             spawnMesh sector vertices (WallPart.createUV vertices t.Width t.Height part) texturePath
 
-let spawnWallMesh level (wall: Wall) wad =
+let spawnWallMesh (level : Level) (wall: Wall) wad =
     let (
         (upperFront, middleFront, lowerFront),
-        (upperBack, middleBack, lowerBack)) = Foom.Game.Level.Level.createWallGeometry wall level
+        (upperBack, middleBack, lowerBack)) = level.CreateWallGeometry wall
 
     match wall.FrontSide with
     | Some frontSide ->
@@ -118,11 +118,11 @@ let spawnWallMesh level (wall: Wall) wad =
         let isSky =
             match wall.BackSide with
             | Some backSide ->
-                let sector = Foom.Game.Level.Level.getSector backSide.SectorId level
+                let sector = level.GetSector backSide.SectorId
                 sector.ceilingTextureName.Equals("F_SKY1")
             | _ -> false
         
-        let sector = Foom.Game.Level.Level.getSector frontSide.SectorId level
+        let sector = level.GetSector frontSide.SectorId
 
         spawnWallPartMesh sector frontSide.Upper upperFront wad isSky
         spawnWallPartMesh sector frontSide.Middle middleFront wad false
@@ -136,11 +136,11 @@ let spawnWallMesh level (wall: Wall) wad =
         let isSky =
             match wall.FrontSide with
             | Some frontSide ->
-                let sector = Foom.Game.Level.Level.getSector frontSide.SectorId level
+                let sector = level.GetSector frontSide.SectorId
                 sector.ceilingTextureName.Equals("F_SKY1")
             | _ -> false
 
-        let sector = Foom.Game.Level.Level.getSector backSide.SectorId level
+        let sector = level.GetSector backSide.SectorId
 
         spawnWallPartMesh sector backSide.Upper upperBack wad isSky
         spawnWallPartMesh sector backSide.Middle middleBack wad false
@@ -166,13 +166,12 @@ let updates openWad exportTextures am (clientWorld: ClientWorld) =
 
             let lvl = WadLevel.toLevel level
 
-            let sectorCount = lvl |> Level.getSectorCount
+            let sectorCount = lvl.SectorCount
 
             let sectorWalls =
                 Array.init sectorCount (fun _ -> ResizeArray ())
 
-            lvl
-            |> Foom.Game.Level.Level.iteriSector (fun i sector ->
+            lvl.ForEachSector (fun i sector ->
 
                 (i, level)
                 ||> Level.iterLinedefBySectorId (fun linedef ->
@@ -231,8 +230,7 @@ let updates openWad exportTextures am (clientWorld: ClientWorld) =
                 )
             )
             
-            lvl
-            |> Level.iterWall (fun wall ->
+            lvl.ForEachWall (fun wall ->
                 spawnWallMesh lvl wall wad
             )
 

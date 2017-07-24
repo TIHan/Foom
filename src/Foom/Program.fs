@@ -117,18 +117,17 @@ let start (input : IInput) (gl : IGL) (invoke: Task ref) =
                     TimeSpan.FromTicks(interval).TotalSeconds |> single
                 )
 
-            stopwatch.Stop ()
-
-            //printfn "FPS: %A" (int (1000. / stopwatch.Elapsed.TotalMilliseconds))
-           // if stopwatch.Elapsed.TotalMilliseconds > 20. then
-            printfn "MS: %A" stopwatch.Elapsed.TotalMilliseconds
-
             result
         )
 
     let render =
         (fun currentTime t ->
             Client.draw (TimeSpan.FromTicks(currentTime).TotalSeconds |> single) t client client
+            stopwatch.Stop ()
+
+            //printfn "FPS: %A" (int (1000. / stopwatch.Elapsed.TotalMilliseconds))
+           // if stopwatch.Elapsed.TotalMilliseconds > 20. then
+            printfn "MS: %A" stopwatch.Elapsed.TotalMilliseconds
         )
 
     (client.AlwaysUpdate, update, render)
