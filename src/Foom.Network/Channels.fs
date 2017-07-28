@@ -27,7 +27,7 @@ type DataMerger (packetPool : PacketPool) =
             packetPool.GetFromBytes (bytes, startIndex, size, mergedPackets)
         data.Clear ()
 
-[<Sealed>]
+
 type UnreliableChannel (packetPool : PacketPool, send) =
     inherit Channel ()
 
@@ -135,10 +135,10 @@ type ConnectionRequestedReceiver (packetPool : PacketPool, receive) =
         System.Diagnostics.Debug.Assert (packet.Type = PacketType.ConnectionRequested)
         queue.Enqueue (packet, endPoint)
 
-    override this.Update _ =
+    override this.Update time =
         while queue.Count <> 0 do
             let packet, endPoint = queue.Dequeue ()
-            receive packet endPoint
+            receive time packet endPoint
             packetPool.Recycle packet
 
 type UnreliableReceiver (packetPool : PacketPool, receive) =
@@ -164,6 +164,7 @@ type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
 
     let mutable nextSeqId = 0us
 
+    // TODO: AckManager needs to use the packetPool.
     override this.Receive (time, packet, _) =
         System.Diagnostics.Debug.Assert (packet.Type = PacketType.ReliableOrdered)
         sendAck packet.SequenceId

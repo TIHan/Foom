@@ -20,15 +20,17 @@ type PacketType =
     | ConnectionRequested = 8uy
     | ConnectionAccepted = 9uy
 
+    | Ping = 10uy
+    | Pong = 11uy
+
+    | Disconnect = 12uy
+
 [<Struct>]
 type PacketHeader =
     { type'         : PacketType // 1 byte
       sequenceId    : uint16 // 2 bytes
       fragmentId    : byte
       fragmentCount : byte
-      pad0          : byte
-      pad1          : byte
-      pad2          : byte
     }
 
 [<Sealed>]
@@ -112,6 +114,8 @@ type Packet () =
     member this.Reset () =
         byteStream.Length <- 0
         byteWriter.Write Unchecked.defaultof<PacketHeader>
+
+    member this.Writer = byteWriter
 
     member this.Reader = byteReader
 

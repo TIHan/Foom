@@ -6,8 +6,7 @@ open System.Collections.Generic
 [<Sealed>]
 type Client (udpClient: IUdpClient) =
 
-    let packetPool = PacketPool 1024
-    let peer = Peer (Udp.Client udpClient, packetPool)
+    let peer = new Peer (Udp.Client udpClient)
 
     member val Connected = peer.PeerConnected
 
@@ -19,7 +18,7 @@ type Client (udpClient: IUdpClient) =
     member this.Update time =
         peer.Update time
 
-    member this.PacketPoolCount = packetPool.Count
+    member this.PacketPoolCount = peer.PacketPool.Count
 
-    member this.PacketPoolMaxCount = packetPool.MaxCount
+    member this.PacketPoolMaxCount = peer.PacketPool.MaxCount
 

@@ -457,9 +457,9 @@ type Test() =
         Assert.AreEqual (server.PacketPoolMaxCount, server.PacketPoolCount)
         Assert.AreNotEqual (client.PacketPoolMaxCount, client.PacketPoolCount)
 
-        server.Update (TimeSpan.FromSeconds 10.)
+        server.Update (TimeSpan.FromSeconds 4.)
         Threading.Thread.Sleep 100
-        client.Update (TimeSpan.FromSeconds 10.)
+        client.Update (TimeSpan.FromSeconds 4.)
 
         values
         |> Array.iteri (fun i v -> Assert.AreEqual (i + 1, v))
