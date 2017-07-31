@@ -1,13 +1,58 @@
-﻿namespace Foom.Network
+﻿namespace rec Foom.Network
 
 open System
 open System.Collections.Generic
 
+type ConnectedClientData =
+    {
+        heartbeatInterval : TimeSpan
+        mutable heartbeatTime : TimeSpan
+    }
+
+type ClientData =
+    {
+        mutable pingTime : TimeSpan
+        peerConnected : Event<IUdpEndPoint>
+        peerDisconnected : Event<IUdpEndPoint>
+    }
+
+type ServerData =
+    {
+        connectionTimeout : TimeSpan
+        peerLookup : Dictionary<IUdpEndPoint, ConnectedClientPeer>
+        peerConnected : Event<IUdpEndPoint>
+        peerDisconnected : Event<IUdpEndPoint>
+    }
+
+[<AutoOpen>]
+module PeerHelpers =
+
+    let createServerData connectionTimeout =
+        {
+            connectionTimeout = connectionTimeout
+            peerLookup = Dictionary ()
+            peerConnected = Event<IUdpEndPoint> ()
+            peerDisconnected = Event<IUdpEndPoint> ()
+        }
+
+    let createClientData () =
+        {
+            pingTime = TimeSpan.Zero
+            peerConnected = Event<IUdpEndPoint> ()
+            peerDisconnected = Event<IUdpEndPoint> ()
+        }
+
+    let createConnectedClientData interval time =
+        {
+            heartbeatInterval = interval
+            heartbeatTime = time
+        }
+
 [<RequireQualifiedAccess>]
 type Udp =
-    | Client of IUdpClient
-    | Server of IUdpServer
-    | ServerWithEndPoint of IUdpServer * IUdpEndPoint
+    | Client of IUdpClient * ClientData
+    | Server of IUdpServer * ServerData
+    | ServerWithEndPoint of IUdpServer * IUdpEndPoint * ConnectedClientData
 
 type Peer (udp : Udp) as this =
 
@@ -21,19 +66,14 @@ type Peer (udp : Udp) as this =
     let receiverByteReader = ByteReader (receiveByteStream)
     let receiverByteWriter = ByteWriter (receiveByteStream)
 
-    let peerLookup = Dictionary<IUdpEndPoint, Peer> ()
-
-    let peerConnected = Event<IUdpEndPoint> ()
-    let peerDisconnected = Event<IUdpEndPoint> ()
-
     // Senders
     let send = fun bytes size -> 
         match udp with
-        | Udp.Client client -> client.Send (bytes, size) |> ignore
-        | Udp.ServerWithEndPoint (server, endPoint) -> server.Send (bytes, size, endPoint) |> ignore
+        | Udp.Client (client, _) -> client.Send (bytes, size) |> ignore
+        | Udp.ServerWithEndPoint (server, endPoint, _) -> server.Send (bytes, size, endPoint) |> ignore
         | _ -> failwith "should not happen"
 
-    let unreliableChan = UnreliableChannel (packetPool, send)
+    let unreliableChan = UnreliableSender (packetPool, send)
 
     let reliableOrderedChan = ReliableOrderedChannel (packetPool, send)
 
@@ -64,22 +104,26 @@ type Peer (udp : Udp) as this =
 
     let connectionRequestedReceiver = ConnectionRequestedReceiver (packetPool, fun time packet endPoint ->
         match udp with
-        | Udp.Server udpServer ->
-            let peer = new Peer (Udp.ServerWithEndPoint (udpServer, endPoint))
+        | Udp.Server (udpServer, data) ->
+            let peer = new ConnectedClientPeer (udpServer, endPoint, createConnectedClientData (TimeSpan.FromSeconds 1.) time)
+
             peer.LastReceiveTime <- time
 
-            peerLookup.Add (endPoint, peer)
+            data.peerLookup.Add (endPoint, peer)
 
             let packet = Packet ()
             packet.Type <- PacketType.ConnectionAccepted
             udpServer.Send (packet.Raw, packet.Length, endPoint) |> ignore
 
-            peerConnected.Trigger endPoint
+            data.peerConnected.Trigger endPoint
         | _ -> ()
     )
 
     let connectionAcceptedReceiver = ConnectionAcceptedReceiver (packetPool, fun endPoint ->
-        peerConnected.Trigger endPoint
+        match udp with
+        | Udp.Client (_, data) ->
+            data.peerConnected.Trigger endPoint
+        | _ -> ()
     )
 
     let receivers =
@@ -89,6 +133,8 @@ type Peer (udp : Udp) as this =
             unreliableReceiver :> Receiver
             reliableOrderedReceiver :> Receiver
         |]
+
+    member this.Udp = udp
 
     member private this.OnReceive (reader : ByteReader) =
 
@@ -106,23 +152,13 @@ type Peer (udp : Udp) as this =
         while not reader.IsEndOfStream do
             onReceive reader
 
-    member val ConnectionTimeout = TimeSpan.FromSeconds(5.) with get, set
-
     member val LastReceiveTime = TimeSpan.Zero with get, set
-
-    member val HeartbeatInterval = TimeSpan.FromSeconds(1.) with get
-
-    member val HeartbeatTime = TimeSpan.Zero with get, set
 
     member this.PacketPool = packetPool
 
-    member this.PeerConnected = peerConnected.Publish
-
-    member this.PeerDisconnected = peerDisconnected.Publish
-
     member this.Connect (address, port) =
         match udp with
-        | Udp.Client udpClient ->
+        | Udp.Client (udpClient, _) ->
             if udpClient.Connect (address, port) then
                 let packet = Packet ()
                 packet.Type <- PacketType.ConnectionRequested
@@ -140,8 +176,8 @@ type Peer (udp : Udp) as this =
 
     member this.Send (bytes, startIndex, size, packetType) =
         match udp with
-        | Udp.Server _ ->
-            peerLookup
+        | Udp.Server (_, data) ->
+            data.peerLookup
             |> Seq.iter (fun pair ->
                 let peer = pair.Value
                 peer.Send (bytes, startIndex, size, packetType)
@@ -182,24 +218,33 @@ type Peer (udp : Udp) as this =
         this.Send<'T> (msg, PacketType.ReliableOrdered)
 
     member this.ReceivePacket (time, packet : Packet, endPoint : IUdpEndPoint) =
-        match peerLookup.TryGetValue endPoint with
-        | true, peer -> 
-            // TODO: Disconnect the client if there are no more packets available in their pool.
-            // TODO: Disconnect the client if too many packets were received in a time frame.
+        this.LastReceiveTime <- time
 
-            // Trade packets from server and client
-            peer.PacketPool.Get ()
-            |> packetPool.Recycle
+        match udp with
+        | Udp.Server (server, data) ->
+            match data.peerLookup.TryGetValue endPoint with
+            | (true, peer) -> 
+                // TODO: Disconnect the client if there are no more packets available in their pool.
+                // TODO: Disconnect the client if too many packets were received in a time frame.
 
-            peer.ReceivePacket (time, packet, endPoint)
+                // Trade packets from server and client
+                peer.PacketPool.Get ()
+                |> packetPool.Recycle
+
+                peer.ReceivePacket (time, packet, endPoint)
+
+            | _ ->
+
+                match packet.Type with
+
+                | PacketType.ConnectionRequested ->
+                    connectionRequestedReceiver.Receive (time, packet, endPoint)
+
+                | _ -> packetPool.Recycle packet
+
         | _ ->
 
-            this.LastReceiveTime <- time
-
             match packet.Type with
-
-            | PacketType.ConnectionRequested ->
-                connectionRequestedReceiver.Receive (time, packet, endPoint)
 
             | PacketType.ConnectionAccepted ->
                 connectionAcceptedReceiver.Receive (time, packet, endPoint)
@@ -216,11 +261,11 @@ type Peer (udp : Udp) as this =
 
             | PacketType.Ping ->
 
-                //let sendPacket = packetPool.Get ()
-                //sendPacket.Type <- PacketType.Pong
-                //sendPacket.Writer.Write<TimeSpan> (packet.Reader.Read<TimeSpan>())
-                //send sendPacket.Raw sendPacket.Length
-                //packetPool.Recycle sendPacket
+                let sendPacket = packetPool.Get ()
+                sendPacket.Type <- PacketType.Pong
+                sendPacket.Writer.Write<TimeSpan> (packet.Reader.Read<TimeSpan>())
+                send sendPacket.Raw sendPacket.Length
+                packetPool.Recycle sendPacket
                 packetPool.Recycle packet
 
             | PacketType.Pong ->
@@ -231,8 +276,8 @@ type Peer (udp : Udp) as this =
             | PacketType.Disconnect ->
 
                 match udp with
-                | Udp.Client client ->
-                    peerDisconnected.Trigger client.RemoteEndPoint
+                | Udp.Client (client, data) ->
+                    data.peerDisconnected.Trigger client.RemoteEndPoint
                 | _ -> ()
 
                 packetPool.Recycle packet
@@ -243,7 +288,7 @@ type Peer (udp : Udp) as this =
         receiveByteStream.Length <- 0
 
         match udp with
-        | Udp.Client client ->
+        | Udp.Client (client, _) ->
 
             while client.IsDataAvailable do
                 let packet = packetPool.Get ()
@@ -254,7 +299,7 @@ type Peer (udp : Udp) as this =
                 else
                     packetPool.Recycle packet
 
-        | Udp.Server server ->
+        | Udp.Server (server, data) ->
 
             while server.IsDataAvailable do
                 let packet = packetPool.Get ()
@@ -269,12 +314,12 @@ type Peer (udp : Udp) as this =
 
             let endPointRemovals = Queue ()
             // Check for connection timeouts
-            peerLookup
+            data.peerLookup
             |> Seq.iter (fun pair ->
                 let endPoint = pair.Key
                 let peer = pair.Value
 
-                if time > peer.LastReceiveTime + this.ConnectionTimeout then
+                if time > peer.LastReceiveTime + data.connectionTimeout then
 
                     let packet = packetPool.Get ()
                     packet.Type <- PacketType.Disconnect
@@ -288,14 +333,14 @@ type Peer (udp : Udp) as this =
 
             while endPointRemovals.Count > 0 do
                 let endPoint = endPointRemovals.Dequeue ()
-                peerLookup.Remove endPoint |> ignore
-                peerDisconnected.Trigger endPoint
+                data.peerLookup.Remove endPoint |> ignore
+                data.peerDisconnected.Trigger endPoint
 
-        | Udp.ServerWithEndPoint (server, endPoint) ->
+        | Udp.ServerWithEndPoint (server, endPoint, data) ->
 
-            if time > this.HeartbeatTime + this.HeartbeatInterval then
+            if time > data.heartbeatTime + data.heartbeatInterval then
 
-                this.HeartbeatTime <- time
+                data.heartbeatTime <- time
 
                 let packet = packetPool.Get ()
                 packet.Type <- PacketType.Ping
@@ -312,11 +357,14 @@ type Peer (udp : Udp) as this =
         senders
         |> Array.iter (fun sender -> sender.Update time)
 
-        peerLookup
-        |> Seq.iter (fun pair ->
-            let peer = pair.Value
-            peer.Update time
-        )
+        match udp with
+        | Udp.Server (_, data) ->
+            data.peerLookup
+            |> Seq.iter (fun pair ->
+                let peer = pair.Value
+                peer.Update time
+            )
+        | _ -> ()
 
         sendStream.Length <- 0
 
@@ -328,6 +376,35 @@ type Peer (udp : Udp) as this =
 
         member this.Dispose () =
             match udp with
-            | Udp.Client client -> client.Dispose ()
-            | Udp.Server server -> server.Dispose ()
+            | Udp.Client (client, _) -> client.Dispose ()
+            | Udp.Server (server, _) -> server.Dispose ()
             | _ -> ()
+
+type ServerPeer (udpServer, connectionTimeout) =
+    inherit Peer (Udp.Server (udpServer, createServerData connectionTimeout))
+
+    member this.ClientConnected =
+        match this.Udp with
+        | Udp.Server (_, data) -> data.peerConnected.Publish
+        | _ -> failwith "should not happen"
+
+    member this.ClientDisconnected =
+        match this.Udp with
+        | Udp.Server (_, data) -> data.peerDisconnected.Publish
+        | _ -> failwith "should not happen"
+
+type ClientPeer (udpClient) =
+    inherit Peer (Udp.Client (udpClient, createClientData ()))
+
+    member this.Connected =
+        match this.Udp with
+        | Udp.Client (_, data) -> data.peerConnected.Publish
+        | _ -> failwith "should not happen"
+
+    member this.Disconnected =
+        match this.Udp with
+        | Udp.Client (_, data) -> data.peerDisconnected.Publish
+        | _ -> failwith "should not happen"
+
+type ConnectedClientPeer (udpServer, endPoint, data) =
+    inherit Peer (Udp.ServerWithEndPoint (udpServer, endPoint, data))

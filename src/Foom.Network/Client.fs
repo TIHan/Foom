@@ -6,9 +6,10 @@ open System.Collections.Generic
 [<Sealed>]
 type Client (udpClient: IUdpClient) =
 
-    let peer = new Peer (Udp.Client udpClient)
+    let peer = new ClientPeer (udpClient)
 
-    member val Connected = peer.PeerConnected
+    [<CLIEvent>]
+    member val Connected = peer.Connected
 
     member this.Connect (address, port) = peer.Connect (address, port)
 

@@ -6,10 +6,10 @@ open System.Collections.Generic
 [<Sealed>]
 type Server (udpServer: IUdpServer) =
 
-    let peer = new Peer (Udp.Server udpServer)
+    let peer = new ServerPeer (udpServer, TimeSpan.FromSeconds 5.)
 
     [<CLIEvent>]
-    member val ClientConnected = peer.PeerConnected
+    member val ClientConnected = peer.ClientConnected
 
     member val BytesSentSinceLastUpdate = 0 with get, set
 

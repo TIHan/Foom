@@ -6,13 +6,6 @@ open System.Collections.Generic
 
 open Foom.Network
 
-[<AbstractClass>]
-type Channel () =
-
-    abstract Send : byte [] * startIndex : int * size : int -> unit
-
-    abstract Update : TimeSpan -> unit
-
 [<Sealed>]
 type DataMerger (packetPool : PacketPool) =
 
@@ -27,8 +20,36 @@ type DataMerger (packetPool : PacketPool) =
             packetPool.GetFromBytes (bytes, startIndex, size, mergedPackets)
         data.Clear ()
 
+[<AbstractClass>]
+type Receiver () =
 
-type UnreliableChannel (packetPool : PacketPool, send) =
+    abstract Receive : TimeSpan * Packet * IUdpEndPoint -> unit
+
+    abstract Update : TimeSpan -> unit
+
+[<AbstractClass>]
+type Channel () =
+
+    abstract Send : byte [] * startIndex : int * size : int -> unit
+
+    abstract Update : TimeSpan -> unit
+
+type UnreliableReceiver (packetPool : PacketPool, receive) =
+    inherit Receiver ()
+
+    let queue = Queue<Packet * IUdpEndPoint> ()
+
+    override this.Receive (_, packet, endPoint) =
+        System.Diagnostics.Debug.Assert (packet.Type = PacketType.Unreliable)
+        queue.Enqueue (packet, endPoint)
+
+    override this.Update _ =
+        while queue.Count <> 0 do
+            let packet, endPoint = queue.Dequeue ()
+            receive packet endPoint
+            packetPool.Recycle packet
+
+type UnreliableSender (packetPool : PacketPool, send) =
     inherit Channel ()
 
     let dataMerger = DataMerger packetPool
@@ -104,13 +125,6 @@ type ReliableOrderedAckSender (packetPool : PacketPool, send) =
             packetPool.Recycle packet
         packets.Clear ()
 
-[<AbstractClass>]
-type Receiver () =
-
-    abstract Receive : TimeSpan * Packet * IUdpEndPoint -> unit
-
-    abstract Update : TimeSpan -> unit
-
 type ConnectionAcceptedReceiver (packetPool : PacketPool, receive) =
     inherit Receiver ()
 
@@ -139,21 +153,6 @@ type ConnectionRequestedReceiver (packetPool : PacketPool, receive) =
         while queue.Count <> 0 do
             let packet, endPoint = queue.Dequeue ()
             receive time packet endPoint
-            packetPool.Recycle packet
-
-type UnreliableReceiver (packetPool : PacketPool, receive) =
-    inherit Receiver ()
-
-    let queue = Queue<Packet * IUdpEndPoint> ()
-
-    override this.Receive (_, packet, endPoint) =
-        System.Diagnostics.Debug.Assert (packet.Type = PacketType.Unreliable)
-        queue.Enqueue (packet, endPoint)
-
-    override this.Update _ =
-        while queue.Count <> 0 do
-            let packet, endPoint = queue.Dequeue ()
-            receive packet endPoint
             packetPool.Recycle packet
 
 type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
