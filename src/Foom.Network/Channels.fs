@@ -68,21 +68,21 @@ type ReliableOrderedChannel (packetPool : PacketPool, send) =
             let packet = packets.[i]
             sequencer.Assign packet
             packet.Type <- PacketType.ReliableOrdered
-            ackManager.MarkCopy (packet, time)
+            ackManager.Mark (packet, time)
             send packet.Raw packet.Length
-            packetPool.Recycle packet
 
-        ackManager.Update time (fun ack copyPacket ->
-            let packet = packetPool.Get ()
-            copyPacket.CopyTo packet
+        ackManager.Update time (fun ack packet ->
             send packet.Raw packet.Length
-            packetPool.Recycle packet
         )
 
         packets.Clear ()
 
     member this.Ack ack =
+        let packet = ackManager.GetPacket (int ack)
+        if obj.ReferenceEquals (packet, null) |> not then 
+            packetPool.Recycle packet
         ackManager.Ack ack
+
 
 type ReliableOrderedAckSender (packetPool : PacketPool, send) =
     inherit Channel ()
@@ -168,15 +168,12 @@ type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
     override this.Receive (time, packet, _) =
         System.Diagnostics.Debug.Assert (packet.Type = PacketType.ReliableOrdered)
         sendAck packet.SequenceId
-        ackManager.MarkCopy (packet, time)
-        packetPool.Recycle packet
+        ackManager.Mark (packet, time)
 
     override this.Update time =
-        ackManager.ForEachPending (fun seqId copyPacket ->
+        ackManager.ForEachPending (fun seqId packet ->
             if nextSeqId = seqId then
-                let packet = packetPool.Get ()
-                copyPacket.CopyTo packet
-                ackManager.Ack nextSeqId
+                ackManager.Ack seqId
                 nextSeqId <- nextSeqId + 1us
 
                 if packet.IsFragmented then

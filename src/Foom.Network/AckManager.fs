@@ -73,8 +73,7 @@ module AckManagerHelpers =
 [<Sealed>]
 type AckManager (ackRetryTime : TimeSpan) =
 
-    let copyPacketPool = PacketPool (256)
-    let copyPackets = Array.init 65536 (fun _ -> Unchecked.defaultof<Packet>)
+    let packets = Array.init 65536 (fun _ -> Unchecked.defaultof<Packet>)
     let acks = Array.init 65536 (fun _ -> true)
     let ackTimes = Array.init 65536 (fun _ -> TimeSpan.Zero)
 
@@ -85,28 +84,19 @@ type AckManager (ackRetryTime : TimeSpan) =
         iterPending oldestAck newestAck acks (fun i -> 
             if time > ackTimes.[i] + ackRetryTime then
                 ackTimes.[i] <- ackTimes.[i] + ackRetryTime
-                f (uint16 i) copyPackets.[i]
-        )
-
-    member this.UpdateSequenced time f =
-        iterPending oldestAck newestAck acks (fun i ->
-            let packet = copyPackets.[i]
-            if newestAck <> i + int (if packet.FragmentId > 0uy then packet.FragmentId - 1uy else 0uy) then
-                this.Ack (uint16 i)
-            else
-                if time > ackTimes.[i] + ackRetryTime then
-                    f (uint16 i) packet
+                f (uint16 i) packets.[i]
         )
 
     member this.ForEachPending f =
-        iterPending oldestAck newestAck acks (fun i -> f (uint16 i) copyPackets.[i])
+        iterPending oldestAck newestAck acks (fun i -> f (uint16 i) packets.[i])
+
+    member this.GetPacket i = packets.[i]
 
     member x.Ack (i : uint16) =
         let i = int i
 
         if not acks.[i] then
-            copyPacketPool.Recycle copyPackets.[i]
-            copyPackets.[i] <- Unchecked.defaultof<Packet>
+            packets.[i] <- Unchecked.defaultof<Packet>
 
             acks.[i] <- true
             ackTimes.[i] <- TimeSpan.Zero
@@ -115,12 +105,10 @@ type AckManager (ackRetryTime : TimeSpan) =
             oldestAck <- newOldestAck
             newestAck <- newNewestAck
 
-    member x.MarkCopy (packet : Packet, time) =
+    member x.Mark (packet : Packet, time) =
         let i = int packet.SequenceId
         if acks.[i] then
-            let packet' = copyPacketPool.Get ()
-            packet.CopyTo packet' 
-            copyPackets.[i] <- packet'
+            packets.[i] <- packet
 
             acks.[i] <- false
             ackTimes.[i] <- time
