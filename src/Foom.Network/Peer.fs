@@ -7,11 +7,11 @@ type ConnectedClientData =
     {
         heartbeatInterval : TimeSpan
         mutable heartbeatTime : TimeSpan
+        mutable pingTime : TimeSpan
     }
 
 type ClientData =
     {
-        mutable pingTime : TimeSpan
         peerConnected : Event<IUdpEndPoint>
         peerDisconnected : Event<IUdpEndPoint>
     }
@@ -37,7 +37,6 @@ module PeerHelpers =
 
     let createClientData () =
         {
-            pingTime = TimeSpan.Zero
             peerConnected = Event<IUdpEndPoint> ()
             peerDisconnected = Event<IUdpEndPoint> ()
         }
@@ -46,6 +45,7 @@ module PeerHelpers =
         {
             heartbeatInterval = interval
             heartbeatTime = time
+            pingTime = TimeSpan.Zero
         }
 
 [<RequireQualifiedAccess>]
@@ -54,6 +54,7 @@ type Udp =
     | Server of IUdpServer * ServerData
     | ServerWithEndPoint of IUdpServer * IUdpEndPoint * ConnectedClientData
 
+[<AbstractClass>]
 type Peer (udp : Udp) as this =
 
     let packetPool = PacketPool 1024
@@ -270,7 +271,11 @@ type Peer (udp : Udp) as this =
 
             | PacketType.Pong ->
 
-                // TODO: Get ping time.
+                match udp with
+                | Udp.ServerWithEndPoint (_, _, data) ->
+                    data.pingTime <- time - packet.Reader.Read<TimeSpan> ()
+                | _ -> ()
+
                 packetPool.Recycle packet
 
             | PacketType.Disconnect ->
