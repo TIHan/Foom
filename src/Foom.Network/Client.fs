@@ -11,6 +11,9 @@ type Client (udpClient: IUdpClient) =
     [<CLIEvent>]
     member val Connected = peer.Connected
 
+    [<CLIEvent>]
+    member val Disconnected = peer.Disconnected
+
     member this.Connect (address, port) = peer.Connect (address, port)
 
     member this.Subscribe<'T> f =

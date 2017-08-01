@@ -480,3 +480,64 @@ type Test() =
         |> Array.iteri (fun i v -> Assert.AreEqual (i + 1, v))
 
 
+    [<Test>]
+    member this.TestServerTimeout () =
+        use udpClient = new UdpClient () :> IUdpClient
+        use udpServer = new UdpServer (29015) :> IUdpServer
+
+        let client = Client (udpClient)
+        let server = Server (udpServer)
+
+        client.Connect ("127.0.0.1", 29015)
+
+        let mutable didConnect = false
+        let mutable didDisconnect = false
+        let mutable didClientConnect = false
+        let mutable didClientDisconnect = false
+
+        client.Connected.Add (fun _ -> didConnect <- true)
+        client.Disconnected.Add (fun _ -> didDisconnect <- true)
+        server.ClientConnected.Add (fun _ -> didClientConnect <- true)
+        server.ClientDisconnected.Add (fun _ -> didClientDisconnect <- true)
+
+        server.Update (TimeSpan.FromSeconds 100.)
+        Threading.Thread.Sleep 100
+        client.Update (TimeSpan.FromSeconds 100.)
+
+        Assert.True (didConnect)
+        Assert.False (didDisconnect)
+        Assert.True (didClientConnect)
+        Assert.False (didClientDisconnect)
+
+        client.Update (TimeSpan.FromSeconds 101.)
+
+        Assert.True (didConnect)
+        Assert.False (didDisconnect)
+        Assert.True (didClientConnect)
+        Assert.False (didClientDisconnect)
+
+        server.Update (TimeSpan.FromSeconds 101.)
+
+        Assert.True (didConnect)
+        Assert.False (didDisconnect)
+        Assert.True (didClientConnect)
+        Assert.False (didClientDisconnect)
+
+        client.Update (TimeSpan.FromSeconds 500.)
+
+        Assert.True (didConnect)
+        Assert.True (didDisconnect)
+        Assert.True (didClientConnect)
+        Assert.False (didClientDisconnect)
+
+        server.Update (TimeSpan.FromSeconds 500.)
+
+        Assert.True (didConnect)
+        Assert.True (didDisconnect)
+        Assert.True (didClientConnect)
+        Assert.True (didClientDisconnect)
+
+        
+
+        
+

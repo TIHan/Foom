@@ -11,6 +11,9 @@ type Server (udpServer: IUdpServer) =
     [<CLIEvent>]
     member val ClientConnected = peer.ClientConnected
 
+    [<CLIEvent>]
+    member val ClientDisconnected = peer.ClientDisconnected
+
     member val BytesSentSinceLastUpdate = 0 with get, set
 
     member this.PublishUnreliable<'T> (msg: 'T) =

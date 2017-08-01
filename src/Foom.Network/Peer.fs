@@ -86,6 +86,7 @@ type ClientState =
         receiveStreamState : ReceiveStreamState
         subscriptions : Event<obj> []
         udpClient : IUdpClient
+        connectionTimeout : TimeSpan
         peerConnected : Event<IUdpEndPoint>
         peerDisconnected : Event<IUdpEndPoint>
         mutable lastReceiveTime : TimeSpan
@@ -95,7 +96,7 @@ type ClientState =
 
 module ClientState =
 
-    let create (udpClient : IUdpClient) time =
+    let create (udpClient : IUdpClient) connectionTimeout =
 
         let packetPool = PacketPool 1024
         let sendStreamState = SendStreamState.create ()
@@ -122,10 +123,11 @@ module ClientState =
             receiveStreamState = receiveStreamState
             subscriptions = createSubscriptions ()
             udpClient = udpClient
+            connectionTimeout = connectionTimeout
             peerConnected = Event<IUdpEndPoint> ()
             peerDisconnected = Event<IUdpEndPoint> ()
             basicChannelState = basicChannelState
-            lastReceiveTime = time
+            lastReceiveTime = TimeSpan.Zero
         }
 
     let receive time (packet : Packet) (state : ClientState) =
@@ -449,6 +451,9 @@ type Peer (udp : Udp) =
 
             state.sendStreamState.sendStream.Length <- 0
 
+            if time > state.lastReceiveTime + state.connectionTimeout then
+                state.peerDisconnected.Trigger state.udpClient.RemoteEndPoint
+
         | Udp.Server state ->
 
             let server = state.udpServer
@@ -533,7 +538,7 @@ type ServerPeer (udpServer, connectionTimeout) =
         | _ -> failwith "should not happen"
 
 type ClientPeer (udpClient) =
-    inherit Peer (Udp.Client (ClientState.create udpClient TimeSpan.Zero))
+    inherit Peer (Udp.Client (ClientState.create udpClient (TimeSpan.FromSeconds 5.)))
 
     member this.Connected =
         match this.Udp with
