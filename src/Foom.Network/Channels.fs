@@ -23,7 +23,7 @@ type DataMerger (packetPool : PacketPool) =
 [<AbstractClass>]
 type Receiver () =
 
-    abstract Receive : TimeSpan * Packet * IUdpEndPoint -> unit
+    abstract Receive : TimeSpan * Packet -> unit
 
     abstract Update : TimeSpan -> unit
 
@@ -37,16 +37,16 @@ type Channel () =
 type UnreliableReceiver (packetPool : PacketPool, receive) =
     inherit Receiver ()
 
-    let queue = Queue<Packet * IUdpEndPoint> ()
+    let queue = Queue<Packet> ()
 
-    override this.Receive (_, packet, endPoint) =
+    override this.Receive (_, packet) =
         System.Diagnostics.Debug.Assert (packet.Type = PacketType.Unreliable)
-        queue.Enqueue (packet, endPoint)
+        queue.Enqueue (packet)
 
     override this.Update _ =
         while queue.Count <> 0 do
-            let packet, endPoint = queue.Dequeue ()
-            receive packet endPoint
+            let packet = queue.Dequeue ()
+            receive packet
             packetPool.Recycle packet
 
 type UnreliableSender (packetPool : PacketPool, send) =
@@ -89,7 +89,7 @@ type ReliableOrderedChannel (packetPool : PacketPool, send) =
             let packet = packets.[i]
             sequencer.Assign packet
             packet.Type <- PacketType.ReliableOrdered
-            ackManager.Mark (packet, time)
+            ackManager.Mark (packet, time) |> ignore
             send packet.Raw packet.Length
 
         ackManager.Update time (fun ack packet ->
@@ -125,36 +125,6 @@ type ReliableOrderedAckSender (packetPool : PacketPool, send) =
             packetPool.Recycle packet
         packets.Clear ()
 
-type ConnectionAcceptedReceiver (packetPool : PacketPool, receive) =
-    inherit Receiver ()
-
-    let queue = Queue<Packet * IUdpEndPoint> ()
-
-    override this.Receive (_, packet, endPoint) =
-        System.Diagnostics.Debug.Assert (packet.Type = PacketType.ConnectionAccepted)
-        queue.Enqueue (packet, endPoint)
-
-    override this.Update _ =
-        while queue.Count <> 0 do
-            let packet, endPoint = queue.Dequeue ()
-            receive endPoint
-            packetPool.Recycle packet
-
-type ConnectionRequestedReceiver (packetPool : PacketPool, receive) =
-    inherit Receiver ()
-
-    let queue = Queue<Packet * IUdpEndPoint> ()
-
-    override this.Receive (_, packet, endPoint) =
-        System.Diagnostics.Debug.Assert (packet.Type = PacketType.ConnectionRequested)
-        queue.Enqueue (packet, endPoint)
-
-    override this.Update time =
-        while queue.Count <> 0 do
-            let packet, endPoint = queue.Dequeue ()
-            receive time packet endPoint
-            packetPool.Recycle packet
-
 type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
     inherit Receiver ()
 
@@ -164,10 +134,11 @@ type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
     let mutable nextSeqId = 0us
 
     // TODO: AckManager needs to use the packetPool.
-    override this.Receive (time, packet, _) =
+    override this.Receive (time, packet) =
         System.Diagnostics.Debug.Assert (packet.Type = PacketType.ReliableOrdered)
         sendAck packet.SequenceId
-        ackManager.Mark (packet, time)
+        if ackManager.Mark (packet, time) |> not then
+            packetPool.Recycle packet
 
     override this.Update time =
         ackManager.ForEachPending (fun seqId packet ->

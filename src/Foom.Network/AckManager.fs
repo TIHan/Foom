@@ -122,3 +122,6 @@ type AckManager (ackRetryTime : TimeSpan) =
                 newestAck <- i
             elif sequenceMoreRecent (uint16 i) (uint16 newestAck) then
                 newestAck <- i
+            true
+        else
+            false

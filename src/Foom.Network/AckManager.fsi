@@ -11,7 +11,7 @@ type AckManager =
 
     member Ack : uint16 -> unit
 
-    member Mark : Packet * TimeSpan -> unit
+    member Mark : Packet * TimeSpan -> bool
 
     member GetPacket : int -> Packet
 
