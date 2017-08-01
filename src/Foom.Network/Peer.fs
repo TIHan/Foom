@@ -1,4 +1,4 @@
-﻿namespace rec Foom.Network
+﻿namespace Foom.Network
 
 open System
 open System.Collections.Generic
@@ -72,12 +72,54 @@ type SendStreamState =
         sendWriter :    ByteWriter
     }
 
+module SendStreamState =
+
+    let create () =
+        let sendStream = ByteStream (Array.zeroCreate <| 1024 * 1024)
+        {
+            sendStream = sendStream
+            sendWriter = ByteWriter sendStream
+        }
+
 type ReceiveStreamState =
     {
         receiveStream : ByteStream
         receiveWriter : ByteWriter
         receiveReader : ByteReader
     }
+
+module ReceiveStreamState =
+
+    let create () =
+        let receiveStream = ByteStream (Array.zeroCreate <| 1024 * 1024)
+        {
+            receiveStream = receiveStream
+            receiveWriter = ByteWriter receiveStream
+            receiveReader = ByteReader receiveStream
+        }
+
+    let rec onReceive' (subscriptions : Event<obj> []) (state : ReceiveStreamState) =
+        let reader = state.receiveReader
+        let typeId = reader.ReadByte () |> int
+
+        if subscriptions.Length > typeId && typeId >= 0 then
+            let pickler = Network.FindTypeById typeId
+            let msg = pickler.ctor reader
+            pickler.deserialize msg reader
+            subscriptions.[typeId].Trigger msg
+        else
+            failwith "This shouldn't happen."
+
+    let onReceive subscriptions state =
+        state.receiveStream.Position <- 0
+        while not state.receiveReader.IsEndOfStream do
+            onReceive' subscriptions state
+
+[<AutoOpen>]
+module StateHelpers =
+
+    let createSubscriptions () =
+        Array.init 1024 (fun _ -> Event<obj> ())
 
 type ClientState =
     {
@@ -154,100 +196,6 @@ module ClientState =
 
         | _ -> false
 
-type ServerState =
-    {
-        packetPool : PacketPool
-        sendStreamState : SendStreamState
-        subscriptions : Event<obj> []
-        udpServer : IUdpServer
-        connectionTimeout : TimeSpan
-        peerLookup : Dictionary<IUdpEndPoint, ConnectedClientState>
-        peerConnected : Event<IUdpEndPoint>
-        peerDisconnected : Event<IUdpEndPoint>
-    }
-
-module ServerState =
-
-    let create udpServer connectionTimeout =
-
-        let packetPool = PacketPool 1024
-        let sendStreamState = SendStreamState.create ()
-
-        {
-            packetPool = packetPool
-            sendStreamState = sendStreamState
-            subscriptions = createSubscriptions ()
-            udpServer = udpServer
-            connectionTimeout = connectionTimeout
-            peerLookup = Dictionary ()
-            peerConnected = Event<IUdpEndPoint> ()
-            peerDisconnected = Event<IUdpEndPoint> ()
-        }
-
-    let receive time (packet : Packet) endPoint state =
-        match packet.Type with
-        | PacketType.ConnectionRequested ->
-            let ccState = ConnectedClientState.create state.udpServer endPoint (TimeSpan.FromSeconds 1.) time
-
-            state.peerLookup.Add (endPoint, ccState)
-
-            let packet = Packet ()
-            packet.Type <- PacketType.ConnectionAccepted
-            state.udpServer.Send (packet.Raw, packet.Length, endPoint) |> ignore
-            state.packetPool.Recycle packet
-            state.peerConnected.Trigger endPoint
-            true
-
-        | PacketType.Disconnect ->
-            
-            state.peerLookup.Remove endPoint |> ignore
-            state.packetPool.Recycle packet
-            true
-        | _ -> false
-        
-
-[<AutoOpen>]
-module StateHelpers =
-
-    let createSubscriptions () =
-        Array.init 1024 (fun _ -> Event<obj> ())
-    
-module SendStreamState =
-
-    let create () =
-        let sendStream = ByteStream (Array.zeroCreate <| 1024 * 1024)
-        {
-            sendStream = sendStream
-            sendWriter = ByteWriter sendStream
-        }
-
-module ReceiveStreamState =
-
-    let create () =
-        let receiveStream = ByteStream (Array.zeroCreate <| 1024 * 1024)
-        {
-            receiveStream = receiveStream
-            receiveWriter = ByteWriter receiveStream
-            receiveReader = ByteReader receiveStream
-        }
-
-    let rec onReceive' (subscriptions : Event<obj> []) (state : ReceiveStreamState) =
-        let reader = state.receiveReader
-        let typeId = reader.ReadByte () |> int
-
-        if subscriptions.Length > typeId && typeId >= 0 then
-            let pickler = Network.FindTypeById typeId
-            let msg = pickler.ctor reader
-            pickler.deserialize msg reader
-            subscriptions.[typeId].Trigger msg
-        else
-            failwith "This shouldn't happen."
-
-    let onReceive subscriptions state =
-        state.receiveStream.Position <- 0
-        while not state.receiveReader.IsEndOfStream do
-            onReceive' subscriptions state
-
 type ConnectedClientState =
     {
         packetPool : PacketPool
@@ -302,6 +250,57 @@ module ConnectedClientState =
         | PacketType.Pong ->
 
             state.pingTime <- time - packet.Reader.Read<TimeSpan> ()
+            state.packetPool.Recycle packet
+            true
+        | _ -> false
+
+type ServerState =
+    {
+        packetPool : PacketPool
+        sendStreamState : SendStreamState
+        subscriptions : Event<obj> []
+        udpServer : IUdpServer
+        connectionTimeout : TimeSpan
+        peerLookup : Dictionary<IUdpEndPoint, ConnectedClientState>
+        peerConnected : Event<IUdpEndPoint>
+        peerDisconnected : Event<IUdpEndPoint>
+    }
+
+module ServerState =
+
+    let create udpServer connectionTimeout =
+
+        let packetPool = PacketPool 1024
+        let sendStreamState = SendStreamState.create ()
+
+        {
+            packetPool = packetPool
+            sendStreamState = sendStreamState
+            subscriptions = createSubscriptions ()
+            udpServer = udpServer
+            connectionTimeout = connectionTimeout
+            peerLookup = Dictionary ()
+            peerConnected = Event<IUdpEndPoint> ()
+            peerDisconnected = Event<IUdpEndPoint> ()
+        }
+
+    let receive time (packet : Packet) endPoint state =
+        match packet.Type with
+        | PacketType.ConnectionRequested ->
+            let ccState = ConnectedClientState.create state.udpServer endPoint (TimeSpan.FromSeconds 1.) time
+
+            state.peerLookup.Add (endPoint, ccState)
+
+            let packet = Packet ()
+            packet.Type <- PacketType.ConnectionAccepted
+            state.udpServer.Send (packet.Raw, packet.Length, endPoint) |> ignore
+            state.packetPool.Recycle packet
+            state.peerConnected.Trigger endPoint
+            true
+
+        | PacketType.Disconnect ->
+            
+            state.peerLookup.Remove endPoint |> ignore
             state.packetPool.Recycle packet
             true
         | _ -> false
@@ -522,7 +521,6 @@ type Peer (udp : Udp) =
             match udp with
             | Udp.Client state -> state.udpClient.Dispose ()
             | Udp.Server state-> state.udpServer.Dispose ()
-            | _ -> ()
 
 type ServerPeer (udpServer, connectionTimeout) =
     inherit Peer (Udp.Server (ServerState.create udpServer connectionTimeout))
