@@ -81,6 +81,25 @@ module SendStreamState =
             sendWriter = ByteWriter sendStream
         }
 
+    let write (msg : 'T) f (state : SendStreamState) =
+
+        let sendStream = state.sendStream
+        let sendWriter = state.sendWriter
+
+        let startIndex = sendStream.Position
+
+        match Network.lookup.TryGetValue typeof<'T> with
+        | true, id ->
+            let pickler = Network.FindTypeById id
+            sendWriter.WriteByte (byte id)
+            pickler.serialize (msg :> obj) sendWriter
+
+            let size = sendStream.Position - startIndex
+
+            f sendStream.Raw startIndex size
+
+        | _ -> ()
+
 type ReceiveStreamState =
     {
         receiveStream : ByteStream
@@ -356,27 +375,12 @@ type Peer (udp : Udp) =
             BasicChannelState.send bytes startIndex size packetType state.basicChannelState
 
     member private this.Send<'T> (msg : 'T, packetType) =
-        let sendStreamState =
-            match udp with
-            | Udp.Client state -> state.sendStreamState
-            | Udp.Server state -> state.sendStreamState
-
-        let sendStream = sendStreamState.sendStream
-        let sendWriter = sendStreamState.sendWriter
-
-        let startIndex = sendStream.Position
-
-        match Network.lookup.TryGetValue typeof<'T> with
-        | true, id ->
-            let pickler = Network.FindTypeById id
-            sendWriter.WriteByte (byte id)
-            pickler.serialize (msg :> obj) sendWriter
-
-            let size = sendStream.Position - startIndex
-
-            this.Send (sendStream.Raw, startIndex, size, packetType)
-
-        | _ -> ()
+        match udp with
+        | Udp.Client state -> state.sendStreamState
+        | Udp.Server state -> state.sendStreamState
+        |> SendStreamState.write msg (fun bytes startIndex size -> 
+            this.Send (bytes, startIndex, size, packetType)
+        )
 
     member this.SendUnreliable<'T> (msg : 'T) =
         this.Send<'T> (msg, PacketType.Unreliable)
