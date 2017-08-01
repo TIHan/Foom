@@ -83,9 +83,7 @@ module private InternalStream =
 
 open InternalStream
 
-type ByteStream (maxSize) =
-
-    let mutable data = Array.zeroCreate<byte> maxSize
+type ByteStream (data : byte []) =
 
     [<DefaultValue>] val mutable length : int
     [<DefaultValue>] val mutable position : int

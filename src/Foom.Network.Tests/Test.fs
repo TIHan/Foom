@@ -144,7 +144,7 @@ type Test() =
     [<Test>]
     member this.ByteStream () : unit =
 
-        let byteStream = ByteStream (1024)
+        let byteStream = ByteStream (Array.zeroCreate 1024)
         let byteWriter = ByteWriter (byteStream)
         let byteReader = ByteReader (byteStream)
 

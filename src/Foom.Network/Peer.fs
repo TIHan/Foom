@@ -215,7 +215,7 @@ module StateHelpers =
 module SendStreamState =
 
     let create () =
-        let sendStream = ByteStream (1024 * 1024)
+        let sendStream = ByteStream (Array.zeroCreate <| 1024 * 1024)
         {
             sendStream = sendStream
             sendWriter = ByteWriter sendStream
@@ -224,7 +224,7 @@ module SendStreamState =
 module ReceiveStreamState =
 
     let create () =
-        let receiveStream = ByteStream (1024 * 1024)
+        let receiveStream = ByteStream (Array.zeroCreate <| 1024 * 1024)
         {
             receiveStream = receiveStream
             receiveWriter = ByteWriter receiveStream

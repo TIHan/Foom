@@ -38,7 +38,7 @@ type Packet () =
 
     static let PacketSize = 1024
 
-    let byteStream = ByteStream (PacketSize + sizeof<PacketHeader>)
+    let byteStream = ByteStream (Array.zeroCreate <| PacketSize + sizeof<PacketHeader>)
     let byteWriter = ByteWriter (byteStream)
     let byteReader = ByteReader (byteStream)
 
