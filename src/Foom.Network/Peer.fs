@@ -395,8 +395,6 @@ type Peer (udp : Udp) =
                 | _ -> ()
             | _ -> ()
 
-            state.sendStreamState.sendStream.Length <- 0
-
         | Udp.Server state ->
             match state.peerLookup.TryGetValue endPoint with
             | (true, ccState) -> 
@@ -448,6 +446,8 @@ type Peer (udp : Udp) =
             state.basicChannelState.unreliableSender.Update time
             state.basicChannelState.reliableOrderedAckSender.Update time
             state.basicChannelState.reliableOrderedSender.Update time
+
+            state.sendStreamState.sendStream.Length <- 0
 
         | Udp.Server state ->
 

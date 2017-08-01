@@ -431,9 +431,15 @@ type Test() =
 
         udpServer.CanForceDataLossEveryOtherCall <- true
 
+        Assert.AreEqual (server.ClientPacketPoolMaxCount, server.ClientPacketPoolCount)
+        Assert.AreEqual (server.PacketPoolMaxCount, server.PacketPoolCount)
+        Assert.AreEqual (client.PacketPoolMaxCount, client.PacketPoolCount)
+
         server.Update TimeSpan.Zero
         Threading.Thread.Sleep 100
         client.Update TimeSpan.Zero
+
+        Assert.AreNotEqual (server.ClientPacketPoolMaxCount, server.ClientPacketPoolCount)
 
         values
         |> Array.iteri (fun i v -> Assert.AreNotEqual (i + 1, v))
@@ -441,6 +447,8 @@ type Test() =
         server.Update (TimeSpan.FromSeconds 2.)
         Threading.Thread.Sleep 100
         client.Update (TimeSpan.FromSeconds 2.)
+
+        Assert.AreNotEqual (server.ClientPacketPoolMaxCount, server.ClientPacketPoolCount)
 
         values
         |> Array.iteri (fun i v -> Assert.AreNotEqual (i + 1, v))
@@ -451,20 +459,24 @@ type Test() =
         Threading.Thread.Sleep 100
         client.Update (TimeSpan.FromSeconds 2.)
 
-        values
-        |> Array.iteri (fun i v -> Assert.AreNotEqual (i + 1, v))
-
+        Assert.AreNotEqual (server.ClientPacketPoolMaxCount, server.ClientPacketPoolCount)
         Assert.AreEqual (server.PacketPoolMaxCount, server.PacketPoolCount)
         Assert.AreNotEqual (client.PacketPoolMaxCount, client.PacketPoolCount)
+
+        values
+        |> Array.iteri (fun i v -> Assert.AreNotEqual (i + 1, v))
 
         server.Update (TimeSpan.FromSeconds 4.)
         Threading.Thread.Sleep 100
         client.Update (TimeSpan.FromSeconds 4.)
+        Threading.Thread.Sleep 100
+        server.Update (TimeSpan.FromSeconds 4.2)
+
+        Assert.AreEqual (server.ClientPacketPoolMaxCount, server.ClientPacketPoolCount)
+        Assert.AreEqual (server.PacketPoolMaxCount, server.PacketPoolCount)
+        Assert.AreEqual (client.PacketPoolMaxCount, client.PacketPoolCount)
 
         values
         |> Array.iteri (fun i v -> Assert.AreEqual (i + 1, v))
-
-        Assert.AreEqual (server.PacketPoolMaxCount, server.PacketPoolCount)
-        Assert.AreEqual (client.PacketPoolMaxCount, client.PacketPoolCount)
 
 
