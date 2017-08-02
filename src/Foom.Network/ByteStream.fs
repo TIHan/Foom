@@ -1,6 +1,7 @@
 ﻿namespace Foom.Network
 
 open System
+open System.IO
 open System.Runtime.InteropServices
 
 open FSharp.NativeInterop
@@ -84,6 +85,7 @@ module private InternalStream =
 open InternalStream
 
 type ByteStream (data : byte []) =
+    inherit Stream ()
 
     [<DefaultValue>] val mutable length : int
     [<DefaultValue>] val mutable position : int
@@ -112,18 +114,54 @@ type ByteStream (data : byte []) =
     //        Array.Copy (data, newData, data.Length)
     //        data <- newData
 
+    override this.CanWrite = true
+
+    override this.CanRead = true
+
+    override this.CanSeek = true
+
+    override this.Flush () = ()
+
+    override this.SetLength (value : int64) =
+        let value = int value
+        setLength value data &this.position &this.length
+        Array.Clear (data, value, this.length - value)
+
+    override this.Length = int64 this.length
+
+    override this.Position
+        with get () = int64 this.position
+        and set value = setPosition (int value) data this.length &this.position
+
+    override this.Write (bytes, offset, count) =
+        this.CheckBounds count
+
+        for i = offset to count - 1 do
+            data.[this.position] <- bytes.[i]
+            this.position <- this.position + 1
+
+    override this.Read (bytes, offset, count) =
+        this.CheckBoundsLength count
+
+        for i = offset to count - 1 do
+            bytes.[i] <- data.[this.position]
+            this.position <- this.position + 1
+
+        count
+
+    override this.Seek (offset, origin) =
+        let offset = int offset
+        match origin with
+        | SeekOrigin.Begin -> this.position <- 0
+        | SeekOrigin.End -> this.position <- this.length - 1
+        | _ -> ()
+
+        this.CheckBoundsLength offset
+
+        this.position <- this.position + offset
+        int64 this.position
+
     member this.Raw = data
-
-    member this.Length 
-        with get () = this.length
-        and set value = 
-            let lengthToClear = value
-            setLength value data &this.position &this.length
-            Array.Clear (data, lengthToClear, this.length - value)
-
-    member this.Position
-        with get () = this.position
-        and set value = setPosition value data this.length &this.position
 
 [<Sealed>]
 type ByteWriter (byteStream: ByteStream) =

@@ -38,7 +38,7 @@ type Packet () =
 
     static let PacketSize = 1024
 
-    let byteStream = ByteStream (Array.zeroCreate <| PacketSize + sizeof<PacketHeader>)
+    let byteStream = new ByteStream (Array.zeroCreate <| PacketSize + sizeof<PacketHeader>)
     let byteWriter = ByteWriter (byteStream)
     let byteReader = ByteReader (byteStream)
 
@@ -46,18 +46,18 @@ type Packet () =
         byteWriter.Write Unchecked.defaultof<PacketHeader>
 
     member this.Length 
-        with get () = byteStream.Length
-        and set value = byteStream.Length <- value
+        with get () = int byteStream.Length
+        and set value = byteStream.SetLength (int64 value)
 
     member this.DataLength = this.Length - sizeof<PacketHeader>
 
-    member this.DataLengthRemaining = byteStream.Raw.Length - byteStream.Length
+    member this.DataLengthRemaining = byteStream.Raw.Length - int byteStream.Length
 
     member this.Raw = byteStream.Raw
 
     member this.Header =
         let originalPos = byteStream.Position
-        byteStream.Position <- 0
+        byteStream.Position <- 0L
         let value = byteReader.Read<PacketHeader> ()
         byteStream.Position <- originalPos
         value
@@ -69,42 +69,42 @@ type Packet () =
     member this.SequenceId 
         with get () =
             let originalPos = byteStream.Position
-            byteStream.Position <- 1
+            byteStream.Position <- 1L
             let value = byteReader.ReadUInt16 ()
             byteStream.Position <- originalPos
             value
 
         and set value =
            let originalPos = byteStream.Position
-           byteStream.Position <- 1
+           byteStream.Position <- 1L
            byteWriter.WriteUInt16 value
            byteStream.Position <- originalPos
 
     member this.FragmentId 
         with get () =
             let originalPos = byteStream.Position
-            byteStream.Position <- 3
+            byteStream.Position <- 3L
             let value = byteReader.ReadByte ()
             byteStream.Position <- originalPos
             value
 
         and set value =
            let originalPos = byteStream.Position
-           byteStream.Position <- 3
+           byteStream.Position <- 3L
            byteWriter.WriteByte value
            byteStream.Position <- originalPos
 
     member this.FragmentCount
         with get () =
             let originalPos = byteStream.Position
-            byteStream.Position <- 4
+            byteStream.Position <- 4L
             let value = byteReader.ReadByte ()
             byteStream.Position <- originalPos
             value
 
         and set value =
            let originalPos = byteStream.Position
-           byteStream.Position <- 4
+           byteStream.Position <- 4L
            byteWriter.WriteByte value
            byteStream.Position <- originalPos
 
@@ -112,7 +112,7 @@ type Packet () =
         byteWriter.WriteRawBytes (data, startIndex, size)
 
     member this.Reset () =
-        byteStream.Length <- 0
+        byteStream.SetLength 0L
         byteWriter.Write Unchecked.defaultof<PacketHeader>
 
     member this.Writer = byteWriter
@@ -126,7 +126,7 @@ type Packet () =
     member this.ReadAcks f =
         let originalPos = byteStream.Position
         if this.Type = PacketType.ReliableOrderedAck then
-            byteStream.Position <- sizeof<PacketHeader>
+            byteStream.Position <- int64 sizeof<PacketHeader>
             while byteStream.Position < byteStream.Length do
                 f (byteReader.ReadUInt16 ())
 

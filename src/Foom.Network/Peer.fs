@@ -76,7 +76,7 @@ type SendStreamState =
 module SendStreamState =
 
     let create () =
-        let sendStream = ByteStream (Array.zeroCreate <| 1024 * 1024)
+        let sendStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
         {
             sendStream = sendStream
             sendWriter = ByteWriter sendStream
@@ -87,7 +87,7 @@ module SendStreamState =
         let sendStream = state.sendStream
         let sendWriter = state.sendWriter
 
-        let startIndex = sendStream.Position
+        let startIndex = int sendStream.Position
 
         match Network.lookup.TryGetValue typeof<'T> with
         | true, id ->
@@ -95,7 +95,7 @@ module SendStreamState =
             sendWriter.WriteByte (byte id)
             pickler.serialize (msg :> obj) sendWriter
 
-            let size = sendStream.Position - startIndex
+            let size = int sendStream.Position - startIndex
 
             f sendStream.Raw startIndex size
 
@@ -111,7 +111,7 @@ type ReceiveStreamState =
 module ReceiveStreamState =
 
     let create () =
-        let receiveStream = ByteStream (Array.zeroCreate <| 1024 * 1024)
+        let receiveStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
         {
             receiveStream = receiveStream
             receiveWriter = ByteWriter receiveStream
@@ -131,7 +131,7 @@ module ReceiveStreamState =
             failwith "This shouldn't happen."
 
     let read subscriptions state =
-        state.receiveStream.Position <- 0
+        state.receiveStream.Position <- 0L
         while not state.receiveReader.IsEndOfStream do
             read' subscriptions state
 
@@ -173,9 +173,9 @@ module ClientState =
                     udpClient.Send (bytes, size) |> ignore
                 )
                 (fun ack send ->
-                    let startIndex = sendStreamState.sendStream.Position
+                    let startIndex = int sendStreamState.sendStream.Position
                     sendStreamState.sendWriter.WriteUInt16 ack
-                    let size = sendStreamState.sendStream.Position - startIndex
+                    let size = int sendStreamState.sendStream.Position - startIndex
                     send (sendStreamState.sendStream.Raw, startIndex, size)
                 )
 
@@ -247,9 +247,9 @@ module ConnectedClientState =
                     udpServer.Send (bytes, size, endPoint) |> ignore
                 )
                 (fun ack send ->
-                    let startIndex = sendStreamState.sendStream.Position
+                    let startIndex = int sendStreamState.sendStream.Position
                     sendStreamState.sendWriter.WriteUInt16 ack
-                    let size = sendStreamState.sendStream.Position - startIndex
+                    let size = int sendStreamState.sendStream.Position - startIndex
                     send (sendStreamState.sendStream.Raw, startIndex, size)
                 )
 
@@ -430,7 +430,7 @@ type Peer (udp : Udp) =
         match udp with
         | Udp.Client state ->
 
-            state.receiveStreamState.receiveStream.Length <- 0
+            state.receiveStreamState.receiveStream.SetLength 0L
 
             let client = state.udpClient
             let packetPool = state.packetPool
@@ -453,7 +453,7 @@ type Peer (udp : Udp) =
             state.basicChannelState.reliableOrderedAckSender.Update time
             state.basicChannelState.reliableOrderedSender.Update time
 
-            state.sendStreamState.sendStream.Length <- 0
+            state.sendStreamState.sendStream.SetLength 0L
 
             if time > state.lastReceiveTime + state.connectionTimeout then
                 state.peerDisconnected.Trigger state.udpClient.RemoteEndPoint
@@ -509,10 +509,10 @@ type Peer (udp : Udp) =
                 ccState.basicChannelState.reliableOrderedAckSender.Update time
                 ccState.basicChannelState.reliableOrderedSender.Update time
 
-                ccState.sendStreamState.sendStream.Length <- 0
+                ccState.sendStreamState.sendStream.SetLength 0L
             )
 
-            state.sendStreamState.sendStream.Length <- 0
+            state.sendStreamState.sendStream.SetLength 0L
 
             while endPointRemovals.Count > 0 do
                 let endPoint = endPointRemovals.Dequeue ()

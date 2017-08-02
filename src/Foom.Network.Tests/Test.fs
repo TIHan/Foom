@@ -144,7 +144,7 @@ type Test() =
     [<Test>]
     member this.ByteStream () : unit =
 
-        let byteStream = ByteStream (Array.zeroCreate 1024)
+        let byteStream = new ByteStream (Array.zeroCreate 1024)
         let byteWriter = ByteWriter (byteStream)
         let byteReader = ByteReader (byteStream)
 
@@ -171,7 +171,7 @@ type Test() =
                 (byteWriter.WriteSingle (7.38857298759829874987f), fun () -> Assert.AreEqual (7.38857298759829874987f, byteReader.ReadSingle ()))
             ]
 
-        byteStream.Position <- 0
+        byteStream.Position <- 0L
 
         ops
         |> List.iter (fun (_, test) ->
