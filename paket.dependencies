@@ -38,3 +38,4 @@ nuget System.Threading.Timer 4.3.0
 nuget System.ValueTuple 4.3.1
 nuget Xamarin.Android.FSharp.ResourceProvider 1.0.0.13 framework: >= monoandroid
 nuget FAKE
+nuget System.IO.Compression

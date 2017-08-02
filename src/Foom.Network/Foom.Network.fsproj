@@ -19,18 +19,15 @@
     <OutputPath>..\..\build</OutputPath>
     <DefineConstants>DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <PlatformTarget>
-    </PlatformTarget>
+    <PlatformTarget></PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <Optimize>true</Optimize>
     <OutputPath>..\..\build</OutputPath>
-    <DefineConstants>
-    </DefineConstants>
+    <DefineConstants></DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <GenerateTailCalls>true</GenerateTailCalls>
-    <PlatformTarget>
-    </PlatformTarget>
+    <PlatformTarget></PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ByteStream.fs" />
@@ -42,6 +39,7 @@
     <Compile Include="AckManager.fs" />
     <Compile Include="IUdp.fs" />
     <Compile Include="Channels.fs" />
+    <Compile Include="Peer.fsi" />
     <Compile Include="Peer.fs" />
     <Compile Include="Server.fs" />
     <Compile Include="Client.fs" />

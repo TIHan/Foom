@@ -2,6 +2,7 @@
 
 open System
 open System.Collections.Generic
+open System.IO.Compression
 
 type BasicChannelState =
     {
@@ -117,7 +118,7 @@ module ReceiveStreamState =
             receiveReader = ByteReader receiveStream
         }
 
-    let rec onReceive' (subscriptions : Event<obj> []) (state : ReceiveStreamState) =
+    let rec read' (subscriptions : Event<obj> []) (state : ReceiveStreamState) =
         let reader = state.receiveReader
         let typeId = reader.ReadByte () |> int
 
@@ -129,10 +130,10 @@ module ReceiveStreamState =
         else
             failwith "This shouldn't happen."
 
-    let onReceive subscriptions state =
+    let read subscriptions state =
         state.receiveStream.Position <- 0
         while not state.receiveReader.IsEndOfStream do
-            onReceive' subscriptions state
+            read' subscriptions state
 
 [<AutoOpen>]
 module StateHelpers =
@@ -446,7 +447,7 @@ type Peer (udp : Udp) =
             state.basicChannelState.unreliableReceiver.Update time
             state.basicChannelState.reliableOrderedReceiver.Update time
 
-            ReceiveStreamState.onReceive state.subscriptions state.receiveStreamState
+            ReceiveStreamState.read state.subscriptions state.receiveStreamState
             
             state.basicChannelState.unreliableSender.Update time
             state.basicChannelState.reliableOrderedAckSender.Update time
@@ -502,7 +503,7 @@ type Peer (udp : Udp) =
                 ccState.basicChannelState.unreliableReceiver.Update time
                 ccState.basicChannelState.reliableOrderedReceiver.Update time
 
-                ReceiveStreamState.onReceive state.subscriptions ccState.receiveStreamState
+                ReceiveStreamState.read state.subscriptions ccState.receiveStreamState
             
                 ccState.basicChannelState.unreliableSender.Update time
                 ccState.basicChannelState.reliableOrderedAckSender.Update time
@@ -538,6 +539,16 @@ type ServerPeer (udpServer, connectionTimeout) =
         match this.Udp with
         | Udp.Server state -> state.peerDisconnected.Publish
         | _ -> failwith "should not happen"
+
+    member this.ClientPacketPoolMaxCount =
+        match this.Udp with
+        | Udp.Server server -> server.peerLookup |> Seq.sumBy (fun pair1 -> pair1.Value.packetPool.MaxCount)
+        | _ -> failwith "nope"
+
+    member this.ClientPacketPoolCount =
+        match this.Udp with
+        | Udp.Server server -> server.peerLookup |> Seq.sumBy (fun pair1 -> pair1.Value.packetPool.Count)
+        | _ -> failwith "nope"
 
 type ClientPeer (udpClient) =
     inherit Peer (Udp.Client (ClientState.create udpClient (TimeSpan.FromSeconds 5.)))

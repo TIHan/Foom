@@ -34,12 +34,6 @@ type Server (udpServer: IUdpServer) =
 
     member this.PacketPoolMaxCount = peer.PacketPool.MaxCount
 
-    member this.ClientPacketPoolMaxCount =
-        match peer.Udp with
-        | Udp.Server server -> server.peerLookup |> Seq.sumBy (fun pair1 -> pair1.Value.packetPool.MaxCount)
-        | _ -> failwith "nope"
+    member this.ClientPacketPoolMaxCount = peer.ClientPacketPoolMaxCount
 
-    member this.ClientPacketPoolCount =
-        match peer.Udp with
-        | Udp.Server server -> server.peerLookup |> Seq.sumBy (fun pair1 -> pair1.Value.packetPool.Count)
-        | _ -> failwith "nope"
+    member this.ClientPacketPoolCount = peer.ClientPacketPoolCount
