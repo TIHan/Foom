@@ -71,33 +71,65 @@ type SendStreamState =
     {
         sendStream :    ByteStream
         sendWriter :    ByteWriter
+        compressedStream : ByteStream
+        compressedWriter : ByteWriter
     }
 
 module SendStreamState =
 
     let create () =
         let sendStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
+        let compressedStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
         {
             sendStream = sendStream
             sendWriter = ByteWriter sendStream
+            compressedStream = compressedStream
+            compressedWriter = ByteWriter compressedStream
         }
 
     let write (msg : 'T) f (state : SendStreamState) =
 
-        let sendStream = state.sendStream
-        let sendWriter = state.sendWriter
-
-        let startIndex = int sendStream.Position
-
         match Network.lookup.TryGetValue typeof<'T> with
         | true, id ->
+            let sendStream = state.sendStream
+            let sendWriter = state.sendWriter
+
+            let startIndex = int sendStream.Position
+
             let pickler = Network.FindTypeById id
             sendWriter.WriteByte (byte id)
             pickler.serialize (msg :> obj) sendWriter
 
             let size = int sendStream.Position - startIndex
 
-            f sendStream.Raw startIndex size
+            //
+
+            let previousLength = state.compressedStream.Length
+            let previousPosition = state.compressedStream.Position
+
+            //
+
+            state.compressedWriter.WriteInt 0
+
+            //
+
+            let deflateStream = new DeflateStream (state.compressedStream, CompressionMode.Compress)
+            deflateStream.Write (sendStream.Raw, startIndex, size)
+            deflateStream.Dispose ()
+
+            let length = int <| state.compressedStream.Length - previousLength
+
+            //
+
+            let resetPosition = state.compressedStream.Position
+            state.compressedStream.Position <- previousPosition
+            state.compressedWriter.WriteInt length
+
+            //
+
+            //f state.compressedStream.Raw (int previousPosition) length
+
+            f state.sendStream.Raw startIndex size
 
         | _ -> ()
 
@@ -454,6 +486,7 @@ type Peer (udp : Udp) =
             state.basicChannelState.reliableOrderedSender.Update time
 
             state.sendStreamState.sendStream.SetLength 0L
+            state.sendStreamState.compressedStream.SetLength 0L
 
             if time > state.lastReceiveTime + state.connectionTimeout then
                 state.peerDisconnected.Trigger state.udpClient.RemoteEndPoint
@@ -510,9 +543,11 @@ type Peer (udp : Udp) =
                 ccState.basicChannelState.reliableOrderedSender.Update time
 
                 ccState.sendStreamState.sendStream.SetLength 0L
+                ccState.sendStreamState.compressedStream.SetLength 0L
             )
 
             state.sendStreamState.sendStream.SetLength 0L
+            state.sendStreamState.compressedStream.SetLength 0L
 
             while endPointRemovals.Count > 0 do
                 let endPoint = endPointRemovals.Dequeue ()

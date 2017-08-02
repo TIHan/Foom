@@ -138,7 +138,11 @@ type ByteStream (data : byte []) =
 
         for i = offset to count - 1 do
             data.[this.position] <- bytes.[i]
-            this.position <- this.position + 1
+
+        let len = this.position + count
+        if len > this.length then
+            this.length <- len
+        this.position <- len
 
     override this.Read (bytes, offset, count) =
         this.CheckBoundsLength count
