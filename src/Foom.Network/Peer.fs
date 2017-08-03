@@ -102,18 +102,16 @@ module SendStreamState =
 
             let size = int sendStream.Position - startIndex
 
-            //
+            ////
 
             let previousLength = state.compressedStream.Length
             let previousPosition = state.compressedStream.Position
 
-            //
+            ////
 
-//            state.compressedWriter.WriteInt 0
+            state.compressedWriter.WriteInt 0
 
-            //
-
-           // state.compressedStream.Position <- 0L
+            ////
 
             let deflateStream = new DeflateStream (state.compressedStream, CompressionMode.Compress)
             deflateStream.Write (sendStream.Raw, startIndex, size)
@@ -121,30 +119,26 @@ module SendStreamState =
 
             let length = int <| state.compressedStream.Length - previousLength
 
-            //
+            ////
 
-            //let resetPosition = state.compressedStream.Position
-            //state.compressedStream.Position <- previousPosition
-            //state.compressedWriter.WriteInt length
-            //state.compressedStream.Position <- resetPosition
+            let resetPosition = state.compressedStream.Position
+            state.compressedStream.Position <- previousPosition
+            state.compressedWriter.WriteInt size
+            state.compressedStream.Position <- resetPosition
 
-            //
+            ////
 
-            //f state.compressedStream.Raw (int previousPosition) length
+            ////f state.compressedStream.Raw (int previousPosition) length
+            state.compressedStream.Position <- previousPosition
+            let compressedReader = ByteReader (state.compressedStream)
+            let compressLength = compressedReader.ReadInt ()
 
-            //state.compressedStream.Position <- previousPosition
-            //let compressedReader = ByteReader (state.compressedStream)
-            //let compressLength = compressedReader.ReadInt ()
-
-            state.compressedStream.Position <- 0L
+            state.sendStream.SetLength (int64 startIndex)
             let deflateStream = new DeflateStream (state.compressedStream, CompressionMode.Decompress)
-            let length = deflateStream.Read (state.sendStream.Raw, startIndex, length)
+            let length2 = deflateStream.Read (state.sendStream.Raw, startIndex, compressLength)
             deflateStream.Dispose ()
+            state.compressedStream.Position <- 0L
 
-//            state.sendStream.SetLength (int64 <| startIndex + length)
-
-            //
-           // failwithf "beef %A" length
             f state.sendStream.Raw startIndex size
 
         | _ -> ()

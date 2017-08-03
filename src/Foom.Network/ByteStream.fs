@@ -124,8 +124,10 @@ type ByteStream (data : byte []) =
 
     override this.SetLength (value : int64) =
         let value = int value
+        let oldLength = this.length
         setLength value data &this.position &this.length
-        Array.Clear (data, value, this.length - value)
+        if oldLength > value then
+            Array.Clear (data, value, oldLength - value)
 
     override this.Length = int64 this.length
 
@@ -145,6 +147,11 @@ type ByteStream (data : byte []) =
             this.length <- len
 
     override this.Read (bytes, offset, count) =
+        let count = 
+            if count > this.length - this.position then
+                this.length - this.position
+            else
+                count
         this.CheckBoundsLength count
 
         for i = offset to count - 1 do

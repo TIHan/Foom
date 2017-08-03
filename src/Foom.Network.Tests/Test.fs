@@ -312,6 +312,7 @@ type Test() =
         let client = Client (udpClient)
         let mutable value = 0
         client.Subscribe<TestMessage> (fun msg ->
+            printfn "%A" msg
             value <- msg.b
         )
 
