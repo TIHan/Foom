@@ -84,8 +84,11 @@ module private InternalStream =
 
 open InternalStream
 
-type ByteStream (data : byte []) =
+type ByteStream (data : byte []) as this =
     inherit Stream ()
+
+    let writer = ByteWriter this
+    let reader = ByteReader this
 
     [<DefaultValue>] val mutable length : int
     [<DefaultValue>] val mutable position : int
@@ -174,8 +177,11 @@ type ByteStream (data : byte []) =
 
     member this.Raw = data
 
-[<Sealed>]
-type ByteWriter (byteStream: ByteStream) =
+    member this.Writer = writer
+
+    member this.Reader = reader
+
+and [<Sealed>] ByteWriter (byteStream: ByteStream) =
 
     member this.WriteByte (value: byte) =
         byteStream.CheckBounds 1
@@ -291,8 +297,7 @@ type ByteWriter (byteStream: ByteStream) =
             byteStream.length <- len
         byteStream.position <- byteStream.position + size
 
-[<Sealed>]
-type ByteReader (byteStream: ByteStream) =
+and [<Sealed>] ByteReader (byteStream: ByteStream) =
 
     member this.ReadByte () : byte =
         byteStream.CheckBoundsLength 1
@@ -379,5 +384,4 @@ type ByteReader (byteStream: ByteStream) =
     member this.IsEndOfStream = byteStream.position = byteStream.length
 
     member this.Position = byteStream.position
-
-
+    

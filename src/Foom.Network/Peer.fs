@@ -70,21 +70,15 @@ module BasicChannelState =
 type SendStreamState =
     {
         sendStream :    ByteStream
-        sendWriter :    ByteWriter
         compressedStream : ByteStream
-        compressedWriter : ByteWriter
     }
 
 module SendStreamState =
 
     let create () =
-        let sendStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
-        let compressedStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
         {
-            sendStream = sendStream
-            sendWriter = ByteWriter sendStream
-            compressedStream = compressedStream
-            compressedWriter = ByteWriter compressedStream
+            sendStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
+            compressedStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
         }
 
     let write (msg : 'T) f (state : SendStreamState) =
@@ -92,13 +86,12 @@ module SendStreamState =
         match Network.lookup.TryGetValue typeof<'T> with
         | true, id ->
             let sendStream = state.sendStream
-            let sendWriter = state.sendWriter
 
             let startIndex = int sendStream.Position
 
             let pickler = Network.FindTypeById id
-            sendWriter.WriteByte (byte id)
-            pickler.serialize (msg :> obj) sendWriter
+            sendStream.Writer.WriteByte (byte id)
+            pickler.serialize (msg :> obj) sendStream.Writer
 
             let size = int sendStream.Position - startIndex
 
@@ -109,7 +102,7 @@ module SendStreamState =
 
             ////
 
-            state.compressedWriter.WriteInt 0
+            state.compressedStream.Writer.WriteInt 0
 
             ////
 
@@ -123,12 +116,12 @@ module SendStreamState =
 
             let resetPosition = state.compressedStream.Position
             state.compressedStream.Position <- previousPosition
-            state.compressedWriter.WriteInt size
+            state.compressedStream.Writer.WriteInt size
             state.compressedStream.Position <- resetPosition
 
             ////
 
-            ////f state.compressedStream.Raw (int previousPosition) length
+           // f state.compressedStream.Raw (int previousPosition) length
             state.compressedStream.Position <- previousPosition
             let compressedReader = ByteReader (state.compressedStream)
             let compressLength = compressedReader.ReadInt ()
@@ -146,22 +139,19 @@ module SendStreamState =
 type ReceiveStreamState =
     {
         receiveStream : ByteStream
-        receiveWriter : ByteWriter
-        receiveReader : ByteReader
+        uncompressedStream : ByteStream
     }
 
 module ReceiveStreamState =
 
     let create () =
-        let receiveStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
         {
-            receiveStream = receiveStream
-            receiveWriter = ByteWriter receiveStream
-            receiveReader = ByteReader receiveStream
+            receiveStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
+            uncompressedStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
         }
 
     let rec read' (subscriptions : Event<obj> []) (state : ReceiveStreamState) =
-        let reader = state.receiveReader
+        let reader = state.receiveStream.Reader
         let typeId = reader.ReadByte () |> int
 
         if subscriptions.Length > typeId && typeId >= 0 then
@@ -174,7 +164,7 @@ module ReceiveStreamState =
 
     let read subscriptions state =
         state.receiveStream.Position <- 0L
-        while not state.receiveReader.IsEndOfStream do
+        while not state.receiveStream.Reader.IsEndOfStream do
             read' subscriptions state
 
 [<AutoOpen>]
@@ -209,14 +199,14 @@ module ClientState =
         let basicChannelState =
             BasicChannelState.create packetPool
                 (fun packet ->
-                    receiveStreamState.receiveWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.DataLength)
+                    receiveStreamState.receiveStream.Writer.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.DataLength)
                 )
                 (fun bytes size ->
                     udpClient.Send (bytes, size) |> ignore
                 )
                 (fun ack send ->
                     let startIndex = int sendStreamState.sendStream.Position
-                    sendStreamState.sendWriter.WriteUInt16 ack
+                    sendStreamState.sendStream.Writer.WriteUInt16 ack
                     let size = int sendStreamState.sendStream.Position - startIndex
                     send (sendStreamState.sendStream.Raw, startIndex, size)
                 )
@@ -283,14 +273,14 @@ module ConnectedClientState =
         let basicChannelState =
             BasicChannelState.create packetPool
                 (fun packet ->
-                    receiveStreamState.receiveWriter.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.DataLength)
+                    receiveStreamState.receiveStream.Writer.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.DataLength)
                 )
                 (fun bytes size ->
                     udpServer.Send (bytes, size, endPoint) |> ignore
                 )
                 (fun ack send ->
                     let startIndex = int sendStreamState.sendStream.Position
-                    sendStreamState.sendWriter.WriteUInt16 ack
+                    sendStreamState.sendStream.Writer.WriteUInt16 ack
                     let size = int sendStreamState.sendStream.Position - startIndex
                     send (sendStreamState.sendStream.Raw, startIndex, size)
                 )
