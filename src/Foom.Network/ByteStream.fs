@@ -96,7 +96,7 @@ type ByteStream (data : byte []) =
 
     member this.CheckBoundsLength offset = 
         if checkBounds offset this.length this.position |> not then
-            failwith "Outside the bounds of the stream."
+            failwithf "Outside the bounds of the stream. offset: %A | length: %A | position: %A" offset this.length this.position
 
     //member this.TryResize offset =
     //    if not (checkBoundsNoException offset data this.position) then
@@ -138,11 +138,11 @@ type ByteStream (data : byte []) =
 
         for i = offset to count - 1 do
             data.[this.position] <- bytes.[i]
+            this.position <- this.position + 1
 
-        let len = this.position + count
+        let len = this.position
         if len > this.length then
             this.length <- len
-        this.position <- len
 
     override this.Read (bytes, offset, count) =
         this.CheckBoundsLength count
