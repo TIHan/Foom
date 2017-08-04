@@ -34,104 +34,84 @@ type PacketHeader =
     }
 
 [<Sealed>]
-type Packet () =
-
-    static let PacketSize = 1024
-
-    let byteStream = new ByteStream (Array.zeroCreate <| PacketSize + sizeof<PacketHeader>)
-    let byteWriter = ByteWriter (byteStream)
-    let byteReader = ByteReader (byteStream)
+type Packet () as this =
+    inherit ByteStream (Array.zeroCreate <| 1024 + sizeof<PacketHeader>)
 
     do
-        byteWriter.Write Unchecked.defaultof<PacketHeader>
+        this.Writer.Write Unchecked.defaultof<PacketHeader>
 
-    member this.Length 
-        with get () = int byteStream.Length
-        and set value = byteStream.SetLength (int64 value)
+    member this.DataLength = this.Length - int64 sizeof<PacketHeader>
 
-    member this.DataLength = this.Length - sizeof<PacketHeader>
-
-    member this.DataLengthRemaining = byteStream.Raw.Length - int byteStream.Length
-
-    member this.Raw = byteStream.Raw
+    member this.DataLengthRemaining = int64 this.Raw.Length - this.Length
 
     member this.Header =
-        let originalPos = byteStream.Position
-        byteStream.Position <- 0L
-        let value = byteReader.Read<PacketHeader> ()
-        byteStream.Position <- originalPos
+        let originalPos = this.Position
+        this.Position <- 0L
+        let value = this.Reader.Read<PacketHeader> ()
+        this.Position <- originalPos
         value
 
     member this.Type
-        with get () : PacketType = LanguagePrimitives.EnumOfValue (byteStream.Raw.[0])
-        and set (value : PacketType) = byteStream.Raw.[0] <- byte value
+        with get () : PacketType = LanguagePrimitives.EnumOfValue (this.Raw.[0])
+        and set (value : PacketType) = this.Raw.[0] <- byte value
 
     member this.SequenceId 
         with get () =
-            let originalPos = byteStream.Position
-            byteStream.Position <- 1L
-            let value = byteReader.ReadUInt16 ()
-            byteStream.Position <- originalPos
+            let originalPos = this.Position
+            this.Position <- 1L
+            let value = this.Reader.ReadUInt16 ()
+            this.Position <- originalPos
             value
 
         and set value =
-           let originalPos = byteStream.Position
-           byteStream.Position <- 1L
-           byteWriter.WriteUInt16 value
-           byteStream.Position <- originalPos
+           let originalPos = this.Position
+           this.Position <- 1L
+           this.Writer.WriteUInt16 value
+           this.Position <- originalPos
 
     member this.FragmentId 
         with get () =
-            let originalPos = byteStream.Position
-            byteStream.Position <- 3L
-            let value = byteReader.ReadByte ()
-            byteStream.Position <- originalPos
+            let originalPos = this.Position
+            this.Position <- 3L
+            let value = this.Reader.ReadByte ()
+            this.Position <- originalPos
             value
 
         and set value =
-           let originalPos = byteStream.Position
-           byteStream.Position <- 3L
-           byteWriter.WriteByte value
-           byteStream.Position <- originalPos
+           let originalPos = this.Position
+           this.Position <- 3L
+           this.Writer.WriteByte value
+           this.Position <- originalPos
 
     member this.FragmentCount
         with get () =
-            let originalPos = byteStream.Position
-            byteStream.Position <- 4L
-            let value = byteReader.ReadByte ()
-            byteStream.Position <- originalPos
+            let originalPos = this.Position
+            this.Position <- 4L
+            let value = this.Reader.ReadByte ()
+            this.Position <- originalPos
             value
 
         and set value =
-           let originalPos = byteStream.Position
-           byteStream.Position <- 4L
-           byteWriter.WriteByte value
-           byteStream.Position <- originalPos
-
-    member this.WriteRawBytes (data, startIndex, size) =
-        byteWriter.WriteRawBytes (data, startIndex, size)
+           let originalPos = this.Position
+           this.Position <- 4L
+           this.Writer.WriteByte value
+           this.Position <- originalPos
 
     member this.Reset () =
-        byteStream.SetLength 0L
-        byteWriter.Write Unchecked.defaultof<PacketHeader>
-
-    member this.Writer = byteWriter
-
-    member this.Reader = byteReader
-
-    member this.Stream = byteStream
+        this.SetLength 0L
+        this.Writer.Write Unchecked.defaultof<PacketHeader>
 
     member this.CopyTo (packet : Packet) =
-        packet.Length <- this.Length
-        Buffer.BlockCopy (this.Raw, 0, packet.Raw, 0, this.Length)
+        packet.SetLength this.Length
+        Buffer.BlockCopy (this.Raw, 0, packet.Raw, 0, int this.Length)
 
     member this.ReadAcks f =
-        let originalPos = byteStream.Position
+        let originalPos = this.Position
         if this.Type = PacketType.ReliableOrderedAck then
-            byteStream.Position <- int64 sizeof<PacketHeader>
-            while byteStream.Position < byteStream.Length do
-                f (byteReader.ReadUInt16 ())
+            this.Position <- int64 sizeof<PacketHeader>
+            while this.Position < this.Length do
+                f (this.Reader.ReadUInt16 ())
 
-        byteStream.Position <- originalPos
+        this.Position <- originalPos
 
     member this.IsFragmented = this.FragmentId > 0uy

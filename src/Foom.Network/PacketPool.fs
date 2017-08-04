@@ -5,7 +5,7 @@ open System.Collections.Generic
 
 type PacketPool (poolAmount) =
 
-    let pool = Stack (Array.init poolAmount (fun _ -> Packet ()))
+    let pool = Stack (Array.init poolAmount (fun _ -> new Packet ()))
 
     member this.Count = pool.Count
 
@@ -43,7 +43,7 @@ module private PacketPoolHelpers =
             false
 
     let fragment (bytes : byte []) (startIndex : int) (size : int) (packet : Packet) (packets : ResizeArray<Packet>) (packetPool : PacketPool) =
-        let count = (size / packet.DataLengthRemaining) + (if size % packet.DataLengthRemaining > 0 then 1 else 0)
+        let count = (size / int packet.DataLengthRemaining) + (if size % int packet.DataLengthRemaining > 0 then 1 else 0)
 
         if count > 255 then
             failwith "Fragmented count for data is greater than 255."
@@ -53,37 +53,37 @@ module private PacketPoolHelpers =
 
         setFragment (byte count) &fragmentId packet
 
-        packet.WriteRawBytes (bytes, startIndex, packet.DataLengthRemaining)
+        packet.Write (bytes, startIndex, int packet.DataLengthRemaining)
         packets.Add packet
 
         for i = 1 to count - 1 do
             let packet = createFragmentPacket (byte count) &fragmentId packetPool
 
             if i = (count - 1) then
-                let startIndex = startIndex + (i * packet.DataLengthRemaining)
-                packet.WriteRawBytes (bytes, startIndex, size - startIndex)
+                let startIndex = startIndex + (i * int packet.DataLengthRemaining)
+                packet.Write (bytes, startIndex, size - startIndex)
             else
-                packet.WriteRawBytes (bytes, startIndex + (i * packet.DataLengthRemaining), packet.DataLengthRemaining)
+                packet.Write (bytes, startIndex + (i * int packet.DataLengthRemaining), int packet.DataLengthRemaining)
 
             packets.Add packet 
 
-    let getFromBytes bytes startIndex size (packets : ResizeArray<Packet>) (packetPool : PacketPool) =
+    let getFromBytes bytes startIndex (size : int) (packets : ResizeArray<Packet>) (packetPool : PacketPool) =
         if packets.Count = 0 then
             let packet = packetPool.Get ()
-            if packet.DataLengthRemaining >= size then
-                packet.WriteRawBytes (bytes, startIndex, size)
+            if int packet.DataLengthRemaining >= size then
+                packet.Write (bytes, startIndex, size)
                 packets.Add packet
             else
                 fragment bytes startIndex size packet packets packetPool
                     
         else
             let packet = packets.[packets.Count - 1]
-            if packet.DataLengthRemaining >= size then
-                packet.WriteRawBytes (bytes, startIndex, size)
+            if int packet.DataLengthRemaining >= size then
+                packet.Write (bytes, startIndex, size)
             else
                 let packet = packetPool.Get ()
-                if packet.DataLengthRemaining >= size then
-                    packet.WriteRawBytes (bytes, startIndex, size)
+                if int packet.DataLengthRemaining >= size then
+                    packet.Write (bytes, startIndex, size)
                     packets.Add packet
                 else
                     fragment bytes startIndex size packet packets packetPool

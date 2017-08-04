@@ -194,9 +194,9 @@ type UdpClient () =
                 failwith "Send is invalid because we haven't tried to connect."
  
             if isIpV6 then
-                this.UdpClientV6.Send (packet.Raw, packet.Length) |> ignore
+                this.UdpClientV6.Send (packet.Raw, int packet.Length) |> ignore
             else
-                this.UdpClient.Send (packet.Raw, packet.Length) |> ignore
+                this.UdpClient.Send (packet.Raw, int packet.Length) |> ignore
 
 [<Sealed>]
 type UdpServer (port) =
@@ -243,7 +243,7 @@ type UdpServer (port) =
                         if (this :> IUdpServer).CanForceDataLoss || (dataLossEveryOtherCall && (this :> IUdpServer).CanForceDataLossEveryOtherCall) then
                             0
                         else
-                            this.UdpClient.Send (packet.Raw, packet.Length, remoteEP.ipEndPoint)
+                            this.UdpClient.Send (packet.Raw, int packet.Length, remoteEP.ipEndPoint)
 
                     bytesSentSinceLastCall <- bytesSentSinceLastCall + actualSize
                     dataLossEveryOtherCall <- not dataLossEveryOtherCall
@@ -253,7 +253,7 @@ type UdpServer (port) =
                         if (this :> IUdpServer).CanForceDataLoss || (dataLossEveryOtherCall && (this :> IUdpServer).CanForceDataLossEveryOtherCall) then
                             0
                         else
-                            this.UdpClientV6.Send (packet.Raw, packet.Length, remoteEP.ipEndPoint)
+                            this.UdpClientV6.Send (packet.Raw, int packet.Length, remoteEP.ipEndPoint)
 
                     dataLossEveryOtherCall <- not dataLossEveryOtherCall
                     bytesSentSinceLastCall <- bytesSentSinceLastCall + actualSize

@@ -163,7 +163,7 @@ module ClientState =
         let basicChannelState =
             BasicChannelState.create packetPool
                 (fun packet ->
-                    receiveStreamState.receiveStream.Writer.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.DataLength)
+                    receiveStreamState.receiveStream.Writer.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, int packet.DataLength)
                 )
                 udpClient.Send
                 (fun ack send ->
@@ -235,7 +235,7 @@ module ConnectedClientState =
         let basicChannelState =
             BasicChannelState.create packetPool
                 (fun packet ->
-                    receiveStreamState.receiveStream.Writer.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.DataLength)
+                    receiveStreamState.receiveStream.Writer.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, int packet.DataLength)
                 )
                 (fun packet -> udpServer.Send (packet, endPoint))
                 (fun ack send ->
@@ -303,9 +303,9 @@ module ServerState =
 
             state.peerLookup.Add (endPoint, ccState)
 
-            let packet = Packet ()
-            packet.Type <- PacketType.ConnectionAccepted
-            state.udpServer.Send (packet, endPoint)
+            use tmp = new Packet ()
+            tmp.Type <- PacketType.ConnectionAccepted
+            state.udpServer.Send (tmp, endPoint)
             state.packetPool.Recycle packet
             state.peerConnected.Trigger endPoint
             true
@@ -336,9 +336,9 @@ type Peer (udp : Udp) =
         match udp with
         | Udp.Client state ->
             if state.udpClient.Connect (address, port) then
-                let packet = Packet ()
-                packet.Type <- PacketType.ConnectionRequested
-                state.udpClient.Send packet
+                use tmp = new Packet ()
+                tmp.Type <- PacketType.ConnectionRequested
+                state.udpClient.Send tmp
         | _ -> failwith "Clients can only connect."
 
     member this.Subscribe<'T> f =
@@ -430,7 +430,7 @@ type Peer (udp : Udp) =
 
             while client.IsDataAvailable do
                 let packet = packetPool.Get ()
-                let byteCount = client.Receive (packet.Stream)
+                let byteCount = client.Receive (packet)
                 if byteCount > 0 then
                     this.ReceivePacket (time, packet, client.RemoteEndPoint)
                 else
@@ -459,7 +459,7 @@ type Peer (udp : Udp) =
             while server.IsDataAvailable do
                 let packet = packetPool.Get ()
                 let mutable endPoint = Unchecked.defaultof<IUdpEndPoint>
-                let byteCount = server.Receive (packet.Stream, &endPoint)
+                let byteCount = server.Receive (packet, &endPoint)
                 // TODO: Check to see if endPoint is banned.
                 if byteCount > 0 then
                     this.ReceivePacket (time, packet, endPoint)
