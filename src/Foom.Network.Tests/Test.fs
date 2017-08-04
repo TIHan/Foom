@@ -312,7 +312,6 @@ type Test() =
         let client = Client (udpClient)
         let mutable value = 0
         client.Subscribe<TestMessage> (fun msg ->
-            printfn "%A" msg
             value <- msg.b
         )
 
@@ -412,9 +411,9 @@ type Test() =
         client.Connect ("127.0.0.1", 29015)
 
         client.Update TimeSpan.Zero
-        Threading.Thread.Sleep 100
+        Threading.Thread.Sleep 1
         server.Update TimeSpan.Zero
-        Threading.Thread.Sleep 100
+        Threading.Thread.Sleep 1
         client.Update TimeSpan.Zero
 
         let testSize = 4096 * 4
@@ -437,7 +436,7 @@ type Test() =
         Assert.AreEqual (client.PacketPoolMaxCount, client.PacketPoolCount)
 
         server.Update TimeSpan.Zero
-        Threading.Thread.Sleep 100
+        Threading.Thread.Sleep 1
         client.Update TimeSpan.Zero
 
         Assert.AreNotEqual (server.ClientPacketPoolMaxCount, server.ClientPacketPoolCount)
@@ -446,7 +445,7 @@ type Test() =
         |> Array.iteri (fun i v -> Assert.AreNotEqual (i + 1, v))
 
         server.Update (TimeSpan.FromSeconds 2.)
-        Threading.Thread.Sleep 100
+        Threading.Thread.Sleep 1
         client.Update (TimeSpan.FromSeconds 2.)
 
         Assert.AreNotEqual (server.ClientPacketPoolMaxCount, server.ClientPacketPoolCount)
@@ -457,7 +456,7 @@ type Test() =
         udpServer.CanForceDataLossEveryOtherCall <- false
 
         server.Update (TimeSpan.FromSeconds 2.)
-        Threading.Thread.Sleep 100
+        Threading.Thread.Sleep 1
         client.Update (TimeSpan.FromSeconds 2.)
 
         Assert.AreNotEqual (server.ClientPacketPoolMaxCount, server.ClientPacketPoolCount)
@@ -468,9 +467,9 @@ type Test() =
         |> Array.iteri (fun i v -> Assert.AreNotEqual (i + 1, v))
 
         server.Update (TimeSpan.FromSeconds 4.)
-        Threading.Thread.Sleep 100
+        Threading.Thread.Sleep 1
         client.Update (TimeSpan.FromSeconds 4.)
-        Threading.Thread.Sleep 100
+        Threading.Thread.Sleep 1
         server.Update (TimeSpan.FromSeconds 4.2)
 
         Assert.AreEqual (server.ClientPacketPoolMaxCount, server.ClientPacketPoolCount)
