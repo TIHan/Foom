@@ -2,6 +2,7 @@
 
 open System
 open System.IO
+open System.Security.Cryptography
 open System.Net
 open System.Net.Sockets
 open System.Collections.Generic
@@ -32,11 +33,19 @@ type Udp =
 
     val UdpClientV6 : UdpClient
 
+    val BufferStream : MemoryStream
+
     val Buffer : byte []
 
     val mutable receiveBufferSize : int
 
     val mutable sendBufferSize : int
+
+    val Aes : AesCryptoServiceProvider 
+
+    val Encryptor : ICryptoTransform
+
+    val Decryptor : ICryptoTransform
 
     new () =
         let udpClient = new UdpClient (AddressFamily.InterNetwork)
@@ -50,12 +59,25 @@ type Udp =
         udpClient.Client.SendBufferSize <- UdpConstants.DefaultSendBufferSize
         udpClientV6.Client.SendBufferSize <- UdpConstants.DefaultSendBufferSize
 
+        let buffer = Array.zeroCreate 65536
+        let bufferStream = new MemoryStream (buffer)
+
+        let aes = new AesCryptoServiceProvider ()
+
+        let encryptor = aes.CreateEncryptor ()
+
+        let decryptor = aes.CreateDecryptor ()
+
         { 
             UdpClient = udpClient
             UdpClientV6 = udpClientV6
-            Buffer = Array.zeroCreate 65536
+            BufferStream = bufferStream
+            Buffer = buffer
             receiveBufferSize = UdpConstants.DefaultReceiveBufferSize
             sendBufferSize = UdpConstants.DefaultSendBufferSize
+            Aes = aes
+            Encryptor = encryptor
+            Decryptor = decryptor
         }
 
     new (port) =
@@ -70,12 +92,25 @@ type Udp =
         udpClient.Client.SendBufferSize <- UdpConstants.DefaultSendBufferSize
         udpClientV6.Client.SendBufferSize <- UdpConstants.DefaultSendBufferSize
 
+        let buffer = Array.zeroCreate 65536
+        let bufferStream = new MemoryStream (buffer)
+
+        let aes = new AesCryptoServiceProvider ()
+
+        let encryptor = aes.CreateEncryptor ()
+
+        let decryptor = aes.CreateDecryptor ()
+
         { 
             UdpClient = udpClient
             UdpClientV6 = udpClientV6
-            Buffer = Array.zeroCreate 65536
+            BufferStream = bufferStream
+            Buffer = buffer
             receiveBufferSize = UdpConstants.DefaultReceiveBufferSize
             sendBufferSize = UdpConstants.DefaultSendBufferSize
+            Aes = aes
+            Encryptor = encryptor
+            Decryptor = decryptor
         }
 
     interface IUdp with
@@ -235,6 +270,20 @@ type UdpServer (port) =
             else 0
 
         member this.Send (packet : Packet, remoteEP) =
+
+           // let ms = new MemoryStream ()
+           // let buffer = ms.GetBuffer ()
+           // let stream = new CryptoStream(ms, this.Encryptor, CryptoStreamMode.Write)
+           // packet.CopyTo(stream)
+           // stream.FlushFinalBlock ()
+           //// stream.Dispose ()
+
+            //ms.Position <- 0L
+            //packet.Position <- 0L
+            //let stream = new CryptoStream(ms, this.Decryptor, CryptoStreamMode.Read)
+            //stream.CopyTo(packet)
+            //stream.Dispose ()
+
             match remoteEP with
             | :? UdpEndPoint as remoteEP -> 
 
