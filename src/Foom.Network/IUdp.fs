@@ -28,7 +28,7 @@ type IUdpClient =
 
     abstract Receive : Stream -> int
 
-    abstract Send : byte[] * size: int -> int
+    abstract Send : Packet -> unit
 
     abstract RemoteEndPoint : IUdpEndPoint
 
@@ -39,7 +39,7 @@ type IUdpServer =
 
     abstract Receive : Stream * [<Out>] remoteEP: byref<IUdpEndPoint> -> int
 
-    abstract Send : byte [] * size: int * IUdpEndPoint -> int
+    abstract Send : Packet * IUdpEndPoint -> unit
 
     abstract BytesSentSinceLastCall : unit -> int
 

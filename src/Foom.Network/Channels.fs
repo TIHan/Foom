@@ -64,7 +64,7 @@ type UnreliableSender (packetPool : PacketPool, send) =
         let packets = mergedPackets
         for i = 0 to packets.Count - 1 do
             let packet = packets.[i]
-            send packet.Raw packet.Length
+            send packet
             packetPool.Recycle packet
         packets.Clear ()
                 
@@ -90,10 +90,10 @@ type ReliableOrderedChannel (packetPool : PacketPool, send) =
             sequencer.Assign packet
             packet.Type <- PacketType.ReliableOrdered
             ackManager.Mark (packet, time) |> ignore
-            send packet.Raw packet.Length
+            send packet
 
         ackManager.Update time (fun ack packet ->
-            send packet.Raw packet.Length
+            send packet
         )
 
         packets.Clear ()
@@ -121,7 +121,7 @@ type ReliableOrderedAckSender (packetPool : PacketPool, send) =
         for i = 0 to packets.Count - 1 do
             let packet = packets.[i]
             packet.Type <- PacketType.ReliableOrderedAck
-            send packet.Raw packet.Length
+            send packet
             packetPool.Recycle packet
         packets.Clear ()
 

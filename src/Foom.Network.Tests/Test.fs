@@ -88,58 +88,58 @@ type Test() =
         Network.RegisterType (TestMessage2.Serialize, TestMessage2.Deserialize, TestMessage2.Ctor)
         Network.RegisterType (TestMessage3.Serialize, TestMessage3.Deserialize, TestMessage3.Ctor)
 
-    [<Test>]
-    member this.UdpWorks () : unit =
-        use udpClient = new UdpClient () :> IUdpClient
-        use udpClientV4 = new UdpClient () :> IUdpClient
-        use udpServer = new UdpServer (29015) :> IUdpServer
+    //[<Test>]
+    //member this.UdpWorks () : unit =
+        //use udpClient = new UdpClient () :> IUdpClient
+        //use udpClientV4 = new UdpClient () :> IUdpClient
+        //use udpServer = new UdpServer (29015) :> IUdpServer
 
-        Assert.False (udpClient.Connect ("break this", 29015))
-        Assert.True (udpClient.Connect ("::1", 29015))
-        Assert.True (udpClientV4.Connect ("127.0.0.1", 29015))
+        //Assert.False (udpClient.Connect ("break this", 29015))
+        //Assert.True (udpClient.Connect ("::1", 29015))
+        //Assert.True (udpClientV4.Connect ("127.0.0.1", 29015))
 
-        for i = 0 to 100 do
-            let i = 0
-            Assert.True (udpClient.Send ([| 123uy + byte i |], 1) > 0)
+        //for i = 0 to 100 do
+        //    let i = 0
+        //    Assert.True (udpClient.Send ([| 123uy + byte i |], 1) > 0)
 
-            let buffer = [| 0uy |]
-            let mutable endPoint = Unchecked.defaultof<IUdpEndPoint>
-            while not udpServer.IsDataAvailable do ()
-            Assert.True (udpServer.Receive (buffer, 0, 1, &endPoint) > 0)
-            Assert.IsNotNull (endPoint)
-            Assert.AreEqual (123uy + byte i, buffer.[0])
+        //    let buffer = [| 0uy |]
+        //    let mutable endPoint = Unchecked.defaultof<IUdpEndPoint>
+        //    while not udpServer.IsDataAvailable do ()
+        //    Assert.True (udpServer.Receive (buffer, 0, 1, &endPoint) > 0)
+        //    Assert.IsNotNull (endPoint)
+        //    Assert.AreEqual (123uy + byte i, buffer.[0])
 
-        let test amount =
+        //let test amount =
 
-            let maxBytes = Array.zeroCreate<byte> amount
-            maxBytes.[amount - 1] <- 123uy
+        //    let maxBytes = Array.zeroCreate<byte> amount
+        //    maxBytes.[amount - 1] <- 123uy
 
-            Assert.True (udpClient.Send (maxBytes, maxBytes.Length) > 0)
+        //    Assert.True (udpClient.Send (maxBytes, maxBytes.Length) > 0)
 
-            let buffer = Array.zeroCreate<byte> amount
-            let mutable endPoint = Unchecked.defaultof<IUdpEndPoint>
-            while not udpServer.IsDataAvailable do ()
-            Assert.True (udpServer.Receive (buffer, 0, buffer.Length, &endPoint) > 0)
-            Assert.IsNotNull (endPoint)
-            Assert.AreEqual (123uy, buffer.[amount - 1])
+        //    let buffer = Array.zeroCreate<byte> amount
+        //    let mutable endPoint = Unchecked.defaultof<IUdpEndPoint>
+        //    while not udpServer.IsDataAvailable do ()
+        //    Assert.True (udpServer.Receive (buffer, 0, buffer.Length, &endPoint) > 0)
+        //    Assert.IsNotNull (endPoint)
+        //    Assert.AreEqual (123uy, buffer.[amount - 1])
 
-        Assert.AreEqual (64512, udpClient.SendBufferSize)
-        Assert.AreEqual (64512, udpClient.ReceiveBufferSize)
-        Assert.AreEqual (64512, udpServer.SendBufferSize)
-        Assert.AreEqual (64512, udpServer.ReceiveBufferSize)
+        //Assert.AreEqual (64512, udpClient.SendBufferSize)
+        //Assert.AreEqual (64512, udpClient.ReceiveBufferSize)
+        //Assert.AreEqual (64512, udpServer.SendBufferSize)
+        //Assert.AreEqual (64512, udpServer.ReceiveBufferSize)
 
-        test 512
-        test 1024
-        test 8192
-        udpClient.SendBufferSize <- 8193
-        test 8193
+        //test 512
+        //test 1024
+        //test 8192
+        //udpClient.SendBufferSize <- 8193
+        //test 8193
 
-        udpClient.SendBufferSize <- 10000
-        test 10000
+        //udpClient.SendBufferSize <- 10000
+        //test 10000
 
-        for i = 1 to 64512 - 48 do
-            udpClient.SendBufferSize <- i
-            test i
+        //for i = 1 to 64512 - 48 do
+            //udpClient.SendBufferSize <- i
+            //test i
 
     [<Test>]
     member this.ByteStream () : unit =

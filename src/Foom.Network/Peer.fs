@@ -165,9 +165,7 @@ module ClientState =
                 (fun packet ->
                     receiveStreamState.receiveStream.Writer.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.DataLength)
                 )
-                (fun bytes size ->
-                    udpClient.Send (bytes, size) |> ignore
-                )
+                udpClient.Send
                 (fun ack send ->
                     let startIndex = int sendStreamState.sendStream.Position
                     sendStreamState.sendStream.Writer.WriteUInt16 ack
@@ -200,7 +198,7 @@ module ClientState =
             let sendPacket = state.packetPool.Get ()
             sendPacket.Type <- PacketType.Pong
             sendPacket.Writer.Write<TimeSpan> (packet.Reader.Read<TimeSpan>())
-            state.udpClient.Send (packet.Raw, packet.Length) |> ignore
+            state.udpClient.Send packet
             state.packetPool.Recycle sendPacket
             state.packetPool.Recycle packet
             true
@@ -239,9 +237,7 @@ module ConnectedClientState =
                 (fun packet ->
                     receiveStreamState.receiveStream.Writer.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, packet.DataLength)
                 )
-                (fun bytes size ->
-                    udpServer.Send (bytes, size, endPoint) |> ignore
-                )
+                (fun packet -> udpServer.Send (packet, endPoint))
                 (fun ack send ->
                     let startIndex = int sendStreamState.sendStream.Position
                     sendStreamState.sendStream.Writer.WriteUInt16 ack
@@ -309,7 +305,7 @@ module ServerState =
 
             let packet = Packet ()
             packet.Type <- PacketType.ConnectionAccepted
-            state.udpServer.Send (packet.Raw, packet.Length, endPoint) |> ignore
+            state.udpServer.Send (packet, endPoint)
             state.packetPool.Recycle packet
             state.peerConnected.Trigger endPoint
             true
@@ -342,7 +338,7 @@ type Peer (udp : Udp) =
             if state.udpClient.Connect (address, port) then
                 let packet = Packet ()
                 packet.Type <- PacketType.ConnectionRequested
-                state.udpClient.Send (packet.Raw, packet.Length) |> ignore
+                state.udpClient.Send packet
         | _ -> failwith "Clients can only connect."
 
     member this.Subscribe<'T> f =
@@ -481,7 +477,7 @@ type Peer (udp : Udp) =
 
                     let packet = packetPool.Get ()
                     packet.Type <- PacketType.Disconnect
-                    server.Send (packet.Raw, packet.Length, endPoint) |> ignore
+                    server.Send (packet, endPoint)
                     packetPool.Recycle packet
 
                     endPointRemovals.Enqueue endPoint
@@ -493,7 +489,7 @@ type Peer (udp : Udp) =
                     let packet = packetPool.Get ()
                     packet.Type <- PacketType.Ping
                     packet.Writer.Write<TimeSpan> (time)
-                    server.Send (packet.Raw, packet.Length, endPoint) |> ignore
+                    server.Send (packet, endPoint)
                     packetPool.Recycle packet
 
                 ccState.basicChannelState.unreliableReceiver.Update time

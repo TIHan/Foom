@@ -189,14 +189,14 @@ type UdpClient () =
                 stream.Write (this.Buffer, 0, byteCount)
             byteCount
 
-        member this.Send (buffer, size) =
+        member this.Send (packet) =
             if not isConnected then
                 failwith "Send is invalid because we haven't tried to connect."
  
             if isIpV6 then
-                this.UdpClientV6.Send (buffer, size)
+                this.UdpClientV6.Send (packet.Raw, packet.Length) |> ignore
             else
-                this.UdpClient.Send (buffer, size)
+                this.UdpClient.Send (packet.Raw, packet.Length) |> ignore
 
 [<Sealed>]
 type UdpServer (port) =
@@ -234,36 +234,31 @@ type UdpServer (port) =
 
             else 0
 
-        member this.Send (buffer, size, remoteEP) =
+        member this.Send (packet : Packet, remoteEP) =
             match remoteEP with
             | :? UdpEndPoint as remoteEP -> 
 
                 if remoteEP.ipEndPoint.AddressFamily = AddressFamily.InterNetwork then
                     let actualSize = 
                         if (this :> IUdpServer).CanForceDataLoss || (dataLossEveryOtherCall && (this :> IUdpServer).CanForceDataLossEveryOtherCall) then
-                            size
+                            0
                         else
-                            this.UdpClient.Send (buffer, size, remoteEP.ipEndPoint)
-                    if actualSize <> size then
-                        printfn "[UdpServer] ActualSize: %A. Size: %A." actualSize size
+                            this.UdpClient.Send (packet.Raw, packet.Length, remoteEP.ipEndPoint)
+
                     bytesSentSinceLastCall <- bytesSentSinceLastCall + actualSize
                     dataLossEveryOtherCall <- not dataLossEveryOtherCall
-                    actualSize
 
                 elif remoteEP.ipEndPoint.AddressFamily = AddressFamily.InterNetworkV6 then
                     let actualSize = 
                         if (this :> IUdpServer).CanForceDataLoss || (dataLossEveryOtherCall && (this :> IUdpServer).CanForceDataLossEveryOtherCall) then
-                            size
+                            0
                         else
-                            this.UdpClientV6.Send (buffer, size, remoteEP.ipEndPoint)
-                    if actualSize <> size then
-                        printfn "[UdpServer] ActualSize: %A. Size: %A." actualSize size
+                            this.UdpClientV6.Send (packet.Raw, packet.Length, remoteEP.ipEndPoint)
+
                     dataLossEveryOtherCall <- not dataLossEveryOtherCall
                     bytesSentSinceLastCall <- bytesSentSinceLastCall + actualSize
-                    actualSize
-                else
-                    0
-            | _ -> 0
+
+            | _ -> ()
 
         member this.Receive (stream : Stream, endPoint) =
             let byteCount = (this :> IUdpServer).Receive (this.Buffer, 0, this.Buffer.Length, &endPoint)
