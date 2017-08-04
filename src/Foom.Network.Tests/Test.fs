@@ -405,7 +405,6 @@ type Test() =
             value <- msg.b
         )
 
-
         let server = Server (udpServer)
 
         client.Connect ("127.0.0.1", 29015)
@@ -437,9 +436,7 @@ type Test() =
         Assert.AreEqual (server.PacketPoolMaxCount, server.PacketPoolCount)
         Assert.AreEqual (client.PacketPoolMaxCount, client.PacketPoolCount)
 
-        let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
         server.Update TimeSpan.Zero
-        stopwatch.Stop ()
         Threading.Thread.Sleep 1
         client.Update TimeSpan.Zero
 
