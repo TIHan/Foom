@@ -427,7 +427,9 @@ type Test() =
 
         let data = { arr = Array.init testSize (fun i -> i + 1); len = testSize }
 
+        let stopwatch2 = System.Diagnostics.Stopwatch.StartNew ()
         server.PublishReliableOrdered data
+        stopwatch2.Stop ()
 
         udpServer.CanForceDataLossEveryOtherCall <- true
 
@@ -435,7 +437,9 @@ type Test() =
         Assert.AreEqual (server.PacketPoolMaxCount, server.PacketPoolCount)
         Assert.AreEqual (client.PacketPoolMaxCount, client.PacketPoolCount)
 
+        let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
         server.Update TimeSpan.Zero
+        stopwatch.Stop ()
         Threading.Thread.Sleep 1
         client.Update TimeSpan.Zero
 

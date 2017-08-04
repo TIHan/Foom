@@ -106,7 +106,7 @@ module SendStreamState =
             let compressionPosition = state.compressedStream.Position
 
             sendStream.Position <- int64 startIndex
-            let deflateStream = new DeflateStream(state.compressedStream, CompressionMode.Compress, true)
+            let deflateStream = new DeflateStream(state.compressedStream, CompressionLevel.Optimal, true)
             sendStream.CopyTo (deflateStream, size)
             deflateStream.Dispose ()
 
@@ -143,7 +143,9 @@ module ReceiveStreamState =
         //let ms = new MemoryStream (state.receiveStream.Raw, state.receiveStream.Position,)
         state.uncompressedStream.Position <- 0L
         let deflateStream = new DeflateStream(state.receiveStream, CompressionMode.Decompress, true)
+        let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
         deflateStream.CopyTo(state.uncompressedStream, size)
+        stopwatch.Stop ()
         deflateStream.Dispose ()
         state.receiveStream.Position <- oldPos + int64 size
         state.uncompressedStream.Position <- 0L
@@ -545,10 +547,10 @@ type Peer (udp : Udp) =
             state.sendStreamState.sendStream.SetLength 0L
             state.sendStreamState.compressedStream.SetLength 0L
 
-            while endPointRemovals.Count > 0 do
-                let endPoint = endPointRemovals.Dequeue ()
-                state.peerLookup.Remove endPoint |> ignore
-                state.peerDisconnected.Trigger endPoint
+            //while endPointRemovals.Count > 0 do
+            //    let endPoint = endPointRemovals.Dequeue ()
+            //    state.peerLookup.Remove endPoint |> ignore
+            //    state.peerDisconnected.Trigger endPoint
 
 
     interface IDisposable with
