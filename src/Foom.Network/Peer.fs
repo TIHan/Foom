@@ -547,10 +547,10 @@ type Peer (udp : Udp) =
             state.sendStreamState.sendStream.SetLength 0L
             state.sendStreamState.compressedStream.SetLength 0L
 
-            //while endPointRemovals.Count > 0 do
-            //    let endPoint = endPointRemovals.Dequeue ()
-            //    state.peerLookup.Remove endPoint |> ignore
-            //    state.peerDisconnected.Trigger endPoint
+            while endPointRemovals.Count > 0 do
+                let endPoint = endPointRemovals.Dequeue ()
+                state.peerLookup.Remove endPoint |> ignore
+                state.peerDisconnected.Trigger endPoint
 
 
     interface IDisposable with
