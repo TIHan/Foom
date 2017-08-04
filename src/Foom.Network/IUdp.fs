@@ -26,7 +26,7 @@ type IUdpClient =
 
     abstract Receive : byte [] * offset: int * size: int -> int
 
-    abstract Receive : Stream -> int
+    abstract Receive : Packet -> int
 
     abstract Send : Packet -> unit
 

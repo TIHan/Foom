@@ -43,10 +43,6 @@ type Udp =
 
     val Aes : AesCryptoServiceProvider 
 
-    val Encryptor : ICryptoTransform
-
-    val Decryptor : ICryptoTransform
-
     new () =
         let udpClient = new UdpClient (AddressFamily.InterNetwork)
         let udpClientV6 = new UdpClient (AddressFamily.InterNetworkV6)
@@ -63,10 +59,10 @@ type Udp =
         let bufferStream = new MemoryStream (buffer)
 
         let aes = new AesCryptoServiceProvider ()
-
-        let encryptor = aes.CreateEncryptor ()
-
-        let decryptor = aes.CreateDecryptor ()
+        aes.Key <- Array.zeroCreate 16
+        aes.IV <- Array.zeroCreate 16
+        aes.Mode <- CipherMode.CBC
+        aes.Padding <- PaddingMode.PKCS7
 
         { 
             UdpClient = udpClient
@@ -76,8 +72,6 @@ type Udp =
             receiveBufferSize = UdpConstants.DefaultReceiveBufferSize
             sendBufferSize = UdpConstants.DefaultSendBufferSize
             Aes = aes
-            Encryptor = encryptor
-            Decryptor = decryptor
         }
 
     new (port) =
@@ -96,10 +90,10 @@ type Udp =
         let bufferStream = new MemoryStream (buffer)
 
         let aes = new AesCryptoServiceProvider ()
-
-        let encryptor = aes.CreateEncryptor ()
-
-        let decryptor = aes.CreateDecryptor ()
+        aes.Key <- Array.zeroCreate 16
+        aes.IV <- Array.zeroCreate 16
+        aes.Mode <- CipherMode.CBC
+        aes.Padding <- PaddingMode.PKCS7
 
         { 
             UdpClient = udpClient
@@ -109,8 +103,6 @@ type Udp =
             receiveBufferSize = UdpConstants.DefaultReceiveBufferSize
             sendBufferSize = UdpConstants.DefaultSendBufferSize
             Aes = aes
-            Encryptor = encryptor
-            Decryptor = decryptor
         }
 
     interface IUdp with
@@ -217,11 +209,21 @@ type UdpClient () =
 
             else 0
 
-        member this.Receive (stream : Stream) =
+        member this.Receive (packet : Packet) =
+            packet.SetLength 0L
+
             let byteCount = (this :> IUdpClient).Receive (this.Buffer, 0, this.Buffer.Length)
             if byteCount > 0 then
-                stream.Position <- 0L
-                stream.Write (this.Buffer, 0, byteCount)
+                packet.Write (this.Buffer, 0, byteCount)
+                //use decryptor = this.Aes.CreateDecryptor ()
+                //let ms = new MemoryStream (this.Buffer, 0, byteCount)
+                //let stream = new CryptoStream(ms, decryptor, CryptoStreamMode.Read)
+                //stream.CopyTo (packet)
+
+                //stream.Dispose ()
+                //ms.Dispose ()
+
+           // packet.Position <- 0L
             byteCount
 
         member this.Send (packet) =
@@ -271,19 +273,19 @@ type UdpServer (port) =
 
         member this.Send (packet : Packet, remoteEP) =
 
-           // let ms = new MemoryStream ()
-           // let buffer = ms.GetBuffer ()
-           // let stream = new CryptoStream(ms, this.Encryptor, CryptoStreamMode.Write)
-           // packet.CopyTo(stream)
-           // stream.FlushFinalBlock ()
-           //// stream.Dispose ()
+            //use encryptor = this.Aes.CreateEncryptor ()
+            //let ms = new MemoryStream (this.Buffer)
+            //ms.SetLength 0L
+            //let stream = new CryptoStream(ms, encryptor, CryptoStreamMode.Write)
+            //packet.WriteTo(stream)
+            //stream.FlushFinalBlock ()
 
-            //ms.Position <- 0L
-            //packet.Position <- 0L
-            //let stream = new CryptoStream(ms, this.Decryptor, CryptoStreamMode.Read)
-            //stream.CopyTo(packet)
+            //let buffer = this.Buffer
+            //let bufferLength = int ms.Length
             //stream.Dispose ()
-
+            //ms.Dispose ()
+            let buffer = packet.Raw
+            let bufferLength = int packet.Length
             match remoteEP with
             | :? UdpEndPoint as remoteEP -> 
 
@@ -292,7 +294,7 @@ type UdpServer (port) =
                         if (this :> IUdpServer).CanForceDataLoss || (dataLossEveryOtherCall && (this :> IUdpServer).CanForceDataLossEveryOtherCall) then
                             0
                         else
-                            this.UdpClient.Send (packet.Raw, int packet.Length, remoteEP.ipEndPoint)
+                            this.UdpClient.Send (buffer, bufferLength, remoteEP.ipEndPoint)
 
                     bytesSentSinceLastCall <- bytesSentSinceLastCall + actualSize
                     dataLossEveryOtherCall <- not dataLossEveryOtherCall
@@ -302,7 +304,7 @@ type UdpServer (port) =
                         if (this :> IUdpServer).CanForceDataLoss || (dataLossEveryOtherCall && (this :> IUdpServer).CanForceDataLossEveryOtherCall) then
                             0
                         else
-                            this.UdpClientV6.Send (packet.Raw, int packet.Length, remoteEP.ipEndPoint)
+                            this.UdpClientV6.Send (buffer, bufferLength, remoteEP.ipEndPoint)
 
                     dataLossEveryOtherCall <- not dataLossEveryOtherCall
                     bytesSentSinceLastCall <- bytesSentSinceLastCall + actualSize

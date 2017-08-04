@@ -428,7 +428,15 @@ type Test() =
 
         let stopwatch2 = System.Diagnostics.Stopwatch.StartNew ()
         server.PublishReliableOrdered data
+        server.Update TimeSpan.Zero
         stopwatch2.Stop ()
+
+        let stopwatch2 = System.Diagnostics.Stopwatch.StartNew ()
+        server.PublishReliableOrdered data
+        server.Update TimeSpan.Zero
+        stopwatch2.Stop ()
+
+        failwithf "%A" stopwatch2.Elapsed.TotalMilliseconds
 
         udpServer.CanForceDataLossEveryOtherCall <- true
 
@@ -436,7 +444,7 @@ type Test() =
         Assert.AreEqual (server.PacketPoolMaxCount, server.PacketPoolCount)
         Assert.AreEqual (client.PacketPoolMaxCount, client.PacketPoolCount)
 
-        server.Update TimeSpan.Zero
+
         Threading.Thread.Sleep 1
         client.Update TimeSpan.Zero
 
