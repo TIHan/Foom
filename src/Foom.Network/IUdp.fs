@@ -1,6 +1,7 @@
 ﻿namespace Foom.Network
 
 open System
+open System.IO
 open System.Runtime.InteropServices
 
 type IUdpEndPoint =
@@ -25,6 +26,8 @@ type IUdpClient =
 
     abstract Receive : byte [] * offset: int * size: int -> int
 
+    abstract Receive : Stream -> int
+
     abstract Send : byte[] * size: int -> int
 
     abstract RemoteEndPoint : IUdpEndPoint
@@ -33,6 +36,8 @@ type IUdpServer =
     inherit IUdp
 
     abstract Receive : byte [] * offset: int * size: int * [<Out>] remoteEP: byref<IUdpEndPoint> -> int
+
+    abstract Receive : Stream * [<Out>] remoteEP: byref<IUdpEndPoint> -> int
 
     abstract Send : byte [] * size: int * IUdpEndPoint -> int
 

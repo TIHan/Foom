@@ -95,44 +95,7 @@ module SendStreamState =
 
             let size = int sendStream.Position - startIndex
 
-            ////
-
-            let previousLength = state.compressedStream.Length
-            let previousPosition = state.compressedStream.Position
-
-            ////
-
-            state.compressedStream.Writer.WriteInt 0
-
-            ////
-
-            let deflateStream = new DeflateStream (state.compressedStream, CompressionMode.Compress)
-            deflateStream.Write (sendStream.Raw, startIndex, size)
-            deflateStream.Dispose ()
-
-            let length = int <| state.compressedStream.Length - previousLength
-
-            ////
-
-            let resetPosition = state.compressedStream.Position
-            state.compressedStream.Position <- previousPosition
-            state.compressedStream.Writer.WriteInt size
-            state.compressedStream.Position <- resetPosition
-
-            ////
-
-            f state.compressedStream.Raw (int previousPosition) length
-            //state.compressedStream.Position <- previousPosition
-            //let compressedReader = ByteReader (state.compressedStream)
-            //let compressLength = compressedReader.ReadInt ()
-
-            //state.sendStream.SetLength (int64 startIndex)
-            //let deflateStream = new DeflateStream (state.compressedStream, CompressionMode.Decompress)
-            //let length2 = deflateStream.Read (state.sendStream.Raw, startIndex, compressLength)
-            //deflateStream.Dispose ()
-            //state.compressedStream.Position <- 0L
-
-            //f state.sendStream.Raw startIndex size
+            f state.sendStream.Raw startIndex size
 
         | _ -> ()
 
@@ -151,24 +114,7 @@ module ReceiveStreamState =
         }
 
     let rec read' (subscriptions : Event<obj> []) (state : ReceiveStreamState) =
-        let recvReader = state.receiveStream.Reader
-
-        let count = state.receiveStream.Reader.ReadInt ()
-
-        state.uncompressedStream.SetLength (int64 count)
-        state.uncompressedStream.Position <- 0L
-
-        let previousPosition = state.receiveStream.Position
-
-        let deflateStream = new DeflateStream (state.receiveStream, CompressionMode.Decompress)
-        let amount = deflateStream.Read (state.uncompressedStream.Raw, 0, count)
-        deflateStream.Dispose ()
-
-        state.receiveStream.Position <- previousPosition + int64 amount
-
-
-
-        let reader = state.uncompressedStream.Reader
+        let reader = state.receiveStream.Reader
         let typeId = reader.ReadByte () |> int
 
         if subscriptions.Length > typeId && typeId >= 0 then
@@ -488,9 +434,8 @@ type Peer (udp : Udp) =
 
             while client.IsDataAvailable do
                 let packet = packetPool.Get ()
-                let byteCount = client.Receive (packet.Raw, 0, packet.Raw.Length)
+                let byteCount = client.Receive (packet.Stream)
                 if byteCount > 0 then
-                    packet.Length <- byteCount
                     this.ReceivePacket (time, packet, client.RemoteEndPoint)
                 else
                     packetPool.Recycle packet
@@ -518,10 +463,9 @@ type Peer (udp : Udp) =
             while server.IsDataAvailable do
                 let packet = packetPool.Get ()
                 let mutable endPoint = Unchecked.defaultof<IUdpEndPoint>
-                let byteCount = server.Receive (packet.Raw, 0, packet.Raw.Length, &endPoint)
+                let byteCount = server.Receive (packet.Stream, &endPoint)
                 // TODO: Check to see if endPoint is banned.
                 if byteCount > 0 then
-                    packet.Length <- byteCount
                     this.ReceivePacket (time, packet, endPoint)
                 else
                     packetPool.Recycle packet

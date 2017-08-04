@@ -31,149 +31,45 @@ type SingleUnion =
 module LitteEndian =
 
     let inline write8 (data: byte []) offset value =
+        let offset = int offset
         data.[offset] <- byte value
 
     let inline write16 (data: byte []) offset value =
+        let offset = int offset
         data.[offset] <- byte value
         data.[offset + 1] <- byte (value >>> 8)
 
     let inline write32 (data: byte []) offset value =
+        let offset = int offset
         data.[offset] <- byte value
         data.[offset + 1] <- byte (value >>> 8)
         data.[offset + 2] <- byte (value >>> 16)
         data.[offset + 3] <- byte (value >>> 24)
 
     let inline read8 (data: byte []) offset =
+        let offset = int offset
         data.[offset]
 
     let inline read16 (data: byte []) offset =
+        let offset = int offset
         (uint16 data.[offset]) |||
         ((uint16 data.[offset + 1]) <<< 8)
 
     let inline read32 (data: byte []) offset =
+        let offset = int offset
         (uint32 data.[offset]) |||
         ((uint32 data.[offset + 1]) <<< 8) |||
         ((uint32 data.[offset + 2]) <<< 16) |||
         ((uint32 data.[offset + 3]) <<< 24)
 
-module private InternalStream =
-
-    let inline checkBounds offset length position =
-        position + offset <= length
-
-    //let inline checkBoundsNoException offset (data: byte []) length position =
-    //    if position + offset >= length then
-    //        false
-    //    else
-    //        true
-
-    let setLength value (data: byte []) (position: byref<int>) (length: byref<int>) =
-        if value > data.Length || value < 0 then
-            failwith "Length cannot be set because it is outside the bounds of the byte array."
-
-        if position > value then
-            position <- value
-
-        length <- value
-
-    let inline setPosition value (data: byte []) length (position: byref<int>) =
-        if value < 0 || value > length then
-            failwith "Position cannot be set because it is greater than or equal to the length."
-
-        position <- value
-
-open InternalStream
-
 type ByteStream (data : byte []) as this =
-    inherit Stream ()
+    inherit MemoryStream (data, true)
 
     let writer = ByteWriter this
     let reader = ByteReader this
 
-    [<DefaultValue>] val mutable length : int
-    [<DefaultValue>] val mutable position : int
-
-    member this.CheckBounds offset = 
-        if checkBounds offset data.Length this.position |> not then
-            failwith "Outside the bounds of the array."
-
-    member this.CheckBoundsLength offset = 
-        if checkBounds offset this.length this.position |> not then
-            failwithf "Outside the bounds of the stream. offset: %A | length: %A | position: %A" offset this.length this.position
-
-    //member this.TryResize offset =
-    //    if not (checkBoundsNoException offset data this.position) then
-    //        let newLength = uint32 data.Length * 2u
-    //        let newLength =
-    //            if newLength < uint32 offset then
-    //                uint32 offset
-    //            else
-    //                newLength
-
-    //        if newLength >= uint32 Int32.MaxValue then
-    //            failwith "Length is bigger than the maximum number of elements in the array"
-
-    //        let newData = Array.zeroCreate (int newLength)
-    //        Array.Copy (data, newData, data.Length)
-    //        data <- newData
-
-    override this.CanWrite = true
-
-    override this.CanRead = true
-
-    override this.CanSeek = true
-
-    override this.Flush () = ()
-
-    override this.SetLength (value : int64) =
-        let value = int value
-        let oldLength = this.length
-        setLength value data &this.position &this.length
-        if oldLength > value then
-            Array.Clear (data, value, oldLength - value)
-
-    override this.Length = int64 this.length
-
-    override this.Position
-        with get () = int64 this.position
-        and set value = setPosition (int value) data this.length &this.position
-
-    override this.Write (bytes, offset, count) =
-        this.CheckBounds count
-
-        for i = offset to count - 1 do
-            data.[this.position] <- bytes.[i]
-            this.position <- this.position + 1
-
-        let len = this.position
-        if len > this.length then
-            this.length <- len
-
-    override this.Read (bytes, offset, count) =
-        let count = 
-            if count > this.length - this.position then
-                this.length - this.position
-            else
-                count
-        this.CheckBoundsLength count
-
-        for i = offset to count - 1 do
-            bytes.[i] <- data.[this.position]
-            this.position <- this.position + 1
-
-        count
-
-    override this.Seek (offset, origin) =
-        let offset = int offset
-        match origin with
-        | SeekOrigin.Begin -> this.position <- 0
-        | SeekOrigin.End -> this.position <- this.length - 1
-        | _ -> ()
-
-        this.CheckBoundsLength offset
-
-        this.position <- this.position + offset
-        int64 this.position
+    do
+        this.SetLength 0L
 
     member this.Raw = data
 
@@ -184,58 +80,58 @@ type ByteStream (data : byte []) as this =
 and [<Sealed>] ByteWriter (byteStream: ByteStream) =
 
     member this.WriteByte (value: byte) =
-        byteStream.CheckBounds 1
+        let len = byteStream.Position + 1L
+        if len > byteStream.Length then
+            byteStream.SetLength len
 
-        LitteEndian.write8 byteStream.Raw byteStream.position value
-        let len = byteStream.position + 1
-        if len > byteStream.length then
-            byteStream.length <- len
-        byteStream.position <- byteStream.position + 1
+        LitteEndian.write8 byteStream.Raw byteStream.Position value
+
+        byteStream.Position <- byteStream.Position + 1L
 
     member this.WriteSByte (value: sbyte) =
-        byteStream.CheckBounds 1
+        let len = byteStream.Position + 1L
+        if len > byteStream.Length then
+            byteStream.SetLength len
 
-        LitteEndian.write8 byteStream.Raw byteStream.position value
-        let len = byteStream.position + 1
-        if len > byteStream.length then
-            byteStream.length <- len
-        byteStream.position <- byteStream.position + 1
+        LitteEndian.write8 byteStream.Raw byteStream.Position value
+
+        byteStream.Position <- byteStream.Position + 1L
 
     member this.WriteInt16 (value: int16) =
-        byteStream.CheckBounds 2
+        let len = byteStream.Position + 2L
+        if len > byteStream.Length then
+            byteStream.SetLength len
 
-        LitteEndian.write16 byteStream.Raw byteStream.position value
-        let len = byteStream.position + 2
-        if len > byteStream.length then
-            byteStream.length <- len
-        byteStream.position <- byteStream.position + 2
+        LitteEndian.write16 byteStream.Raw byteStream.Position value
+
+        byteStream.Position <- byteStream.Position + 2L
 
     member this.WriteUInt16 (value: uint16) =
-        byteStream.CheckBounds 2
+        let len = byteStream.Position + 2L
+        if len > byteStream.Length then
+            byteStream.SetLength  len
 
-        LitteEndian.write16 byteStream.Raw byteStream.position value
-        let len = byteStream.position + 2
-        if len > byteStream.length then
-            byteStream.length <- len
-        byteStream.position <- byteStream.position + 2
+        LitteEndian.write16 byteStream.Raw byteStream.Position value
+
+        byteStream.Position <- byteStream.Position + 2L
 
     member this.WriteInt (value: int) =
-        byteStream.CheckBounds 4
+        let len = byteStream.Position + 4L
+        if len > byteStream.Length then
+            byteStream.SetLength  len
 
-        LitteEndian.write32 byteStream.Raw byteStream.position value
-        let len = byteStream.position + 4
-        if len > byteStream.length then
-            byteStream.length <- len
-        byteStream.position <- byteStream.position + 4
+        LitteEndian.write32 byteStream.Raw byteStream.Position value
+
+        byteStream.Position <- byteStream.Position + 4L
 
     member this.WriteUInt32 (value: uint32) =
-        byteStream.CheckBounds 4
+        let len = byteStream.Position + 4L
+        if len > byteStream.Length then
+            byteStream.SetLength len
 
-        LitteEndian.write32 byteStream.Raw byteStream.position value
-        let len = byteStream.position + 4
-        if len > byteStream.length then
-            byteStream.length <- len
-        byteStream.position <- byteStream.position + 4
+        LitteEndian.write32 byteStream.Raw byteStream.Position value
+
+        byteStream.Position <- byteStream.Position + 4L
 
     member this.WriteSingle (value: single) =
         let mutable s = SingleUnion ()
@@ -243,102 +139,92 @@ and [<Sealed>] ByteWriter (byteStream: ByteStream) =
         this.WriteUInt32 (s.Value)
 
     member this.WriteBytes (bytes: byte []) =
-        byteStream.CheckBounds bytes.Length
+        let len = byteStream.Position + int64 bytes.Length
+        if len > byteStream.Length then
+            byteStream.SetLength len
 
-        Buffer.BlockCopy (bytes, 0, byteStream.Raw, byteStream.position, bytes.Length)
-        let len = byteStream.position + bytes.Length
-        if len > byteStream.length then
-            byteStream.length <- len
-        byteStream.position <- byteStream.position + bytes.Length
+        Buffer.BlockCopy (bytes, 0, byteStream.Raw, int byteStream.Position, bytes.Length)
+
+        byteStream.Position <- byteStream.Position + int64 bytes.Length
 
     member this.WriteRawBytes (bytes: byte [], startIndex, size) =
-        byteStream.CheckBounds size
+        let len = byteStream.Position + int64 size
+        if len > byteStream.Length then
+            byteStream.SetLength len
 
-        Buffer.BlockCopy (bytes, startIndex, byteStream.Raw, byteStream.position, size)
-        let len = byteStream.position + size
-        if len > byteStream.length then
-            byteStream.length <- len
-        byteStream.position <- byteStream.position + size
+        Buffer.BlockCopy (bytes, startIndex, byteStream.Raw, int byteStream.Position, size)
+
+        byteStream.Position <- byteStream.Position + int64 size
 
     member this.WriteInts (values: int [], startIndex, size) =
         this.WriteInt size
         let size = size * 4
 
-        Buffer.BlockCopy (values, startIndex, byteStream.Raw, byteStream.position, size)
-        let len = byteStream.position + size
-        if len > byteStream.length then
-            byteStream.length <- len
-        byteStream.position <- byteStream.position + size
+        let len = byteStream.Position + int64 size
+        if len > byteStream.Length then
+            byteStream.SetLength len
+
+        Buffer.BlockCopy (values, startIndex, byteStream.Raw, int byteStream.Position, size)
+
+        byteStream.Position <- byteStream.Position + int64 size
 
     member this.Write<'T when 'T : unmanaged> (value: 'T) =
         let mutable value = value
         let size = sizeof<'T>
 
-        byteStream.CheckBounds size
-
         let ptr = &&value |> NativePtr.toNativeInt
 
-        Marshal.Copy (ptr, byteStream.Raw, byteStream.position, size)
-        let len = byteStream.position + size
-        if len > byteStream.length then
-            byteStream.length <- len
-        byteStream.position <- byteStream.position + size
+        let len = byteStream.Position + int64 size
+        if len > byteStream.Length then
+            byteStream.SetLength len
+
+        Marshal.Copy (ptr, byteStream.Raw, int byteStream.Position, size)
+
+        byteStream.Position <- byteStream.Position + int64 size
 
     member this.Write<'T when 'T : unmanaged> (value: byref<'T>) =
         let size = sizeof<'T>
 
-        byteStream.CheckBounds size
-
         let ptr = &&value |> NativePtr.toNativeInt
 
-        Marshal.Copy (ptr, byteStream.Raw, byteStream.position, size)
-        let len = byteStream.position + size
-        if len > byteStream.length then
-            byteStream.length <- len
-        byteStream.position <- byteStream.position + size
+        let len = byteStream.Position + int64 size
+        if len > byteStream.Length then
+            byteStream.SetLength len
+
+        Marshal.Copy (ptr, byteStream.Raw, int byteStream.Position, size)
+
+        byteStream.Position <- byteStream.Position + int64 size
 
 and [<Sealed>] ByteReader (byteStream: ByteStream) =
 
     member this.ReadByte () : byte =
-        byteStream.CheckBoundsLength 1
-
-        let value = LitteEndian.read8 byteStream.Raw byteStream.position |> byte
-        byteStream.position <- byteStream.position + 1
+        let value = LitteEndian.read8 byteStream.Raw byteStream.Position |> byte
+        byteStream.Position <- byteStream.Position + 1L
         value
 
     member this.ReadSByte () : sbyte =
-        byteStream.CheckBoundsLength 1
-
-        let value = LitteEndian.read8 byteStream.Raw byteStream.position |> sbyte
-        byteStream.position <- byteStream.position + 1
+        let value = LitteEndian.read8 byteStream.Raw byteStream.Position |> sbyte
+        byteStream.Position <- byteStream.Position + 1L
         value
 
     member this.ReadInt16 () : int16 =
-        byteStream.CheckBoundsLength 2
-
-        let value = LitteEndian.read16 byteStream.Raw byteStream.position |> int16
-        byteStream.position <- byteStream.position + 2
+        let value = LitteEndian.read16 byteStream.Raw byteStream.Position |> int16
+        byteStream.Position <- byteStream.Position + 2L
         value
 
     member this.ReadUInt16 () : uint16 =
-        byteStream.CheckBoundsLength 2
-
-        let value = LitteEndian.read16 byteStream.Raw byteStream.position |> uint16
-        byteStream.position <- byteStream.position + 2
+        let value = LitteEndian.read16 byteStream.Raw byteStream.Position |> uint16
+        byteStream.Position <- byteStream.Position + 2L
         value
 
     member this.ReadInt () : int =
-        byteStream.CheckBoundsLength 4
-
-        let value = LitteEndian.read32 byteStream.Raw byteStream.position |> int
-        byteStream.position <- byteStream.position + 4
+        let value = LitteEndian.read32 byteStream.Raw byteStream.Position |> int
+        byteStream.Position <- byteStream.Position + 4L
         value
 
     member this.ReadUInt32 () : uint32 =
-        byteStream.CheckBoundsLength 4
-
-        let value = LitteEndian.read32 byteStream.Raw byteStream.position |> uint32
-        byteStream.position <- byteStream.position + 4
+        let value = LitteEndian.read32 byteStream.Raw byteStream.Position |> uint32
+        byteStream.Position <- byteStream.Position + 4L
         value
 
     member this.ReadSingle () : single =
@@ -350,22 +236,17 @@ and [<Sealed>] ByteReader (byteStream: ByteStream) =
     member this.Read<'T when 'T : unmanaged> () : 'T =
         let size = sizeof<'T>
 
-        byteStream.CheckBoundsLength size
-
         let mutable value = Unchecked.defaultof<'T>
         let ptr = &&value |> NativePtr.toNativeInt
-        Marshal.Copy (byteStream.Raw, byteStream.position, ptr, size)
-        byteStream.position <- byteStream.position + size
+        Marshal.Copy (byteStream.Raw, int byteStream.Position, ptr, size)
+        byteStream.Position <- byteStream.Position + int64 size
         value
 
     member this.Read<'T when 'T : unmanaged> (value: byref<'T>) =
         let size = sizeof<'T>
-
-        byteStream.CheckBoundsLength size
-
         let ptr = &&value |> NativePtr.toNativeInt
-        Marshal.Copy (byteStream.Raw, byteStream.position, ptr, size)
-        byteStream.position <- byteStream.position + size
+        Marshal.Copy (byteStream.Raw, int byteStream.Position, ptr, size)
+        byteStream.Position <- byteStream.Position + int64 size
 
     member this.ReadInts (buffer: int []) =
         let len = this.ReadInt ()
@@ -374,14 +255,11 @@ and [<Sealed>] ByteReader (byteStream: ByteStream) =
             failwith "Buffer is too small for reading an array of ints."
 
         let size = len * 4
-
-        byteStream.CheckBoundsLength size
-
-        Buffer.BlockCopy (byteStream.Raw, byteStream.position, buffer, 0, size)
-        byteStream.position <- byteStream.position + size
+        Buffer.BlockCopy (byteStream.Raw, int byteStream.Position, buffer, 0, size)
+        byteStream.Position <- byteStream.Position + int64 size
         len
 
-    member this.IsEndOfStream = byteStream.position = byteStream.length
+    member this.IsEndOfStream = byteStream.Position = byteStream.Length
 
-    member this.Position = byteStream.position
+    member this.Position = byteStream.Position
     

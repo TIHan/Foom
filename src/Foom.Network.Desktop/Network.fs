@@ -32,6 +32,8 @@ type Udp =
 
     val UdpClientV6 : UdpClient
 
+    val Buffer : byte []
+
     val mutable receiveBufferSize : int
 
     val mutable sendBufferSize : int
@@ -51,6 +53,7 @@ type Udp =
         { 
             UdpClient = udpClient
             UdpClientV6 = udpClientV6
+            Buffer = Array.zeroCreate 65536
             receiveBufferSize = UdpConstants.DefaultReceiveBufferSize
             sendBufferSize = UdpConstants.DefaultSendBufferSize
         }
@@ -70,6 +73,7 @@ type Udp =
         { 
             UdpClient = udpClient
             UdpClientV6 = udpClientV6
+            Buffer = Array.zeroCreate 65536
             receiveBufferSize = UdpConstants.DefaultReceiveBufferSize
             sendBufferSize = UdpConstants.DefaultSendBufferSize
         }
@@ -178,6 +182,12 @@ type UdpClient () =
 
             else 0
 
+        member this.Receive (stream : Stream) =
+            let byteCount = (this :> IUdpClient).Receive (this.Buffer, 0, this.Buffer.Length)
+            if byteCount > 0 then
+                stream.Position <- 0L
+                stream.Write (this.Buffer, 0, byteCount)
+            byteCount
 
         member this.Send (buffer, size) =
             if not isConnected then
@@ -254,6 +264,13 @@ type UdpServer (port) =
                 else
                     0
             | _ -> 0
+
+        member this.Receive (stream : Stream, endPoint) =
+            let byteCount = (this :> IUdpServer).Receive (this.Buffer, 0, this.Buffer.Length, &endPoint)
+            if byteCount > 0 then
+                stream.Position <- 0L
+                stream.Write (this.Buffer, 0, byteCount)
+            byteCount
 
         member this.BytesSentSinceLastCall () =
             let count = bytesSentSinceLastCall

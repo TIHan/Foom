@@ -119,9 +119,11 @@ type Packet () =
 
     member this.Reader = byteReader
 
+    member this.Stream = byteStream
+
     member this.CopyTo (packet : Packet) =
-        Buffer.BlockCopy (this.Raw, 0, packet.Raw, 0, this.Length)
         packet.Length <- this.Length
+        Buffer.BlockCopy (this.Raw, 0, packet.Raw, 0, this.Length)
 
     member this.ReadAcks f =
         let originalPos = byteStream.Position
