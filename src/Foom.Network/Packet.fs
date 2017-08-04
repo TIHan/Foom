@@ -56,46 +56,16 @@ type Packet () as this =
         and set (value : PacketType) = this.Raw.[0] <- byte value
 
     member this.SequenceId 
-        with get () =
-            let originalPos = this.Position
-            this.Position <- 1L
-            let value = this.Reader.ReadUInt16 ()
-            this.Position <- originalPos
-            value
-
-        and set value =
-           let originalPos = this.Position
-           this.Position <- 1L
-           this.Writer.WriteUInt16 value
-           this.Position <- originalPos
+        with get () = LitteEndian.read16 this.Raw 1
+        and set (value : uint16) = LitteEndian.write16 this.Raw 1 value
 
     member this.FragmentId 
-        with get () =
-            let originalPos = this.Position
-            this.Position <- 3L
-            let value = this.Reader.ReadByte ()
-            this.Position <- originalPos
-            value
-
-        and set value =
-           let originalPos = this.Position
-           this.Position <- 3L
-           this.Writer.WriteByte value
-           this.Position <- originalPos
+        with get () = LitteEndian.read8 this.Raw 3
+        and set (value : byte) = LitteEndian.write8 this.Raw 3 value
 
     member this.FragmentCount
-        with get () =
-            let originalPos = this.Position
-            this.Position <- 4L
-            let value = this.Reader.ReadByte ()
-            this.Position <- originalPos
-            value
-
-        and set value =
-           let originalPos = this.Position
-           this.Position <- 4L
-           this.Writer.WriteByte value
-           this.Position <- originalPos
+        with get () = LitteEndian.read8 this.Raw 4
+        and set (value : byte) = LitteEndian.write8 this.Raw 4 value
 
     member this.Reset () =
         this.SetLength 0L
