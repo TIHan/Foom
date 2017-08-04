@@ -30,6 +30,6 @@ let RegisterType<'T> (serialize: 'T -> ByteWriter -> unit, deserialize: 'T -> By
     typeArray.Add pickler
 
 let FindTypeById id =
-    if id >= typeArray.Count + 1 then
+    if id >= typeArray.Count + 1 || id <= 0 then
         failwithf "oh shit %A" id
     typeArray.[id - 1]

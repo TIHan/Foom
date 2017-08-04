@@ -1,6 +1,7 @@
 ﻿namespace Foom.Network
 
 open System
+open System.IO
 open System.Collections.Generic
 open System.IO.Compression
 
@@ -95,7 +96,19 @@ module SendStreamState =
 
             let size = int sendStream.Position - startIndex
 
-            f state.sendStream.Raw startIndex size
+            let previousPosition = state.compressedStream.Position
+            let previousLength = state.compressedStream.Length
+
+            state.compressedStream.Writer.WriteInt size
+
+            sendStream.Position <- int64 startIndex
+            let deflateStream = new DeflateStream(state.compressedStream, CompressionMode.Compress, true)
+            sendStream.CopyTo (deflateStream, size)
+            deflateStream.Dispose ()
+
+            let size = state.compressedStream.Length - previousLength
+
+            f state.compressedStream.Raw (int previousPosition) (int size)
 
         | _ -> ()
 
@@ -114,7 +127,17 @@ module ReceiveStreamState =
         }
 
     let rec read' (subscriptions : Event<obj> []) (state : ReceiveStreamState) =
-        let reader = state.receiveStream.Reader
+
+        let size = state.receiveStream.Reader.ReadInt ()
+
+        let deflateStream = new DeflateStream(state.receiveStream, CompressionMode.Decompress, true)
+        deflateStream.CopyTo(state.uncompressedStream, size)
+        deflateStream.Dispose ()
+        state.uncompressedStream.Position <- 0L
+
+        failwithf "%A" state.receiveStream.Position
+
+        let reader = state.uncompressedStream.Reader
         let typeId = reader.ReadByte () |> int
 
         if subscriptions.Length > typeId && typeId >= 0 then
