@@ -214,16 +214,16 @@ type UdpClient () =
 
             let byteCount = (this :> IUdpClient).Receive (this.Buffer, 0, this.Buffer.Length)
             if byteCount > 0 then
-                packet.Write (this.Buffer, 0, byteCount)
-                //use decryptor = this.Aes.CreateDecryptor ()
-                //let ms = new MemoryStream (this.Buffer, 0, byteCount)
-                //let stream = new CryptoStream(ms, decryptor, CryptoStreamMode.Read)
-                //stream.CopyTo (packet)
+                //packet.Write (this.Buffer, 0, byteCount)
+                use decryptor = this.Aes.CreateDecryptor ()
+                let ms = new MemoryStream (this.Buffer, 0, byteCount)
+                let stream = new CryptoStream(ms, decryptor, CryptoStreamMode.Read)
+                stream.CopyTo (packet)
 
-                //stream.Dispose ()
-                //ms.Dispose ()
+                stream.Dispose ()
+                ms.Dispose ()
 
-           // packet.Position <- 0L
+            packet.Position <- 0L
             byteCount
 
         member this.Send (packet) =
@@ -273,19 +273,18 @@ type UdpServer (port) =
 
         member this.Send (packet : Packet, remoteEP) =
 
-            //use encryptor = this.Aes.CreateEncryptor ()
-            //let ms = new MemoryStream (this.Buffer)
-            //ms.SetLength 0L
-            //let stream = new CryptoStream(ms, encryptor, CryptoStreamMode.Write)
-            //packet.WriteTo(stream)
-            //stream.FlushFinalBlock ()
+            use encryptor = this.Aes.CreateEncryptor ()
+            use ms = new MemoryStream (this.Buffer)
+            ms.SetLength 0L
+            use stream = new CryptoStream(ms, encryptor, CryptoStreamMode.Write)
+            packet.WriteTo(stream)
+            stream.FlushFinalBlock ()
 
-            //let buffer = this.Buffer
-            //let bufferLength = int ms.Length
-            //stream.Dispose ()
-            //ms.Dispose ()
-            let buffer = packet.Raw
-            let bufferLength = int packet.Length
+            let buffer = this.Buffer
+            let bufferLength = int ms.Length
+
+            //let buffer = packet.Raw
+            //let bufferLength = int packet.Length
             match remoteEP with
             | :? UdpEndPoint as remoteEP -> 
 

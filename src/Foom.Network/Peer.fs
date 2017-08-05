@@ -96,29 +96,29 @@ module SendStreamState =
 
             let size = int sendStream.Position - startIndex
 
-            f state.sendStream.Raw startIndex (int size)
+           // f state.sendStream.Raw startIndex (int size)
 
-            //let previousPosition = state.compressedStream.Position
-            //let previousLength = state.compressedStream.Length
+            let previousPosition = state.compressedStream.Position
+            let previousLength = state.compressedStream.Length
 
-            //state.compressedStream.Writer.WriteInt 0
+            state.compressedStream.Writer.WriteInt 0
 
-            //let compressionPosition = state.compressedStream.Position
+            let compressionPosition = state.compressedStream.Position
 
-            //sendStream.Position <- int64 startIndex
-            //let deflateStream = new DeflateStream(state.compressedStream, CompressionLevel.Optimal, true)
-            //sendStream.CopyTo (deflateStream, size)
-            //deflateStream.Dispose ()
+            sendStream.Position <- int64 startIndex
+            let deflateStream = new DeflateStream(state.compressedStream, CompressionLevel.Optimal, true)
+            sendStream.CopyTo (deflateStream, size)
+            deflateStream.Dispose ()
 
-            //let pos = state.compressedStream.Position
-            //state.compressedStream.Position <- previousPosition
-            //state.compressedStream.Writer.WriteInt (int state.compressedStream.Length - int compressionPosition)
-            //state.compressedStream.Position <- pos
+            let pos = state.compressedStream.Position
+            state.compressedStream.Position <- previousPosition
+            state.compressedStream.Writer.WriteInt (int state.compressedStream.Length - int compressionPosition)
+            state.compressedStream.Position <- pos
 
-            //let size = state.compressedStream.Length - previousLength
+            let size = state.compressedStream.Length - previousLength
 
 
-            //f state.compressedStream.Raw (int previousPosition) (int size)
+            f state.compressedStream.Raw (int previousPosition) (int size)
 
         | _ -> ()
 
@@ -138,22 +138,22 @@ module ReceiveStreamState =
 
     let rec read' (subscriptions : Event<obj> []) (state : ReceiveStreamState) =
 
-        //let size = state.receiveStream.Reader.ReadInt ()
-        //let oldPos = state.receiveStream.Position
-        ////let ms = new MemoryStream (state.receiveStream.Raw, state.receiveStream.Position,)
-        //state.uncompressedStream.Position <- 0L
-        //let deflateStream = new DeflateStream(state.receiveStream, CompressionMode.Decompress, true)
-        //let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
-        //deflateStream.CopyTo(state.uncompressedStream, size)
-        //stopwatch.Stop ()
-        //deflateStream.Dispose ()
-        //state.receiveStream.Position <- oldPos + int64 size
-        //state.uncompressedStream.Position <- 0L
+        let size = state.receiveStream.Reader.ReadInt ()
+        let oldPos = state.receiveStream.Position
+        //let ms = new MemoryStream (state.receiveStream.Raw, state.receiveStream.Position,)
+        state.uncompressedStream.Position <- 0L
+        let deflateStream = new DeflateStream(state.receiveStream, CompressionMode.Decompress, true)
+        let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
+        deflateStream.CopyTo(state.uncompressedStream, size)
+        stopwatch.Stop ()
+        deflateStream.Dispose ()
+        state.receiveStream.Position <- oldPos + int64 size
+        state.uncompressedStream.Position <- 0L
 
 
 
-        //let reader = state.uncompressedStream.Reader
-        let reader = state.receiveStream.Reader
+        let reader = state.uncompressedStream.Reader
+        //let reader = state.receiveStream.Reader
         let typeId = reader.ReadByte () |> int
 
         if subscriptions.Length > typeId && typeId >= 0 then
