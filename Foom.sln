@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.10
+VisualStudioVersion = 15.0.26430.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{3D3330CA-D4E4-4B52-A1A0-2DE435C22A4A}"
 	ProjectSection(SolutionItems) = preProject
@@ -87,6 +87,8 @@ EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Game.Doom.Entities", "src\Foom.Game.Doom.Entities\Foom.Game.Doom.Entities.fsproj", "{CF95D6F5-5C58-4581-BBE2-436728979686}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Ferop.Runner", "src\Ferop\src\Ferop.Runner\Ferop.Runner.fsproj", "{874CD71A-CF34-4091-80C3-4D68B30D23FF}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Network.PerformanceTests", "src\Foom.Network.PerformanceTests\Foom.Network.PerformanceTests.fsproj", "{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -782,6 +784,26 @@ Global
 		{874CD71A-CF34-4091-80C3-4D68B30D23FF}.Release|x64.Build.0 = Release|Any CPU
 		{874CD71A-CF34-4091-80C3-4D68B30D23FF}.Release|x86.ActiveCfg = Release|Any CPU
 		{874CD71A-CF34-4091-80C3-4D68B30D23FF}.Release|x86.Build.0 = Release|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Debug|iPhone.ActiveCfg = Debug|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Debug|iPhone.Build.0 = Debug|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Debug|iPhoneSimulator.ActiveCfg = Debug|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Debug|iPhoneSimulator.Build.0 = Debug|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Debug|x64.Build.0 = Debug|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Debug|x86.Build.0 = Debug|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Release|iPhone.ActiveCfg = Release|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Release|iPhone.Build.0 = Release|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Release|iPhoneSimulator.ActiveCfg = Release|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Release|iPhoneSimulator.Build.0 = Release|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Release|x64.ActiveCfg = Release|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Release|x64.Build.0 = Release|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Release|x86.ActiveCfg = Release|Any CPU
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -818,5 +840,6 @@ Global
 		{FC68760A-CBBD-43B7-AE3E-7C0E527B6FDC} = {9BA39791-B2A4-490D-87CF-97DF1F5197F0}
 		{CF95D6F5-5C58-4581-BBE2-436728979686} = {589C1D05-F7CE-4D3F-982B-2B9AF8C277DB}
 		{874CD71A-CF34-4091-80C3-4D68B30D23FF} = {9BA39791-B2A4-490D-87CF-97DF1F5197F0}
+		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE} = {0ADD6B56-B5B6-4938-B2E8-3B9F8ED6D978}
 	EndGlobalSection
 EndGlobal
