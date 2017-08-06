@@ -122,8 +122,7 @@ let main argv =
             server.PublishReliableOrdered data
             server.Update stopwatch.Elapsed
         )
-
-        Threading.Thread.Sleep 1000
+        Threading.Thread.Sleep 10
 
         perf "Client Receive" (fun () ->
             client.Update stopwatch.Elapsed
