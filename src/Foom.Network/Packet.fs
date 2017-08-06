@@ -3,6 +3,13 @@
 open System
 open System.Collections.Generic
 
+type INetworkEncryption =
+    inherit IDisposable
+
+    abstract Compress : bytes : byte [] * offset : int * count : int * output : byte [] * outputOffset : int * outputMaxCount : int -> int
+
+    abstract Decompress : bytes : byte [] * offset : int * count : int * output : byte [] * outputOffset : int * outputMaxCount : int -> int
+
 type PacketType =
 
     | Unreliable = 0uy

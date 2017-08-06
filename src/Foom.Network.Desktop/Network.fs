@@ -8,6 +8,36 @@ open System.Net.Sockets
 open System.Collections.Generic
 open System.Runtime.InteropServices
 
+type AesCompression () =
+
+    let aes = new AesCryptoServiceProvider ()
+
+    do
+        aes.Key <- Array.zeroCreate 16
+        aes.IV <- Array.zeroCreate 16
+        aes.Mode <- CipherMode.CBC
+        aes.Padding <- PaddingMode.PKCS7
+
+    interface INetworkEncryption with
+
+        member this.Compress (bytes, offset, count, output, outputOffset, outputMaxCount) =
+            use encryptor = aes.CreateEncryptor ()
+            use outputStream = new MemoryStream (output, outputOffset, outputMaxCount)
+            use stream = new CryptoStream(outputStream, encryptor, CryptoStreamMode.Write)
+            outputStream.Write (bytes, offset, count)
+            int stream.Length
+
+        member this.Decompress (bytes, offset, count, output, outputOffset, outputMaxCount) =
+            use decryptor = aes.CreateDecryptor ()
+            use inputStream = new MemoryStream (bytes, offset, count)
+            use stream = new CryptoStream(inputStream, decryptor, CryptoStreamMode.Read)
+            stream.Read (output, outputOffset, outputMaxCount)
+
+    interface IDisposable with
+
+        member this.Dispose () =
+            aes.Dispose ()
+
 type UdpEndPoint =
     {
         ipEndPoint : IPEndPoint
@@ -273,12 +303,14 @@ type UdpServer (port) =
 
         member this.Send (packet : Packet, remoteEP) =
 
+            let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
             use encryptor = this.Aes.CreateEncryptor ()
             use ms = new MemoryStream (this.Buffer)
             ms.SetLength 0L
             use stream = new CryptoStream(ms, encryptor, CryptoStreamMode.Write)
             packet.WriteTo(stream)
             stream.FlushFinalBlock ()
+            stopwatch.Stop ()
 
             let buffer = this.Buffer
             let bufferLength = int ms.Length

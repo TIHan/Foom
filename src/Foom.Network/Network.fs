@@ -1,6 +1,7 @@
 ﻿module Foom.Network.Network
 
 open System
+open System.IO
 open System.Collections.Generic
 open System.Reflection
 
