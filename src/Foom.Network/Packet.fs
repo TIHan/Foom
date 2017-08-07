@@ -10,6 +10,13 @@ type INetworkEncryption =
 
     abstract Decrypt : bytes : byte [] * offset : int * count : int * output : byte [] * outputOffset : int * outputMaxCount : int -> int
 
+type INetworkCompression =
+    inherit IDisposable
+
+    abstract Compress : bytes : byte [] * offset : int * count : int * output : byte [] * outputOffset : int * outputMaxCount : int -> int
+
+    abstract Decompress : bytes : byte [] * offset : int * count : int * output : byte [] * outputOffset : int * outputMaxCount : int -> int
+
 type PacketType =
 
     | Unreliable = 0uy

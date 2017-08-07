@@ -88,13 +88,13 @@ let main argv =
     use udpClient = new UdpClient () :> IUdpClient
     use udpServer = new UdpServer (29015) :> IUdpServer
 
-    let client = Client (udpClient)
+    let client = Client (udpClient, new DeflateCompression ())
     let mutable value = 0
     client.Subscribe<TestMessage> (fun msg ->
         value <- msg.b
     )
 
-    let server = Server (udpServer)
+    let server = Server (udpServer, new DeflateCompression ())
 
     client.Connect ("127.0.0.1", 29015)
 

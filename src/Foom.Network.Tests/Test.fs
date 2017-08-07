@@ -83,6 +83,8 @@ type TestMessage3 =
 [<TestFixture>]
 type Test() = 
 
+    let deflateCompression = new DeflateCompression ()
+
     do
         Network.RegisterType (TestMessage.Serialize, TestMessage.Deserialize, TestMessage.Ctor)
         Network.RegisterType (TestMessage2.Serialize, TestMessage2.Deserialize, TestMessage2.Ctor)
@@ -216,9 +218,9 @@ type Test() =
         use udpClientV6 = new UdpClient () :> IUdpClient
         use udpServer = new UdpServer (29015) :> IUdpServer
 
-        let client = Client (udpClient)
-        let clientV6 = Client (udpClientV6)
-        let server = Server (udpServer)
+        let client = Client (udpClient, deflateCompression)
+        let clientV6 = Client (udpClientV6, deflateCompression)
+        let server = Server (udpServer, deflateCompression)
 
         let mutable isConnected = false
         let mutable isIpv6Connected = false
@@ -341,14 +343,14 @@ type Test() =
         use udpClient = new UdpClient () :> IUdpClient
         use udpServer = new UdpServer (29015) :> IUdpServer
 
-        let client = Client (udpClient)
+        let client = Client (udpClient, deflateCompression)
         let mutable value = 0
         client.Subscribe<TestMessage> (fun msg ->
             value <- msg.b
         )
 
 
-        let server = Server (udpServer)
+        let server = Server (udpServer, deflateCompression)
 
         client.Connect ("127.0.0.1", 29015)
 
@@ -431,13 +433,13 @@ type Test() =
         use udpClient = new UdpClient () :> IUdpClient
         use udpServer = new UdpServer (29015) :> IUdpServer
 
-        let client = Client (udpClient)
+        let client = Client (udpClient, deflateCompression)
         let mutable value = 0
         client.Subscribe<TestMessage> (fun msg ->
             value <- msg.b
         )
 
-        let server = Server (udpServer)
+        let server = Server (udpServer, deflateCompression)
 
         client.Connect ("127.0.0.1", 29015)
 
@@ -516,8 +518,8 @@ type Test() =
         use udpClient = new UdpClient () :> IUdpClient
         use udpServer = new UdpServer (29015) :> IUdpServer
 
-        let client = Client (udpClient)
-        let server = Server (udpServer)
+        let client = Client (udpClient, deflateCompression)
+        let server = Server (udpServer, deflateCompression)
 
         client.Connect ("127.0.0.1", 29015)
 

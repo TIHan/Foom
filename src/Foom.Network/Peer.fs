@@ -70,14 +70,16 @@ module BasicChannelState =
 
 type SendStreamState =
     {
+        compression : INetworkCompression
         sendStream :    ByteStream
         compressedStream : ByteStream
     }
 
 module SendStreamState =
 
-    let create () =
+    let create compression =
         {
+            compression = compression
             sendStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
             compressedStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
         }
@@ -124,14 +126,16 @@ module SendStreamState =
 
 type ReceiveStreamState =
     {
+        compression : INetworkCompression
         receiveStream : ByteStream
         uncompressedStream : ByteStream
     }
 
 module ReceiveStreamState =
 
-    let create () =
+    let create compression =
         {
+            compression = compression
             receiveStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
             uncompressedStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
         }
@@ -191,11 +195,11 @@ type ClientState =
 
 module ClientState =
 
-    let create (udpClient : IUdpClient) connectionTimeout =
+    let create (udpClient : IUdpClient) connectionTimeout compression =
 
         let packetPool = PacketPool 1024
-        let sendStreamState = SendStreamState.create ()
-        let receiveStreamState = ReceiveStreamState.create ()
+        let sendStreamState = SendStreamState.create compression
+        let receiveStreamState = ReceiveStreamState.create compression
 
         let basicChannelState =
             BasicChannelState.create packetPool
@@ -263,11 +267,11 @@ type ConnectedClientState =
 
 module ConnectedClientState =
 
-    let create (udpServer : IUdpServer) endPoint heartbeatInterval time =
+    let create (udpServer : IUdpServer) endPoint heartbeatInterval time compression =
 
         let packetPool = PacketPool 1024
-        let sendStreamState = SendStreamState.create ()
-        let receiveStreamState = ReceiveStreamState.create ()
+        let sendStreamState = SendStreamState.create compression
+        let receiveStreamState = ReceiveStreamState.create compression
 
         let basicChannelState =
             BasicChannelState.create packetPool
@@ -317,10 +321,10 @@ type ServerState =
 
 module ServerState =
 
-    let create udpServer connectionTimeout =
+    let create udpServer connectionTimeout compression =
 
         let packetPool = PacketPool 1024
-        let sendStreamState = SendStreamState.create ()
+        let sendStreamState = SendStreamState.create compression
 
         {
             packetPool = packetPool
@@ -336,7 +340,7 @@ module ServerState =
     let receive time (packet : Packet) endPoint state =
         match packet.Type with
         | PacketType.ConnectionRequested ->
-            let ccState = ConnectedClientState.create state.udpServer endPoint (TimeSpan.FromSeconds 1.) time
+            let ccState = ConnectedClientState.create state.udpServer endPoint (TimeSpan.FromSeconds 1.) time state.sendStreamState.compression
 
             state.peerLookup.Add (endPoint, ccState)
 
@@ -558,8 +562,8 @@ type Peer (udp : Udp) =
             | Udp.Client state -> state.udpClient.Dispose ()
             | Udp.Server state-> state.udpServer.Dispose ()
 
-type ServerPeer (udpServer, connectionTimeout) =
-    inherit Peer (Udp.Server (ServerState.create udpServer connectionTimeout))
+type ServerPeer (udpServer, connectionTimeout, compression) =
+    inherit Peer (Udp.Server (ServerState.create udpServer connectionTimeout compression))
 
     member this.ClientConnected =
         match this.Udp with
@@ -581,8 +585,8 @@ type ServerPeer (udpServer, connectionTimeout) =
         | Udp.Server server -> server.peerLookup |> Seq.sumBy (fun pair1 -> pair1.Value.packetPool.Count)
         | _ -> failwith "nope"
 
-type ClientPeer (udpClient) =
-    inherit Peer (Udp.Client (ClientState.create udpClient (TimeSpan.FromSeconds 5.)))
+type ClientPeer (udpClient, compression) =
+    inherit Peer (Udp.Client (ClientState.create udpClient (TimeSpan.FromSeconds 5.) compression))
 
     member this.Connected =
         match this.Udp with
