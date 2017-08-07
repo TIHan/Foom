@@ -179,6 +179,34 @@ type Test() =
         )
 
     [<Test>]
+    member this.TestWritingBits () : unit =
+
+        let byteStream = new ByteStream (Array.zeroCreate 1024)
+
+        let x = 163uy
+
+        byteStream.Writer.WriteByte x
+        byteStream.Position <- 0L
+
+        let y = byteStream.Reader.ReadByte ()
+
+        Assert.AreEqual (x, y)
+
+        byteStream.SetLength 0L
+
+        byteStream.Writer.WriteBit true
+        byteStream.Writer.WriteByte x
+        byteStream.Position <- 0L
+        byteStream.BitOffset <- 0
+        
+        let bit = byteStream.Reader.ReadBit ()
+        let y = byteStream.Reader.ReadByte ()
+
+        Assert.AreEqual (true, bit)
+        Assert.AreEqual (x, y)
+
+
+    [<Test>]
     member this.ClientAndServerWorks () : unit =
         use udpClient = new UdpClient () :> IUdpClient
         use udpClientV6 = new UdpClient () :> IUdpClient

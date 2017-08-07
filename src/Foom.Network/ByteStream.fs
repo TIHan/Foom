@@ -30,9 +30,12 @@ type SingleUnion =
 
 module LitteEndian =
 
-    let inline write8 (data: byte []) offset value =
+    let inline write8 (data: byte []) offset bitOffset value =
         let offset = int offset
-        data.[offset] <- byte value
+        if bitOffset = 0 then
+            data.[offset] <- byte value
+        else
+            data.[offset] <- data.[offset] ||| (byte value >>> bitOffset)
 
     let inline write16 (data: byte []) offset value =
         let offset = int offset
@@ -77,14 +80,19 @@ type ByteStream (data : byte []) as this =
 
     member this.Reader = reader
 
+    member val BitOffset = 0 with get, set
+
 and [<Sealed>] ByteWriter (byteStream: ByteStream) =
+
+    member this.WriteBit (value : bool) =
+        ()
 
     member this.WriteByte (value: byte) =
         let len = byteStream.Position + 1L
         if len > byteStream.Length then
             byteStream.SetLength len
 
-        LitteEndian.write8 byteStream.Raw byteStream.Position value
+        LitteEndian.write8 byteStream.Raw byteStream.Position byteStream.BitOffset value
 
         byteStream.Position <- byteStream.Position + 1L
 
@@ -93,7 +101,7 @@ and [<Sealed>] ByteWriter (byteStream: ByteStream) =
         if len > byteStream.Length then
             byteStream.SetLength len
 
-        LitteEndian.write8 byteStream.Raw byteStream.Position value
+        LitteEndian.write8 byteStream.Raw byteStream.Position byteStream.BitOffset value
 
         byteStream.Position <- byteStream.Position + 1L
 
@@ -196,6 +204,9 @@ and [<Sealed>] ByteWriter (byteStream: ByteStream) =
         byteStream.Position <- byteStream.Position + int64 size
 
 and [<Sealed>] ByteReader (byteStream: ByteStream) =
+
+    member this.ReadBit () : bool =
+        false
 
     member this.ReadByte () : byte =
         let value = LitteEndian.read8 byteStream.Raw byteStream.Position |> byte

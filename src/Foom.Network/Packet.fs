@@ -68,11 +68,11 @@ type Packet () as this =
 
     member this.FragmentId 
         with get () = LitteEndian.read8 this.Raw 3
-        and set (value : byte) = LitteEndian.write8 this.Raw 3 value
+        and set (value : byte) = LitteEndian.write8 this.Raw 3 0 value
 
     member this.FragmentCount
         with get () = LitteEndian.read8 this.Raw 4
-        and set (value : byte) = LitteEndian.write8 this.Raw 4 value
+        and set (value : byte) = LitteEndian.write8 this.Raw 4 0 value
 
     member this.Reset () =
         this.SetLength 0L
