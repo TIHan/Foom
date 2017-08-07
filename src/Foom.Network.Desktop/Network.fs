@@ -22,23 +22,17 @@ type AesEncryption () =
 
         member this.Encrypt (bytes, offset, count, output, outputOffset, outputMaxCount) =
             use encryptor = aes.CreateEncryptor ()
-            use inputStream = new MemoryStream (bytes, offset, count)
             use outputStream = new MemoryStream (output, outputOffset, outputMaxCount)
-
-            let len1 = outputStream.Position
-
             use stream = new CryptoStream(outputStream, encryptor, CryptoStreamMode.Write)
-            inputStream.WriteTo (stream)
+            stream.Write (bytes, offset, count)
             stream.FlushFinalBlock ()
-            int (outputStream.Position - len1)
+            int (outputStream.Position - int64 outputOffset)
 
         member this.Decrypt (bytes, offset, count, output, outputOffset, outputMaxCount) =
             use decryptor = aes.CreateDecryptor ()
             use inputStream = new MemoryStream (bytes, offset, count)
-            use outputStream = new MemoryStream (output, outputOffset, outputMaxCount)
             use stream = new CryptoStream(inputStream, decryptor, CryptoStreamMode.Read)
-            stream.CopyTo outputStream
-            int (outputStream.Position)
+            stream.Read (output, outputOffset, outputMaxCount)
 
     interface IDisposable with
 
@@ -58,10 +52,10 @@ type UdpEndPoint =
 module UdpConstants =
 
     [<Literal>]
-    let DefaultReceiveBufferSize = 64512
+    let DefaultReceiveBufferSize = 645120
 
     [<Literal>]
-    let DefaultSendBufferSize = 64512
+    let DefaultSendBufferSize = 645120
 
 [<AbstractClass>]
 type Udp =
