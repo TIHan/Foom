@@ -67,11 +67,11 @@ type Packet () as this =
         and set (value : uint16) = LitteEndian.write16 this.Raw 1 value
 
     member this.FragmentId 
-        with get () = LitteEndian.read8 this.Raw 3
+        with get () = LitteEndian.read8 this.Raw 3 0
         and set (value : byte) = LitteEndian.write8 this.Raw 3 0 value
 
     member this.FragmentCount
-        with get () = LitteEndian.read8 this.Raw 4
+        with get () = LitteEndian.read8 this.Raw 4 0
         and set (value : byte) = LitteEndian.write8 this.Raw 4 0 value
 
     member this.Reset () =

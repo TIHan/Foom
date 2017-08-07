@@ -194,16 +194,20 @@ type Test() =
 
         byteStream.SetLength 0L
 
-        byteStream.Writer.WriteBit true
-        byteStream.Writer.WriteByte x
-        byteStream.Position <- 0L
-        byteStream.BitOffset <- 0
-        
-        let bit = byteStream.Reader.ReadBit ()
-        let y = byteStream.Reader.ReadByte ()
+        for i = 1 to 100 do
+            let orig = byteStream.Position
+            let origBit = byteStream.BitOffset
 
-        Assert.AreEqual (true, bit)
-        Assert.AreEqual (x, y)
+            byteStream.Writer.WriteBit true
+            byteStream.Writer.WriteByte x
+            byteStream.Position <- orig
+            byteStream.BitOffset <- origBit
+        
+            let bit = byteStream.Reader.ReadBit ()
+            let z = byteStream.Reader.ReadByte ()
+
+            Assert.AreEqual (true, bit)
+            Assert.AreEqual (x, z)
 
 
     [<Test>]
