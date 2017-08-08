@@ -211,6 +211,28 @@ type Test() =
             Assert.AreEqual (true, bit)
             Assert.AreEqual (x, z)
 
+    [<Test>]
+    member this.DeltaTest () =
+        let byteStream = new ByteStream (Array.zeroCreate 1024)
+
+        let prevData = { x = 1234; y = 4321 }
+        let nextData = { x = 1234; y = 99 }
+
+        let writer = DeltaWriter (byteStream)
+        let reader = DeltaReader (byteStream)
+
+        writer.WriteDeltaInt (prevData.x, nextData.x)
+        writer.WriteDeltaInt (prevData.y, nextData.y)
+
+        Assert.AreEqual (5, byteStream.Length)
+
+        byteStream.Position <- 0L
+
+        let x = reader.ReadDeltaInt (prevData.x)
+        let y = reader.ReadDeltaInt (prevData.y)
+
+        Assert.AreEqual (1234, x)
+        Assert.AreEqual (99, y)
 
     [<Test>]
     member this.ClientAndServerWorks () : unit =

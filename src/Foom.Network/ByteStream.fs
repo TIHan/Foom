@@ -246,6 +246,8 @@ and [<Sealed>] ByteWriter (byteStream: ByteStream) =
 
         byteStream.Position <- byteStream.Position + int64 size
 
+    member this.Position = byteStream.Position
+
 and [<Sealed>] ByteReader (byteStream: ByteStream) =
 
     member this.ReadBit () : bool =
@@ -323,3 +325,52 @@ and [<Sealed>] ByteReader (byteStream: ByteStream) =
 
     member this.Position = byteStream.Position
     
+type DeltaWriter (bs : ByteStream) =
+
+    let data = bs.Raw
+    let writer = bs.Writer
+    let mutable deltaByte = 0uy
+    let mutable deltaIndex = 0
+    let mutable bitOffset = 0
+
+    member this.WriteDeltaInt (prev : int, next : int) =
+        if bitOffset = 0 then
+            deltaByte <- 0uy
+            deltaIndex <- int writer.Position
+            writer.WriteByte deltaByte
+
+        if prev <> next then
+            deltaByte <- deltaByte ||| (1uy <<< bitOffset)
+            data.[deltaIndex] <- deltaByte
+            writer.WriteInt next
+
+        if bitOffset = 7 then
+            bitOffset <- 0
+        else
+            bitOffset <- bitOffset + 1
+            
+type DeltaReader (bs : ByteStream) =
+
+    let data = bs.Raw
+    let reader = bs.Reader
+    let mutable deltaByte = 0uy
+    let mutable deltaIndex = 0
+    let mutable bitOffset = 0
+
+    member inline private this.IncrOffset () =
+        if bitOffset = 7 then
+            bitOffset <- 0
+        else
+            bitOffset <- bitOffset + 1
+
+    member this.ReadDeltaInt (current : int) =
+        if bitOffset = 0 then
+            deltaIndex <- int reader.Position
+            deltaByte <- reader.ReadByte ()
+
+        if (deltaByte &&& (1uy <<< bitOffset)) > 0uy then
+            this.IncrOffset ()
+            reader.ReadInt ()
+        else
+            this.IncrOffset ()
+            current
