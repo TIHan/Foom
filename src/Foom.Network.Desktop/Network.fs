@@ -244,7 +244,6 @@ type UdpClient () =
 
             let byteCount = (this :> IUdpClient).Receive (buffer, 0, buffer.Length)
             if byteCount > 0 then
-                packet.SetLength (int64 packet.Raw.Length)
                 let length = this.Encryption.Decrypt (buffer, 0, byteCount, packet.Raw, 0, packet.Raw.Length)
                 packet.SetLength (int64 length)
             packet.Position <- 0L

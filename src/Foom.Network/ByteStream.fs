@@ -81,13 +81,13 @@ module LitteEndian =
         ((uint32 data.[offset + 3]) <<< 24)
 
 type ByteStream (data : byte []) as this =
-    inherit MemoryStream (data, true)
+    inherit Stream ()
 
     let writer = ByteWriter this
     let reader = ByteReader this
 
-    do
-        this.SetLength 0L
+    let mutable length = 0L
+    let mutable position = 0L
 
     member this.Raw = data
 
@@ -97,11 +97,48 @@ type ByteStream (data : byte []) as this =
 
     member val BitOffset = 0 with get, set
 
+    // Stream Implementation
+
+    override this.CanWrite = true
+
+    override this.Length = length
+
+    override this.SetLength value =
+        if position > value then
+            position <- value
+        length <- value
+
+    override this.Position
+        with get () = position
+        and set value = position <- value
+
+    override this.Flush () = ()
+
+    override this.CanRead = true
+
+    override this.CanSeek = false
+
+    override this.Read (bytes, offset, count) =
+        for i = offset to offset + count - 1 do
+            bytes.[i] <- data.[int position]
+            position <- position + 1L 
+        count
+
+    override this.Seek (offset, origin) = raise <| NotImplementedException ()
+
+    override this.Write (bytes, offset, count) =
+        for i = offset to offset + count - 1 do
+            data.[int position] <- bytes.[i]
+            position <- position + 1L
+        if position > length then
+            length <- position
+
 and [<Sealed>] ByteWriter (byteStream: ByteStream) =
 
     member this.WriteBit (value : bool) =
         let value = if value then 1uy else 0uy
         if byteStream.BitOffset = 0 then
+            byteStream.Raw.[int byteStream.Position] <- 0uy
             byteStream.SetLength (byteStream.Position + 1L)
 
         byteStream.Raw.[int byteStream.Position] <- byteStream.Raw.[int byteStream.Position] ||| (value <<< byteStream.BitOffset)
