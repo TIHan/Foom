@@ -231,6 +231,8 @@ type Test() =
         let x = reader.ReadDeltaInt (prevData.x)
         let y = reader.ReadDeltaInt (prevData.y)
 
+        Assert.AreEqual (5, byteStream.Position)
+
         Assert.AreEqual (1234, x)
         Assert.AreEqual (99, y)
 
