@@ -119,17 +119,17 @@ type ByteStream (data : byte []) as this =
     override this.CanSeek = false
 
     override this.Read (bytes, offset, count) =
-        for i = offset to offset + count - 1 do
-            bytes.[i] <- data.[int position]
-            position <- position + 1L 
+        let remaining = int (length - position)
+        let count = if count > remaining then remaining else count
+        Buffer.BlockCopy (data, int position, bytes, offset, count)
+        position <- position + int64 count
         count
 
     override this.Seek (offset, origin) = raise <| NotImplementedException ()
 
     override this.Write (bytes, offset, count) =
-        for i = offset to offset + count - 1 do
-            data.[int position] <- bytes.[i]
-            position <- position + 1L
+        Buffer.BlockCopy (bytes, offset, data, int position, count)
+        position <- position + int64 count
         if position > length then
             length <- position
 
@@ -206,24 +206,6 @@ and [<Sealed>] ByteWriter (byteStream: ByteStream) =
         let mutable s = SingleUnion ()
         s.SingleValue <- value
         this.WriteUInt32 (s.Value)
-
-    member this.WriteBytes (bytes: byte []) =
-        let len = byteStream.Position + int64 bytes.Length
-        if len > byteStream.Length then
-            byteStream.SetLength len
-
-        Buffer.BlockCopy (bytes, 0, byteStream.Raw, int byteStream.Position, bytes.Length)
-
-        byteStream.Position <- byteStream.Position + int64 bytes.Length
-
-    member this.WriteRawBytes (bytes: byte [], startIndex, size) =
-        let len = byteStream.Position + int64 size
-        if len > byteStream.Length then
-            byteStream.SetLength len
-
-        Buffer.BlockCopy (bytes, startIndex, byteStream.Raw, int byteStream.Position, size)
-
-        byteStream.Position <- byteStream.Position + int64 size
 
     member this.WriteInts (values: int [], startIndex, size) =
         this.WriteInt size

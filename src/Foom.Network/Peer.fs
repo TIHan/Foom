@@ -204,7 +204,7 @@ module ClientState =
         let basicChannelState =
             BasicChannelState.create packetPool
                 (fun packet ->
-                    receiveStreamState.receiveStream.Writer.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, int packet.DataLength)
+                    receiveStreamState.receiveStream.Write (packet.Raw, sizeof<PacketHeader>, int packet.DataLength)
                 )
                 udpClient.Send
                 (fun ack send ->
@@ -276,7 +276,7 @@ module ConnectedClientState =
         let basicChannelState =
             BasicChannelState.create packetPool
                 (fun packet ->
-                    receiveStreamState.receiveStream.Writer.WriteRawBytes (packet.Raw, sizeof<PacketHeader>, int packet.DataLength)
+                    receiveStreamState.receiveStream.Write (packet.Raw, sizeof<PacketHeader>, int packet.DataLength)
                 )
                 (fun packet -> udpServer.Send (packet, endPoint))
                 (fun ack send ->
