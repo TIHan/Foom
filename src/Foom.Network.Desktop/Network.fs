@@ -11,28 +11,36 @@ open System.Runtime.InteropServices
 type AesEncryption () =
 
     let aes = new AesCryptoServiceProvider ()
+    let defaultKey = Array.zeroCreate 16
+    let defaultIV = Array.zeroCreate 16
 
     do
-        aes.Key <- Array.zeroCreate 16
-        aes.IV <- Array.zeroCreate 16
+        aes.Key <- defaultKey
+        aes.IV <- defaultIV
         aes.Mode <- CipherMode.CBC
         aes.Padding <- PaddingMode.PKCS7
+
+    member this.Encrypt (bytes, offset, count, output, outputOffset, outputMaxCount, key) =
+        use encryptor = aes.CreateEncryptor (key, defaultIV)
+        use outputStream = new MemoryStream (output, outputOffset, outputMaxCount)
+        use stream = new CryptoStream(outputStream, encryptor, CryptoStreamMode.Write)
+        stream.Write (bytes, offset, count)
+        stream.FlushFinalBlock ()
+        int (outputStream.Position - int64 outputOffset)
+
+    member this.Decrypt (bytes, offset, count, output, outputOffset, outputMaxCount, key) =
+        use decryptor = aes.CreateDecryptor (key, defaultIV)
+        use inputStream = new MemoryStream (bytes, offset, count)
+        use stream = new CryptoStream(inputStream, decryptor, CryptoStreamMode.Read)
+        stream.Read (output, outputOffset, outputMaxCount)
 
     interface INetworkEncryption with
 
         member this.Encrypt (bytes, offset, count, output, outputOffset, outputMaxCount) =
-            use encryptor = aes.CreateEncryptor ()
-            use outputStream = new MemoryStream (output, outputOffset, outputMaxCount)
-            use stream = new CryptoStream(outputStream, encryptor, CryptoStreamMode.Write)
-            stream.Write (bytes, offset, count)
-            stream.FlushFinalBlock ()
-            int (outputStream.Position - int64 outputOffset)
+            this.Encrypt (bytes, offset, count, output, outputOffset, outputMaxCount, defaultKey)
 
         member this.Decrypt (bytes, offset, count, output, outputOffset, outputMaxCount) =
-            use decryptor = aes.CreateDecryptor ()
-            use inputStream = new MemoryStream (bytes, offset, count)
-            use stream = new CryptoStream(inputStream, decryptor, CryptoStreamMode.Read)
-            stream.Read (output, outputOffset, outputMaxCount)
+            this.Decrypt (bytes, offset, count, output, outputOffset, outputMaxCount, defaultKey)
 
     interface IDisposable with
 
