@@ -83,8 +83,6 @@ type TestMessage3 =
 [<TestFixture>]
 type Test() = 
 
-    let deflateCompression = new DeflateCompression ()
-
     do
         Network.RegisterType (TestMessage.Serialize, TestMessage.Deserialize, TestMessage.Ctor)
         Network.RegisterType (TestMessage2.Serialize, TestMessage2.Deserialize, TestMessage2.Ctor)
@@ -181,45 +179,14 @@ type Test() =
         )
 
     [<Test>]
-    member this.TestWritingBits () : unit =
-
-        let byteStream = new ByteStream (Array.zeroCreate 1024)
-
-        let x = 163uy
-
-        byteStream.Writer.WriteByte x
-        byteStream.Position <- 0L
-
-        let y = byteStream.Reader.ReadByte ()
-
-        Assert.AreEqual (x, y)
-
-        byteStream.SetLength 0L
-
-        for i = 1 to 100 do
-            let orig = byteStream.Position
-            let origBit = byteStream.BitOffset
-
-            byteStream.Writer.WriteBit true
-            byteStream.Writer.WriteByte x
-            byteStream.Position <- orig
-            byteStream.BitOffset <- origBit
-        
-            let bit = byteStream.Reader.ReadBit ()
-            let z = byteStream.Reader.ReadByte ()
-
-            Assert.AreEqual (true, bit)
-            Assert.AreEqual (x, z)
-
-    [<Test>]
     member this.DeltaTest () =
         let byteStream = new ByteStream (Array.zeroCreate 1024)
 
         let prevData = { x = 1234; y = 4321 }
         let nextData = { x = 1234; y = 99 }
 
-        let writer = DeltaWriter (byteStream)
-        let reader = DeltaReader (byteStream)
+        let writer = byteStream.Writer
+        let reader = byteStream.Reader
 
         writer.WriteDeltaInt (prevData.x, nextData.x)
         writer.WriteDeltaInt (prevData.y, nextData.y)
@@ -242,9 +209,9 @@ type Test() =
         use udpClientV6 = new UdpClient () :> IUdpClient
         use udpServer = new UdpServer (29015) :> IUdpServer
 
-        let client = Client (udpClient, deflateCompression)
-        let clientV6 = Client (udpClientV6, deflateCompression)
-        let server = Server (udpServer, deflateCompression)
+        let client = Client (udpClient)
+        let clientV6 = Client (udpClientV6)
+        let server = Server (udpServer)
 
         let mutable isConnected = false
         let mutable isIpv6Connected = false
@@ -367,14 +334,14 @@ type Test() =
         use udpClient = new UdpClient () :> IUdpClient
         use udpServer = new UdpServer (29015) :> IUdpServer
 
-        let client = Client (udpClient, deflateCompression)
+        let client = Client (udpClient)
         let mutable value = 0
         client.Subscribe<TestMessage> (fun msg ->
             value <- msg.b
         )
 
 
-        let server = Server (udpServer, deflateCompression)
+        let server = Server (udpServer)
 
         client.Connect ("127.0.0.1", 29015)
 
@@ -457,13 +424,13 @@ type Test() =
         use udpClient = new UdpClient () :> IUdpClient
         use udpServer = new UdpServer (29015) :> IUdpServer
 
-        let client = Client (udpClient, deflateCompression)
+        let client = Client (udpClient)
         let mutable value = 0
         client.Subscribe<TestMessage> (fun msg ->
             value <- msg.b
         )
 
-        let server = Server (udpServer, deflateCompression)
+        let server = Server (udpServer)
 
         client.Connect ("127.0.0.1", 29015)
 
@@ -542,8 +509,8 @@ type Test() =
         use udpClient = new UdpClient () :> IUdpClient
         use udpServer = new UdpServer (29015) :> IUdpServer
 
-        let client = Client (udpClient, deflateCompression)
-        let server = Server (udpServer, deflateCompression)
+        let client = Client (udpClient)
+        let server = Server (udpServer)
 
         client.Connect ("127.0.0.1", 29015)
 

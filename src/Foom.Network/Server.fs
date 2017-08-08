@@ -4,9 +4,9 @@ open System
 open System.Collections.Generic
 
 [<Sealed>]
-type Server (udpServer: IUdpServer, compression) =
+type Server (udpServer: IUdpServer) =
 
-    let peer = new ServerPeer (udpServer, TimeSpan.FromSeconds 5., compression)
+    let peer = new ServerPeer (udpServer, TimeSpan.FromSeconds 5.)
 
     [<CLIEvent>]
     member val ClientConnected = peer.ClientConnected

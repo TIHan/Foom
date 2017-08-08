@@ -1,4 +1,5 @@
 ﻿open System
+open System.Collections.Generic
 
 open Foom.Network
 
@@ -73,9 +74,99 @@ type TestMessage3 =
             len = 0
         }
 
+[<Struct>]
+type EntityState =
+    {
+        mutable id : uint16
+        mutable x : int
+        mutable y : int
+        mutable z : int
+        mutable angle : int16
+        mutable anim : byte
+        mutable materialIndex : int
+    }
+
+type Snapshot =
+    {
+        mutable stateLength : uint16
+        states : EntityState []
+    }
+
+    static member Create () =
+        {
+            stateLength = 0us
+            states = Array.zeroCreate 65536
+        }
+
+type SnapshotPool (poolAmount) =
+
+    let pool : Stack<Snapshot> = Stack (Array.init poolAmount (fun _ -> Snapshot.Create ()))
+
+    member this.Count = pool.Count
+
+    member this.MaxCount = poolAmount
+
+    member this.Get () = pool.Pop ()
+
+    member this.Recycle (state : Snapshot) =
+        Array.Clear (state.states, 0, int state.stateLength)
+        if pool.Count + 1 > poolAmount then
+            failwith "For right now, this throws an exception" 
+        pool.Push state
+
+let pool = SnapshotPool 60
+
+let clientStates = Array.zeroCreate<EntityState> 65536
+//let lastAckStates = Array.init 65536 (fun _ -> { id = 0us; x = 0; y = 0; z = 0; angle = 0s; frame = 0us; materialIndex = 0 })
+
+let mutable lastAckSnapshot = pool.Get ()
+
+type Snapshot with
+
+    static member Serialize (msg: Snapshot) (w: ByteWriter) =
+        let prev = lastAckSnapshot
+
+        w.WriteUInt16 msg.stateLength
+        for i = 0 to int msg.stateLength - 1 do
+            let state = &msg.states.[i]
+            let prev = &prev.states.[i]
+
+            w.WriteUInt16 state.id
+            w.WriteDeltaInt (prev.x, state.x)
+            w.WriteDeltaInt (prev.y, state.y)
+            w.WriteDeltaInt (prev.z, state.z)
+            w.WriteDeltaInt16 (prev.angle, state.angle)
+            w.WriteDeltaByte (prev.anim, state.anim)
+            w.WriteDeltaInt (prev.materialIndex, state.materialIndex)
+
+
+        pool.Recycle prev
+        lastAckSnapshot <- msg
+
+    static member Deserialize (msg: Snapshot) (r: ByteReader) =
+        pool.Recycle msg
+
+        let length = int <| r.ReadUInt16 ()
+
+        for i = 0 to int length - 1 do
+            let id = int <| r.ReadUInt16 ()
+
+            let current = &clientStates.[id]
+
+            current.id <- uint16 id
+            current.x <- r.ReadDeltaInt (current.x)
+            current.y <- r.ReadDeltaInt (current.y)
+            current.z <- r.ReadDeltaInt (current.z)
+            current.angle <- r.ReadDeltaInt16 (current.angle)
+            current.anim <- r.ReadDeltaByte (current.anim)
+            current.materialIndex <- r.ReadDeltaInt (current.materialIndex)
+
+    static member Ctor _ = pool.Get ()
+
 Network.RegisterType (TestMessage.Serialize, TestMessage.Deserialize, TestMessage.Ctor)
 Network.RegisterType (TestMessage2.Serialize, TestMessage2.Deserialize, TestMessage2.Ctor)
 Network.RegisterType (TestMessage3.Serialize, TestMessage3.Deserialize, TestMessage3.Ctor)
+Network.RegisterType (Snapshot.Serialize, Snapshot.Deserialize, Snapshot.Ctor)
 
 let perf title f =
     let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
@@ -88,13 +179,13 @@ let main argv =
     use udpClient = new UdpClient () :> IUdpClient
     use udpServer = new UdpServer (29015) :> IUdpServer
 
-    let client = Client (udpClient, new DeflateCompression ())
+    let client = Client (udpClient)
     let mutable value = 0
     client.Subscribe<TestMessage> (fun msg ->
         value <- msg.b
     )
 
-    let server = Server (udpServer, new DeflateCompression ())
+    let server = Server (udpServer)
 
     client.Connect ("127.0.0.1", 29015)
 
@@ -122,6 +213,7 @@ let main argv =
             server.PublishReliableOrdered data
             server.Update stopwatch.Elapsed
         )
+        printfn "Server Sent: %A bytes" server.BytesSentSinceLastUpdate
         Threading.Thread.Sleep 10
 
         perf "Client Receive" (fun () ->
@@ -129,6 +221,41 @@ let main argv =
         )
 
         printfn "%A = %A" client.PacketPoolMaxCount client.PacketPoolCount
+
+    client.Subscribe<Snapshot> (fun msg ->
+        ()
+    )
+
+    let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
+    let rng = System.Random ()
+    for i = 1 to 50 do
+
+        perf "Server Send Snapshot" (fun () ->
+            let snapshot = pool.Get ()
+
+            snapshot.stateLength <- 100us
+
+            for j = 0 to 100 - 1 do
+                let state = &snapshot.states.[j]
+                state.id <- uint16 j
+                state.x <- (1 + rng.Next())
+                state.y <- (2 + rng.Next())
+                state.z <- (3 + j)
+                state.angle <- int16 (4 + j)
+                state.anim <- byte (5 + rng.Next ())
+                state.materialIndex <- int (6 + j)
+            server.PublishReliableOrdered snapshot
+            server.Update stopwatch.Elapsed
+        )
+        printfn "Server Sent: %A kb/sec" (float32 server.BytesSentSinceLastUpdate / 1024.f * 30.f)
+        Threading.Thread.Sleep 10
+
+        perf "Client Receive Snapshot" (fun () ->
+            client.Update stopwatch.Elapsed
+        )
+
+        printfn "%A = %A" client.PacketPoolMaxCount client.PacketPoolCount
+      
 
     Console.ReadLine () |> ignore
     0

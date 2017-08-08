@@ -29,7 +29,7 @@ type ServerPeer =
 
     member ClientPacketPoolCount : int
 
-    new : IUdpServer * connectionTimeout : TimeSpan * INetworkCompression -> ServerPeer
+    new : IUdpServer * connectionTimeout : TimeSpan -> ServerPeer
 
 type ClientPeer =
     inherit Peer
@@ -38,4 +38,4 @@ type ClientPeer =
 
     member Disconnected : IEvent<IUdpEndPoint>
 
-    new : IUdpClient * INetworkCompression -> ClientPeer
+    new : IUdpClient -> ClientPeer

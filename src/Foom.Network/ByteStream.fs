@@ -30,14 +30,8 @@ type SingleUnion =
 
 module LitteEndian =
 
-    let inline write8 (data: byte []) offset bitOffset value =
-        let offset = int offset
-        if bitOffset = 0 then
-            data.[offset] <- byte value
-        else
-            let offset1 = offset + 1
-            data.[offset] <- data.[offset] ||| byte (value <<< bitOffset)
-            data.[offset1] <- data.[offset1] ||| byte (value >>> (8 - bitOffset))
+    let inline write8 (data: byte []) offset value =
+        data.[int offset] <- byte value
 
     let inline write16 (data: byte []) offset value =
         let offset = int offset
@@ -51,22 +45,8 @@ module LitteEndian =
         data.[offset + 2] <- byte (value >>> 16)
         data.[offset + 3] <- byte (value >>> 24)
 
-    let inline read8 (data: byte []) offset bitOffset =
-        let offset = int offset
-        if bitOffset = 0 then
-            data.[offset]
-        else
-            let offset1 = offset + 1
-            let value = data.[offset] <<< bitOffset
-            value ||| (data.[offset1] >>> (8 - bitOffset))
-
-    let read8byte (data: byte []) offset bitOffset =
-        let offset = int offset
-        if bitOffset = 0 then
-            data.[offset]
-        else
-            let offset1 = offset + 1
-            (data.[offset] >>> bitOffset) ||| (data.[offset1] <<< (8 - bitOffset))
+    let inline read8 (data: byte []) offset =
+        data.[int offset]
 
     let inline read16 (data: byte []) offset =
         let offset = int offset
@@ -79,6 +59,14 @@ module LitteEndian =
         ((uint32 data.[offset + 1]) <<< 8) |||
         ((uint32 data.[offset + 2]) <<< 16) |||
         ((uint32 data.[offset + 3]) <<< 24)
+
+[<AutoOpen>]
+module DeltaHelpers =
+
+    let inline clampBitOffset bitOffset =
+        if bitOffset = 7 then 0
+        else bitOffset + 1
+    
 
 type ByteStream (data : byte []) as this =
     inherit Stream ()
@@ -94,8 +82,6 @@ type ByteStream (data : byte []) as this =
     member this.Writer = writer
 
     member this.Reader = reader
-
-    member val BitOffset = 0 with get, set
 
     // Stream Implementation
 
@@ -135,25 +121,68 @@ type ByteStream (data : byte []) as this =
 
 and [<Sealed>] ByteWriter (byteStream: ByteStream) =
 
-    member this.WriteBit (value : bool) =
-        let value = if value then 1uy else 0uy
-        if byteStream.BitOffset = 0 then
-            byteStream.Raw.[int byteStream.Position] <- 0uy
-            byteStream.SetLength (byteStream.Position + 1L)
+    let mutable deltaByte = 0uy
+    let mutable deltaIndex = 0
+    let mutable bitOffset = 0
 
-        byteStream.Raw.[int byteStream.Position] <- byteStream.Raw.[int byteStream.Position] ||| (value <<< byteStream.BitOffset)
-        if byteStream.BitOffset = 7 then
-            byteStream.BitOffset <- 0
-            byteStream.Position <- byteStream.Position + 1L
-        else
-            byteStream.BitOffset <- byteStream.BitOffset + 1
+    member this.WriteDeltaByte (prev, next) =
+        if bitOffset = 0 then
+            deltaByte <- 0uy
+            deltaIndex <- int this.Position
+            this.WriteByte deltaByte
+
+        if prev <> next then
+            deltaByte <- deltaByte ||| (1uy <<< bitOffset)
+            byteStream.Raw.[deltaIndex] <- deltaByte
+            this.WriteByte next
+
+        bitOffset <- clampBitOffset bitOffset
+
+    member this.WriteDeltaInt16 (prev, next) =
+        if bitOffset = 0 then
+            deltaByte <- 0uy
+            deltaIndex <- int this.Position
+            this.WriteByte deltaByte
+
+        if prev <> next then
+            deltaByte <- deltaByte ||| (1uy <<< bitOffset)
+            byteStream.Raw.[deltaIndex] <- deltaByte
+            this.WriteInt16 next
+
+        bitOffset <- clampBitOffset bitOffset
+
+    member this.WriteDeltaUInt16 (prev, next) =
+        if bitOffset = 0 then
+            deltaByte <- 0uy
+            deltaIndex <- int this.Position
+            this.WriteByte deltaByte
+
+        if prev <> next then
+            deltaByte <- deltaByte ||| (1uy <<< bitOffset)
+            byteStream.Raw.[deltaIndex] <- deltaByte
+            this.WriteUInt16 next
+
+        bitOffset <- clampBitOffset bitOffset
+
+    member this.WriteDeltaInt (prev : int, next : int) =
+        if bitOffset = 0 then
+            deltaByte <- 0uy
+            deltaIndex <- int this.Position
+            this.WriteByte deltaByte
+
+        if prev <> next then
+            deltaByte <- deltaByte ||| (1uy <<< bitOffset)
+            byteStream.Raw.[deltaIndex] <- deltaByte
+            this.WriteInt next
+
+        bitOffset <- clampBitOffset bitOffset
 
     member this.WriteByte (value: byte) =
-        let len = byteStream.Position + 1L + (if byteStream.BitOffset > 0 then 1L else 0L)
+        let len = byteStream.Position + 1L
         if len > byteStream.Length then
             byteStream.SetLength len
 
-        LitteEndian.write8 byteStream.Raw byteStream.Position byteStream.BitOffset value
+        LitteEndian.write8 byteStream.Raw byteStream.Position value
 
         byteStream.Position <- len
 
@@ -162,7 +191,7 @@ and [<Sealed>] ByteWriter (byteStream: ByteStream) =
         if len > byteStream.Length then
             byteStream.SetLength len
 
-        LitteEndian.write8 byteStream.Raw byteStream.Position byteStream.BitOffset value
+        LitteEndian.write8 byteStream.Raw byteStream.Position value
 
         byteStream.Position <- byteStream.Position + 1L
 
@@ -250,22 +279,65 @@ and [<Sealed>] ByteWriter (byteStream: ByteStream) =
 
 and [<Sealed>] ByteReader (byteStream: ByteStream) =
 
-    member this.ReadBit () : bool =
-        let value = byteStream.Raw.[int byteStream.Position] &&& (1uy <<< byteStream.BitOffset)
-        if byteStream.BitOffset = 7 then
-            byteStream.BitOffset <- 0
-            byteStream.Position <- byteStream.Position + 1L
+    let mutable deltaByte = 0uy
+    let mutable deltaIndex = 0
+    let mutable bitOffset = 0
+
+    member this.ReadDeltaByte (current) =
+        if bitOffset = 0 then
+            deltaIndex <- int this.Position
+            deltaByte <- this.ReadByte ()
+
+        if (deltaByte &&& (1uy <<< bitOffset)) > 0uy then
+            bitOffset <- clampBitOffset bitOffset
+            this.ReadByte ()
         else
-            byteStream.BitOffset <- byteStream.BitOffset + 1
-        if value = 0uy then false else true
+            bitOffset <- clampBitOffset bitOffset
+            current
+
+    member this.ReadDeltaInt16 (current) =
+        if bitOffset = 0 then
+            deltaIndex <- int this.Position
+            deltaByte <- this.ReadByte ()
+
+        if (deltaByte &&& (1uy <<< bitOffset)) > 0uy then
+            bitOffset <- clampBitOffset bitOffset
+            this.ReadInt16 ()
+        else
+            bitOffset <- clampBitOffset bitOffset
+            current
+
+    member this.ReadDeltaUInt16 (current) =
+        if bitOffset = 0 then
+            deltaIndex <- int this.Position
+            deltaByte <- this.ReadByte ()
+
+        if (deltaByte &&& (1uy <<< bitOffset)) > 0uy then
+            bitOffset <- clampBitOffset bitOffset
+            this.ReadUInt16 ()
+        else
+            bitOffset <- clampBitOffset bitOffset
+            current
+
+    member this.ReadDeltaInt (current : int) =
+        if bitOffset = 0 then
+            deltaIndex <- int this.Position
+            deltaByte <- this.ReadByte ()
+
+        if (deltaByte &&& (1uy <<< bitOffset)) > 0uy then
+            bitOffset <- clampBitOffset bitOffset
+            this.ReadInt ()
+        else
+            bitOffset <- clampBitOffset bitOffset
+            current
 
     member this.ReadByte () : byte =
-        let value = LitteEndian.read8byte byteStream.Raw byteStream.Position byteStream.BitOffset |> byte
+        let value = LitteEndian.read8 byteStream.Raw byteStream.Position
         byteStream.Position <- byteStream.Position + 1L
         value
 
     member this.ReadSByte () : sbyte =
-        let value = LitteEndian.read8 byteStream.Raw byteStream.Position  byteStream.BitOffset |> sbyte
+        let value = LitteEndian.read8 byteStream.Raw byteStream.Position |> sbyte
         byteStream.Position <- byteStream.Position + 1L
         value
 
@@ -324,53 +396,3 @@ and [<Sealed>] ByteReader (byteStream: ByteStream) =
     member this.IsEndOfStream = byteStream.Position = byteStream.Length
 
     member this.Position = byteStream.Position
-    
-type DeltaWriter (bs : ByteStream) =
-
-    let data = bs.Raw
-    let writer = bs.Writer
-    let mutable deltaByte = 0uy
-    let mutable deltaIndex = 0
-    let mutable bitOffset = 0
-
-    member this.WriteDeltaInt (prev : int, next : int) =
-        if bitOffset = 0 then
-            deltaByte <- 0uy
-            deltaIndex <- int writer.Position
-            writer.WriteByte deltaByte
-
-        if prev <> next then
-            deltaByte <- deltaByte ||| (1uy <<< bitOffset)
-            data.[deltaIndex] <- deltaByte
-            writer.WriteInt next
-
-        if bitOffset = 7 then
-            bitOffset <- 0
-        else
-            bitOffset <- bitOffset + 1
-            
-type DeltaReader (bs : ByteStream) =
-
-    let data = bs.Raw
-    let reader = bs.Reader
-    let mutable deltaByte = 0uy
-    let mutable deltaIndex = 0
-    let mutable bitOffset = 0
-
-    member inline private this.IncrOffset () =
-        if bitOffset = 7 then
-            bitOffset <- 0
-        else
-            bitOffset <- bitOffset + 1
-
-    member this.ReadDeltaInt (current : int) =
-        if bitOffset = 0 then
-            deltaIndex <- int reader.Position
-            deltaByte <- reader.ReadByte ()
-
-        if (deltaByte &&& (1uy <<< bitOffset)) > 0uy then
-            this.IncrOffset ()
-            reader.ReadInt ()
-        else
-            this.IncrOffset ()
-            current

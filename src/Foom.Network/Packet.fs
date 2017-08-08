@@ -10,13 +10,6 @@ type INetworkEncryption =
 
     abstract Decrypt : bytes : byte [] * offset : int * count : int * output : byte [] * outputOffset : int * outputMaxCount : int -> int
 
-type INetworkCompression =
-    inherit IDisposable
-
-    abstract Compress : bytes : byte [] * offset : int * count : int * output : byte [] * outputOffset : int * outputMaxCount : int -> int
-
-    abstract Decompress : bytes : byte [] * offset : int * count : int * output : byte [] * outputOffset : int * outputMaxCount : int -> int
-
 type PacketType =
 
     | Unreliable = 0uy
@@ -74,12 +67,12 @@ type Packet () as this =
         and set (value : uint16) = LitteEndian.write16 this.Raw 1 value
 
     member this.FragmentId 
-        with get () = LitteEndian.read8 this.Raw 3 0
-        and set (value : byte) = LitteEndian.write8 this.Raw 3 0 value
+        with get () = LitteEndian.read8 this.Raw 3
+        and set (value : byte) = LitteEndian.write8 this.Raw 3 value
 
     member this.FragmentCount
-        with get () = LitteEndian.read8 this.Raw 4 0
-        and set (value : byte) = LitteEndian.write8 this.Raw 4 0 value
+        with get () = LitteEndian.read8 this.Raw 4
+        and set (value : byte) = LitteEndian.write8 this.Raw 4 value
 
     member this.Reset () =
         this.SetLength 0L

@@ -70,18 +70,14 @@ module BasicChannelState =
 
 type SendStreamState =
     {
-        compression : INetworkCompression
         sendStream :    ByteStream
-        compressedStream : ByteStream
     }
 
 module SendStreamState =
 
-    let create compression =
+    let create () =
         {
-            compression = compression
             sendStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
-            compressedStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
         }
 
     let write (msg : 'T) f (state : SendStreamState) =
@@ -100,61 +96,21 @@ module SendStreamState =
 
             f state.sendStream.Raw startIndex (int size)
 
-            //let previousPosition = state.compressedStream.Position
-            //let previousLength = state.compressedStream.Length
-
-            //state.compressedStream.Writer.WriteInt 0
-
-            //let compressionPosition = state.compressedStream.Position
-
-            //sendStream.Position <- int64 startIndex
-            //let deflateStream = new DeflateStream(state.compressedStream, CompressionLevel.NoCompression, true)
-            //sendStream.CopyTo (deflateStream, size)
-            //deflateStream.Dispose ()
-
-            //let pos = state.compressedStream.Position
-            //state.compressedStream.Position <- previousPosition
-            //state.compressedStream.Writer.WriteInt (int state.compressedStream.Length - int compressionPosition)
-            //state.compressedStream.Position <- pos
-
-            //let size = state.compressedStream.Length - previousLength
-
-
-            //f state.compressedStream.Raw (int previousPosition) (int size)
-
         | _ -> ()
 
 type ReceiveStreamState =
     {
-        compression : INetworkCompression
         receiveStream : ByteStream
-        uncompressedStream : ByteStream
     }
 
 module ReceiveStreamState =
 
-    let create compression =
+    let create () =
         {
-            compression = compression
             receiveStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
-            uncompressedStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
         }
 
     let rec read' (subscriptions : Event<obj> []) (state : ReceiveStreamState) =
-
-        //let size = state.receiveStream.Reader.ReadInt ()
-        //let oldPos = state.receiveStream.Position
-        ////let ms = new MemoryStream (state.receiveStream.Raw, state.receiveStream.Position,)
-        //state.uncompressedStream.Position <- 0L
-        //let deflateStream = new DeflateStream(state.receiveStream, CompressionMode.Decompress, true)
-        //deflateStream.CopyTo(state.uncompressedStream, size)
-        //deflateStream.Dispose ()
-        //state.receiveStream.Position <- oldPos + int64 size
-        //state.uncompressedStream.Position <- 0L
-
-
-
-        //let reader = state.uncompressedStream.Reader
         let reader = state.receiveStream.Reader
         let typeId = reader.ReadByte () |> int
 
@@ -195,11 +151,11 @@ type ClientState =
 
 module ClientState =
 
-    let create (udpClient : IUdpClient) connectionTimeout compression =
+    let create (udpClient : IUdpClient) connectionTimeout =
 
         let packetPool = PacketPool 1024
-        let sendStreamState = SendStreamState.create compression
-        let receiveStreamState = ReceiveStreamState.create compression
+        let sendStreamState = SendStreamState.create ()
+        let receiveStreamState = ReceiveStreamState.create ()
 
         let basicChannelState =
             BasicChannelState.create packetPool
@@ -267,11 +223,11 @@ type ConnectedClientState =
 
 module ConnectedClientState =
 
-    let create (udpServer : IUdpServer) endPoint heartbeatInterval time compression =
+    let create (udpServer : IUdpServer) endPoint heartbeatInterval time =
 
         let packetPool = PacketPool 1024
-        let sendStreamState = SendStreamState.create compression
-        let receiveStreamState = ReceiveStreamState.create compression
+        let sendStreamState = SendStreamState.create ()
+        let receiveStreamState = ReceiveStreamState.create ()
 
         let basicChannelState =
             BasicChannelState.create packetPool
@@ -321,10 +277,10 @@ type ServerState =
 
 module ServerState =
 
-    let create udpServer connectionTimeout compression =
+    let create udpServer connectionTimeout =
 
         let packetPool = PacketPool 1024
-        let sendStreamState = SendStreamState.create compression
+        let sendStreamState = SendStreamState.create ()
 
         {
             packetPool = packetPool
@@ -340,7 +296,7 @@ module ServerState =
     let receive time (packet : Packet) endPoint state =
         match packet.Type with
         | PacketType.ConnectionRequested ->
-            let ccState = ConnectedClientState.create state.udpServer endPoint (TimeSpan.FromSeconds 1.) time state.sendStreamState.compression
+            let ccState = ConnectedClientState.create state.udpServer endPoint (TimeSpan.FromSeconds 1.) time
 
             state.peerLookup.Add (endPoint, ccState)
 
@@ -464,7 +420,6 @@ type Peer (udp : Udp) =
         | Udp.Client state ->
 
             state.receiveStreamState.receiveStream.SetLength 0L
-            state.receiveStreamState.uncompressedStream.SetLength 0L
 
             let client = state.udpClient
             let packetPool = state.packetPool
@@ -487,7 +442,6 @@ type Peer (udp : Udp) =
             state.basicChannelState.reliableOrderedSender.Update time
 
             state.sendStreamState.sendStream.SetLength 0L
-            state.sendStreamState.compressedStream.SetLength 0L
 
             if time > state.lastReceiveTime + state.connectionTimeout then
                 state.peerDisconnected.Trigger state.udpClient.RemoteEndPoint
@@ -543,11 +497,9 @@ type Peer (udp : Udp) =
                 ccState.basicChannelState.reliableOrderedSender.Update time
 
                 ccState.sendStreamState.sendStream.SetLength 0L
-                ccState.sendStreamState.compressedStream.SetLength 0L
             )
 
             state.sendStreamState.sendStream.SetLength 0L
-            state.sendStreamState.compressedStream.SetLength 0L
 
             while endPointRemovals.Count > 0 do
                 let endPoint = endPointRemovals.Dequeue ()
@@ -562,8 +514,8 @@ type Peer (udp : Udp) =
             | Udp.Client state -> state.udpClient.Dispose ()
             | Udp.Server state-> state.udpServer.Dispose ()
 
-type ServerPeer (udpServer, connectionTimeout, compression) =
-    inherit Peer (Udp.Server (ServerState.create udpServer connectionTimeout compression))
+type ServerPeer (udpServer, connectionTimeout) =
+    inherit Peer (Udp.Server (ServerState.create udpServer connectionTimeout))
 
     member this.ClientConnected =
         match this.Udp with
@@ -585,8 +537,8 @@ type ServerPeer (udpServer, connectionTimeout, compression) =
         | Udp.Server server -> server.peerLookup |> Seq.sumBy (fun pair1 -> pair1.Value.packetPool.Count)
         | _ -> failwith "nope"
 
-type ClientPeer (udpClient, compression) =
-    inherit Peer (Udp.Client (ClientState.create udpClient (TimeSpan.FromSeconds 5.) compression))
+type ClientPeer (udpClient) =
+    inherit Peer (Udp.Client (ClientState.create udpClient (TimeSpan.FromSeconds 5.)))
 
     member this.Connected =
         match this.Udp with

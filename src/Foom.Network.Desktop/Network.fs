@@ -39,23 +39,6 @@ type AesEncryption () =
         member this.Dispose () =
             aes.Dispose ()
 
-type DeflateCompression () =
-
-    interface INetworkCompression with
-
-        member this.Compress (bytes, offset, count, output, outputOffset, outputMaxCount) =
-            Array.Copy (bytes, offset, output, outputOffset, count)
-            count
-
-        member this.Decompress (bytes, offset, count, output, outputOffset, outputMaxCount) =
-            Array.Copy (bytes, offset, output, outputOffset, count)
-            count
-
-    interface IDisposable with
-
-        member this.Dispose () =
-            ()
-
 type UdpEndPoint =
     {
         ipEndPoint : IPEndPoint
