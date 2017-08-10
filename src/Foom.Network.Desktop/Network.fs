@@ -195,6 +195,13 @@ type UdpClient () =
                 else
                     false
 
+        member this.Disconnect () =
+            try
+                this.UdpClient.Client.Disconnect true
+                this.UdpClientV6.Client.Disconnect true
+            with | _ -> ()
+            isConnected <- false
+
         member this.RemoteEndPoint =
             if not isConnected then
                 failwith "Remote End Point is invalid because we haven't tried to connect."
@@ -231,6 +238,9 @@ type UdpClient () =
             else 0
 
         member this.Receive (packet : Packet) =
+            if not isConnected then
+                failwith "Receive is invalid because we haven't tried to connect."
+
             let buffer = this.Buffer
 
             let byteCount = (this :> IUdpClient).Receive (buffer, 0, buffer.Length)

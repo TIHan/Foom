@@ -8,11 +8,17 @@ type Peer =
 
     member Connect : address : string * port : int -> unit
 
+    member Disconnect : unit -> unit
+
     member Subscribe<'T> : ('T -> unit) -> unit
 
     member SendUnreliable<'T> : msg : 'T -> unit
 
+    member SendUnreliable<'T> : msg : 'T * IUdpEndPoint -> unit
+
     member SendReliableOrdered<'T> : msg : 'T -> unit
+
+    member SendReliableOrdered<'T> : msg : 'T * IUdpEndPoint -> unit
 
     member Update : TimeSpan -> unit
 
