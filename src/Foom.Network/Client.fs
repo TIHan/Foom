@@ -4,13 +4,9 @@ open System
 open System.Collections.Generic
 
 [<Sealed>]
-type Client (udpClient: IUdpClient) as this =
+type Client (udpClient: IUdpClient) =
 
     let peer = new ClientPeer (udpClient)
-
-    do
-        peer.Connected.Add (fun _ -> this.IsConnected <- true)
-        peer.Disconnected.Add (fun _ -> this.IsConnected <- false)
 
     [<CLIEvent>]
     member val Connected = peer.Connected
@@ -18,7 +14,7 @@ type Client (udpClient: IUdpClient) as this =
     [<CLIEvent>]
     member val Disconnected = peer.Disconnected
 
-    member val IsConnected = false with get, set
+    member this.IsConnected = peer.IsConnected
 
     member this.Connect (address, port) = 
         if this.IsConnected then

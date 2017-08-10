@@ -601,3 +601,5 @@ type Test() =
         Assert.True (didClientConnect)
         Assert.True (didClientDisconnect)
 
+        client.Update (TimeSpan.FromSeconds 200.)
+

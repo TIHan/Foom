@@ -40,8 +40,10 @@ type ServerPeer =
 type ClientPeer =
     inherit Peer
 
+    member IsConnected : bool
+
     member Connected : IEvent<IUdpEndPoint>
 
-    member Disconnected : IEvent<IUdpEndPoint>
+    member Disconnected : IEvent<unit>
 
     new : IUdpClient -> ClientPeer

@@ -143,8 +143,9 @@ type ClientState =
         udpClient : IUdpClient
         connectionTimeout : TimeSpan
         peerConnected : Event<IUdpEndPoint>
-        peerDisconnected : Event<IUdpEndPoint>
+        peerDisconnected : Event<unit>
         mutable lastReceiveTime : TimeSpan
+        mutable isConnected : bool
 
         basicChannelState : BasicChannelState
     }
@@ -178,15 +179,17 @@ module ClientState =
             udpClient = udpClient
             connectionTimeout = connectionTimeout
             peerConnected = Event<IUdpEndPoint> ()
-            peerDisconnected = Event<IUdpEndPoint> ()
+            peerDisconnected = Event<unit> ()
             basicChannelState = basicChannelState
             lastReceiveTime = TimeSpan.Zero
+            isConnected = false
         }
 
     let receive time (packet : Packet) (state : ClientState) =
         match packet.Type with
 
         | PacketType.ConnectionAccepted ->
+            state.isConnected <- true
             state.peerConnected.Trigger (state.udpClient.RemoteEndPoint)
             state.packetPool.Recycle packet
             true
@@ -201,7 +204,8 @@ module ClientState =
             true
 
         | PacketType.Disconnect ->
-            state.peerDisconnected.Trigger (state.udpClient.RemoteEndPoint)
+            state.isConnected <- false
+            state.peerDisconnected.Trigger ()
             state.packetPool.Recycle packet
             true
 
@@ -346,7 +350,7 @@ type Peer (udp : Udp) =
             use tmp = new Packet ()
             tmp.Type <- PacketType.Disconnect
             state.udpClient.Send tmp
-            state.peerDisconnected.Trigger state.udpClient.RemoteEndPoint
+            state.peerDisconnected.Trigger ()
             state.udpClient.Disconnect ()
         | _ -> failwith "Clients can only disconnect."
 
@@ -479,8 +483,9 @@ type Peer (udp : Udp) =
 
             state.sendStreamState.sendStream.SetLength 0L
 
-            if time > state.lastReceiveTime + state.connectionTimeout then
-                state.peerDisconnected.Trigger state.udpClient.RemoteEndPoint
+            if time > state.lastReceiveTime + state.connectionTimeout && state.isConnected then
+                state.isConnected <- false
+                state.peerDisconnected.Trigger ()
 
         | Udp.Server state ->
 
@@ -575,6 +580,11 @@ type ServerPeer (udpServer, connectionTimeout) =
 
 type ClientPeer (udpClient) =
     inherit Peer (Udp.Client (ClientState.create udpClient (TimeSpan.FromSeconds 5.)))
+
+    member this.IsConnected =
+        match this.Udp with
+        | Udp.Client state -> state.isConnected
+        | _ -> failwith "should not happen"
 
     member this.Connected =
         match this.Udp with
