@@ -37,3 +37,8 @@ type Server (udpServer: IUdpServer) =
     member this.ClientPacketPoolMaxCount = peer.ClientPacketPoolMaxCount
 
     member this.ClientPacketPoolCount = peer.ClientPacketPoolCount
+
+    interface IDisposable with
+
+        member this.Dispose () =
+            udpServer.Dispose ()

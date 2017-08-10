@@ -1,9 +1,57 @@
 ﻿namespace Foom.Game.Network
 
 open System
+open System.Collections.Generic
 
 open Foom.Ecs
 open Foom.Network
+
+type ISnapshot =
+
+    abstract Reset : unit -> unit 
+
+type SnapshotFactory<'T when 'T : (new : unit -> 'T) and 'T :> ISnapshot> () =
+
+    let poolAmount = 60
+
+    let pool = Stack (Array.init poolAmount (fun _ -> new 'T ()))
+
+    member this.Count = pool.Count
+
+    member this.MaxCount = poolAmount
+
+    member this.Get () = pool.Pop ()
+
+    member this.Recycle (packet : 'T) =
+        packet.Reset ()
+        if pool.Count + 1 > poolAmount then
+            failwith "For right now, this throws an exception" 
+        pool.Push packet
+
+[<AbstractClass>]
+type NetworkComponent<'State, 'T when 'State : struct and 'T :> Component> () =
+    inherit Component ()
+
+    abstract Map : 'T * byref<'State> -> unit
+
+    abstract Set : byref<'State> * 'T -> unit
+
+    abstract Serialize : ByteWriter * prev : byref<'State> * next : byref<'State> -> unit
+
+    abstract Deserialize : byref<'State> * ByteReader -> unit
+
+[<Sealed>]
+type ServerComponent (udpServer : IUdpServer) =
+    inherit Component ()
+
+    member val Server = new Server (udpServer)
+
+    member val Snapshot = None with get, set
+
+    interface IDisposable with
+
+        member this.Dispose () =
+            (this.Server :> IDisposable).Dispose ()
 
 type TestComp () =
     inherit Component ()
@@ -21,19 +69,6 @@ type TestState =
         mutable y : int
         mutable z : int
     }
-
-[<AbstractClass>]
-type NetworkComponent<'State, 'T when 'State : struct and 'T :> Component> () =
-    inherit Component ()
-
-    abstract Map : 'T * byref<'State> -> unit
-
-    abstract Set : byref<'State> * 'T -> unit
-
-    abstract Serialize : ByteWriter * prev : byref<'State> * next : byref<'State> -> unit
-
-    abstract Deserialize : byref<'State> * ByteReader -> unit
-
 
 type TestNetworkComp () =
     inherit NetworkComponent<TestState, TestComp> ()
@@ -57,13 +92,5 @@ type TestNetworkComp () =
         state.x <- reader.ReadDeltaInt (state.x)
         state.y <- reader.ReadDeltaInt (state.y)
         state.z <- reader.ReadDeltaInt (state.z)
-
-module NetworkBehavior =
-
-    let updateSnapshot f =
-        Behavior.update (fun _ em ea ->
-            em.ForEach<TestNetworkComp> (fun ent comp ->
-                ()
-            )
-        )
+       
 
