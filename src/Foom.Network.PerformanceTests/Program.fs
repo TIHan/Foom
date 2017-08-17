@@ -176,33 +176,51 @@ let perf title f =
 
 [<EntryPoint>]
 let main argv = 
-    use udpClient = new UdpClient () :> IUdpClient
-    use udpServer = new UdpServer (29015) :> IUdpServer
-
-    let client = Client (udpClient)
-    let mutable value = 0
-    client.Subscribe<TestMessage> (fun msg ->
-        value <- msg.b
-    )
-
-    let server = Server (udpServer)
-
-    client.Connect ("127.0.0.1", 29015)
-
-    client.Update TimeSpan.Zero
-    Threading.Thread.Sleep 100
-    server.Update TimeSpan.Zero
-    Threading.Thread.Sleep 100
-    client.Update TimeSpan.Zero
-
     let testSize = 4096 * 4
 
-    let values = Array.zeroCreate testSize
+    let udpClients = Array.init 8 (fun _ -> 
+        let client = new Client (new UdpClient ())
 
-    client.Subscribe<TestMessage3> (fun msg ->
-        for i = 0 to msg.len - 1 do
-            values.[i] <- msg.arr.[i]
+        let mutable value = 0
+        client.Subscribe<TestMessage> (fun msg ->
+            value <- msg.b
+        )
+
+
+
+        let values = Array.zeroCreate testSize
+
+        client.Subscribe<TestMessage3> (fun msg ->
+            for i = 0 to msg.len - 1 do
+                values.[i] <- msg.arr.[i]
+        )
+
+        client.Subscribe<Snapshot> (fun msg ->
+            ()
+        )
+
+        client
     )
+
+    use udpServer = new UdpServer (29015) :> IUdpServer
+
+    let server = new Server (udpServer)
+
+    udpClients
+    |> Array.iter (fun client -> client.Connect ("127.0.0.1", 29015))
+
+    udpClients
+    |> Array.iter (fun client -> client.Update TimeSpan.Zero)
+
+    Threading.Thread.Sleep 100
+
+    server.Update TimeSpan.Zero
+
+    Threading.Thread.Sleep 100
+
+    udpClients
+    |> Array.iter (fun client -> client.Update TimeSpan.Zero)
+
 
     let data = { arr = Array.init testSize (fun i -> i + 1); len = testSize }
 
@@ -217,14 +235,11 @@ let main argv =
         Threading.Thread.Sleep 10
 
         perf "Client Receive" (fun () ->
-            client.Update stopwatch.Elapsed
+            udpClients
+            |> Array.iter (fun client -> client.Update stopwatch.Elapsed)
         )
 
-        printfn "%A = %A" client.PacketPoolMaxCount client.PacketPoolCount
-
-    client.Subscribe<Snapshot> (fun msg ->
-        ()
-    )
+        //printfn "%A = %A" client.PacketPoolMaxCount client.PacketPoolCount
 
     let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
     let rng = System.Random ()
@@ -233,9 +248,9 @@ let main argv =
         perf "Server Send Snapshot" (fun () ->
             let snapshot = pool.Get ()
 
-            snapshot.stateLength <- 100us
+            snapshot.stateLength <- 500us
 
-            for j = 0 to 100 - 1 do
+            for j = 0 to 500 - 1 do
                 let state = &snapshot.states.[j]
                 state.id <- uint16 j
                 state.x <- (1 + rng.Next())
@@ -251,10 +266,11 @@ let main argv =
         Threading.Thread.Sleep 10
 
         perf "Client Receive Snapshot" (fun () ->
-            client.Update stopwatch.Elapsed
+            udpClients
+            |> Array.iter (fun client -> client.Update stopwatch.Elapsed)
         )
 
-        printfn "%A = %A" client.PacketPoolMaxCount client.PacketPoolCount
+       // printfn "%A = %A" client.PacketPoolMaxCount client.PacketPoolCount
       
 
     Console.ReadLine () |> ignore
