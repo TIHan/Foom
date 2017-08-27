@@ -5,69 +5,6 @@ open System.IO
 open System.Collections.Generic
 open System.IO.Compression
 
-type BasicChannelState =
-    {
-        sharedPacketPool :          PacketPool
-
-        unreliableReceiver :        UnreliableReceiver
-        unreliableSender :          UnreliableSender
-
-        reliableOrderedReceiver :   ReliableOrderedReceiver
-        reliableOrderedSender :     ReliableOrderedChannel
-
-        reliableOrderedAckSender :  ReliableOrderedAckSender
-    }
-
-module BasicChannelState =
-
-    let create packetPool receive send sendAck =
-        let reliableOrderedAckSender = ReliableOrderedAckSender (packetPool, send)
-
-        let sendAck = fun ack -> sendAck ack reliableOrderedAckSender.Send
-
-        {
-            sharedPacketPool = packetPool
-
-            unreliableReceiver = UnreliableReceiver (packetPool, receive)
-            unreliableSender = UnreliableSender (packetPool, send)
-
-            reliableOrderedReceiver = ReliableOrderedReceiver (packetPool, sendAck, receive)
-            reliableOrderedSender = ReliableOrderedChannel (packetPool, send)
-
-            reliableOrderedAckSender = reliableOrderedAckSender
-        }
-
-    let send bytes startIndex size packetType state =
-        match packetType with
-        | PacketType.Unreliable ->
-            state.unreliableSender.Send (bytes, startIndex, size)
-
-        | PacketType.ReliableOrdered ->
-            state.reliableOrderedSender.Send (bytes, startIndex, size)
-
-        | PacketType.ReliableOrderedAck ->
-            state.reliableOrderedAckSender.Send (bytes, startIndex, size)
-
-        | _ -> failwith "packet type not supported"
-
-    let receive time (packet : Packet) state =
-        match packet.Type with
-
-        | PacketType.Unreliable ->
-            state.unreliableReceiver.Receive (time, packet)
-            true
-
-        | PacketType.ReliableOrdered ->
-            state.reliableOrderedReceiver.Receive (time, packet)
-            true
-
-        | PacketType.ReliableOrderedAck ->
-            packet.ReadAcks state.reliableOrderedSender.Ack
-            state.sharedPacketPool.Recycle packet
-            true
-
-        | _ -> false
-
 type SendStreamState =
     {
         sendStream :    ByteStream
@@ -432,14 +369,11 @@ type Peer (udp : Udp) =
                 else
                     packetPool.Recycle packet
 
-            state.basicChannelState.unreliableReceiver.Update time
-            state.basicChannelState.reliableOrderedReceiver.Update time
+            state.basicChannelState.UpdateReceive time
 
             ReceiveStreamState.read state.subscriptions state.receiveStreamState
-            
-            state.basicChannelState.unreliableSender.Update time
-            state.basicChannelState.reliableOrderedAckSender.Update time
-            state.basicChannelState.reliableOrderedSender.Update time
+
+            state.basicChannelState.UpdateSend time
 
             state.sendStreamState.sendStream.SetLength 0L
 
@@ -487,14 +421,11 @@ type Peer (udp : Udp) =
                     server.Send (packet, endPoint)
                     packetPool.Recycle packet
 
-                ccState.basicChannelState.unreliableReceiver.Update time
-                ccState.basicChannelState.reliableOrderedReceiver.Update time
+                ccState.basicChannelState.UpdateReceive time
 
                 ReceiveStreamState.read state.subscriptions ccState.receiveStreamState
             
-                ccState.basicChannelState.unreliableSender.Update time
-                ccState.basicChannelState.reliableOrderedAckSender.Update time
-                ccState.basicChannelState.reliableOrderedSender.Update time
+                ccState.basicChannelState.UpdateSend time
 
                 ccState.sendStreamState.sendStream.SetLength 0L
             )
