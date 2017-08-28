@@ -68,7 +68,8 @@ type BasicChannelState =
 
         | _ -> false
 
-    member this.UpdateReceive time =
+    member this.Update time =
+        // Receive
         this.unreliableReceiver.Flush time
         this.reliableOrderedReceiver.Flush time
 
@@ -78,7 +79,7 @@ type BasicChannelState =
             this.receive packet
         )
 
-    member this.UpdateSend time =
+        // Send
         this.unreliableSender.Flush time
         this.reliableOrderedAckSender.Flush time
         this.reliableOrderedSender.Flush time

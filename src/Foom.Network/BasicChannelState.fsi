@@ -15,6 +15,4 @@ type BasicChannelState =
 
     member SendReliableOrderedAck : uint16 -> unit
 
-    member UpdateReceive : TimeSpan -> unit
-
-    member UpdateSend : TimeSpan -> unit
+    member Update : TimeSpan -> unit

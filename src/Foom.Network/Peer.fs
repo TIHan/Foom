@@ -414,11 +414,9 @@ type Peer (udp : Udp) =
                 else
                     packetPool.Recycle packet
 
-            state.basicChannelState.UpdateReceive time
+            state.basicChannelState.Update time
 
             ReceiveStreamState.read state.subscriptions state.receiveStreamState
-
-            state.basicChannelState.UpdateSend time
 
             state.sendStreamState.sendStream.SetLength 0L
 
@@ -467,11 +465,9 @@ type Peer (udp : Udp) =
                     server.Send (packet, endPoint)
                     packetPool.Recycle packet
 
-                ccState.basicChannelState.UpdateReceive time
+                ccState.basicChannelState.Update time
 
                 ReceiveStreamState.read state.subscriptions ccState.receiveStreamState
-            
-                ccState.basicChannelState.UpdateSend time
 
                 ccState.sendStreamState.sendStream.SetLength 0L
             )
