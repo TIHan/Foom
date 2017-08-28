@@ -232,7 +232,7 @@ type ReceiverAck =
         {
             receiver = Receiver.Create packetPool
             ackManager = AckManager (TimeSpan.FromSeconds 1.)
-            fragmentAssembler = FragmentAssembler ()
+            fragmentAssembler = FragmentAssembler.Create ()
             nextSeqId = 0us
         }
 
