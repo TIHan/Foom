@@ -24,6 +24,8 @@ type IUdpClient =
 
     abstract Connect : address: string * port: int -> bool
 
+    abstract Disconnect : unit -> unit
+
     abstract Receive : byte [] * offset: int * size: int -> int
 
     abstract Receive : Packet -> int
