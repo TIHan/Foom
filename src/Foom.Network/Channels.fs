@@ -5,42 +5,6 @@ open System.Collections.Generic
 
 open Foom.Network
 
-type Filter<'Input, 'Output> =
-    {
-        inputQueue : Queue<'Input>
-        outputQueue : Queue<'Output>
-        map : 'Input -> ('Output -> unit) -> unit
-    } 
-
-    member this.Enqueue input =
-        this.inputQueue.Enqueue input
-
-    member this.Flush (time : TimeSpan) =
-        while this.inputQueue.Count > 0 do
-            let input = this.inputQueue.Dequeue ()
-            this.map input this.outputQueue.Enqueue
-
-    member this.Process f =
-        while this.outputQueue.Count > 0 do
-            let output = this.outputQueue.Dequeue ()
-            f output
-
-type Filter private () =
-
-    static member Create map =
-        {
-            inputQueue = Queue ()
-            outputQueue = Queue ()
-            map = map
-        }
-
-
-    static member CreateMerger (packetPool : PacketPool) : Filter<struct (byte[] * int * int), Packet> =
-        Filter.Create (fun (struct (bytes, startIndex, size)) enqueue ->
-            ()
-            //packetPool.GetFromBytes (bytes, startIndex, size, outputPackets)
-        )
-
 [<Sealed>]
 type DataMerger () =
 
