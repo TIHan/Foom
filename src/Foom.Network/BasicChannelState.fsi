@@ -9,7 +9,11 @@ type BasicChannelState =
 
     member Receive : Packet -> bool
 
-    member Send : byte[] * int * int * PacketType -> unit
+    member SendUnreliable : byte[] * int * int -> unit
+
+    member SendReliableOrdered : byte [] * int * int -> unit
+
+    member SendReliableOrderedAck : uint16 -> unit
 
     member UpdateReceive : TimeSpan -> unit
 

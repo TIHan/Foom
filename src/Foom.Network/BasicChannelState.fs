@@ -4,6 +4,7 @@ open System.Collections.Generic
 
 type BasicChannelState =
     {
+        sendStream :                ByteStream
         sharedPacketPool :          PacketPool
 
         unreliableReceiver :        Receiver
@@ -25,6 +26,7 @@ type BasicChannelState =
         let sendAck = fun ack -> sendAck ack reliableOrderedAckSender.Enqueue
 
         {
+            sendStream = new ByteStream (Array.zeroCreate (1024 * 1024))
             sharedPacketPool = packetPool
 
             unreliableReceiver = Receiver.CreateUnreliable packetPool
@@ -40,18 +42,19 @@ type BasicChannelState =
             receive = receive
         }
 
-    member this.Send (bytes, startIndex, size, packetType) =
-        match packetType with
-        | PacketType.Unreliable ->
-            this.unreliableSender.Enqueue (bytes, startIndex, size)
+    member this.SendUnreliable (bytes, startIndex, size) =
+        this.unreliableSender.Enqueue (bytes, startIndex, size)
 
-        | PacketType.ReliableOrdered ->
-            this.reliableOrderedSender.Enqueue (bytes, startIndex, size)
+    member this.SendReliableOrdered (bytes, startIndex, size) =
+        this.reliableOrderedSender.Enqueue (bytes, startIndex, size)
 
-        | PacketType.ReliableOrderedAck ->
-            this.reliableOrderedAckSender.Enqueue (bytes, startIndex, size)
+    member this.SendReliableOrderedAck ack =
+        let s = this.sendStream.Position
+        this.sendStream.Writer.WriteUInt16 ack
+        this.reliableOrderedAckSender.Enqueue (this.sendStream.Raw, int s, 2)
 
-        | _ -> failwith "packet type not supported"
+    member this.ReceiveUnreliable packet =
+        this.unreliableReceiver.Enqueue packet
 
     member this.Receive (packet : Packet) =
         match packet.Type with
@@ -89,3 +92,5 @@ type BasicChannelState =
         this.unreliableSender.Process this.send
         this.reliableOrderedAckSender.Process this.send
         this.reliableOrderedSender.Process this.send
+
+        this.sendStream.SetLength 0L

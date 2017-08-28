@@ -313,11 +313,21 @@ type Peer (udp : Udp) =
             state.peerLookup
             |> Seq.iter (fun pair ->
                 let ccState = pair.Value
-                ccState.basicChannelState.Send (bytes, startIndex, size, packetType)
+                match packetType with
+                | PacketType.Unreliable ->
+                    ccState.basicChannelState.SendUnreliable (bytes, startIndex, size)
+                | PacketType.ReliableOrdered ->
+                    ccState.basicChannelState.SendReliableOrdered (bytes, startIndex, size)
+                | _ -> failwith "bad packet type"
             )
 
         | Udp.Client state ->
-            state.basicChannelState.Send (bytes, startIndex, size, packetType)
+            match packetType with
+            | PacketType.Unreliable ->
+                state.basicChannelState.SendUnreliable (bytes, startIndex, size)
+            | PacketType.ReliableOrdered ->
+                state.basicChannelState.SendReliableOrdered (bytes, startIndex, size)
+            | _ -> failwith "bad packet type"
 
     member this.Send<'T> (msg : 'T, packetType) =
         match udp with
@@ -332,7 +342,12 @@ type Peer (udp : Udp) =
         | Udp.Server state ->
             match state.peerLookup.TryGetValue (endPoint) with
             | true, ccState ->
-                ccState.basicChannelState.Send (bytes, startIndex, size, packetType)
+                match packetType with
+                | PacketType.Unreliable ->
+                    ccState.basicChannelState.SendUnreliable (bytes, startIndex, size)
+                | PacketType.ReliableOrdered ->
+                    ccState.basicChannelState.SendReliableOrdered (bytes, startIndex, size)
+                | _ -> failwith "bad packet type"
             | _ -> ()
         | _ -> ()
 
