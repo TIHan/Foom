@@ -71,6 +71,19 @@ module BasicChannelState =
 
 type BasicChannelState with
 
+    member this.Send bytes startIndex size packetType =
+        match packetType with
+        | PacketType.Unreliable ->
+            this.unreliableSender.Send (bytes, startIndex, size)
+
+        | PacketType.ReliableOrdered ->
+            this.reliableOrderedSender.Send (bytes, startIndex, size)
+
+        | PacketType.ReliableOrderedAck ->
+            this.reliableOrderedAckSender.Send (bytes, startIndex, size)
+
+        | _ -> failwith "packet type not supported"
+
     member this.UpdateReceive time =
         this.unreliableReceiver.Update time
         this.reliableOrderedReceiver.Update time
