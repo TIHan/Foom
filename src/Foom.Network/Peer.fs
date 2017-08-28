@@ -96,17 +96,18 @@ module ClientState =
         let receiveStreamState = ReceiveStreamState.create ()
 
         let basicChannelState =
-            BasicChannelState.create packetPool
+            BasicChannelState.Create (packetPool,
                 (fun packet ->
                     receiveStreamState.receiveStream.Write (packet.Raw, sizeof<PacketHeader>, int packet.DataLength)
-                )
-                udpClient.Send
+                ),
+                udpClient.Send,
                 (fun ack send ->
                     let startIndex = int sendStreamState.sendStream.Position
                     sendStreamState.sendStream.Writer.WriteUInt16 ack
                     let size = int sendStreamState.sendStream.Position - startIndex
                     send (sendStreamState.sendStream.Raw, startIndex, size)
                 )
+            )
 
         {
             packetPool = packetPool
@@ -171,17 +172,18 @@ module ConnectedClientState =
         let receiveStreamState = ReceiveStreamState.create ()
 
         let basicChannelState =
-            BasicChannelState.create packetPool
+            BasicChannelState.Create (packetPool,
                 (fun packet ->
                     receiveStreamState.receiveStream.Write (packet.Raw, sizeof<PacketHeader>, int packet.DataLength)
-                )
-                (fun packet -> udpServer.Send (packet, endPoint))
+                ),
+                (fun packet -> udpServer.Send (packet, endPoint)),
                 (fun ack send ->
                     let startIndex = int sendStreamState.sendStream.Position
                     sendStreamState.sendStream.Writer.WriteUInt16 ack
                     let size = int sendStreamState.sendStream.Position - startIndex
                     send (sendStreamState.sendStream.Raw, startIndex, size)
                 )
+            )
 
         {
             packetPool = packetPool
@@ -311,11 +313,11 @@ type Peer (udp : Udp) =
             state.peerLookup
             |> Seq.iter (fun pair ->
                 let ccState = pair.Value
-                BasicChannelState.send bytes startIndex size packetType ccState.basicChannelState
+                ccState.basicChannelState.Send (bytes, startIndex, size, packetType)
             )
 
         | Udp.Client state ->
-            BasicChannelState.send bytes startIndex size packetType state.basicChannelState
+            state.basicChannelState.Send (bytes, startIndex, size, packetType)
 
     member this.Send<'T> (msg : 'T, packetType) =
         match udp with
@@ -330,7 +332,7 @@ type Peer (udp : Udp) =
         | Udp.Server state ->
             match state.peerLookup.TryGetValue (endPoint) with
             | true, ccState ->
-                BasicChannelState.send bytes startIndex size packetType ccState.basicChannelState
+                ccState.basicChannelState.Send (bytes, startIndex, size, packetType)
             | _ -> ()
         | _ -> ()
 
@@ -360,7 +362,7 @@ type Peer (udp : Udp) =
         | Udp.Client state -> 
             state.lastReceiveTime <- time
 
-            match BasicChannelState.receive time packet state.basicChannelState with
+            match state.basicChannelState.Receive (time, packet) with
             | false ->
                 match ClientState.receive time packet state with
                 | false -> state.packetPool.Recycle packet
@@ -381,7 +383,7 @@ type Peer (udp : Udp) =
                     ccState.packetPool.Get ()
                     |> state.packetPool.Recycle
 
-                    match BasicChannelState.receive time packet ccState.basicChannelState with
+                    match ccState.basicChannelState.Receive (time, packet) with
                     | false -> ccState.packetPool.Recycle packet
                     | _ -> ()
                 | _ -> ()
