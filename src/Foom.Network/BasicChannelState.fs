@@ -6,7 +6,7 @@ type BasicChannelState =
     {
         sharedPacketPool :          PacketPool
 
-        unreliableReceiver :        UnreliableReceiver
+        unreliableReceiver :        Receiver
         unreliableSender :          Sender
 
         reliableOrderedReceiver :   ReliableOrderedReceiver
@@ -15,6 +15,7 @@ type BasicChannelState =
         reliableOrderedAckSender :  Sender
 
         send :                      Packet -> unit
+        receive :                   Packet -> unit
     }
 
     static member Create (packetPool, receive, send, sendAck) =
@@ -25,7 +26,7 @@ type BasicChannelState =
         {
             sharedPacketPool = packetPool
 
-            unreliableReceiver = UnreliableReceiver (packetPool, receive)
+            unreliableReceiver = Receiver.CreateUnreliable packetPool
             unreliableSender = Sender.CreateUnreliable packetPool
 
             reliableOrderedReceiver = ReliableOrderedReceiver (packetPool, sendAck, receive)
@@ -34,6 +35,7 @@ type BasicChannelState =
             reliableOrderedAckSender = reliableOrderedAckSender
 
             send = send
+            receive = receive
         }
 
     member this.Send (bytes, startIndex, size, packetType) =
@@ -53,7 +55,7 @@ type BasicChannelState =
         match packet.Type with
 
         | PacketType.Unreliable ->
-            this.unreliableReceiver.Receive (time, packet)
+            this.unreliableReceiver.Enqueue packet
             true
 
         | PacketType.ReliableOrdered ->
@@ -68,8 +70,10 @@ type BasicChannelState =
         | _ -> false
 
     member this.UpdateReceive time =
-        this.unreliableReceiver.Update time
+        this.unreliableReceiver.Flush time
         this.reliableOrderedReceiver.Update time
+
+        this.unreliableReceiver.Process this.receive
 
     member this.UpdateSend time =
         this.unreliableSender.Flush time

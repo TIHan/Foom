@@ -37,10 +37,10 @@
     <Compile Include="Sequencer.fs" />
     <Compile Include="AckManager.fsi" />
     <Compile Include="AckManager.fs" />
-    <Compile Include="IUdp.fs" />
     <Compile Include="Channels.fs" />
     <Compile Include="BasicChannelState.fsi" />
     <Compile Include="BasicChannelState.fs" />
+    <Compile Include="IUdp.fs" />
     <Compile Include="Peer.fsi" />
     <Compile Include="Peer.fs" />
     <Compile Include="Server.fs" />

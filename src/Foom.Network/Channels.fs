@@ -21,7 +21,7 @@ type DataMerger () =
         data.Clear ()
 
 [<AbstractClass>]
-type Receiver () =
+type Receiver2 () =
 
     abstract Receive : TimeSpan * Packet -> unit
 
@@ -131,8 +131,50 @@ type SenderAck =
 
         senderAck
 
+type Receiver =
+    {
+        packetPool : PacketPool
+        inputQueue : Queue<Packet>
+        outputQueue : Queue<Packet>
+        ackManager : AckManager
+        fragmentAssembler : FragmentAssembler
+
+        mutable output : TimeSpan -> Packet -> unit
+    }
+
+    member this.Enqueue packet =
+        this.inputQueue.Enqueue packet
+
+    member this.Flush time =
+        while this.inputQueue.Count > 0 do
+            let packet = this.inputQueue.Dequeue ()
+            this.output time packet
+
+    member this.Process f =
+        while this.outputQueue.Count > 0 do
+            let packet = this.outputQueue.Dequeue ()
+            f packet
+            this.packetPool.Recycle packet
+           
+    static member Create packetPool =
+        {
+            packetPool = packetPool
+            inputQueue = Queue ()
+            outputQueue = Queue ()
+            ackManager = AckManager (TimeSpan.FromSeconds 1.)
+            fragmentAssembler = FragmentAssembler ()
+            output = fun _ _ -> ()
+        }
+
+    static member CreateUnreliable packetPool =
+        let receiver = Receiver.Create packetPool
+
+        receiver.output <- fun _ packet -> receiver.outputQueue.Enqueue packet
+
+        receiver
+
 type UnreliableReceiver (packetPool : PacketPool, receive) =
-    inherit Receiver ()
+    inherit Receiver2 ()
 
     let queue = Queue<Packet> ()
 
@@ -147,7 +189,7 @@ type UnreliableReceiver (packetPool : PacketPool, receive) =
             packetPool.Recycle packet
 
 type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
-    inherit Receiver ()
+    inherit Receiver2 ()
 
     let ackManager = AckManager (TimeSpan.FromSeconds 1.)
     let fragmentAssembler = FragmentAssembler ()
