@@ -10,7 +10,7 @@ type BasicChannelState =
         unreliableSender :          Sender
 
         reliableOrderedReceiver :   ReliableOrderedReceiver
-        reliableOrderedSender :     ReliableOrderedChannel
+        reliableOrderedSender :     SenderAck
 
         reliableOrderedAckSender :  Sender
 
@@ -29,7 +29,7 @@ type BasicChannelState =
             unreliableSender = Sender.CreateUnreliable packetPool
 
             reliableOrderedReceiver = ReliableOrderedReceiver (packetPool, sendAck, receive)
-            reliableOrderedSender = ReliableOrderedChannel (packetPool, send)
+            reliableOrderedSender = SenderAck.CreateReliableOrdered packetPool
 
             reliableOrderedAckSender = reliableOrderedAckSender
 
@@ -42,7 +42,7 @@ type BasicChannelState =
             this.unreliableSender.Enqueue (bytes, startIndex, size)
 
         | PacketType.ReliableOrdered ->
-            this.reliableOrderedSender.Send (bytes, startIndex, size)
+            this.reliableOrderedSender.Enqueue (bytes, startIndex, size)
 
         | PacketType.ReliableOrderedAck ->
             this.reliableOrderedAckSender.Enqueue (bytes, startIndex, size)
@@ -74,7 +74,8 @@ type BasicChannelState =
     member this.UpdateSend time =
         this.unreliableSender.Flush time
         this.reliableOrderedAckSender.Flush time
-        this.reliableOrderedSender.Update time
+        this.reliableOrderedSender.Flush time
 
         this.unreliableSender.Process this.send
         this.reliableOrderedAckSender.Process this.send
+        this.reliableOrderedSender.Process this.send

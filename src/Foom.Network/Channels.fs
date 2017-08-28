@@ -27,13 +27,6 @@ type Receiver () =
 
     abstract Update : TimeSpan -> unit
 
-[<AbstractClass>]
-type Channel () =
-
-    abstract Send : byte [] * startIndex : int * size : int -> unit
-
-    abstract Update : TimeSpan -> unit
-
 type Sender =
     {
         packetPool : PacketPool
@@ -99,6 +92,10 @@ type SenderAck =
     member this.Flush time =
         this.sender.Flush time
 
+        this.ackManager.Update time (fun ack packet ->
+            this.sender.packetQueue.Enqueue packet
+        )
+
     member this.Ack ack =
         let packet = this.ackManager.GetPacket (int ack)
         if obj.ReferenceEquals (packet, null) |> not then 
@@ -130,10 +127,6 @@ type SenderAck =
             ackManager.Mark (packet, time) |> ignore
             packetQueue.Enqueue packet
 
-            ackManager.Update time (fun ack packet ->
-                packetQueue.Enqueue packet
-            )
-
         senderAck.sender.output <- output
 
         senderAck
@@ -152,82 +145,6 @@ type UnreliableReceiver (packetPool : PacketPool, receive) =
             let packet = queue.Dequeue ()
             receive packet
             packetPool.Recycle packet
-
-type UnreliableSender (packetPool : PacketPool, send) =
-    inherit Channel ()
-
-    let dataMerger = DataMerger ()
-    let mergedPackets = ResizeArray ()
-
-    override this.Send (bytes, startIndex, size) =
-        dataMerger.Enqueue (bytes, startIndex, size)
-
-    override this.Update time =
-        dataMerger.Flush (packetPool, mergedPackets)
-
-        let packets = mergedPackets
-        for i = 0 to packets.Count - 1 do
-            let packet = packets.[i]
-            send packet
-            packetPool.Recycle packet
-        packets.Clear ()
-                
-[<Sealed>]
-type ReliableOrderedChannel (packetPool : PacketPool, send) =
-    inherit Channel ()
-
-    let dataMerger = DataMerger ()
-    let mergedPackets = ResizeArray ()
-
-    let sequencer = Sequencer ()
-    let ackManager = AckManager (TimeSpan.FromSeconds 1.)
-
-    override this.Send (bytes, startIndex, size) =
-        dataMerger.Enqueue (bytes, startIndex, size)
-
-    override this.Update time =
-        dataMerger.Flush (packetPool, mergedPackets)
-
-        let packets = mergedPackets
-        for i = 0 to packets.Count - 1 do
-            let packet = packets.[i]
-            sequencer.Assign packet
-            packet.Type <- PacketType.ReliableOrdered
-            ackManager.Mark (packet, time) |> ignore
-            send packet
-
-        ackManager.Update time (fun ack packet ->
-            send packet
-        )
-
-        packets.Clear ()
-
-    member this.Ack ack =
-        let packet = ackManager.GetPacket (int ack)
-        if obj.ReferenceEquals (packet, null) |> not then 
-            packetPool.Recycle packet
-        ackManager.Ack ack
-
-
-type ReliableOrderedAckSender (packetPool : PacketPool, send) =
-    inherit Channel ()
-
-    let dataMerger = DataMerger ()
-    let mergedPackets = ResizeArray ()
-
-    override this.Send (bytes, startIndex, size) =
-        dataMerger.Enqueue (bytes, startIndex, size)
-
-    override this.Update time =
-        dataMerger.Flush (packetPool, mergedPackets)
-
-        let packets = mergedPackets
-        for i = 0 to packets.Count - 1 do
-            let packet = packets.[i]
-            packet.Type <- PacketType.ReliableOrderedAck
-            send packet
-            packetPool.Recycle packet
-        packets.Clear ()
 
 type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
     inherit Receiver ()
