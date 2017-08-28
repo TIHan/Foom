@@ -5,7 +5,7 @@ open System
 [<Sealed>]
 type BasicChannelState =
 
-    static member Create : PacketPool * (Packet -> unit) * (Packet -> unit) * (uint16 -> (byte [] * int * int -> unit) -> unit) -> BasicChannelState
+    static member Create : PacketPool * (Packet -> unit) * (Packet -> unit) -> BasicChannelState
 
     member Receive : Packet -> bool
 

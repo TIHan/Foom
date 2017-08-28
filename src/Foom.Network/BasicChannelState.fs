@@ -16,15 +16,10 @@ type BasicChannelState =
         reliableOrderedAckSender :  Sender
 
         send :                      Packet -> unit
-        sendAck :                   uint16 -> unit
         receive :                   Packet -> unit
     }
 
-    static member Create (packetPool, receive, send, sendAck) =
-        let reliableOrderedAckSender = Sender.CreateReliableOrderedAck packetPool
-
-        let sendAck = fun ack -> sendAck ack reliableOrderedAckSender.Enqueue
-
+    static member Create (packetPool, receive, send) =
         {
             sendStream = new ByteStream (Array.zeroCreate (1024 * 1024))
             sharedPacketPool = packetPool
@@ -35,10 +30,9 @@ type BasicChannelState =
             reliableOrderedReceiver = ReceiverAck.CreateReliableOrdered packetPool
             reliableOrderedSender = SenderAck.CreateReliableOrdered packetPool
 
-            reliableOrderedAckSender = reliableOrderedAckSender
+            reliableOrderedAckSender = Sender.CreateReliableOrderedAck packetPool
 
             send = send
-            sendAck = sendAck
             receive = receive
         }
 
@@ -80,7 +74,7 @@ type BasicChannelState =
 
         this.unreliableReceiver.Process this.receive
         this.reliableOrderedReceiver.Process (fun packet ->
-            this.sendAck packet.SequenceId
+            this.SendReliableOrderedAck packet.SequenceId
             this.receive packet
         )
 

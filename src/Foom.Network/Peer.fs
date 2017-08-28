@@ -100,13 +100,7 @@ module ClientState =
                 (fun packet ->
                     receiveStreamState.receiveStream.Write (packet.Raw, sizeof<PacketHeader>, int packet.DataLength)
                 ),
-                udpClient.Send,
-                (fun ack send ->
-                    let startIndex = int sendStreamState.sendStream.Position
-                    sendStreamState.sendStream.Writer.WriteUInt16 ack
-                    let size = int sendStreamState.sendStream.Position - startIndex
-                    send (sendStreamState.sendStream.Raw, startIndex, size)
-                )
+                udpClient.Send
             )
 
         {
@@ -176,13 +170,7 @@ module ConnectedClientState =
                 (fun packet ->
                     receiveStreamState.receiveStream.Write (packet.Raw, sizeof<PacketHeader>, int packet.DataLength)
                 ),
-                (fun packet -> udpServer.Send (packet, endPoint)),
-                (fun ack send ->
-                    let startIndex = int sendStreamState.sendStream.Position
-                    sendStreamState.sendStream.Writer.WriteUInt16 ack
-                    let size = int sendStreamState.sendStream.Position - startIndex
-                    send (sendStreamState.sendStream.Raw, startIndex, size)
-                )
+                (fun packet -> udpServer.Send (packet, endPoint))
             )
 
         {
