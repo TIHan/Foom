@@ -362,7 +362,7 @@ type Peer (udp : Udp) =
         | Udp.Client state -> 
             state.lastReceiveTime <- time
 
-            match state.basicChannelState.Receive (time, packet) with
+            match state.basicChannelState.Receive packet with
             | false ->
                 match ClientState.receive time packet state with
                 | false -> state.packetPool.Recycle packet
@@ -383,7 +383,7 @@ type Peer (udp : Udp) =
                     ccState.packetPool.Get ()
                     |> state.packetPool.Recycle
 
-                    match ccState.basicChannelState.Receive (time, packet) with
+                    match ccState.basicChannelState.Receive packet with
                     | false -> ccState.packetPool.Recycle packet
                     | _ -> ()
                 | _ -> ()

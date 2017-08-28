@@ -37,6 +37,7 @@
     <Compile Include="Sequencer.fs" />
     <Compile Include="AckManager.fsi" />
     <Compile Include="AckManager.fs" />
+    <Compile Include="Channels.fsi" />
     <Compile Include="Channels.fs" />
     <Compile Include="BasicChannelState.fsi" />
     <Compile Include="BasicChannelState.fs" />

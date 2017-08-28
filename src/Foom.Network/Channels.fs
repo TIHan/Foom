@@ -1,5 +1,4 @@
-﻿[<AutoOpen>]
-module Foom.Network.Pipelines
+﻿namespace Foom.Network
 
 open System
 open System.Collections.Generic
@@ -19,13 +18,6 @@ type DataMerger () =
             let struct (bytes, startIndex, size) = data.[i]
             packetPool.GetFromBytes (bytes, startIndex, size, outputPackets)
         data.Clear ()
-
-[<AbstractClass>]
-type Receiver2 () =
-
-    abstract Receive : TimeSpan * Packet -> unit
-
-    abstract Update : TimeSpan -> unit
 
 type Sender =
     {
@@ -217,50 +209,3 @@ type ReceiverAck =
                     packetPool.Recycle packet
 
         receiverAck
-
-
-type UnreliableReceiver (packetPool : PacketPool, receive) =
-    inherit Receiver2 ()
-
-    let queue = Queue<Packet> ()
-
-    override this.Receive (_, packet) =
-        System.Diagnostics.Debug.Assert (packet.Type = PacketType.Unreliable)
-        queue.Enqueue (packet)
-
-    override this.Update _ =
-        while queue.Count <> 0 do
-            let packet = queue.Dequeue ()
-            receive packet
-            packetPool.Recycle packet
-
-type ReliableOrderedReceiver (packetPool : PacketPool, sendAck, receive) =
-    inherit Receiver2 ()
-
-    let ackManager = AckManager (TimeSpan.FromSeconds 1.)
-    let fragmentAssembler = FragmentAssembler ()
-
-    let mutable nextSeqId = 0us
-
-    // TODO: AckManager needs to use the packetPool.
-    override this.Receive (time, packet) =
-        System.Diagnostics.Debug.Assert (packet.Type = PacketType.ReliableOrdered)
-        sendAck packet.SequenceId
-        if ackManager.Mark (packet, time) |> not then
-            packetPool.Recycle packet
-
-    override this.Update time =
-        ackManager.ForEachPending (fun seqId packet ->
-            if nextSeqId = seqId then
-                ackManager.Ack seqId
-                nextSeqId <- nextSeqId + 1us
-
-                if packet.IsFragmented then
-                    fragmentAssembler.Mark (packet, fun packet ->
-                        receive packet
-                        packetPool.Recycle packet
-                    )
-                else
-                    receive packet
-                    packetPool.Recycle packet
-        )

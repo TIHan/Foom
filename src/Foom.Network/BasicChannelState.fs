@@ -9,12 +9,13 @@ type BasicChannelState =
         unreliableReceiver :        Receiver
         unreliableSender :          Sender
 
-        reliableOrderedReceiver :   ReliableOrderedReceiver
+        reliableOrderedReceiver :   ReceiverAck
         reliableOrderedSender :     SenderAck
 
         reliableOrderedAckSender :  Sender
 
         send :                      Packet -> unit
+        sendAck :                   uint16 -> unit
         receive :                   Packet -> unit
     }
 
@@ -29,12 +30,13 @@ type BasicChannelState =
             unreliableReceiver = Receiver.CreateUnreliable packetPool
             unreliableSender = Sender.CreateUnreliable packetPool
 
-            reliableOrderedReceiver = ReliableOrderedReceiver (packetPool, sendAck, receive)
+            reliableOrderedReceiver = ReceiverAck.CreateReliableOrdered packetPool
             reliableOrderedSender = SenderAck.CreateReliableOrdered packetPool
 
             reliableOrderedAckSender = reliableOrderedAckSender
 
             send = send
+            sendAck = sendAck
             receive = receive
         }
 
@@ -51,7 +53,7 @@ type BasicChannelState =
 
         | _ -> failwith "packet type not supported"
 
-    member this.Receive (time, packet : Packet) =
+    member this.Receive (packet : Packet) =
         match packet.Type with
 
         | PacketType.Unreliable ->
@@ -59,7 +61,7 @@ type BasicChannelState =
             true
 
         | PacketType.ReliableOrdered ->
-            this.reliableOrderedReceiver.Receive (time, packet)
+            this.reliableOrderedReceiver.Enqueue packet
             true
 
         | PacketType.ReliableOrderedAck ->
@@ -71,9 +73,13 @@ type BasicChannelState =
 
     member this.UpdateReceive time =
         this.unreliableReceiver.Flush time
-        this.reliableOrderedReceiver.Update time
+        this.reliableOrderedReceiver.Flush time
 
         this.unreliableReceiver.Process this.receive
+        this.reliableOrderedReceiver.Process (fun packet ->
+            this.sendAck packet.SequenceId
+            this.receive packet
+        )
 
     member this.UpdateSend time =
         this.unreliableSender.Flush time
