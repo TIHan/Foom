@@ -11,13 +11,13 @@ type DataMerger (packetPool : PacketPool) =
 
     let data = ResizeArray ()
 
-    member this.Send (bytes, startIndex, size) =
+    member this.Enqueue (bytes, startIndex, size) =
         data.Add (struct (bytes, startIndex, size))
 
-    member this.Update mergedPackets =
+    member this.Flush outputPackets =
         for i = 0 to data.Count - 1 do
             let struct (bytes, startIndex, size) = data.[i]
-            packetPool.GetFromBytes (bytes, startIndex, size, mergedPackets)
+            packetPool.GetFromBytes (bytes, startIndex, size, outputPackets)
         data.Clear ()
 
 [<AbstractClass>]
@@ -56,10 +56,10 @@ type UnreliableSender (packetPool : PacketPool, send) =
     let mergedPackets = ResizeArray ()
 
     override this.Send (bytes, startIndex, size) =
-        dataMerger.Send (bytes, startIndex, size)
+        dataMerger.Enqueue (bytes, startIndex, size)
 
     override this.Update time =
-        dataMerger.Update mergedPackets
+        dataMerger.Flush mergedPackets
 
         let packets = mergedPackets
         for i = 0 to packets.Count - 1 do
@@ -79,10 +79,10 @@ type ReliableOrderedChannel (packetPool : PacketPool, send) =
     let ackManager = AckManager (TimeSpan.FromSeconds 1.)
 
     override this.Send (bytes, startIndex, size) =
-        dataMerger.Send (bytes, startIndex, size)
+        dataMerger.Enqueue (bytes, startIndex, size)
 
     override this.Update time =
-        dataMerger.Update mergedPackets
+        dataMerger.Flush mergedPackets
 
         let packets = mergedPackets
         for i = 0 to packets.Count - 1 do
@@ -112,10 +112,10 @@ type ReliableOrderedAckSender (packetPool : PacketPool, send) =
     let mergedPackets = ResizeArray ()
 
     override this.Send (bytes, startIndex, size) =
-        dataMerger.Send (bytes, startIndex, size)
+        dataMerger.Enqueue (bytes, startIndex, size)
 
     override this.Update time =
-        dataMerger.Update mergedPackets
+        dataMerger.Flush mergedPackets
 
         let packets = mergedPackets
         for i = 0 to packets.Count - 1 do
