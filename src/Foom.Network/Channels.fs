@@ -136,8 +136,6 @@ type Receiver =
         packetPool : PacketPool
         inputQueue : Queue<Packet>
         outputQueue : Queue<Packet>
-        ackManager : AckManager
-        fragmentAssembler : FragmentAssembler
 
         mutable output : TimeSpan -> Packet -> unit
     }
@@ -161,8 +159,6 @@ type Receiver =
             packetPool = packetPool
             inputQueue = Queue ()
             outputQueue = Queue ()
-            ackManager = AckManager (TimeSpan.FromSeconds 1.)
-            fragmentAssembler = FragmentAssembler ()
             output = fun _ _ -> ()
         }
 
@@ -172,6 +168,56 @@ type Receiver =
         receiver.output <- fun _ packet -> receiver.outputQueue.Enqueue packet
 
         receiver
+
+type ReceiverAck =
+    {
+        receiver : Receiver
+        ackManager : AckManager
+        fragmentAssembler : FragmentAssembler
+
+        mutable nextSeqId : uint16
+    }
+
+    member this.Enqueue packet =
+        this.receiver.Enqueue packet
+
+    member this.Flush time =
+        this.receiver.Flush time
+
+        this.ackManager.ForEachPending (fun seqId packet ->
+            if this.nextSeqId = seqId then
+                this.ackManager.Ack seqId
+                this.nextSeqId <- this.nextSeqId + 1us
+
+                if packet.IsFragmented then
+                    this.fragmentAssembler.Mark (packet, fun packet ->
+                        this.receiver.outputQueue.Enqueue packet
+                    )
+                else
+                    this.receiver.outputQueue.Enqueue packet
+        )
+
+    member this.Process f =
+        this.receiver.Process f
+
+    static member Create packetPool =
+        {
+            receiver = Receiver.Create packetPool
+            ackManager = AckManager (TimeSpan.FromSeconds 1.)
+            fragmentAssembler = FragmentAssembler ()
+            nextSeqId = 0us
+        }
+
+    static member CreateReliableOrdered packetPool =
+        let receiverAck = ReceiverAck.Create packetPool
+
+        receiverAck.receiver.output <-
+            fun time packet ->
+                if receiverAck.ackManager.Mark (packet, time) |> not then
+                    packetPool.Recycle packet
+
+        receiverAck
+
 
 type UnreliableReceiver (packetPool : PacketPool, receive) =
     inherit Receiver2 ()
