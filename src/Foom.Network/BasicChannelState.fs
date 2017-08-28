@@ -12,15 +12,15 @@ type BasicChannelState =
         reliableOrderedReceiver :   ReliableOrderedReceiver
         reliableOrderedSender :     ReliableOrderedChannel
 
-        reliableOrderedAckSender :  ReliableOrderedAckSender
+        reliableOrderedAckSender :  Sender
 
         send :                      Packet -> unit
     }
 
     static member Create (packetPool, receive, send, sendAck) =
-        let reliableOrderedAckSender = ReliableOrderedAckSender (packetPool, send)
+        let reliableOrderedAckSender = Sender.CreateReliableOrderedAck packetPool
 
-        let sendAck = fun ack -> sendAck ack reliableOrderedAckSender.Send
+        let sendAck = fun ack -> sendAck ack reliableOrderedAckSender.Enqueue
 
         {
             sharedPacketPool = packetPool
@@ -45,7 +45,7 @@ type BasicChannelState =
             this.reliableOrderedSender.Send (bytes, startIndex, size)
 
         | PacketType.ReliableOrderedAck ->
-            this.reliableOrderedAckSender.Send (bytes, startIndex, size)
+            this.reliableOrderedAckSender.Enqueue (bytes, startIndex, size)
 
         | _ -> failwith "packet type not supported"
 
@@ -73,7 +73,8 @@ type BasicChannelState =
 
     member this.UpdateSend time =
         this.unreliableSender.Flush time
-        this.reliableOrderedAckSender.Update time
+        this.reliableOrderedAckSender.Flush time
         this.reliableOrderedSender.Update time
 
         this.unreliableSender.Process this.send
+        this.reliableOrderedAckSender.Process this.send
