@@ -36,43 +36,53 @@ type Channel () =
 
 type Sender =
     {
+        packetPool : PacketPool
         merger : DataMerger
         mergedPackets : ResizeArray<Packet>
         mutable output : TimeSpan -> Packet -> unit
+        packetQueue : Queue<Packet>
     }
 
     member this.Enqueue (bytes, startIndex, size) =
         this.merger.Enqueue (bytes, startIndex, size)
 
-    member this.Flush (packetPool, time) =
-        this.merger.Flush (packetPool, this.mergedPackets)
+    member this.Flush (time) =
+        this.merger.Flush (this.packetPool, this.mergedPackets)
 
         for i = 0 to this.mergedPackets.Count - 1 do
             this.output time this.mergedPackets.[i]
 
         this.mergedPackets.Clear ()
 
-    static member Create () =
+    member this.Process f =
+        while this.packetQueue.Count > 0 do
+            let packet = this.packetQueue.Dequeue ()
+            f packet
+            this.packetPool.Recycle packet
+
+    static member Create packetPool =
         {
+            packetPool = packetPool
             merger = DataMerger ()
             mergedPackets = ResizeArray ()
             output = fun _ _ -> ()
+            packetQueue = Queue ()
         }
 
-    static member CreateUnreliable output =
-        let sender = Sender.Create ()
+    static member CreateUnreliable packetPool =
+        let sender = Sender.Create packetPool
 
-        sender.output <- fun _ -> output
+        sender.output <- fun _ packet -> sender.packetQueue.Enqueue packet
 
         sender
 
-    static member CreateReliableOrderedAck output =
-        let sender = Sender.Create ()
+    static member CreateReliableOrderedAck packetPool =
+        let sender = Sender.Create packetPool
 
         sender.output <- 
             fun _ packet ->
                 packet.Type <- PacketType.ReliableOrderedAck
-                output packet
+                sender.packetQueue.Enqueue packet
         
         sender
 
@@ -86,36 +96,42 @@ type SenderAck =
     member this.Enqueue (bytes, startIndex, size) =
         this.sender.Enqueue (bytes, startIndex, size)
 
-    member this.Flush (packetPool, time) =
-        this.sender.Flush (packetPool, time)
+    member this.Flush time =
+        this.sender.Flush time
 
-    member this.Ack (packetPool : PacketPool, ack) =
+    member this.Ack ack =
         let packet = this.ackManager.GetPacket (int ack)
         if obj.ReferenceEquals (packet, null) |> not then 
-            packetPool.Recycle packet
+            this.sender.packetPool.Recycle packet
         this.ackManager.Ack ack
 
-    static member Create () =
+    member this.Process f =
+        while this.sender.packetQueue.Count > 0 do
+            let packet = this.sender.packetQueue.Dequeue ()
+            f packet
+
+    static member Create packetPool =
         {
-            sender = Sender.Create ()
+            sender = Sender.Create packetPool
             sequencer = Sequencer ()
             ackManager = AckManager (TimeSpan.FromSeconds 1.)
         }
      
-    static member CreateReliableOrdered output =
-        let senderAck = SenderAck.Create ()
+    static member CreateReliableOrdered packetPool =
+        let senderAck = SenderAck.Create packetPool
 
         let sequencer = senderAck.sequencer
         let ackManager = senderAck.ackManager
+        let packetQueue = senderAck.sender.packetQueue
 
         let output = fun time packet ->
             sequencer.Assign packet
             packet.Type <- PacketType.ReliableOrdered
             ackManager.Mark (packet, time) |> ignore
-            output packet
+            packetQueue.Enqueue packet
 
             ackManager.Update time (fun ack packet ->
-                output packet
+                packetQueue.Enqueue packet
             )
 
         senderAck.sender.output <- output

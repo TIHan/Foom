@@ -14,12 +14,10 @@ type BasicChannelState =
 
         reliableOrderedAckSender :  ReliableOrderedAckSender
 
-        sendPacketQueue :           Queue<Packet>
         send :                      Packet -> unit
     }
 
     static member Create (packetPool, receive, send, sendAck) =
-        let sendPacketQueue = new Queue<Packet> ()
         let reliableOrderedAckSender = ReliableOrderedAckSender (packetPool, send)
 
         let sendAck = fun ack -> sendAck ack reliableOrderedAckSender.Send
@@ -28,18 +26,14 @@ type BasicChannelState =
             sharedPacketPool = packetPool
 
             unreliableReceiver = UnreliableReceiver (packetPool, receive)
-            unreliableSender = Sender.CreateUnreliable sendPacketQueue.Enqueue
+            unreliableSender = Sender.CreateUnreliable packetPool
 
             reliableOrderedReceiver = ReliableOrderedReceiver (packetPool, sendAck, receive)
             reliableOrderedSender = ReliableOrderedChannel (packetPool, send)
 
             reliableOrderedAckSender = reliableOrderedAckSender
 
-            sendPacketQueue = sendPacketQueue
-            send =
-                fun packet ->
-                    send packet
-                    packetPool.Recycle packet
+            send = send
         }
 
     member this.Send (bytes, startIndex, size, packetType) =
@@ -78,9 +72,8 @@ type BasicChannelState =
         this.reliableOrderedReceiver.Update time
 
     member this.UpdateSend time =
-        this.unreliableSender.Flush (this.sharedPacketPool, time)
+        this.unreliableSender.Flush time
         this.reliableOrderedAckSender.Update time
         this.reliableOrderedSender.Update time
 
-        while this.sendPacketQueue.Count > 0 do
-            this.send (this.sendPacketQueue.Dequeue ())
+        this.unreliableSender.Process this.send
