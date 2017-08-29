@@ -5,6 +5,37 @@ open System.Collections.Generic
 
 open Foom.Network
 
+type Sender2 private (packetPool : PacketPool, packetQueue : Queue<Packet>, dataMerger : DataMerger, output : TimeSpan -> Packet -> (Packet -> unit) -> unit) =
+
+    let enqueue = packetQueue.Enqueue
+
+    member __.Enqueue (buffer, offset, count) =
+        dataMerger.Enqueue (buffer, offset, count)
+
+    member __.Flush time =
+        dataMerger.Flush (fun packet -> output time packet enqueue)
+
+    member __.Process f =
+        while packetQueue.Count > 0 do
+            let packet = packetQueue.Dequeue ()
+            f packet
+            packetPool.Recycle packet
+
+    static member Create (packetPool, output) =
+        Sender2 (packetPool, Queue (), DataMerger.Create packetPool, output)
+
+    static member CreateUnreliable packetPool =
+        Sender2.Create (packetPool, fun _ packet enqueue -> 
+            packet.Type <- PacketType.Unreliable
+            enqueue packet
+        )
+
+    static member CreateReliableOrderedAck packetPool =
+        Sender2.Create (packetPool, fun _ packet enqueue -> 
+            packet.Type <- PacketType.ReliableOrderedAck
+            enqueue packet
+        )
+
 type Sender =
     {
         packetPool : PacketPool
