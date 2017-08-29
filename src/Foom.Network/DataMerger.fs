@@ -64,21 +64,15 @@ module DataMergerImpl =
                 else
                     fragment bytes startIndex size packet packets packetPool
 
-[<NoEquality; NoComparison>]
-type DataMerger =
-    {
-        dataQueue : Queue<struct (byte [] * int * int)>
-    }
+[<Sealed>]
+type DataMerger (dataQueue : Queue<struct (byte [] * int * int)>) =
 
-    member this.Enqueue (bytes, startIndex, size) =
-        this.dataQueue.Enqueue (struct (bytes, startIndex, size))
+    member __.Enqueue (bytes, startIndex, size) =
+        dataQueue.Enqueue (struct (bytes, startIndex, size))
 
-    member this.Flush (packetPool : PacketPool, outputPackets) =
-        while this.dataQueue.Count > 0 do
-            let struct (bytes, startIndex, size) = this.dataQueue.Dequeue ()
+    member __.Flush (packetPool : PacketPool, outputPackets) =
+        while dataQueue.Count > 0 do
+            let struct (bytes, startIndex, size) = dataQueue.Dequeue ()
             getFromBytes bytes startIndex size outputPackets packetPool
 
-    static member Create () =
-        {
-            dataQueue = Queue ()
-        }
+    static member Create () = DataMerger (Queue ())
