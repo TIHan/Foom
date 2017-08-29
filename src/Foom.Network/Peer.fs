@@ -5,50 +5,35 @@ open System.IO
 open System.Collections.Generic
 open System.IO.Compression
 
-type SendStreamState =
-    {
-        sendStream :    ByteStream
-    }
+[<Sealed>]
+type SendStreamState private (bs : ByteStream) =
 
-module SendStreamState =
-
-    let create () =
-        {
-            sendStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
-        }
-
-    let write (msg : 'T) f (state : SendStreamState) =
-
+    member __.Write (msg : 'T, f) =
         match Network.lookup.TryGetValue typeof<'T> with
         | true, id ->
-            let sendStream = state.sendStream
-
-            let startIndex = int sendStream.Position
+            let startIndex = int bs.Position
 
             let pickler = Network.FindTypeById id
-            sendStream.Writer.WriteByte (byte id)
-            pickler.serialize (msg :> obj) sendStream.Writer
+            bs.Writer.WriteByte (byte id)
+            pickler.serialize (msg :> obj) bs.Writer
 
-            let size = int sendStream.Position - startIndex
+            let size = int bs.Position - startIndex
 
-            f state.sendStream.Raw startIndex (int size)
+            f bs.Raw startIndex (int size)
 
         | _ -> ()
 
-type ReceiveStreamState =
-    {
-        receiveStream : ByteStream
-    }
+    member __.Reset () =
+        bs.SetLength 0L
 
-module ReceiveStreamState =
+    static member Create () =
+        SendStreamState (new ByteStream (Array.zeroCreate <| 1024 * 1024))
 
-    let create () =
-        {
-            receiveStream = new ByteStream (Array.zeroCreate <| 1024 * 1024)
-        }
+[<Sealed>]
+type ReceiveStreamState private (bs : ByteStream) =
 
-    let rec read' (subscriptions : Event<obj> []) (state : ReceiveStreamState) =
-        let reader = state.receiveStream.Reader
+    let read (subscriptions : Event<obj> []) =
+        let reader = bs.Reader
         let typeId = reader.ReadByte () |> int
 
         if subscriptions.Length > typeId && typeId >= 0 then
@@ -59,11 +44,20 @@ module ReceiveStreamState =
         else
             failwith "This shouldn't happen."
 
-    let read subscriptions state =
-        state.receiveStream.Position <- 0L
+    member __.Read subscriptions =
+        bs.Position <- 0L
 
-        while not state.receiveStream.Reader.IsEndOfStream do
-            read' subscriptions state
+        while not bs.Reader.IsEndOfStream do
+            read subscriptions
+
+    member __.Write (bytes, offset, count) =
+        bs.Write (bytes, offset, count)
+
+    member this.Reset () =
+        bs.SetLength 0L
+
+    static member Create () =
+        ReceiveStreamState (new ByteStream (Array.zeroCreate <| 1024 * 1024))
 
 [<AutoOpen>]
 module StateHelpers =
@@ -92,13 +86,13 @@ module ClientState =
     let create (udpClient : IUdpClient) connectionTimeout =
 
         let packetPool = PacketPool 1024
-        let sendStreamState = SendStreamState.create ()
-        let receiveStreamState = ReceiveStreamState.create ()
+        let sendStreamState = SendStreamState.Create ()
+        let receiveStreamState = ReceiveStreamState.Create ()
 
         let basicChannelState =
             BasicChannelState.Create (packetPool,
                 (fun packet ->
-                    receiveStreamState.receiveStream.Write (packet.Raw, sizeof<PacketHeader>, int packet.DataLength)
+                    receiveStreamState.Write (packet.Raw, sizeof<PacketHeader>, int packet.DataLength)
                 ),
                 udpClient.Send
             )
@@ -162,13 +156,13 @@ module ConnectedClientState =
     let create (udpServer : IUdpServer) endPoint heartbeatInterval time =
 
         let packetPool = PacketPool 1024
-        let sendStreamState = SendStreamState.create ()
-        let receiveStreamState = ReceiveStreamState.create ()
+        let sendStreamState = SendStreamState.Create ()
+        let receiveStreamState = ReceiveStreamState.Create ()
 
         let basicChannelState =
             BasicChannelState.Create (packetPool,
                 (fun packet ->
-                    receiveStreamState.receiveStream.Write (packet.Raw, sizeof<PacketHeader>, int packet.DataLength)
+                    receiveStreamState.Write (packet.Raw, sizeof<PacketHeader>, int packet.DataLength)
                 ),
                 (fun packet -> udpServer.Send (packet, endPoint))
             )
@@ -202,7 +196,7 @@ module ServerState =
     let create udpServer connectionTimeout =
 
         let packetPool = PacketPool 1024
-        let sendStreamState = SendStreamState.create ()
+        let sendStreamState = SendStreamState.Create ()
 
         {
             packetPool = packetPool
@@ -318,10 +312,12 @@ type Peer (udp : Udp) =
             | _ -> failwith "bad packet type"
 
     member this.Send<'T> (msg : 'T, packetType) =
-        match udp with
-        | Udp.Client state -> state.sendStreamState
-        | Udp.Server state -> state.sendStreamState
-        |> SendStreamState.write msg (fun bytes startIndex size -> 
+        let sendStreamState =
+            match udp with
+            | Udp.Client state -> state.sendStreamState
+            | Udp.Server state -> state.sendStreamState
+
+        sendStreamState.Write (msg, fun bytes startIndex size -> 
             this.Send (bytes, startIndex, size, packetType)
         )
         
@@ -342,8 +338,7 @@ type Peer (udp : Udp) =
     member this.ServerSend<'T> (msg : 'T, packetType, endPoint) =
         match udp with
         | Udp.Server state ->
-            state.sendStreamState
-            |> SendStreamState.write msg (fun bytes startIndex size ->
+            state.sendStreamState.Write (msg, fun bytes startIndex size ->
                 this.ServerSend (bytes, startIndex, size, packetType, endPoint)
             )
         | _ -> ()
@@ -401,7 +396,7 @@ type Peer (udp : Udp) =
         match udp with
         | Udp.Client state ->
 
-            state.receiveStreamState.receiveStream.SetLength 0L
+            state.receiveStreamState.Reset ()
 
             let client = state.udpClient
             let packetPool = state.packetPool
@@ -416,9 +411,9 @@ type Peer (udp : Udp) =
 
             state.basicChannelState.Update time
 
-            ReceiveStreamState.read state.subscriptions state.receiveStreamState
+            state.receiveStreamState.Read state.subscriptions
 
-            state.sendStreamState.sendStream.SetLength 0L
+            state.sendStreamState.Reset ()
 
             if time > state.lastReceiveTime + state.connectionTimeout && state.isConnected then
                 state.isConnected <- false
@@ -467,12 +462,11 @@ type Peer (udp : Udp) =
 
                 ccState.basicChannelState.Update time
 
-                ReceiveStreamState.read state.subscriptions ccState.receiveStreamState
-
-                ccState.sendStreamState.sendStream.SetLength 0L
+                ccState.receiveStreamState.Read state.subscriptions
+                ccState.sendStreamState.Reset ()
             )
 
-            state.sendStreamState.sendStream.SetLength 0L
+            state.sendStreamState.Reset ()
 
             while endPointRemovals.Count > 0 do
                 let endPoint = endPointRemovals.Dequeue ()
