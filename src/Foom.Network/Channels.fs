@@ -5,11 +5,55 @@ open System.Collections.Generic
 
 open Foom.Network
 
-//type BaseSender (packetPool : PacketPool, outputQueue : Queue<Packet>) =
+type ISender =
 
-//    member __.Enqueue (bytes, startIndex, size) =
-        
+    abstract Enqueue : byte [] * offset : int * count : int -> unit
+
+    abstract Flush : TimeSpan -> unit
+
+    abstract Process : (Packet -> unit) -> unit
+
+[<Sealed>]
+type NewSender (packetPool : PacketPool, output) =
+
+    let dataMerger = DataMerger.Create packetPool
+    let outputQueue = Queue<Packet> ()
+
+    let enqueue = outputQueue.Enqueue
+    let flushOutput = (fun packet -> output packet enqueue )
+
+    member __.Enqueue (buffer, offset, count) =
+        dataMerger.Enqueue struct (buffer, offset, count)
+
+    member __.Flush (time : TimeSpan) =
+        dataMerger.Flush flushOutput
+
+    member __.Process f =
+        while outputQueue.Count > 0 do
+            let packet = outputQueue.Dequeue ()
+            f packet
     
+[<Sealed>]
+type Unreliable (packetPool) =
+
+    let sender = NewSender (packetPool, fun packet enqueue ->
+        packet.Type <- PacketType.Unreliable
+        enqueue packet
+    )
+
+    interface ISender with
+
+        member __.Enqueue (buffer, offset, count) =
+            sender.Enqueue (buffer, offset, count)
+
+        member __.Flush time =
+            sender.Flush time
+
+        member __.Process f =
+            sender.Process (fun packet ->
+                f packet
+                packetPool.Recycle packet
+            )
 
 type Sender =
     {
