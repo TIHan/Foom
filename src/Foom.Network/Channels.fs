@@ -17,13 +17,8 @@ type Sender =
     member this.Enqueue (bytes, startIndex, size) =
         this.merger.Enqueue (bytes, startIndex, size)
 
-    member this.Flush (time) =
-        this.merger.Flush (this.packetPool, this.mergedPackets)
-
-        for i = 0 to this.mergedPackets.Count - 1 do
-            this.output time this.mergedPackets.[i]
-
-        this.mergedPackets.Clear ()
+    member this.Flush time =
+        this.merger.Flush (fun packet -> this.output time packet)
 
     member this.Process f =
         while this.packetQueue.Count > 0 do
@@ -34,7 +29,7 @@ type Sender =
     static member Create packetPool =
         {
             packetPool = packetPool
-            merger = DataMerger.Create ()
+            merger = DataMerger.Create packetPool
             mergedPackets = ResizeArray ()
             output = fun _ _ -> ()
             packetQueue = Queue ()

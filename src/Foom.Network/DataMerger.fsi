@@ -5,6 +5,6 @@ type internal DataMerger =
 
     member Enqueue : byte [] * startIndex : int * size : int -> unit
 
-    member Flush : PacketPool * ResizeArray<Packet> -> unit
+    member Flush : (Packet -> unit) -> unit
 
-    static member Create : unit -> DataMerger
+    static member Create : PacketPool -> DataMerger
