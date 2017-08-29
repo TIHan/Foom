@@ -39,6 +39,8 @@
     <Compile Include="AckManager.fs" />
     <Compile Include="FragmentAssembler.fsi" />
     <Compile Include="FragmentAssembler.fs" />
+    <Compile Include="DataMerger.fsi" />
+    <Compile Include="DataMerger.fs" />
     <Compile Include="Channels.fsi" />
     <Compile Include="Channels.fs" />
     <Compile Include="BasicChannelState.fsi" />

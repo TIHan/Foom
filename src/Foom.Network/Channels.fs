@@ -5,20 +5,6 @@ open System.Collections.Generic
 
 open Foom.Network
 
-[<Sealed>]
-type DataMerger () =
-
-    let data = ResizeArray ()
-
-    member this.Enqueue (bytes, startIndex, size) =
-        data.Add (struct (bytes, startIndex, size))
-
-    member this.Flush (packetPool : PacketPool, outputPackets) =
-        for i = 0 to data.Count - 1 do
-            let struct (bytes, startIndex, size) = data.[i]
-            packetPool.GetFromBytes (bytes, startIndex, size, outputPackets)
-        data.Clear ()
-
 type Sender =
     {
         packetPool : PacketPool
@@ -48,7 +34,7 @@ type Sender =
     static member Create packetPool =
         {
             packetPool = packetPool
-            merger = DataMerger ()
+            merger = DataMerger.Create ()
             mergedPackets = ResizeArray ()
             output = fun _ _ -> ()
             packetQueue = Queue ()
