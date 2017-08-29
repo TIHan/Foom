@@ -3,15 +3,12 @@
 open System
 open System.Collections.Generic
 
-(*
-- Unreliable -
-    - Send              |-> DataMerger |> MainQueue
-    - Receive           |-> Passthrough |> MainQueue
+type INetworkEncryption =
+    inherit IDisposable
 
-UnreliableSequenced         |-> DataMerger |> Sequencer |> LastestAck
+    abstract Encrypt : bytes : byte [] * offset : int * count : int * output : byte [] * outputOffset : int * outputMaxCount : int -> int
 
-Reliable |->                DataMerger |>
-*)
+    abstract Decrypt : bytes : byte [] * offset : int * count : int * output : byte [] * outputOffset : int * outputMaxCount : int -> int
 
 type PacketType =
 
@@ -27,16 +24,13 @@ type PacketType =
     | ReliableOrdered = 6uy
     | ReliableOrderedAck = 7uy
 
-    | Snapshot = 8uy
-    | SnapshotAck = 9uy
+    | ConnectionRequested = 8uy
+    | ConnectionAccepted = 9uy
 
-    | ConnectionRequested = 10uy
-    | ConnectionAccepted = 11uy
+    | Ping = 10uy
+    | Pong = 11uy
 
-    | Ping = 12uy
-    | Pong = 13uy
-
-    | Disconnect = 14uy
+    | Disconnect = 12uy
 
 [<Struct>]
 type PacketHeader =
@@ -98,5 +92,3 @@ type Packet () as this =
         this.Position <- originalPos
 
     member this.IsFragmented = this.FragmentId > 0uy
-
-
