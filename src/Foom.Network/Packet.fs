@@ -13,24 +13,20 @@ type INetworkEncryption =
 type PacketType =
 
     | Unreliable = 0uy
-    | UnreliableSequenced = 1uy
 
-    | Reliable = 2uy
-    | ReliableAck = 3uy
+    | ReliableOrdered = 1uy
+    | ReliableOrderedAck = 2uy
 
-    | ReliableSequenced = 4uy
-    | ReliableSequencedAck = 5uy
+    | Snapshot = 3uy
+    | SnapshotAck = 4uy
 
-    | ReliableOrdered = 6uy
-    | ReliableOrderedAck = 7uy
+    | ConnectionRequested = 5uy
+    | ConnectionAccepted = 6uy
 
-    | ConnectionRequested = 8uy
-    | ConnectionAccepted = 9uy
+    | Ping = 7uy
+    | Pong = 8uy
 
-    | Ping = 10uy
-    | Pong = 11uy
-
-    | Disconnect = 12uy
+    | Disconnect = 9uy
 
 [<Struct>]
 type PacketHeader =
