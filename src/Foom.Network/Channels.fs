@@ -5,71 +5,16 @@ open System.Collections.Generic
 
 open Foom.Network
 
-module Filters =
+//type BaseSender (packetPool : PacketPool, outputQueue : Queue<Packet>) =
 
-    let CreateUnreliable packetPool =
-        DataMerger.Create packetPool
-        |> Filter.outputMap (fun _ packet ->
-            packet.Type <- PacketType.Unreliable
-            packet
-        )
-
-    let CreateReliableOrderedAck packetPool =
-        let bs = new ByteStream (Array.zeroCreate (1024 * 64))
-
-        DataMerger.Create packetPool
-        |> Filter.outputMap (fun _ packet ->
-            packet.Type <- PacketType.ReliableOrderedAck
-            packet
-        )
-        |> Filter.inputMap (fun ack ->
-            let i = bs.Position
-            bs.Writer.WriteUInt16 ack
-            struct (bs.Raw, int i, 2)
-        )
-        |> Filter.reset (fun () -> bs.SetLength 0L)
-
-    type AckFilter (packetPool) =
-
-        let sequencer = Sequencer ()
-        let ackManager = AckManager (TimeSpan.FromSeconds 1.)
-
-        let filter =
-            DataMerger.Create packetPool
-            |> Filter.outputMap (fun time packet ->
-                sequencer.Assign packet
-                packet.Type <- PacketType.ReliableOrdered
-                ackManager.Mark (packet, time) |> ignore
-                packet
-            )
-
-        member __.Ack ack =
-            let packet = ackManager.GetPacket (int ack)
-            if obj.ReferenceEquals (packet, null) |> not then 
-                packetPool.Recycle packet
-            ackManager.Ack ack
-
-        interface IFilter<struct (byte [] * int * int), Packet> with
-
-            member __.Enqueue input = filter.Enqueue input
-
-            member __.Flush (time, f) =
-                filter.Flush (time, f)
-
-                ackManager.Update time (fun ack packet ->
-                    f packet
-                )
-
-            member __.Reset () =
-                filter.Reset ()
-
-    let CreateReliableOrdered packetPool =
-        AckFilter packetPool
+//    member __.Enqueue (bytes, startIndex, size) =
+        
+    
 
 type Sender =
     {
         packetPool : PacketPool
-        merger : IFilter<struct (byte [] * int * int), Packet>
+        merger : DataMerger
         mergedPackets : ResizeArray<Packet>
         mutable output : TimeSpan -> Packet -> unit
         packetQueue : Queue<Packet>
@@ -79,7 +24,7 @@ type Sender =
         this.merger.Enqueue struct (bytes, startIndex, size)
 
     member this.Flush time =
-        this.merger.Flush (time, fun packet -> this.output time packet)
+        this.merger.Flush (fun packet -> this.output time packet)
 
     member this.Process f =
         while this.packetQueue.Count > 0 do
