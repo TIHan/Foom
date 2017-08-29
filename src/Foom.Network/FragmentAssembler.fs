@@ -32,6 +32,15 @@ type FragmentBufferPool (poolAmount) =
             failwith "For right now, this throws an exception" 
         pool.Push packet
 
+[<AutoOpen>]
+module FragmentAssemblerImpl =
+
+    let tryGetSequenceEntryId (packet : Packet) (seqId : byref<uint16>) : bool =
+        if packet.FragmentId > 0uy then
+            seqId <- packet.SequenceId - uint16 (packet.FragmentId - 1uy)
+            true
+        else
+            false
 
 type FragmentAssembler =
     {
