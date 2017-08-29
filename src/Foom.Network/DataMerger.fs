@@ -66,8 +66,9 @@ module DataMergerImpl =
                     fragment bytes startIndex size packet packets packetPool
 
 [<Sealed>]
-type DataMerger (packetPool : PacketPool, dataQueue : Queue<struct (byte [] * int * int)>) =
+type DataMerger (packetPool : PacketPool) =
 
+    let dataQueue = Queue<struct (byte [] * int * int)> ()
     let outputPackets = ResizeArray ()
 
     member __.Enqueue input =
@@ -86,6 +87,6 @@ type DataMerger (packetPool : PacketPool, dataQueue : Queue<struct (byte [] * in
     member __.Reset () =
         dataQueue.Clear ()
 
-    static member Create packetPool = DataMerger (packetPool, Queue ())
+    static member Create packetPool = DataMerger (packetPool)
 
         
