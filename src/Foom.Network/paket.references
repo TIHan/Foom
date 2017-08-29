@@ -3,3 +3,4 @@ System.Collections
 System.Resources.ResourceManager
 System.Runtime
 System.ValueTuple
+System.Security.Cryptography.Algorithms
