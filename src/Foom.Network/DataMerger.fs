@@ -1,5 +1,6 @@
 ﻿namespace Foom.Network
 
+open System
 open System.Collections.Generic
 
 [<AutoOpen>]
@@ -64,22 +65,55 @@ module DataMergerImpl =
                 else
                     fragment bytes startIndex size packet packets packetPool
 
+type IFilter<'Input, 'Output> =
+
+    abstract Enqueue : 'Input -> unit
+
+    abstract Flush : TimeSpan * ('Output -> unit) -> unit
+
+module Filter =
+
+    let combine (filter2 : IFilter<'Output, 'NewOutput>) (filter1 : IFilter<'Input, 'Output>) : IFilter<'Input, 'NewOutput> =
+        {
+            new IFilter<'Input, 'NewOutput> with
+
+                member __.Enqueue input = filter1.Enqueue input
+
+                member __.Flush (time, f) =
+                    filter1.Flush (time, fun x -> filter2.Enqueue x)
+                    filter2.Flush (time, f)
+        }
+
+    let map (mapping : 'Output -> 'NewOutput) (filter : IFilter<'Input, 'Output>) : IFilter<'Input, 'NewOutput> =
+        {
+            new IFilter<'Input, 'NewOutput> with
+
+                member __.Enqueue input = filter.Enqueue input
+
+                member __.Flush (time, f) =
+                    filter.Flush (time, fun x -> f (mapping x))
+        }
+
 [<Sealed>]
 type DataMerger (packetPool : PacketPool, dataQueue : Queue<struct (byte [] * int * int)>) =
 
     let outputPackets = ResizeArray ()
 
-    member __.Enqueue (bytes, startIndex, size) =
-        dataQueue.Enqueue (struct (bytes, startIndex, size))
+    interface IFilter<struct (byte [] * int * int), Packet> with
 
-    member __.Flush f =
-        while dataQueue.Count > 0 do
-            let struct (bytes, startIndex, size) = dataQueue.Dequeue ()
-            getFromBytes bytes startIndex size outputPackets packetPool
+        member __.Enqueue input =
+            dataQueue.Enqueue input
 
-        for i = 0 to outputPackets.Count - 1 do
-            f outputPackets.[i]
+        member __.Flush (_, f) =
+            while dataQueue.Count > 0 do
+                let struct (bytes, startIndex, size) = dataQueue.Dequeue ()
+                getFromBytes bytes startIndex size outputPackets packetPool
 
-        outputPackets.Clear ()
+            for i = 0 to outputPackets.Count - 1 do
+                f outputPackets.[i]
+
+            outputPackets.Clear ()
 
     static member Create packetPool = DataMerger (packetPool, Queue ())
+
+        

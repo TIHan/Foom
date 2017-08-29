@@ -1,10 +1,22 @@
 ﻿namespace Foom.Network
 
+open System
+
+type IFilter<'Input, 'Output> =
+
+    abstract Enqueue : 'Input -> unit
+
+    abstract Flush : TimeSpan * ('Output -> unit) -> unit
+
+module Filter =
+
+    val combine : IFilter<'Output, 'NewOutput> -> IFilter<'Input, 'Output> -> IFilter<'Input, 'NewOutput>
+
+    val map : ('Output -> 'NewOutput) -> IFilter<'Input, 'Output> -> IFilter<'Input, 'NewOutput>
+
 [<Sealed>]
 type internal DataMerger =
 
-    member Enqueue : byte [] * startIndex : int * size : int -> unit
-
-    member Flush : (Packet -> unit) -> unit
+    interface IFilter<struct (byte [] * int * int), Packet>
 
     static member Create : PacketPool -> DataMerger

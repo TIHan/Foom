@@ -7,13 +7,14 @@ open Foom.Network
 
 type Sender2 private (packetPool : PacketPool, packetQueue : Queue<Packet>, dataMerger : DataMerger, output : TimeSpan -> Packet -> (Packet -> unit) -> unit) =
 
+    let dataMerger = dataMerger :> IFilter<struct (byte [] * int * int), Packet>
     let enqueue = packetQueue.Enqueue
 
     member __.Enqueue (buffer, offset, count) =
-        dataMerger.Enqueue (buffer, offset, count)
+        dataMerger.Enqueue struct (buffer, offset, count)
 
     member __.Flush time =
-        dataMerger.Flush (fun packet -> output time packet enqueue)
+        dataMerger.Flush (time, fun packet -> output time packet enqueue)
 
     member __.Process f =
         while packetQueue.Count > 0 do
@@ -39,17 +40,17 @@ type Sender2 private (packetPool : PacketPool, packetQueue : Queue<Packet>, data
 type Sender =
     {
         packetPool : PacketPool
-        merger : DataMerger
+        merger : IFilter<struct (byte [] * int * int), Packet>
         mergedPackets : ResizeArray<Packet>
         mutable output : TimeSpan -> Packet -> unit
         packetQueue : Queue<Packet>
     }
 
     member this.Enqueue (bytes, startIndex, size) =
-        this.merger.Enqueue (bytes, startIndex, size)
+        this.merger.Enqueue struct (bytes, startIndex, size)
 
     member this.Flush time =
-        this.merger.Flush (fun packet -> this.output time packet)
+        this.merger.Flush (time, fun packet -> this.output time packet)
 
     member this.Process f =
         while this.packetQueue.Count > 0 do
