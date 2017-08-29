@@ -29,29 +29,42 @@ module Filters =
         )
         |> Filter.reset (fun () -> bs.SetLength 0L)
 
-    //[<RequireQualifiedAccess; Struct>]
-    //type AckMessage =
-    //    | Data of data : struct (byte [] * int * int)
-    //    | Ack of ack : uint16
+    type AckFilter (packetPool) =
 
-    let CreateReliableOrdered packetPool (ackObs : IObservable<uint16>) =
         let sequencer = Sequencer ()
         let ackManager = AckManager (TimeSpan.FromSeconds 1.)
 
-        ackObs.Add (fun ack -> ackManager.Ack ack)
-
-        DataMerger.Create packetPool
-        |> Filter.outputMap (fun time packet ->
-            sequencer.Assign packet
-            packet.Type <- PacketType.ReliableOrdered
-            ackManager.Mark (packet, time) |> ignore
-            packet
-        )
-        |> Filter.flush (fun time f ->
-            ackManager.Update time (fun ack packet ->
-                f packet
+        let filter =
+            DataMerger.Create packetPool
+            |> Filter.outputMap (fun time packet ->
+                sequencer.Assign packet
+                packet.Type <- PacketType.ReliableOrdered
+                ackManager.Mark (packet, time) |> ignore
+                packet
             )
-        )
+
+        member __.Ack ack =
+            let packet = ackManager.GetPacket (int ack)
+            if obj.ReferenceEquals (packet, null) |> not then 
+                packetPool.Recycle packet
+            ackManager.Ack ack
+
+        interface IFilter<struct (byte [] * int * int), Packet> with
+
+            member __.Enqueue input = filter.Enqueue input
+
+            member __.Flush (time, f) =
+                filter.Flush (time, f)
+
+                ackManager.Update time (fun ack packet ->
+                    f packet
+                )
+
+            member __.Reset () =
+                filter.Reset ()
+
+    let CreateReliableOrdered packetPool =
+        AckFilter packetPool
 
 type Sender =
     {
