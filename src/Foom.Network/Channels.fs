@@ -5,36 +5,52 @@ open System.Collections.Generic
 
 open Foom.Network
 
-type Sender2 private (packetPool : PacketPool, packetQueue : Queue<Packet>, dataMerger : DataMerger, output : TimeSpan -> Packet -> (Packet -> unit) -> unit) =
+module Filters =
 
-    let dataMerger = dataMerger :> IFilter<struct (byte [] * int * int), Packet>
-    let enqueue = packetQueue.Enqueue
-
-    member __.Enqueue (buffer, offset, count) =
-        dataMerger.Enqueue struct (buffer, offset, count)
-
-    member __.Flush time =
-        dataMerger.Flush (time, fun packet -> output time packet enqueue)
-
-    member __.Process f =
-        while packetQueue.Count > 0 do
-            let packet = packetQueue.Dequeue ()
-            f packet
-            packetPool.Recycle packet
-
-    static member Create (packetPool, output) =
-        Sender2 (packetPool, Queue (), DataMerger.Create packetPool, output)
-
-    static member CreateUnreliable packetPool =
-        Sender2.Create (packetPool, fun _ packet enqueue -> 
+    let CreateUnreliable packetPool =
+        DataMerger.Create packetPool
+        |> Filter.outputMap (fun _ packet ->
             packet.Type <- PacketType.Unreliable
-            enqueue packet
+            packet
         )
 
-    static member CreateReliableOrderedAck packetPool =
-        Sender2.Create (packetPool, fun _ packet enqueue -> 
+    let CreateReliableOrderedAck packetPool =
+        let bs = new ByteStream (Array.zeroCreate (1024 * 64))
+
+        DataMerger.Create packetPool
+        |> Filter.outputMap (fun _ packet ->
             packet.Type <- PacketType.ReliableOrderedAck
-            enqueue packet
+            packet
+        )
+        |> Filter.inputMap (fun ack ->
+            let i = bs.Position
+            bs.Writer.WriteUInt16 ack
+            struct (bs.Raw, int i, 2)
+        )
+        |> Filter.reset (fun () -> bs.SetLength 0L)
+
+    //[<RequireQualifiedAccess; Struct>]
+    //type AckMessage =
+    //    | Data of data : struct (byte [] * int * int)
+    //    | Ack of ack : uint16
+
+    let CreateReliableOrdered packetPool (ackObs : IObservable<uint16>) =
+        let sequencer = Sequencer ()
+        let ackManager = AckManager (TimeSpan.FromSeconds 1.)
+
+        ackObs.Add (fun ack -> ackManager.Ack ack)
+
+        DataMerger.Create packetPool
+        |> Filter.outputMap (fun time packet ->
+            sequencer.Assign packet
+            packet.Type <- PacketType.ReliableOrdered
+            ackManager.Mark (packet, time) |> ignore
+            packet
+        )
+        |> Filter.flush (fun time f ->
+            ackManager.Update time (fun ack packet ->
+                f packet
+            )
         )
 
 type Sender =

@@ -71,6 +71,8 @@ type IFilter<'Input, 'Output> =
 
     abstract Flush : TimeSpan * ('Output -> unit) -> unit
 
+    abstract Reset : unit -> unit
+
 module Filter =
 
     let combine (filter2 : IFilter<'Output, 'NewOutput>) (filter1 : IFilter<'Input, 'Output>) : IFilter<'Input, 'NewOutput> =
@@ -82,16 +84,65 @@ module Filter =
                 member __.Flush (time, f) =
                     filter1.Flush (time, fun x -> filter2.Enqueue x)
                     filter2.Flush (time, f)
+
+                member __.Reset () =
+                    filter1.Reset ()
+                    filter2.Reset ()
         }
 
-    let map (mapping : 'Output -> 'NewOutput) (filter : IFilter<'Input, 'Output>) : IFilter<'Input, 'NewOutput> =
+    let outputMap (mapping : TimeSpan -> 'Output -> 'NewOutput) (filter : IFilter<'Input, 'Output>) : IFilter<'Input, 'NewOutput> =
         {
             new IFilter<'Input, 'NewOutput> with
 
                 member __.Enqueue input = filter.Enqueue input
 
                 member __.Flush (time, f) =
-                    filter.Flush (time, fun x -> f (mapping x))
+                    filter.Flush (time, fun x -> f (mapping time x))
+
+                member __.Reset () =
+                    filter.Reset ()
+        }
+
+    let inputMap (mapping : 'NewInput -> 'Input) (filter : IFilter<'Input, 'Output>) : IFilter<'NewInput, 'Output> =
+        {
+            new IFilter<'NewInput, 'Output> with
+
+                member __.Enqueue input = filter.Enqueue (mapping input)
+
+                member __.Flush (time, f) =
+                    filter.Flush (time, f)
+
+                member __.Reset () =
+                    filter.Reset ()
+        }
+
+    let reset f (filter : IFilter<'Input, 'Output>) =
+        {
+            new IFilter<'Input, 'Output> with
+
+                member __.Enqueue input = filter.Enqueue input
+
+                member __.Flush (time, f) = filter.Flush (time, f)
+
+                member __.Reset () =
+                    filter.Reset ()
+                    f ()
+
+        }
+
+    let flush flushing (filter : IFilter<'Input, 'Output>) =
+        {
+            new IFilter<'Input, 'Output> with
+
+                member __.Enqueue input = filter.Enqueue input
+
+                member __.Flush (time, f) =
+                    filter.Flush (time, f)
+
+                    flushing time f
+
+                member __.Reset () =
+                    filter.Reset ()
         }
 
 [<Sealed>]
@@ -113,6 +164,9 @@ type DataMerger (packetPool : PacketPool, dataQueue : Queue<struct (byte [] * in
                 f outputPackets.[i]
 
             outputPackets.Clear ()
+
+        member __.Reset () =
+            dataQueue.Clear ()
 
     static member Create packetPool = DataMerger (packetPool, Queue ())
 
