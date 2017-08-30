@@ -6,13 +6,13 @@ open Foom.Collections
 
 let perf title iterations f =
     let mutable total = 0.
-
+    GC.Collect (2, GCCollectionMode.Forced, true)
     for i = 1 to iterations do
         let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
         f ()
         stopwatch.Stop ()
         total <- total + stopwatch.Elapsed.TotalMilliseconds
-        GC.Collect ()
+
     printfn "%s: %A" title (total / double iterations)
 
 [<Struct>]
@@ -108,7 +108,7 @@ let proto () =
 let main argv = 
     let world = World (65536)
 
-    perf "Spawn and Destroy 1000 Entities with 2 Components and 5 Big Components" 100 (fun () ->
+    perf "Spawn and Destroy 1000 Entities with 2 Components and 5 Big Components" 1000 (fun () ->
         for i = 0 to 1000 - 1 do
             let ent = world.EntityManager.Spawn (proto ())
             world.EntityManager.Destroy ent
@@ -134,37 +134,37 @@ let main argv =
 
     let mutable result = Unchecked.defaultof<Vector3>
 
-    perf "Raw Iterate over 65536 Big Components" 100 (fun () ->
+    perf "Raw Iterate over 65536 Big Components" 1000 (fun () ->
         for i = 0 to 65536 - 1 do
             result <- arr.[i].Position7
     )
 
-    perf "Iterate over 65536 Entities with 1 Big Component" 100 (fun () ->
+    perf "Iterate over 65536 Entities with 1 Big Component" 1000 (fun () ->
         world.EntityManager.ForEach<BigPositionComponent1> (fun _ c -> result <- c.Position7)
     )
 
-    perf "Iterate over 65536 Entities with 2 Big Components" 100 (fun () ->
+    perf "Iterate over 65536 Entities with 2 Big Components" 1000 (fun () ->
         world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2> (fun _ _ c -> result <- c.Position7)
     )
 
-    perf "Iterate over 65536 Entities with 3 Big Components" 100 (fun () ->
+    perf "Iterate over 65536 Entities with 3 Big Components" 1000 (fun () ->
         world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2, BigPositionComponent3> (fun _ _ _ c -> result <- c.Position7)
     )
 
-    perf "Iterate over 65536 Entities with 4 Big Components" 100 (fun () ->
+    perf "Iterate over 65536 Entities with 4 Big Components" 1000 (fun () ->
         world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2, BigPositionComponent3, BigPositionComponent4> (fun _ _ _ _ c -> result <- c.Position7)
     )
 
     //
 
 
-    perf "Set Construct Position" 100 (fun () ->
+    perf "Set Construct Position" 1000 (fun () ->
         for i = 0 to systemEntities.Count - 1 do
             let (construct, comp) = systemEntities.Buffer.[i]
             construct.Position <- comp.Position
     )
 
-    perf "Set Component Position" 100 (fun () ->
+    perf "Set Component Position" 1000 (fun () ->
         for i = 0 to systemEntities.Count - 1 do
             let (construct, comp) = systemEntities.Buffer.[i]
             comp.Position <- construct.Position
