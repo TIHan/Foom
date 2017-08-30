@@ -110,10 +110,7 @@ let main argv =
             world.EntityManager.Destroy ent
     )
 
-    for i = 0 to 65536 - 1 do
-        let ent = world.EntityManager.Spawn (proto ())
-        ()
-
+    let entities = Array.init 65536 (fun _ -> world.EntityManager.Spawn (proto ()))
     let arr = Array.init 65536 (fun _ -> BigPositionComponent1 Unchecked.defaultof<Vector3>)
 
     let mutable result = Unchecked.defaultof<Vector3>

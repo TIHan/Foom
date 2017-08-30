@@ -31,7 +31,6 @@ type EntityLookupData<'T when 'T :> Component> =
 
         RemoveComponent: Entity -> unit
 
-        Active: bool []
         IndexLookup: int []
         Entities: Entity UnsafeResizeArray
         Components: 'T UnsafeResizeArray
@@ -144,7 +143,6 @@ and [<ReferenceEquality>] EntityManager =
 
                         RemoveComponent = fun entity -> this.Remove<'T> entity
 
-                        Active = Array.zeroCreate<bool> this.MaxEntityAmount
                         IndexLookup = Array.init this.MaxEntityAmount (fun _ -> -1) // -1 means that no component exists for that entity
                         Entities = UnsafeResizeArray.Create this.MaxEntityAmount
                         Components = UnsafeResizeArray.Create this.MaxEntityAmount
@@ -162,7 +160,7 @@ and [<ReferenceEquality>] EntityManager =
             let inline iter i =
                 let entity = data.Entities.Buffer.[i]
 
-                if data.Active.[entity.Index] && this.ActiveIndices.[entity.Index] then
+                if this.ActiveIndices.[entity.Index] then
                     f entity data.Components.Buffer.[i]
 
             for i = 0 to data.Entities.Count - 1 do iter i
@@ -182,7 +180,7 @@ and [<ReferenceEquality>] EntityManager =
                     let comp1Index = data1.IndexLookup.[entity.Index]
                     let comp2Index = data2.IndexLookup.[entity.Index]
     
-                    if comp1Index >= 0 && comp2Index >= 0 && data1.Active.[entity.Index] && data2.Active.[entity.Index] then
+                    if comp1Index >= 0 && comp2Index >= 0 then
                         f entity data1.Components.Buffer.[comp1Index] data2.Components.Buffer.[comp2Index]
     
             for i = 0 to data.Entities.Count - 1 do iter i
@@ -206,7 +204,7 @@ and [<ReferenceEquality>] EntityManager =
                     let comp2Index = data2.IndexLookup.[entity.Index]
                     let comp3Index = data3.IndexLookup.[entity.Index]
     
-                    if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 && data1.Active.[entity.Index] && data2.Active.[entity.Index] && data3.Active.[entity.Index] then
+                    if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 then
                         f entity data1.Components.Buffer.[comp1Index] data2.Components.Buffer.[comp2Index] data3.Components.Buffer.[comp3Index]
     
             for i = 0 to data.Entities.Count - 1 do iter i
@@ -233,7 +231,7 @@ and [<ReferenceEquality>] EntityManager =
                     let comp3Index = data3.IndexLookup.[entity.Index]
                     let comp4Index = data4.IndexLookup.[entity.Index]
     
-                    if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 && comp4Index >= 0 && data1.Active.[entity.Index] && data2.Active.[entity.Index] && data3.Active.[entity.Index] && data4.Active.[entity.Index] then
+                    if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 && comp4Index >= 0 then
                         f entity data1.Components.Buffer.[comp1Index] data2.Components.Buffer.[comp2Index] data3.Components.Buffer.[comp3Index] data4.Components.Buffer.[comp4Index]
     
             for i = 0 to data.Entities.Count - 1 do iter i
@@ -258,7 +256,6 @@ and [<ReferenceEquality>] EntityManager =
 
                         this.EntityRemovals.[entity.Index].Add (data.RemoveComponent)
 
-                        data.Active.[entity.Index] <- true
                         data.IndexLookup.[entity.Index] <- data.Entities.Count
 
                         data.Components.Add comp
@@ -285,7 +282,6 @@ and [<ReferenceEquality>] EntityManager =
                     data.Entities.SwapRemoveAt index
                     data.Components.SwapRemoveAt index
 
-                    data.Active.[entity.Index] <- false
                     data.IndexLookup.[entity.Index] <- -1
 
                     if not (entity.Index.Equals swappingEntity.Index) then
@@ -376,7 +372,7 @@ and [<ReferenceEquality>] EntityManager =
         let mutable data = Unchecked.defaultof<IEntityLookupData>
         if this.Lookup.TryGetValue (typeof<'T>, &data) then
             let data = data :?> EntityLookupData<'T>
-            data.Active.[entity.Index]
+            data.IndexLookup.[entity.Index] >= 0
         else
             false   
 
