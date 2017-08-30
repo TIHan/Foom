@@ -27,3 +27,7 @@ type World =
     member SpawnEntity : unit -> Entity
 
     member Publish<'Event when 'Event :> IEvent and 'Event : not struct> : 'Event -> unit
+
+    member EntityManager : EntityManager
+
+    member EventAggregator : EventAggregator

@@ -77,3 +77,7 @@ type World (maxEntityAmount) =
     member this.SpawnEntity () = entityManager.Spawn ()
 
     member this.Publish evt = eventAggregator.Publish evt
+
+    member __.EntityManager = entityManager
+
+    member __.EventAggregator = eventAggregator

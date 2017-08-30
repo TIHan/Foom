@@ -8,89 +8,91 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{3D3330
 		paket.dependencies = paket.dependencies
 	EndProjectSection
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Wad", "src\Foom.Wad\Foom.Wad.fsproj", "{13CAB67A-5A00-401D-8CE2-032FFEA5FECE}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Wad", "src\Foom.Wad\Foom.Wad.fsproj", "{13CAB67A-5A00-401D-8CE2-032FFEA5FECE}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Pickler", "src\Foom.Pickler\Foom.Pickler.fsproj", "{4FC2B7B5-28CA-4322-84AB-49DDAD9613FC}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Pickler", "src\Foom.Pickler\Foom.Pickler.fsproj", "{4FC2B7B5-28CA-4322-84AB-49DDAD9613FC}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Renderer.Desktop", "src\Foom.Renderer.Desktop\Foom.Renderer.Desktop.fsproj", "{3811DFB5-545F-4FAD-B3DA-4C245AE85DAC}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Renderer.Desktop", "src\Foom.Renderer.Desktop\Foom.Renderer.Desktop.fsproj", "{3811DFB5-545F-4FAD-B3DA-4C245AE85DAC}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom", "src\Foom\Foom.fsproj", "{7A63DDE1-B3FA-45C1-A795-27D0448E19FD}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom", "src\Foom\Foom.fsproj", "{7A63DDE1-B3FA-45C1-A795-27D0448E19FD}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Ecs", "src\Foom.Ecs\Foom.Ecs.fsproj", "{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Ecs", "src\Foom.Ecs\Foom.Ecs.fsproj", "{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{0ADD6B56-B5B6-4938-B2E8-3B9F8ED6D978}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{CDAC4EAC-FDCE-4D71-B473-4EEDF7A20D0C}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Math", "src\Foom.Math\Foom.Math.fsproj", "{B94F520E-B150-45A7-ADA1-E2945BE9A743}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Math", "src\Foom.Math\Foom.Math.fsproj", "{B94F520E-B150-45A7-ADA1-E2945BE9A743}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Geometry", "src\Foom.Geometry\Foom.Geometry.fsproj", "{34AA5257-2F5B-4097-8250-1FD4956D1130}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Geometry", "src\Foom.Geometry\Foom.Geometry.fsproj", "{34AA5257-2F5B-4097-8250-1FD4956D1130}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Physics", "src\Foom.Physics\Foom.Physics.fsproj", "{6DE9A674-F72C-4BDA-9120-E8EB97E7D5ED}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Physics", "src\Foom.Physics\Foom.Physics.fsproj", "{6DE9A674-F72C-4BDA-9120-E8EB97E7D5ED}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Collections", "src\Foom.Collections\Foom.Collections.fsproj", "{C18C5AB4-4C69-4EA0-AE74-FEFBBD945C05}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Collections", "src\Foom.Collections\Foom.Collections.fsproj", "{C18C5AB4-4C69-4EA0-AE74-FEFBBD945C05}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Renderer", "src\Foom.Renderer\Foom.Renderer.fsproj", "{ED30B5EB-571D-4815-BE37-DDF7ED6198CC}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Renderer", "src\Foom.Renderer\Foom.Renderer.fsproj", "{ED30B5EB-571D-4815-BE37-DDF7ED6198CC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core.Game", "Core.Game", "{66C3905B-FBAD-412B-B49A-FB42DCB08FA9}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Game.Renderer", "src\Foom.Game.Renderer\Foom.Game.Renderer.fsproj", "{181E47F5-8BF0-4AEC-B452-0A88D5BFD28F}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Game.Renderer", "src\Foom.Game.Renderer\Foom.Game.Renderer.fsproj", "{181E47F5-8BF0-4AEC-B452-0A88D5BFD28F}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Game.Assets", "src\Foom.Game.Assets\Foom.Game.Assets.fsproj", "{C41FC4BC-8B5A-4497-9765-FDEAD54749ED}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Game.Assets", "src\Foom.Game.Assets\Foom.Game.Assets.fsproj", "{C41FC4BC-8B5A-4497-9765-FDEAD54749ED}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Game.Sprite", "src\Foom.Game.Sprite\Foom.Game.Sprite.fsproj", "{03FA0D75-22BB-40BC-A3EB-ABA52DD304B9}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Game.Sprite", "src\Foom.Game.Sprite\Foom.Game.Sprite.fsproj", "{03FA0D75-22BB-40BC-A3EB-ABA52DD304B9}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Game.Core", "src\Foom.Game.Core\Foom.Game.Core.fsproj", "{7B655BE8-40D7-482B-8B43-05C5DBAA027B}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Game.Core", "src\Foom.Game.Core\Foom.Game.Core.fsproj", "{7B655BE8-40D7-482B-8B43-05C5DBAA027B}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Game.Level", "src\Foom.Game.Level\Foom.Game.Level.fsproj", "{36E00779-B8EB-432A-B784-CDEB05E90D0B}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Game.Level", "src\Foom.Game.Level\Foom.Game.Level.fsproj", "{36E00779-B8EB-432A-B784-CDEB05E90D0B}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Game.Wad", "src\Foom.Game.Wad\Foom.Game.Wad.fsproj", "{FD3F2622-9550-4BD7-8D63-5916151DF018}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Game.Wad", "src\Foom.Game.Wad\Foom.Game.Wad.fsproj", "{FD3F2622-9550-4BD7-8D63-5916151DF018}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Network", "src\Foom.Network\Foom.Network.fsproj", "{A446D691-8F20-40BD-98AC-B5FB2EFD5D04}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Network", "src\Foom.Network\Foom.Network.fsproj", "{A446D691-8F20-40BD-98AC-B5FB2EFD5D04}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core.Platform", "Core.Platform", "{3EB07B84-DC73-417F-82E6-0C9B7C07520B}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Network.Desktop", "src\Foom.Network.Desktop\Foom.Network.Desktop.fsproj", "{D916B23C-0D8F-4044-8C93-AF4DBAA7D3BE}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Network.Desktop", "src\Foom.Network.Desktop\Foom.Network.Desktop.fsproj", "{D916B23C-0D8F-4044-8C93-AF4DBAA7D3BE}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Network.Tests", "src\Foom.Network.Tests\Foom.Network.Tests.fsproj", "{ABB4EA96-3776-48E7-8A9B-FF774DFC5D60}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Network.Tests", "src\Foom.Network.Tests\Foom.Network.Tests.fsproj", "{ABB4EA96-3776-48E7-8A9B-FF774DFC5D60}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Network.iOS.Tests", "src\Foom.Network.iOS.Tests\Foom.Network.iOS.Tests.fsproj", "{9039521E-6365-4E55-87DF-D95CFEF7A5CA}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Network.iOS.Tests", "src\Foom.Network.iOS.Tests\Foom.Network.iOS.Tests.fsproj", "{9039521E-6365-4E55-87DF-D95CFEF7A5CA}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Network.iOS", "src\Foom.Network.iOS\Foom.Network.iOS.fsproj", "{2DCD59F1-17DC-49D0-917A-EBEAF0F782D5}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Network.iOS", "src\Foom.Network.iOS\Foom.Network.iOS.fsproj", "{2DCD59F1-17DC-49D0-917A-EBEAF0F782D5}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Game.Client", "src\Foom.Game.Client\Foom.Game.Client.fsproj", "{9E5C57CC-0DA0-4720-BC94-9FECC41D2188}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Game.Client", "src\Foom.Game.Client\Foom.Game.Client.fsproj", "{9E5C57CC-0DA0-4720-BC94-9FECC41D2188}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Input", "src\Foom.Input\Foom.Input.fsproj", "{6DC85453-16AF-4402-A4B4-373336106451}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Input", "src\Foom.Input\Foom.Input.fsproj", "{6DC85453-16AF-4402-A4B4-373336106451}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Input.Desktop", "src\Foom.Input.Desktop\Foom.Input.Desktop.fsproj", "{5221813B-04B6-450F-9474-669F1E24D57B}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Input.Desktop", "src\Foom.Input.Desktop\Foom.Input.Desktop.fsproj", "{5221813B-04B6-450F-9474-669F1E24D57B}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.iOS", "src\Foom.iOS\Foom.iOS.fsproj", "{413A90DE-6BAE-4A61-A80A-0E1647BA3185}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.iOS", "src\Foom.iOS\Foom.iOS.fsproj", "{413A90DE-6BAE-4A61-A80A-0E1647BA3185}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Renderer.iOS", "src\Foom.Renderer.iOS\Foom.Renderer.iOS.fsproj", "{737AFFC8-2768-4AB4-87C5-9BD1877547AE}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Renderer.iOS", "src\Foom.Renderer.iOS\Foom.Renderer.iOS.fsproj", "{737AFFC8-2768-4AB4-87C5-9BD1877547AE}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Droid", "src\Foom.Droid\Foom.Droid.fsproj", "{3194239B-6C4D-40A2-B791-A200BB23FA55}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Droid", "src\Foom.Droid\Foom.Droid.fsproj", "{3194239B-6C4D-40A2-B791-A200BB23FA55}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Renderer.Droid", "src\Foom.Renderer.Droid\Foom.Renderer.Droid.fsproj", "{3E4618C7-F2E3-4B61-AA85-2A6D575938A4}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Renderer.Droid", "src\Foom.Renderer.Droid\Foom.Renderer.Droid.fsproj", "{3E4618C7-F2E3-4B61-AA85-2A6D575938A4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Ferop", "Ferop", "{9BA39791-B2A4-490D-87CF-97DF1F5197F0}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Ferop", "src\Ferop\src\Ferop\Ferop.fsproj", "{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Ferop", "src\Ferop\src\Ferop\Ferop.fsproj", "{88E06223-2026-42F8-BE6D-B03E3ED3FE4B}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Ferop.Core", "src\Ferop\src\Ferop.Core\Ferop.Core.fsproj", "{90A45EB2-1122-4BFF-A921-04D926400AC0}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Ferop.Core", "src\Ferop\src\Ferop.Core\Ferop.Core.fsproj", "{90A45EB2-1122-4BFF-A921-04D926400AC0}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Ferop.Tests", "src\Ferop\src\Ferop.Tests\Ferop.Tests.fsproj", "{AE5445CF-A3FE-4565-8A08-329602501135}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Ferop.Tests", "src\Ferop\src\Ferop.Tests\Ferop.Tests.fsproj", "{AE5445CF-A3FE-4565-8A08-329602501135}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Tests.PCL", "src\Ferop\src\Foom.Tests.PCL\Foom.Tests.PCL.fsproj", "{FC68760A-CBBD-43B7-AE3E-7C0E527B6FDC}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Tests.PCL", "src\Ferop\src\Foom.Tests.PCL\Foom.Tests.PCL.fsproj", "{FC68760A-CBBD-43B7-AE3E-7C0E527B6FDC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Doom", "Doom", "{589C1D05-F7CE-4D3F-982B-2B9AF8C277DB}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Game.Doom.Entities", "src\Foom.Game.Doom.Entities\Foom.Game.Doom.Entities.fsproj", "{CF95D6F5-5C58-4581-BBE2-436728979686}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Game.Doom.Entities", "src\Foom.Game.Doom.Entities\Foom.Game.Doom.Entities.fsproj", "{CF95D6F5-5C58-4581-BBE2-436728979686}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Ferop.Runner", "src\Ferop\src\Ferop.Runner\Ferop.Runner.fsproj", "{874CD71A-CF34-4091-80C3-4D68B30D23FF}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Ferop.Runner", "src\Ferop\src\Ferop.Runner\Ferop.Runner.fsproj", "{874CD71A-CF34-4091-80C3-4D68B30D23FF}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Network.PerformanceTests", "src\Foom.Network.PerformanceTests\Foom.Network.PerformanceTests.fsproj", "{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Network.PerformanceTests", "src\Foom.Network.PerformanceTests\Foom.Network.PerformanceTests.fsproj", "{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Game.Network", "src\Foom.Game.Network\Foom.Game.Network.fsproj", "{B7C046E0-742E-4355-831F-220C0D7215BA}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Game.Network", "src\Foom.Game.Network\Foom.Game.Network.fsproj", "{B7C046E0-742E-4355-831F-220C0D7215BA}"
+EndProject
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Ecs.PerformanceTests", "src\Foom.Ecs.PerformanceTests\Foom.Ecs.PerformanceTests.fsproj", "{C8B754B8-4498-40FD-B048-26A24E55A7F5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -826,6 +828,26 @@ Global
 		{B7C046E0-742E-4355-831F-220C0D7215BA}.Release|x64.Build.0 = Release|Any CPU
 		{B7C046E0-742E-4355-831F-220C0D7215BA}.Release|x86.ActiveCfg = Release|Any CPU
 		{B7C046E0-742E-4355-831F-220C0D7215BA}.Release|x86.Build.0 = Release|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Debug|iPhone.ActiveCfg = Debug|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Debug|iPhone.Build.0 = Debug|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Debug|iPhoneSimulator.ActiveCfg = Debug|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Debug|iPhoneSimulator.Build.0 = Debug|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Debug|x64.Build.0 = Debug|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Debug|x86.Build.0 = Debug|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Release|iPhone.ActiveCfg = Release|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Release|iPhone.Build.0 = Release|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Release|iPhoneSimulator.ActiveCfg = Release|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Release|iPhoneSimulator.Build.0 = Release|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Release|x64.ActiveCfg = Release|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Release|x64.Build.0 = Release|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Release|x86.ActiveCfg = Release|Any CPU
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -864,5 +886,6 @@ Global
 		{874CD71A-CF34-4091-80C3-4D68B30D23FF} = {9BA39791-B2A4-490D-87CF-97DF1F5197F0}
 		{A6BD48F0-B2C8-4E90-BCC6-4820E795E5BE} = {0ADD6B56-B5B6-4938-B2E8-3B9F8ED6D978}
 		{B7C046E0-742E-4355-831F-220C0D7215BA} = {66C3905B-FBAD-412B-B49A-FB42DCB08FA9}
+		{C8B754B8-4498-40FD-B048-26A24E55A7F5} = {0ADD6B56-B5B6-4938-B2E8-3B9F8ED6D978}
 	EndGlobalSection
 EndGlobal
