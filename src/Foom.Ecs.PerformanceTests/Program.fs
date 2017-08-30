@@ -114,20 +114,29 @@ let main argv =
         let ent = world.EntityManager.Spawn (proto ())
         ()
 
+    let arr = Array.init 65536 (fun _ -> BigPositionComponent1 Unchecked.defaultof<Vector3>)
+
+    let mutable result = Unchecked.defaultof<Vector3>
+
+    perf "Raw Iterate over 65536 Big Components" 100 (fun () ->
+        for i = 0 to 65536 - 1 do
+            result <- arr.[i].Position1
+    )
+
     perf "Iterate over 65536 Entities with 1 Big Component" 100 (fun () ->
-        world.EntityManager.ForEach<BigPositionComponent1> (fun _ _ -> ())
+        world.EntityManager.ForEach<BigPositionComponent1> (fun _ c -> result <- c.Position1)
     )
 
     perf "Iterate over 65536 Entities with 2 Big Components" 100 (fun () ->
-        world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2> (fun _ _ _ -> ())
+        world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2> (fun _ _ c -> result <- c.Position1)
     )
 
     perf "Iterate over 65536 Entities with 3 Big Components" 100 (fun () ->
-        world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2, BigPositionComponent3> (fun _ _ _ _ -> ())
+        world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2, BigPositionComponent3> (fun _ _ _ c -> result <- c.Position1)
     )
 
     perf "Iterate over 65536 Entities with 4 Big Components" 100 (fun () ->
-        world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2, BigPositionComponent3, BigPositionComponent4> (fun _ _ _ _ _ -> ())
+        world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2, BigPositionComponent3, BigPositionComponent4> (fun _ _ _ _ c -> result <- c.Position1)
     )
 
     0
