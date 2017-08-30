@@ -117,23 +117,23 @@ let main argv =
 
     perf "Raw Iterate over 65536 Big Components" 100 (fun () ->
         for i = 0 to 65536 - 1 do
-            result <- arr.[i].Position1
+            result <- arr.[i].Position7
     )
 
     perf "Iterate over 65536 Entities with 1 Big Component" 100 (fun () ->
-        world.EntityManager.ForEach<BigPositionComponent1> (fun _ c -> result <- c.Position1)
+        world.EntityManager.ForEach<BigPositionComponent1> (fun _ c -> result <- c.Position7)
     )
 
     perf "Iterate over 65536 Entities with 2 Big Components" 100 (fun () ->
-        world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2> (fun _ _ c -> result <- c.Position1)
+        world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2> (fun _ _ c -> result <- c.Position7)
     )
 
     perf "Iterate over 65536 Entities with 3 Big Components" 100 (fun () ->
-        world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2, BigPositionComponent3> (fun _ _ _ c -> result <- c.Position1)
+        world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2, BigPositionComponent3> (fun _ _ _ c -> result <- c.Position7)
     )
 
     perf "Iterate over 65536 Entities with 4 Big Components" 100 (fun () ->
-        world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2, BigPositionComponent3, BigPositionComponent4> (fun _ _ _ _ c -> result <- c.Position1)
+        world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2, BigPositionComponent3, BigPositionComponent4> (fun _ _ _ _ c -> result <- c.Position7)
     )
 
     0
