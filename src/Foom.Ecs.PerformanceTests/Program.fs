@@ -36,6 +36,8 @@ type PositionComponent (position : Vector3) =
 type SubSystemComponent () =
     inherit Component ()
 
+    member val Position = Unchecked.defaultof<Vector3> with get, set
+
 type BigPositionComponent1 (position : Vector3) =
     inherit Component ()
 
@@ -117,7 +119,7 @@ let main argv =
     let systemEntities = UnsafeResizeArray.Create 65536
 
     let handleSubSystemComponentAdded =
-        Behavior.handleComponentAdded (fun ent (_ : SubSystemComponent) () em -> 
+        Behavior.handleComponentAdded (fun ent (_ : SubSystemComponent) () em ->
             match em.TryGet<PositionComponent> ent with
             | Some positionComp ->
                 systemEntities.Add ({ Position = positionComp.Position }, positionComp)
@@ -126,6 +128,8 @@ let main argv =
         |> world.AddBehavior
 
     let entities = Array.init 65536 (fun _ -> world.EntityManager.Spawn (proto ()))
+    handleSubSystemComponentAdded ()
+
     let arr = Array.init 65536 (fun _ -> BigPositionComponent1 Unchecked.defaultof<Vector3>)
 
     let mutable result = Unchecked.defaultof<Vector3>
@@ -153,7 +157,6 @@ let main argv =
 
     //
 
-    handleSubSystemComponentAdded ()
 
     perf "Set Construct Position" 100 (fun () ->
         for i = 0 to systemEntities.Count - 1 do
@@ -166,5 +169,18 @@ let main argv =
             let (construct, comp) = systemEntities.Buffer.[i]
             comp.Position <- construct.Position
     )
+
+    entities
+    |> Array.iter (fun ent -> world.EntityManager.Destroy ent)
+
+    for i = 1 to 10 do
+        let entities = Array.init 1000 (fun _ -> world.EntityManager.Spawn (proto ()))
+
+        perf "HandleSubSystemComponentAdded" 1 (fun () ->
+            handleSubSystemComponentAdded ()
+        )
+
+        entities
+        |> Array.iter (fun ent -> world.EntityManager.Destroy ent)
 
     0
