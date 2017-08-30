@@ -53,6 +53,10 @@
       <Project>{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}</Project>
       <Name>Foom.Ecs</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Foom.Collections\Foom.Collections.fsproj">
+      <Project>{C18C5AB4-4C69-4EA0-AE74-FEFBBD945C05}</Project>
+      <Name>Foom.Collections</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(FSharpTargetsPath)" />
   <Choose>

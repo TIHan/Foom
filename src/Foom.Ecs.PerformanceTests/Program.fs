@@ -2,6 +2,8 @@
 
 open System
 
+open Foom.Collections
+
 let perf title iterations f =
     let mutable total = 0.
 
@@ -110,6 +112,19 @@ let main argv =
             world.EntityManager.Destroy ent
     )
 
+    //
+
+    let systemEntities = UnsafeResizeArray.Create 65536
+
+    let handleSubSystemComponentAdded =
+        Behavior.handleComponentAdded (fun ent (_ : SubSystemComponent) () em -> 
+            match em.TryGet<PositionComponent> ent with
+            | Some positionComp ->
+                systemEntities.Add ({ Position = positionComp.Position }, positionComp)
+            | _ -> ()
+        )
+        |> world.AddBehavior
+
     let entities = Array.init 65536 (fun _ -> world.EntityManager.Spawn (proto ()))
     let arr = Array.init 65536 (fun _ -> BigPositionComponent1 Unchecked.defaultof<Vector3>)
 
@@ -134,6 +149,22 @@ let main argv =
 
     perf "Iterate over 65536 Entities with 4 Big Components" 100 (fun () ->
         world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2, BigPositionComponent3, BigPositionComponent4> (fun _ _ _ _ c -> result <- c.Position7)
+    )
+
+    //
+
+    handleSubSystemComponentAdded ()
+
+    perf "Set Construct Position" 100 (fun () ->
+        for i = 0 to systemEntities.Count - 1 do
+            let (construct, comp) = systemEntities.Buffer.[i]
+            construct.Position <- comp.Position
+    )
+
+    perf "Set Component Position" 100 (fun () ->
+        for i = 0 to systemEntities.Count - 1 do
+            let (construct, comp) = systemEntities.Buffer.[i]
+            comp.Position <- construct.Position
     )
 
     0
