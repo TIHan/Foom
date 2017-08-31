@@ -28,8 +28,8 @@
     <ErrorReport>prompt</ErrorReport>
     <ExternalConsole>true</ExternalConsole>
     <GenerateTailCalls>true</GenerateTailCalls>
-    <PlatformTarget>
-    </PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
     <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath>
@@ -37,27 +37,6 @@
   <PropertyGroup Condition="'$(VisualStudioVersion)' == '10.0' OR '$(VisualStudioVersion)' == '11.0'">
     <FSharpTargetsPath>$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets</FSharpTargetsPath>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Numerics" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Program.fs" />
-    <None Include="paket.references" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Foom.Ecs\Foom.Ecs.fsproj">
-      <Project>{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}</Project>
-      <Name>Foom.Ecs</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Foom.Collections\Foom.Collections.fsproj">
-      <Project>{C18C5AB4-4C69-4EA0-AE74-FEFBBD945C05}</Project>
-      <Name>Foom.Collections</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(FSharpTargetsPath)" />
   <Choose>
     <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v2.0' Or $(TargetFrameworkVersion) == 'v3.0' Or $(TargetFrameworkVersion) == 'v3.5')">
@@ -1470,4 +1449,24 @@
       </ItemGroup>
     </When>
   </Choose>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Program.fs" />
+    <None Include="paket.references" />
+    <Content Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Numerics" />
+    <ProjectReference Include="..\Foom.Ecs\Foom.Ecs.fsproj">
+      <Project>{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}</Project>
+      <Name>Foom.Ecs</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Foom.Collections\Foom.Collections.fsproj">
+      <Project>{C18C5AB4-4C69-4EA0-AE74-FEFBBD945C05}</Project>
+      <Name>Foom.Collections</Name>
+    </ProjectReference>
+  </ItemGroup>
 </Project>
