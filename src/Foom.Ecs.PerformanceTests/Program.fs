@@ -127,7 +127,7 @@ let main argv =
         )
         |> world.AddBehavior
 
-    let entities = Array.init 65536 (fun _ -> world.EntityManager.Spawn (proto ()))
+    let entities = Array.init 10000 (fun _ -> world.EntityManager.Spawn (proto ()))
     handleSubSystemComponentAdded ()
 
     let arr = Array.init 65536 (fun _ -> BigPositionComponent1 Unchecked.defaultof<Vector3>)
@@ -135,7 +135,7 @@ let main argv =
     let mutable result = Unchecked.defaultof<Vector3>
 
     perf "Raw Iterate over 65536 Big Components" 1000 (fun () ->
-        for i = 0 to 65536 - 1 do
+        for i = 0 to 10000 - 1 do
             result <- arr.[i].Position7
     )
 
@@ -157,40 +157,40 @@ let main argv =
 
     //
 
-    for i = 0 to 2 do
-        let rng = Random ()
-        for i = 0 to systemEntities.Count - 1 do
-            systemEntities.Buffer.[i] <- systemEntities.Buffer.[rng.Next(0, 65536)]
+    //for i = 0 to 2 do
+    //    let rng = Random ()
+    //    for i = 0 to systemEntities.Count - 1 do
+    //        systemEntities.Buffer.[i] <- systemEntities.Buffer.[rng.Next(0, 65536)]
 
-        perf "Set Construct Position" 1000 (fun () ->
-            for i = 0 to systemEntities.Count - 1 do
-                let struct (construct, comp) = systemEntities.Buffer.[i]
-                construct.Position <- comp.Position
-        )
+    //    perf "Set Construct Position" 1000 (fun () ->
+    //        for i = 0 to systemEntities.Count - 1 do
+    //            let struct (construct, comp) = systemEntities.Buffer.[i]
+    //            construct.Position <- comp.Position
+    //    )
 
-        for i = 0 to systemEntities.Count - 1 do
-            systemEntities.Buffer.[i] <- systemEntities.Buffer.[rng.Next(0, 65536)]
+    //    for i = 0 to systemEntities.Count - 1 do
+    //        systemEntities.Buffer.[i] <- systemEntities.Buffer.[rng.Next(0, 65536)]
 
-        perf "Set Component Position" 1000 (fun () ->
-            for i = 0 to systemEntities.Count - 1 do
-                let struct (construct, comp) = systemEntities.Buffer.[i]
-                comp.Position <- construct.Position
-        )
+    //    perf "Set Component Position" 1000 (fun () ->
+    //        for i = 0 to systemEntities.Count - 1 do
+    //            let struct (construct, comp) = systemEntities.Buffer.[i]
+    //            comp.Position <- construct.Position
+    //    )
 
-        for i = 0 to 10 do
-            world.EntityManager.ForEach<PositionComponent> (fun _ _ -> ())
+    //    for i = 0 to 10 do
+    //        world.EntityManager.ForEach<PositionComponent> (fun _ _ -> ())
 
-    entities
-    |> Array.iter (fun ent -> world.EntityManager.Destroy ent)
+    //entities
+    //|> Array.iter (fun ent -> world.EntityManager.Destroy ent)
 
-    for i = 1 to 10 do
-        let entities = Array.init 1000 (fun _ -> world.EntityManager.Spawn (proto ()))
+    //for i = 1 to 10 do
+    //    let entities = Array.init 1000 (fun _ -> world.EntityManager.Spawn (proto ()))
 
-        perf "HandleSubSystemComponentAdded" 1 (fun () ->
-            handleSubSystemComponentAdded ()
-        )
+    //    perf "HandleSubSystemComponentAdded" 1 (fun () ->
+    //        handleSubSystemComponentAdded ()
+    //    )
 
-        entities
-        |> Array.iter (fun ent -> world.EntityManager.Destroy ent)
+    //    entities
+    //    |> Array.iter (fun ent -> world.EntityManager.Destroy ent)
 
     0
