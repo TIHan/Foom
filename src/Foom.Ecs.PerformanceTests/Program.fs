@@ -122,7 +122,7 @@ let main argv =
         Behavior.handleComponentAdded (fun ent (_ : SubSystemComponent) () em ->
             match em.TryGet<PositionComponent> ent with
             | Some positionComp ->
-                systemEntities.Add ({ Position = positionComp.Position }, positionComp)
+                systemEntities.Add struct ({ Position = positionComp.Position }, positionComp)
             | _ -> ()
         )
         |> world.AddBehavior
@@ -157,18 +157,28 @@ let main argv =
 
     //
 
-
-    perf "Set Construct Position" 1000 (fun () ->
+    for i = 0 to 2 do
+        let rng = Random ()
         for i = 0 to systemEntities.Count - 1 do
-            let (construct, comp) = systemEntities.Buffer.[i]
-            construct.Position <- comp.Position
-    )
+            systemEntities.Buffer.[i] <- systemEntities.Buffer.[rng.Next(0, 65536)]
 
-    perf "Set Component Position" 1000 (fun () ->
+        perf "Set Construct Position" 1000 (fun () ->
+            for i = 0 to systemEntities.Count - 1 do
+                let struct (construct, comp) = systemEntities.Buffer.[i]
+                construct.Position <- comp.Position
+        )
+
         for i = 0 to systemEntities.Count - 1 do
-            let (construct, comp) = systemEntities.Buffer.[i]
-            comp.Position <- construct.Position
-    )
+            systemEntities.Buffer.[i] <- systemEntities.Buffer.[rng.Next(0, 65536)]
+
+        perf "Set Component Position" 1000 (fun () ->
+            for i = 0 to systemEntities.Count - 1 do
+                let struct (construct, comp) = systemEntities.Buffer.[i]
+                comp.Position <- construct.Position
+        )
+
+        for i = 0 to 10 do
+            world.EntityManager.ForEach<PositionComponent> (fun _ _ -> ())
 
     entities
     |> Array.iter (fun ent -> world.EntityManager.Destroy ent)
