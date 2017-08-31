@@ -154,26 +154,21 @@ let main argv =
         entities.Add <| world.EntityManager.Spawn (proto ())
 
     for j = 2 to 10 do
-        for i = 0 to amount - 1 do
-            if i % j = 0 then
-                entities.[i]
-                |> world.EntityManager.Destroy
+        world.EntityManager.ForEach<BigPositionComponent1> (fun ent _ ->
+            if ent.Index % j = 0 then
+                world.EntityManager.Destroy ent
+        )
 
-        for i = 0 to amount - 1 do
+        for i = 1 to amount do
             if i % j = 0 then
                 entities.Add <| world.EntityManager.Spawn (proto ())
 
-    let mutable count = 0
     let test5 = perfRecord "ECS Iteration Non-Cache Local" 1000 (fun () ->
         for i = 1 to 10 do
-            count <- 0
             world.EntityManager.ForEach<BigPositionComponent1> (fun _ c -> 
                 result <- c.Position7
-                count <- count + 1
             )
     )
-
-    printfn "%A" count
 
     let test6 = perfRecord "ECS Iteration Non-Cache Local - Smaller Two Comps" 1000 (fun () ->
         for i = 1 to 10 do
