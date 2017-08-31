@@ -1454,6 +1454,7 @@
     <Compile Include="Program.fs" />
     <None Include="paket.references" />
     <Content Include="App.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
@@ -1468,5 +1469,8 @@
       <Project>{C18C5AB4-4C69-4EA0-AE74-FEFBBD945C05}</Project>
       <Name>Foom.Collections</Name>
     </ProjectReference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>

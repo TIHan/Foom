@@ -104,11 +104,77 @@ let proto () =
         add (BigPositionComponent5 Unchecked.defaultof<Vector3>)
     }
 
+type title =
+    {
+        mutable text : string
+    }
+
+type subtitle =
+    {
+        mutable text : string
+    }
+
+type yAxis =
+    {
+        mutable title : title
+        mutable max : int
+    }
+
+type legend =
+    {
+        mutable layout : string
+        mutable align : string
+        mutable verticalAlign : string
+    }
+
+type plotOptionsSeries =
+    {
+        mutable pointStart : int
+    }
+
+type series<'T> =
+    {
+        mutable name : string
+        data : 'T seq
+    }
+
+type plotOptions =
+    {
+        mutable series : plotOptionsSeries
+    }
+
+type Chart =
+    {
+        mutable title : title
+        mutable subtitle : subtitle
+        mutable yAxis : yAxis
+        mutable legend : legend
+        mutable plotOptions : plotOptions
+        series : obj []
+    }
+
+let perfRecord title iterations f =
+    let mutable total = 0.
+    let data = ResizeArray ()
+
+    GC.Collect (2, GCCollectionMode.Forced, true)
+
+    for i = 1 to iterations do
+        let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
+        f ()
+        stopwatch.Stop ()
+        data.Add stopwatch.Elapsed.TotalMilliseconds
+
+    {
+        name = title
+        data = data
+    }
+
 [<EntryPoint>]
 let main argv = 
     let world = World (65536)
 
-    perf "Spawn and Destroy 1000 Entities with 2 Components and 5 Big Components" 1000 (fun () ->
+    let test1 = perfRecord "Spawn and Destroy 1000 Entities with 2 Components and 5 Big Components" 1000 (fun () ->
         for i = 0 to 1000 - 1 do
             let ent = world.EntityManager.Spawn (proto ())
             world.EntityManager.Destroy ent
@@ -151,7 +217,7 @@ let main argv =
         world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2, BigPositionComponent3> (fun _ _ _ c -> result <- c.Position7)
     )
 
-    perf "Iterate over 65536 Entities with 4 Big Components" 1000 (fun () ->
+    let test2 = perfRecord "Iterate over 65536 Entities with 4 Big Components" 1000 (fun () ->
         world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2, BigPositionComponent3, BigPositionComponent4> (fun _ _ _ _ c -> result <- c.Position7)
     )
 
@@ -192,5 +258,63 @@ let main argv =
 
     //    entities
     //    |> Array.iter (fun ent -> world.EntityManager.Destroy ent)
+
+    //        name: 'Installation',
+    //    data: [43934, 52503, 57177, 69658, 97031, 119931, 137133, 154175]
+    //}, {
+    //    name: 'Manufacturing',
+    //    data: [24916, 24064, 29742, 29851, 32490, 30282, 38121, 40434]
+    //}, {
+    //    name: 'Sales & Distribution',
+    //    data: [11744, 17722, 16005, 19771, 20185, 24377, 32147, 39387]
+    //}, {
+    //    name: 'Project Development',
+    //    data: [null, null, 7988, 12169, 15112, 22452, 34400, 34227]
+    //}, {
+        //name: 'Other',
+        //data: [12908, 5948, 8105, 11248, 8989, 11816, 18274, 18111]
+    let chartData =
+        {
+            title = { text = "Solar Employment" }
+            subtitle = { text = "Source: thesolarfoundation.com" }
+            yAxis =
+                {
+                    title = { text = "Number of Employees" }
+                    max = 5
+                }
+            legend =
+                {
+                    layout = "vertical"
+                    align = "right"
+                    verticalAlign = "middle"
+                }
+            plotOptions =
+                {
+                    series = { pointStart = 2010 }
+                }
+            series = 
+                [|
+                    test1
+                    test2
+                |]
+        }
+
+    let stringData = Newtonsoft.Json.JsonConvert.SerializeObject (chartData)
+    System.IO.File.WriteAllText ("chart.html",
+    """
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+
+<div id="container"></div>
+
+<script>
+Highcharts.chart('container', """ + stringData +
+"""
+);
+</script>
+    """
+    )
+
+    System.Diagnostics.Process.Start ("chart.html")
 
     0
