@@ -157,11 +157,15 @@ and [<ReferenceEquality>] EntityManager =
         if this.Lookup.TryGetValue (typeof<'T>, &data) then
             let data = data :?> EntityLookupData<'T>
 
-            let inline iter i =
-                let entity = data.Entities.Buffer.[i]
+            let entities = data.Entities.Buffer
+            let activeIndices = this.ActiveIndices
+            let components = data.Components.Buffer
 
-                if this.ActiveIndices.[entity.Index] then
-                    f entity data.Components.Buffer.[i]
+            let inline iter i =
+                let entity = entities.[i]
+
+                if activeIndices.[entity.Index] then
+                    f entity components.[i]
 
             for i = 0 to data.Entities.Count - 1 do iter i
 
@@ -173,15 +177,22 @@ and [<ReferenceEquality>] EntityManager =
             let data1 = data1 :?> EntityLookupData<'T1>
             let data2 = data2 :?> EntityLookupData<'T2>
 
+            let entities = data.Entities.Buffer
+            let activeIndices = this.ActiveIndices
+            let components1 = data1.Components.Buffer
+            let components2 = data2.Components.Buffer
+            let lookup1 = data1.IndexLookup
+            let lookup2 = data2.IndexLookup
+
             let inline iter i =
-                let entity = data.Entities.Buffer.[i]
+                let entity = entities.[i]
     
-                if this.ActiveIndices.[entity.Index] then
-                    let comp1Index = data1.IndexLookup.[entity.Index]
-                    let comp2Index = data2.IndexLookup.[entity.Index]
+                if activeIndices.[entity.Index] then
+                    let comp1Index = lookup1.[entity.Index]
+                    let comp2Index = lookup2.[entity.Index]
     
                     if comp1Index >= 0 && comp2Index >= 0 then
-                        f entity data1.Components.Buffer.[comp1Index] data2.Components.Buffer.[comp2Index]
+                        f entity components1.[comp1Index] components2.[comp2Index]
     
             for i = 0 to data.Entities.Count - 1 do iter i
 
