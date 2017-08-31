@@ -185,6 +185,11 @@ let main argv =
             world.EntityManager.ForEach<SubSystemComponent, BigPositionComponent1> (fun _ _ c -> result <- c.Position7)
     )
 
+    let test9 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big - Reverse" 1000 (fun () ->
+        for i = 1 to 10 do
+            world.EntityManager.ForEach<BigPositionComponent1, SubSystemComponent> (fun _ c _ -> result <- c.Position7)
+    )
+
     let chartData =
         {
             title = { text = "Iteration Performance" }
@@ -214,6 +219,7 @@ let main argv =
                     test6
                     test7
                     test8
+                    test9
                 |]
         }
 

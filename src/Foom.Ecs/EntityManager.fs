@@ -54,7 +54,6 @@ and [<ReferenceEquality>] EntityManager =
         Lookup: ConcurrentDictionary<Type, IEntityLookupData>
 
         ActiveVersions: uint32 []
-        ActiveIndices: bool []
 
         mutable nextEntityIndex: int
         RemovedEntityQueue: Queue<Entity>
@@ -76,7 +75,6 @@ and [<ReferenceEquality>] EntityManager =
         let lookup = ConcurrentDictionary<Type, IEntityLookupData> ()
 
         let activeVersions = Array.init maxEntityAmount (fun _ -> 0u)
-        let activeIndices = Array.zeroCreate<bool> maxEntityAmount
 
         let mutable nextEntityIndex = 1
         let removedEntityQueue = Queue<Entity> () 
@@ -91,7 +89,6 @@ and [<ReferenceEquality>] EntityManager =
             MaxEntityAmount = maxEntityAmount
             Lookup = lookup
             ActiveVersions = activeVersions
-            ActiveIndices = activeIndices
             nextEntityIndex = nextEntityIndex
             RemovedEntityQueue = removedEntityQueue
             EntityRemovals = entityRemovals
@@ -158,14 +155,11 @@ and [<ReferenceEquality>] EntityManager =
             let data = data :?> EntityLookupData<'T>
 
             let entities = data.Entities.Buffer
-            let activeIndices = this.ActiveIndices
             let components = data.Components.Buffer
 
             let inline iter i =
                 let entity = entities.[i]
-
-                if activeIndices.[entity.Index] then
-                    f entity components.[i]
+                f entity components.[i]
 
             for i = 0 to data.Entities.Count - 1 do iter i
 
@@ -178,7 +172,6 @@ and [<ReferenceEquality>] EntityManager =
             let data2 = data2 :?> EntityLookupData<'T2>
 
             let entities = data.Entities.Buffer
-            let activeIndices = this.ActiveIndices
             let components1 = data1.Components.Buffer
             let components2 = data2.Components.Buffer
             let lookup1 = data1.IndexLookup
@@ -187,12 +180,11 @@ and [<ReferenceEquality>] EntityManager =
             let inline iter i =
                 let entity = entities.[i]
     
-                if activeIndices.[entity.Index] then
-                    let comp1Index = lookup1.[entity.Index]
-                    let comp2Index = lookup2.[entity.Index]
-    
-                    if comp1Index >= 0 && comp2Index >= 0 then
-                        f entity components1.[comp1Index] components2.[comp2Index]
+                let comp1Index = lookup1.[entity.Index]
+                let comp2Index = lookup2.[entity.Index]
+
+                if comp1Index >= 0 && comp2Index >= 0 then
+                    f entity components1.[comp1Index] components2.[comp2Index]
     
             for i = 0 to data.Entities.Count - 1 do iter i
 
@@ -207,16 +199,23 @@ and [<ReferenceEquality>] EntityManager =
             let data2 = data2 :?> EntityLookupData<'T2>
             let data3 = data3 :?> EntityLookupData<'T3>
 
+            let entities = data.Entities.Buffer
+            let components1 = data1.Components.Buffer
+            let components2 = data2.Components.Buffer
+            let components3 = data3.Components.Buffer
+            let lookup1 = data1.IndexLookup
+            let lookup2 = data2.IndexLookup
+            let lookup3 = data3.IndexLookup
+
             let inline iter i =
-                let entity = data.Entities.Buffer.[i]
+                let entity = entities.[i]
     
-                if this.ActiveIndices.[entity.Index] then
-                    let comp1Index = data1.IndexLookup.[entity.Index]
-                    let comp2Index = data2.IndexLookup.[entity.Index]
-                    let comp3Index = data3.IndexLookup.[entity.Index]
-    
-                    if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 then
-                        f entity data1.Components.Buffer.[comp1Index] data2.Components.Buffer.[comp2Index] data3.Components.Buffer.[comp3Index]
+                let comp1Index = lookup1.[entity.Index]
+                let comp2Index = lookup2.[entity.Index]
+                let comp3Index = lookup3.[entity.Index]
+
+                if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 then
+                    f entity components1.[comp1Index] components2.[comp2Index] components3.[comp3Index]
     
             for i = 0 to data.Entities.Count - 1 do iter i
 
@@ -233,17 +232,26 @@ and [<ReferenceEquality>] EntityManager =
             let data3 = data3 :?> EntityLookupData<'T3>
             let data4 = data4 :?> EntityLookupData<'T4>
 
+            let entities = data.Entities.Buffer
+            let components1 = data1.Components.Buffer
+            let components2 = data2.Components.Buffer
+            let components3 = data3.Components.Buffer
+            let components4 = data4.Components.Buffer
+            let lookup1 = data1.IndexLookup
+            let lookup2 = data2.IndexLookup
+            let lookup3 = data3.IndexLookup
+            let lookup4 = data4.IndexLookup
+
             let inline iter i =
-                let entity = data.Entities.Buffer.[i]
+                let entity = entities.[i]
     
-                if this.ActiveIndices.[entity.Index] then
-                    let comp1Index = data1.IndexLookup.[entity.Index]
-                    let comp2Index = data2.IndexLookup.[entity.Index]
-                    let comp3Index = data3.IndexLookup.[entity.Index]
-                    let comp4Index = data4.IndexLookup.[entity.Index]
-    
-                    if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 && comp4Index >= 0 then
-                        f entity data1.Components.Buffer.[comp1Index] data2.Components.Buffer.[comp2Index] data3.Components.Buffer.[comp3Index] data4.Components.Buffer.[comp4Index]
+                let comp1Index = lookup1.[entity.Index]
+                let comp2Index = lookup2.[entity.Index]
+                let comp3Index = lookup3.[entity.Index]
+                let comp4Index = lookup4.[entity.Index]
+
+                if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 && comp4Index >= 0 then
+                    f entity components1.[comp1Index] components2.[comp2Index] components3.[comp3Index] components4.[comp4Index]
     
             for i = 0 to data.Entities.Count - 1 do iter i
 
@@ -320,7 +328,6 @@ and [<ReferenceEquality>] EntityManager =
                     Entity (index, 1u)
 
             this.ActiveVersions.[entity.Index] <- entity.Version
-            this.ActiveIndices.[entity.Index] <- true
 
             this.EntitySpawnedEvent.Trigger (EntitySpawned entity)
 
@@ -337,7 +344,6 @@ and [<ReferenceEquality>] EntityManager =
                 this.RemovedEntityQueue.Enqueue entity  
 
                 this.ActiveVersions.[entity.Index] <- 0u
-                this.ActiveIndices.[entity.Index] <- false
 
                 this.EntityDestroyedEvent.Trigger (EntityDestroyed entity)
             else
