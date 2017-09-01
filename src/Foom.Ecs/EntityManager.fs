@@ -20,12 +20,10 @@ type IEntityLookupData =
 
     abstract GetComponent : int -> Component
 
-open Events
-
 [<ReferenceEquality>]
 type EntityLookupData<'T when 'T :> Component> =
     {
-        ComponentRemovedEvent: Event<ComponentRemoved<'T>>
+        ComponentRemovedEvent: Event<'T>
 
         ComponentAddedTriggers : ResizeArray<'T -> unit>
 
@@ -60,8 +58,8 @@ and [<ReferenceEquality>] EntityManager =
 
         EntityRemovals: ((Entity -> unit) ResizeArray) []
 
-        EntitySpawnedEvent: Event<EntitySpawned>
-        EntityDestroyedEvent: Event<EntityDestroyed>
+        EntitySpawnedEvent: Event<Entity>
+        EntityDestroyedEvent: Event<Entity>
 
         mutable CurrentIterations: int
         PendingQueue: Queue<unit -> unit>
@@ -81,8 +79,8 @@ and [<ReferenceEquality>] EntityManager =
 
         let entityRemovals : ((Entity -> unit) ResizeArray) [] = Array.init maxEntityAmount (fun _ -> ResizeArray ())
 
-        let entitySpawnedEvent = eventManager.GetEvent<EntitySpawned> ()
-        let entityDestroyedEvent = eventManager.GetEvent<EntityDestroyed> ()
+        let entitySpawnedEvent = eventManager.GetEntitySpawnedEvent ()
+        let entityDestroyedEvent = eventManager.GetEntityDestroyedEvent ()
 
         {
             EventAggregator = eventManager
@@ -134,7 +132,7 @@ and [<ReferenceEquality>] EntityManager =
             let factory t =
                 let data =
                     {
-                        ComponentRemovedEvent = this.EventAggregator.GetEvent<ComponentRemoved<'T>> ()
+                        ComponentRemovedEvent = this.EventAggregator.GetComponentRemovedEvent<'T> ()
 
                         ComponentAddedTriggers = triggers
 
@@ -298,6 +296,8 @@ and [<ReferenceEquality>] EntityManager =
                     let index = data.IndexLookup.[entity.Index]
                     let swappingEntity = data.Entities.LastItem
 
+                    let comp = data.Components.Buffer.[index]
+
                     data.Entities.SwapRemoveAt index
                     data.Components.SwapRemoveAt index
 
@@ -306,7 +306,7 @@ and [<ReferenceEquality>] EntityManager =
                     if not (entity.Index.Equals swappingEntity.Index) then
                         data.IndexLookup.[swappingEntity.Index] <- index
 
-                    data.ComponentRemovedEvent.Trigger (ComponentRemoved<'T> (entity))
+                    data.ComponentRemovedEvent.Trigger (comp)
                 else
                     Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, does not exist on {1}", typeof<'T>.Name, entity))
 
@@ -329,7 +329,7 @@ and [<ReferenceEquality>] EntityManager =
 
             this.ActiveVersions.[entity.Index] <- entity.Version
 
-            this.EntitySpawnedEvent.Trigger (EntitySpawned entity)
+            this.EntitySpawnedEvent.Trigger (entity)
 
             entity
 
@@ -345,7 +345,7 @@ and [<ReferenceEquality>] EntityManager =
 
                 this.ActiveVersions.[entity.Index] <- 0u
 
-                this.EntityDestroyedEvent.Trigger (EntityDestroyed entity)
+                this.EntityDestroyedEvent.Trigger (entity)
             else
                 Debug.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot destroy.", entity))
 

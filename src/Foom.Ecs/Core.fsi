@@ -38,54 +38,24 @@ type Component =
 /// A marker for event data.
 type IEvent = interface end
 
-/// Common events published by the Entity Manager.
-module Events = 
-
-    /// Published when a component was removed from an exsting entity.
-    [<Sealed>]
-    type ComponentRemoved<'T when 'T :> Component> = 
-
-        internal new : Entity -> ComponentRemoved<'T>
-
-        /// The entity the component was removed from.
-        member Entity : Entity
-
-        interface IEvent
-
-    /// Published when an entity has spawned.
-    [<Sealed>]
-    type EntitySpawned =
-
-        internal new : Entity -> EntitySpawned
-
-        /// The entity spawned.
-        member Entity : Entity
-
-        interface IEvent
-
-    /// Published when an entity was destroyed.
-    [<Sealed>]
-    type EntityDestroyed =
-
-        internal new : Entity -> EntityDestroyed
-
-        /// The entity destroyed.
-        member Entity : Entity
-
-        interface IEvent
-
 /// Responsible for publishing events.
 /// Used for decoupling and communication between systems.
 [<Sealed>]
 type EventAggregator =
 
-    static member internal Create : unit -> EventAggregator
+    internal new : unit -> EventAggregator
 
     /// Publishes an event to underlying subscribers.
     member Publish<'T when 'T :> IEvent and 'T : not struct> : 'T -> unit
 
     member internal GetEvent<'T when 'T :> IEvent> : unit -> Event<'T>
 
+    member internal GetEntitySpawnedEvent : unit -> Event<Entity>
+
+    member internal GetEntityDestroyedEvent : unit -> Event<Entity>
+
     member internal GetComponentAddedEvent<'T when 'T :> Component> : unit -> Event<'T>
+   
+    member internal GetComponentRemovedEvent<'T when 'T :> Component> : unit -> Event<'T>
 
     member internal TryGetComponentAddedTrigger : Type * byref<obj -> unit> -> bool

@@ -37,58 +37,33 @@ type Component () =
 
 type IEvent = interface end
 
-module Events =
+[<Sealed>]
+type EventAggregator () =
 
-    [<Sealed>]
-    type ComponentRemoved<'T when 'T :> Component> (ent: Entity) = 
+    let lookup = ConcurrentDictionary<Type, obj> ()
 
-        member this.Entity = ent
+    let entitySpawned = Event<Entity> ()
+    let entityDestroyed = Event<Entity> ()
 
-        interface IEvent
+    let componentAddedLookup = Dictionary<Type, obj * (obj -> unit)> ()
+    let componentRemovedLookup = Dictionary<Type, obj> ()
 
-    [<Sealed>]
-    type EntitySpawned (ent: Entity) =
-
-        member this.Entity = ent
-
-        interface IEvent
-
-    [<Sealed>]
-    type EntityDestroyed (ent: Entity) =
-
-        member this.Entity = ent
-
-        interface IEvent
-
-open Events
-
-[<ReferenceEquality>]
-type EventAggregator  =
-    {
-        Lookup: ConcurrentDictionary<Type, obj>
-
-        ComponentAddedLookup: Dictionary<Type, obj * (obj -> unit)>
-    }
-
-    static member Create () =
-        {
-            Lookup = ConcurrentDictionary<Type, obj> ()
-
-            ComponentAddedLookup = Dictionary ()
-        }
-
-    member this.Publish (event: 'T when 'T :> IEvent and 'T : not struct) =
+    member __.Publish (event: 'T when 'T :> IEvent and 'T : not struct) =
         let mutable value = Unchecked.defaultof<obj>
-        if this.Lookup.TryGetValue (typeof<'T>, &value) then
+        if lookup.TryGetValue (typeof<'T>, &value) then
             (value :?> Event<'T>).Trigger event
 
-    member this.GetEvent<'T when 'T :> IEvent> () =
-       this.Lookup.GetOrAdd (typeof<'T>, valueFactory = (fun _ -> Event<'T> () :> obj)) :?> Event<'T>
+    member __.GetEvent<'T when 'T :> IEvent> () =
+       lookup.GetOrAdd (typeof<'T>, valueFactory = (fun _ -> Event<'T> () :> obj)) :?> Event<'T>
 
-    member this.GetComponentAddedEvent<'T when 'T :> Component> () =
+    member __.GetEntitySpawnedEvent () = entitySpawned
+
+    member __.GetEntityDestroyedEvent () = entityDestroyed
+
+    member __.GetComponentAddedEvent<'T when 'T :> Component> () =
         let t = typeof<'T>
         let mutable o = Unchecked.defaultof<obj * (obj -> unit)>
-        if (this.ComponentAddedLookup.TryGetValue (t, &o)) then
+        if (componentAddedLookup.TryGetValue (t, &o)) then
             let (event, trigger) = o
             (event :?> Event<'T>)
         else
@@ -98,12 +73,22 @@ type EventAggregator  =
                 | :? 'T as o -> e.Trigger o
                 | _ -> ()
             )
-            this.ComponentAddedLookup.[t] <- (e :> obj, trigger)
+            componentAddedLookup.[t] <- (e :> obj, trigger)
             e
 
-    member this.TryGetComponentAddedTrigger (t : Type, [<Out>] trigger : byref<obj -> unit>) =
+    member __.GetComponentRemovedEvent<'T when 'T :> Component> () =
+        let t = typeof<'T>
+        let mutable o = Unchecked.defaultof<obj>
+        if (componentRemovedLookup.TryGetValue (t, &o)) then
+            (o :?> Event<'T>)
+        else
+            let e = Event<'T> ()
+            componentRemovedLookup.[t] <- (e :> obj)
+            e
+
+    member __.TryGetComponentAddedTrigger (t : Type, [<Out>] trigger : byref<obj -> unit>) =
         let mutable o = Unchecked.defaultof<obj * (obj -> unit)>
-        if (this.ComponentAddedLookup.TryGetValue (t, &o)) then
+        if (componentAddedLookup.TryGetValue (t, &o)) then
             let (_, trigger') = o
             trigger <- trigger'
             true

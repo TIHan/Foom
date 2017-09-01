@@ -10,13 +10,13 @@ open Foom.Ecs
 type Subworld (eventAggregator: EventAggregator, entityManager: EntityManager) =
 
     let entities = ResizeArray (entityManager.MaxNumberOfEntities)
-    let spawnedEvent = eventAggregator.GetEvent<Events.EntitySpawned> ()
+    let spawnedEvent = eventAggregator.GetEntitySpawnedEvent ()
     let mutable recordEntities = false
 
     do
-        spawnedEvent.Publish.Add (fun evt ->
+        spawnedEvent.Publish.Add (fun ent ->
             if recordEntities then
-                entities.Add (evt.Entity)
+                entities.Add (ent)
         )
 
     member this.AddBehavior<'Update> (behav: Behavior<'Update>) =
@@ -52,7 +52,7 @@ type Subworld (eventAggregator: EventAggregator, entityManager: EntityManager) =
 
 [<Sealed>]
 type World (maxEntityAmount) =
-    let eventAggregator = EventAggregator.Create ()
+    let eventAggregator = EventAggregator ()
     let entityManager = EntityManager.Create (eventAggregator, maxEntityAmount)
 
     member this.AddBehavior<'Update> (behav: Behavior<'Update>) =
