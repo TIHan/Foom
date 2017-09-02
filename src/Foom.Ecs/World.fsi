@@ -31,3 +31,5 @@ type World =
     member EntityManager : EntityManager
 
     member EventAggregator : EventAggregator
+
+    member DestroyAllEntities : unit -> unit

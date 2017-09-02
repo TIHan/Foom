@@ -30,8 +30,7 @@ Highcharts.chart('container', {
     yAxis: {
         title: {
             text: 'ms'
-        },
-        max: 3
+        }
     },
     legend: {
         layout: 'vertical',
@@ -79,11 +78,59 @@ type BigPositionComponent1 (position : Vector3) =
     member val Position6 = position with get, set
     member val Position7 = position with get, set
 
+type BigPositionComponent2 (position : Vector3) =
+    inherit Component ()
+
+    member val Position1 = position with get, set
+    member val Position2 = position with get, set
+    member val Position3 = position with get, set
+    member val Position4 = position with get, set
+    member val Position5 = position with get, set
+    member val Position6 = position with get, set
+    member val Position7 = position with get, set
+
+type BigPositionComponent3 (position : Vector3) =
+    inherit Component ()
+
+    member val Position1 = position with get, set
+    member val Position2 = position with get, set
+    member val Position3 = position with get, set
+    member val Position4 = position with get, set
+    member val Position5 = position with get, set
+    member val Position6 = position with get, set
+    member val Position7 = position with get, set
+
+type BigPositionComponent4 (position : Vector3) =
+    inherit Component ()
+
+    member val Position1 = position with get, set
+    member val Position2 = position with get, set
+    member val Position3 = position with get, set
+    member val Position4 = position with get, set
+    member val Position5 = position with get, set
+    member val Position6 = position with get, set
+    member val Position7 = position with get, set
+
+type BigPositionComponent5 (position : Vector3) =
+    inherit Component ()
+
+    member val Position1 = position with get, set
+    member val Position2 = position with get, set
+    member val Position3 = position with get, set
+    member val Position4 = position with get, set
+    member val Position5 = position with get, set
+    member val Position6 = position with get, set
+    member val Position7 = position with get, set
+
 let proto () =
     entity {
         add (PositionComponent Unchecked.defaultof<Vector3>)
         add (SubSystemComponent ())
         add (BigPositionComponent1 Unchecked.defaultof<Vector3>)
+        add (BigPositionComponent2 Unchecked.defaultof<Vector3>)
+        add (BigPositionComponent3 Unchecked.defaultof<Vector3>)
+        add (BigPositionComponent4 Unchecked.defaultof<Vector3>)
+        add (BigPositionComponent5 Unchecked.defaultof<Vector3>)
     }
 
 let perfRecord title iterations f : (string * float seq) =
@@ -100,9 +147,28 @@ let perfRecord title iterations f : (string * float seq) =
 
     (title, data :> IEnumerable<float>)
 
+let perfRecordSpecial title iterations s f e : (string * float seq) =
+    let mutable total = 0.
+    let data = ResizeArray ()
+
+    GC.Collect (2, GCCollectionMode.Forced, true)
+
+    for i = 1 to iterations do
+        s ()
+
+        let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
+        f ()
+        stopwatch.Stop ()
+        data.Add stopwatch.Elapsed.TotalMilliseconds
+
+        e ()
+
+    (title, data :> IEnumerable<float>)
+
 [<EntryPoint>]
 let main argv = 
     let amount = 10000
+    let iterations = 1000
     let world = World (65536)
 
     let mutable result = Unchecked.defaultof<Vector3>
@@ -116,25 +182,25 @@ let main argv =
 
 
 
-    let test1 = perfRecord "Cache Local" 1000 (fun () ->
+    let test1 = perfRecord "Cache Local" iterations (fun () ->
         for i = 1 to 10 do
             for i = 0 to data.Length - 1 do
                 result <- data.[i].Position7
     )
 
-    let test2 = perfRecord "Cache Local Index" 1000 (fun () ->
+    let test2 = perfRecord "Cache Local Index" iterations (fun () ->
         for i = 1 to 10 do
             for i = 0 to data.Length - 1 do
                 result <- data.[arr.[i]].Position7
     )
 
-    let test3 = perfRecord "Non-Cache Local Index" 1000 (fun () ->
+    let test3 = perfRecord "Non-Cache Local Index" iterations (fun () ->
         for i = 1 to 10 do
             for i = 0 to data.Length - 1 do
                 result <- data.[arrRng.[i]].Position7
     )
 
-    let test4 = perfRecord "Non-Cache Local" 1000 (fun () ->
+    let test4 = perfRecord "Non-Cache Local" iterations (fun () ->
         for i = 1 to 10 do
             for i = 0 to dataRng.Length - 1 do
                 result <- dataRng.[i].Position7
@@ -154,39 +220,85 @@ let main argv =
             if i % j = 0 then
                 entities.Add <| world.EntityManager.Spawn (proto ())
 
-    let test5 = perfRecord "ECS Iteration Non-Cache Local" 1000 (fun () ->
+    let test5 = perfRecord "ECS Iteration Non-Cache Local" iterations (fun () ->
         for i = 1 to 10 do
             world.EntityManager.ForEach<BigPositionComponent1> (fun _ c -> 
                 result <- c.Position7
             )
     )
 
-    let test6 = perfRecord "ECS Iteration Non-Cache Local - Smaller Two Comps" 1000 (fun () ->
+    let test6 = perfRecord "ECS Iteration Non-Cache Local - Smaller Two Comps" iterations (fun () ->
         for i = 1 to 10 do
             world.EntityManager.ForEach<SubSystemComponent, PositionComponent> (fun (_ : Entity) _ c -> result <- c.Position)
     )
 
-    let test7 = perfRecord "ECS Iteration Non-Cache Local - Smaller" 1000 (fun () ->
+    let test7 = perfRecord "ECS Iteration Non-Cache Local - Smaller" iterations (fun () ->
         for i = 1 to 10 do
             world.EntityManager.ForEach<PositionComponent> (fun _ c -> result <- c.Position)
     )
 
-    let test8 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big" 1000 (fun () ->
+    let test8 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big" iterations (fun () ->
         for i = 1 to 10 do
             world.EntityManager.ForEach<SubSystemComponent, BigPositionComponent1> (fun (_ : Entity) _ c -> result <- c.Position7)
     )
 
-    let test9 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big - Reverse" 1000 (fun () ->
+    let test9 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big - Reverse" iterations (fun () ->
         for i = 1 to 10 do
             world.EntityManager.ForEach<BigPositionComponent1, SubSystemComponent> (fun (_ : Entity) c _ -> result <- c.Position7)
     )
 
-    let test10 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big - No Entity" 1000 (fun () ->
+    let test10 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big - No Entity" iterations (fun () ->
         for i = 1 to 10 do
             world.EntityManager.ForEachNoEntity<SubSystemComponent, BigPositionComponent1> (fun _ c -> result <- c.Position7)
     )
 
+    world.DestroyAllEntities ()
 
+    let handleComponentAdded =
+        Behavior.HandleComponentAdded (fun _ (c : BigPositionComponent1) _ _ ->
+            result <- c.Position7
+        )
+        |> world.AddBehavior
+
+    let test11 = 
+        perfRecordSpecial "Handle Component Added" iterations
+            (fun () ->
+                for i = 1 to 1000 do
+                    world.EntityManager.Spawn (proto ()) |> ignore
+            )
+            (fun () ->
+               handleComponentAdded ()
+            )
+            (fun () ->
+                world.DestroyAllEntities ()
+            )
+        
+    let test11 =
+        let (title, data) = test11
+        (title, data |> Seq.map (fun x -> x * 10.))
+
+    for i = 1 to 9 do
+        Behavior.HandleComponentAdded (fun _ (c : BigPositionComponent1) _ _ ->
+            result <- c.Position7
+        )
+        |> world.AddBehavior
+        |> ignore
+
+    let test12 = 
+        perfRecordSpecial "Spawn 1000 Ents" iterations
+            (fun () -> ()
+            )
+            (fun () ->
+                for i = 1 to 1000 do
+                    world.EntityManager.Spawn (proto ()) |> ignore
+            )
+            (fun () ->
+                world.DestroyAllEntities ()
+            )
+        
+    let test12 =
+        let (title, data) = test12
+        (title, data |> Seq.map (fun x -> x * 10.))
 
     let series =
         [|
@@ -200,6 +312,8 @@ let main argv =
             test8
             test9
             test10
+            test11
+            test12
         |]
     System.IO.File.WriteAllText ("chart.html", createChart "Iteration Performance" series)
 

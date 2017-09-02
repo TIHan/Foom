@@ -482,6 +482,13 @@ and [<ReferenceEquality>] EntityManager =
 
     member this.MaxNumberOfEntities = this.MaxEntityAmount - 1
 
+    member this.DestroyAll () =
+        this.ActiveVersions
+        |> Array.iteri (fun index version ->
+            if version > 0u then
+                this.Destroy (Entity (index, version))
+        )
+
 [<AutoOpen>]
 module EntityPrototype =
 

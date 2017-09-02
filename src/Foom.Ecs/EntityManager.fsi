@@ -63,6 +63,8 @@ type EntityManager =
 
     member MaxNumberOfEntities : int
 
+    member internal DestroyAll : unit -> unit
+
 [<AutoOpen>]
 module EntityPrototype =
 

@@ -81,3 +81,5 @@ type World (maxEntityAmount) =
     member __.EntityManager = entityManager
 
     member __.EventAggregator = eventAggregator
+
+    member __.DestroyAllEntities () = entityManager.DestroyAll ()
