@@ -77,7 +77,7 @@ and [<ReferenceEquality>] EntityManager =
         let mutable nextEntityIndex = 1
         let removedEntityQueue = Queue<Entity> () 
 
-        let entityRemovals : ((Entity -> unit) ResizeArray) [] = Array.init maxEntityAmount (fun _ -> ResizeArray ())
+        let entityRemovals : ((Entity -> unit) ResizeArray) [] = Array.init maxEntityAmount (fun _ -> ResizeArray 16)
 
         let entitySpawnedEvent = eventManager.GetEntitySpawnedEvent ()
         let entityDestroyedEvent = eventManager.GetEntityDestroyedEvent ()

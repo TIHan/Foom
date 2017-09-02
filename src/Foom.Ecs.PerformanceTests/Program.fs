@@ -290,7 +290,8 @@ let main argv =
             )
             (fun () ->
                 for i = 1 to 1000 do
-                    world.EntityManager.Spawn (proto ()) |> ignore
+                    proto () |> ignore
+                    //world.EntityManager.Spawn (proto ()) |> ignore
             )
             (fun () ->
                 world.DestroyAllEntities ()
