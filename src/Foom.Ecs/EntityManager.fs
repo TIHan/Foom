@@ -186,6 +186,31 @@ and [<ReferenceEquality>] EntityManager =
     
             for i = 0 to data.Entities.Count - 1 do iter i
 
+    member inline this.Iterate<'T1, 'T2 when 'T1 :> Component and 'T2 :> Component> (f) : unit =
+        let mutable data1 = Unchecked.defaultof<IEntityLookupData>
+        let mutable data2 = Unchecked.defaultof<IEntityLookupData>
+        if this.Lookup.TryGetValue (typeof<'T1>, &data1) && this.Lookup.TryGetValue (typeof<'T2>, &data2) then
+            let data = [|data1;data2|] |> Array.minBy (fun x -> x.Entities.Count)
+            let data1 = data1 :?> EntityLookupData<'T1>
+            let data2 = data2 :?> EntityLookupData<'T2>
+
+            let entities = data.Entities.Buffer
+            let components1 = data1.Components.Buffer
+            let components2 = data2.Components.Buffer
+            let lookup1 = data1.IndexLookup
+            let lookup2 = data2.IndexLookup
+
+            let inline iter i =
+                let entity = entities.[i]
+    
+                let comp1Index = lookup1.[entity.Index]
+                let comp2Index = lookup2.[entity.Index]
+
+                if comp1Index >= 0 && comp2Index >= 0 then
+                    f components1.[comp1Index] components2.[comp2Index]
+    
+            for i = 0 to data.Entities.Count - 1 do iter i
+
     member inline this.Iterate<'T1, 'T2, 'T3 when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component> (f) : unit =
         let mutable data1 = Unchecked.defaultof<IEntityLookupData>
         let mutable data2 = Unchecked.defaultof<IEntityLookupData>
@@ -403,7 +428,15 @@ and [<ReferenceEquality>] EntityManager =
         this.CurrentIterations <- this.CurrentIterations - 1
         this.ResolvePendingQueues ()
 
-    member this.ForEach<'T1, 'T2 when 'T1 :> Component and 'T2 :> Component> f : unit =
+    member this.ForEach<'T1, 'T2 when 'T1 :> Component and 'T2 :> Component> (f : Entity -> 'T1 -> 'T2 -> unit) : unit =
+        this.CurrentIterations <- this.CurrentIterations + 1
+
+        this.Iterate<'T1, 'T2> (f)
+
+        this.CurrentIterations <- this.CurrentIterations - 1
+        this.ResolvePendingQueues ()
+
+    member this.ForEachNoEntity<'T1, 'T2 when 'T1 :> Component and 'T2 :> Component> (f : 'T1 -> 'T2 -> unit) : unit =
         this.CurrentIterations <- this.CurrentIterations + 1
 
         this.Iterate<'T1, 'T2> (f)

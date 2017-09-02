@@ -174,7 +174,7 @@ let main argv =
 
     let test6 = perfRecord "ECS Iteration Non-Cache Local - Smaller Two Comps" 1000 (fun () ->
         for i = 1 to 10 do
-            world.EntityManager.ForEach<SubSystemComponent, PositionComponent> (fun _ _ c -> result <- c.Position)
+            world.EntityManager.ForEach<SubSystemComponent, PositionComponent> (fun (_ : Entity) _ c -> result <- c.Position)
     )
 
     let test7 = perfRecord "ECS Iteration Non-Cache Local - Smaller" 1000 (fun () ->
@@ -184,12 +184,17 @@ let main argv =
 
     let test8 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big" 1000 (fun () ->
         for i = 1 to 10 do
-            world.EntityManager.ForEach<SubSystemComponent, BigPositionComponent1> (fun _ _ c -> result <- c.Position7)
+            world.EntityManager.ForEach<SubSystemComponent, BigPositionComponent1> (fun (_ : Entity) _ c -> result <- c.Position7)
     )
 
-    let test9 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big - Reverse" 1000 (fun () ->
+    //let test9 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big - Reverse" 1000 (fun () ->
+    //    for i = 1 to 10 do
+    //        world.EntityManager.ForEach<BigPositionComponent1, SubSystemComponent> (fun (_ : Entity) c _ -> result <- c.Position7)
+    //)
+
+    let test10 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big - No Entity" 1000 (fun () ->
         for i = 1 to 10 do
-            world.EntityManager.ForEach<BigPositionComponent1, SubSystemComponent> (fun _ c _ -> result <- c.Position7)
+            world.EntityManager.ForEachNoEntity<SubSystemComponent, BigPositionComponent1> (fun _ c -> result <- c.Position7)
     )
 
     let chartData =
@@ -217,11 +222,12 @@ let main argv =
                     //test2
                     //test3
                     //test4
-                    test5
+                    //test5
                     //test6
                     //test7
-                    //test8
+                    test8
                     //test9
+                    test10
                 |]
         }
 

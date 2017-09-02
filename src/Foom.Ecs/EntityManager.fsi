@@ -35,6 +35,9 @@ type EntityManager =
     /// Iterate entities that have components of type 'T1 and 'T2.
     member ForEach<'T1, 'T2 when 'T1 :> Component and 'T2 :> Component> : (Entity -> 'T1 -> 'T2 -> unit) -> unit
 
+    /// Iterate entities that have components of type 'T1 and 'T2.
+    member ForEachNoEntity<'T1, 'T2 when 'T1 :> Component and 'T2 :> Component> : ('T1 -> 'T2 -> unit) -> unit
+
     /// Iterate entities that have components of type 'T1, 'T2, and 'T3.
     member ForEach<'T1, 'T2, 'T3 when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component> : (Entity -> 'T1 -> 'T2 -> 'T3 -> unit) -> unit
 
