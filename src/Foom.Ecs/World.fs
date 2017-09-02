@@ -28,7 +28,7 @@ type Subworld (eventAggregator: EventAggregator, entityManager: EntityManager) =
             }
 
         match behav with
-        | Behavior f -> f context
+        | BehaviorUpdate f -> f context
 
         fun updateData ->
 
@@ -64,7 +64,7 @@ type World (maxEntityAmount) =
             }
 
         match behav with
-        | Behavior f -> f context
+        | BehaviorUpdate f -> f context
 
         fun updateData ->
 

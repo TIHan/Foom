@@ -116,6 +116,14 @@ let main argv =
     let amount = 10000
     let world = World (65536)
 
+    let mutable result = Unchecked.defaultof<Vector3>
+
+    let test10Update =
+        Behavior.ForEach (fun _ (c : BigPositionComponent1) ->
+            result <- c.Position7
+        )
+        |> world.AddBehavior
+
     let rng = Random ()
     let arr = Array.init amount (fun i -> i)
     let arrRng = Array.init amount (fun i -> rng.Next(0, amount))
@@ -123,7 +131,7 @@ let main argv =
     let data = Array.init amount (fun _ -> BigPositionComponent1 Unchecked.defaultof<Vector3>)
     let dataRng = Array.init amount (fun i -> data.[arrRng.[i]])
 
-    let mutable result = Unchecked.defaultof<Vector3>
+
 
     let test1 = perfRecord "Cache Local" 1000 (fun () ->
         for i = 1 to 10 do
@@ -166,7 +174,9 @@ let main argv =
     let test5 = perfRecord "ECS Iteration Non-Cache Local" 1000 (fun () ->
         for i = 1 to 10 do
             world.EntityManager.ForEach<BigPositionComponent1> (fun _ c -> 
-                result <- c.Position7
+                c.Position7 <- c.Position7
+                //result |> ignore
+                //result <- c.Position7
             )
     )
 
@@ -190,6 +200,13 @@ let main argv =
             world.EntityManager.ForEach<BigPositionComponent1, SubSystemComponent> (fun _ c _ -> result <- c.Position7)
     )
 
+
+
+    let test10 = perfRecord "ECS Iteration Non-Cache Local - Special" 1000 (fun () ->
+        for i = 1 to 10 do
+            test10Update 1.f
+    )
+
     let chartData =
         {
             title = { text = "Iteration Performance" }
@@ -211,15 +228,16 @@ let main argv =
                 }
             series = 
                 [|
-                    test1
-                    test2
-                    test3
-                    test4
+                    //test1
+                    //test2
+                    //test3
+                    //test4
                     test5
-                    test6
-                    test7
-                    test8
-                    test9
+                    //test6
+                    //test7
+                    //test8
+                    //test9
+                    test10
                 |]
         }
 

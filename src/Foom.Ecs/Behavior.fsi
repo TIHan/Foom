@@ -9,7 +9,12 @@ type internal BehaviorContext<'Update> =
         Actions: ResizeArray<'Update -> unit>
     }
 
-type Behavior<'Update> = internal Behavior of (BehaviorContext<'Update> -> unit)
+type Behavior<'Update> = internal BehaviorUpdate of (BehaviorContext<'Update> -> unit)
+
+[<Sealed>]
+type Behavior =
+
+    static member ForEach<'T, 'Update when 'T :> Component> : (Entity -> 'T -> unit) -> Behavior<'Update>
 
 [<RequireQualifiedAccess>]
 module Behavior =

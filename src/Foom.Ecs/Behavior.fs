@@ -15,13 +15,14 @@ type BehaviorContext<'Update> =
 
 type Behavior<'Update> = internal BehaviorUpdate of (BehaviorContext<'Update> -> unit)
 
+[<Sealed>]
 type Behavior private () =
 
-    static member ForEach<'T, 'Update when 'T :> Component> (f : EntityManager -> EventAggregator -> 'Update -> Entity -> 'T -> unit) =
+    static member ForEach<'T, 'Update when 'T :> Component> (f : Entity -> 'T -> unit) : Behavior<'Update> =
         BehaviorUpdate (fun context ->
             let lookup = Array.init context.EntityManager.MaxNumberOfEntities (fun _ -> -1)
-            let entities = UnsafeResizeArray.Create 0
-            let data = UnsafeResizeArray.Create 0
+            let entities = UnsafeResizeArray.Create 65536
+            let data = UnsafeResizeArray.Create 65536
 
             context.EventAggregator.GetComponentAddedEvent<'T>().Publish.Add (fun comp ->
                 lookup.[comp.Owner.Index] <- entities.Count
@@ -44,12 +45,12 @@ type Behavior private () =
                     lookup.[swappingEntity.Index] <- index
             )
 
-            let f = f context.EntityManager context.EventAggregator
+            //let f = f context.EntityManager context.EventAggregator
             let entitiesBuffer = entities.Buffer
             let dataBuffer = data.Buffer
             (fun updateData ->
                 for i = 0 to entities.Count - 1 do
-                    f updateData entitiesBuffer.[i] dataBuffer.[i]
+                    f entitiesBuffer.[i] dataBuffer.[i]
             )
             |> context.Actions.Add
 
