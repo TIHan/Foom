@@ -14,17 +14,12 @@ type Behavior<'Update> = internal BehaviorUpdate of (BehaviorContext<'Update> ->
 [<Sealed>]
 type Behavior =
 
-    static member ForEach<'T, 'Update when 'T :> Component> : (Entity -> 'T -> unit) -> Behavior<'Update>
+    static member HandleEvent : (#IEvent -> 'Update -> EntityManager -> unit) -> Behavior<'Update>
 
-[<RequireQualifiedAccess>]
-module Behavior =
+    static member HandleLatestEvent : (#IEvent -> 'Update -> EntityManager -> unit) -> Behavior<'Update>
 
-    val handleEvent : (#IEvent -> 'Update -> EntityManager -> unit) -> Behavior<'Update>
+    static member HandleComponentAdded : (Entity -> #Component -> 'Update -> EntityManager -> unit) -> Behavior<'Update>
 
-    val handleLatestEvent : (#IEvent -> 'Update -> EntityManager -> unit) -> Behavior<'Update>
+    static member Update : ('Update -> EntityManager -> EventAggregator -> unit) -> Behavior<'Update>
 
-    val handleComponentAdded : (Entity -> #Component -> 'Update -> EntityManager -> unit) -> Behavior<'Update>
-
-    val update : ('Update -> EntityManager -> EventAggregator -> unit) -> Behavior<'Update>
-
-    val merge : Behavior<'Update>  list -> Behavior<'Update>
+    static member Merge : Behavior<'Update>  list -> Behavior<'Update>

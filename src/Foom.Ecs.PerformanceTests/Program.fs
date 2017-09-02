@@ -118,12 +118,6 @@ let main argv =
 
     let mutable result = Unchecked.defaultof<Vector3>
 
-    let test10Update =
-        Behavior.ForEach (fun _ (c : BigPositionComponent1) ->
-            result <- c.Position7
-        )
-        |> world.AddBehavior
-
     let rng = Random ()
     let arr = Array.init amount (fun i -> i)
     let arrRng = Array.init amount (fun i -> rng.Next(0, amount))
@@ -174,9 +168,7 @@ let main argv =
     let test5 = perfRecord "ECS Iteration Non-Cache Local" 1000 (fun () ->
         for i = 1 to 10 do
             world.EntityManager.ForEach<BigPositionComponent1> (fun _ c -> 
-                c.Position7 <- c.Position7
-                //result |> ignore
-                //result <- c.Position7
+                result <- c.Position7
             )
     )
 
@@ -198,13 +190,6 @@ let main argv =
     let test9 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big - Reverse" 1000 (fun () ->
         for i = 1 to 10 do
             world.EntityManager.ForEach<BigPositionComponent1, SubSystemComponent> (fun _ c _ -> result <- c.Position7)
-    )
-
-
-
-    let test10 = perfRecord "ECS Iteration Non-Cache Local - Special" 1000 (fun () ->
-        for i = 1 to 10 do
-            test10Update 1.f
     )
 
     let chartData =
@@ -237,7 +222,6 @@ let main argv =
                     //test7
                     //test8
                     //test9
-                    test10
                 |]
         }
 

@@ -51,12 +51,12 @@ type MeshRendererComponent (group, material : MaterialDescription<MeshInput>, me
     inherit MeshRendererComponent<MeshInput, Mesh<MeshInput>> (group, material, meshInfo.ToMesh ())
 
 let assetBehavior (am : AssetManager) =
-    Behavior.handleComponentAdded (fun ent (comp : BaseMeshRendererComponent) _ _ ->
+    Behavior.HandleComponentAdded (fun ent (comp : BaseMeshRendererComponent) _ _ ->
         comp.LoadMaterial am
     )
 
 let assetRenderBehavior (renderer : Renderer) =
-    Behavior.handleComponentAdded (fun ent (comp : BaseMeshRendererComponent) _ _ ->
+    Behavior.HandleComponentAdded (fun ent (comp : BaseMeshRendererComponent) _ _ ->
         comp.AddMesh (renderer)
     )
 
@@ -67,16 +67,16 @@ let create (gl: IGL) fileReadAllText (am : AssetManager) : Behavior<float32 * fl
 
     let renderer = Renderer.Create (gl, fileReadAllText)
 
-    Behavior.merge
+    Behavior.Merge
         [
             assetBehavior am
             assetRenderBehavior renderer
 
-            Behavior.handleComponentAdded (fun ent (comp : CameraComponent) _ _ ->
+            Behavior.HandleComponentAdded (fun ent (comp : CameraComponent) _ _ ->
                 comp.RenderCamera <- renderer.CreateCamera (Matrix4x4.Identity, comp.Projection) |> Some
             )
 
-            Behavior.update (fun ((time, deltaTime): float32 * float32) em _ ->
+            Behavior.Update (fun ((time, deltaTime): float32 * float32) em _ ->
 
                 let mutable g_view = Matrix4x4.Identity
                 let mutable g_projection = Matrix4x4.Identity

@@ -34,9 +34,9 @@ type PlayerComponent () =
 module Player =
 
     let fixedUpdate : Behavior<float32 * float32> =
-        Behavior.merge
+        Behavior.Merge
             [
-                Behavior.update (fun (time, deltaTime) em ea ->
+                Behavior.Update (fun (time, deltaTime) em ea ->
                     em.ForEach<CameraComponent, TransformComponent, PlayerComponent> (fun ent cameraComp transformComp playerComp ->
 
                         transformComp.TransformLerp <- transformComp.Transform
@@ -76,7 +76,7 @@ module Player =
                 )
 
 
-                Behavior.update (fun _ em ea ->
+                Behavior.Update (fun _ em ea ->
                     em.ForEach<CameraComponent, TransformComponent, PlayerComponent> (fun ent cameraComp transformComp playerComp ->
 
                         transformComp.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
@@ -92,9 +92,9 @@ module Player =
             ]
 
     let preUpdate (print : string -> unit) (willQuit: bool ref) (input : IInput) =
-        Behavior.merge
+        Behavior.Merge
             [
-                Behavior.update (fun () em ea ->
+                Behavior.Update (fun () em ea ->
                     let mutable spawnAlot = false
                     let mutable pos = Vector3.Zero
                     em.ForEach<CameraComponent, TransformComponent, PlayerComponent> (fun ent cameraComp transformComp playerComp ->
@@ -136,7 +136,7 @@ module Player =
                             |> ignore
                 )
 
-                Behavior.update (fun () em ea ->
+                Behavior.Update (fun () em ea ->
                     em.ForEach<CameraComponent, TransformComponent, PlayerComponent> (fun ent cameraComp transformComp playerComp ->
 
                         transformComp.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))

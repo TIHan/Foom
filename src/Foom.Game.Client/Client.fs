@@ -21,7 +21,7 @@ let init print (gl: IGL) (assetLoader: IAssetLoader) loadTextFile openWad export
             am
            
 
-    let renderSystemUpdate = world.AddBehavior (Behavior.merge [ renderSystem ])
+    let renderSystemUpdate = world.AddBehavior (Behavior.Merge [ renderSystem ])
 
     let clientSubworld = world.CreateSubworld ()
     let clientWorld = ClientWorld.Create (clientSubworld, world.SpawnEntity ())

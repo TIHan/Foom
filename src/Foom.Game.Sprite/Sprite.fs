@@ -105,9 +105,9 @@ module Sprite =
     let update (am: AssetManager) : Behavior<float32 * float32> =
         let lookup = Dictionary<int * TextureKind, SpriteBatchRendererComponent> ()
 
-        Behavior.merge
+        Behavior.Merge
             [
-                Behavior.handleComponentAdded (fun ent (comp: SpriteComponent) _ em ->
+                Behavior.HandleComponentAdded (fun ent (comp: SpriteComponent) _ em ->
                     let rendererComp = 
                         let key = (comp.Layer, comp.TextureKind)
                         match lookup.TryGetValue (key) with
@@ -126,7 +126,7 @@ module Sprite =
                     comp.RendererComponent <- rendererComp
                 )
 
-                Behavior.update (fun _ em ea ->
+                Behavior.Update (fun _ em ea ->
                     em.ForEach<TransformComponent, SpriteComponent> (fun _ transformComp spriteComp ->
                         let rendererComp = spriteComp.RendererComponent
                         if rendererComp.SpriteCount < rendererComp.Positions.Length then
@@ -150,7 +150,7 @@ module Sprite =
                     )
                 )
 
-                Behavior.update (fun _ em ea ->
+                Behavior.Update (fun _ em ea ->
                     em.ForEach<SpriteBatchRendererComponent> (fun _ rendererComp ->
                         rendererComp.Mesh.Positions.Set (rendererComp.Positions, rendererComp.SpriteCount)
                         rendererComp.Mesh.LightLevels.Set (rendererComp.LightLevels, rendererComp.SpriteCount)

@@ -34,7 +34,7 @@ type WadComponent (wadName: string) =
 module Behavior =
 
     let wadLoading (openWad: string -> Stream) f =
-        Behavior.handleComponentAdded (fun ent (wadComp: WadComponent) _ em ->
+        Behavior.HandleComponentAdded (fun ent (wadComp: WadComponent) _ em ->
             match wadComp.State with
             | WadState.ReadyToLoad fileName ->
 
@@ -48,7 +48,7 @@ module Behavior =
         )
 
     let levelLoading f =
-        Behavior.handleComponentAdded (fun ent (levelComp: LevelComponent) _ em ->
+        Behavior.HandleComponentAdded (fun ent (levelComp: LevelComponent) _ em ->
             match levelComp.State with
             | LevelState.ReadyToLoad levelName ->
 

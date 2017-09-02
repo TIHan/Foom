@@ -30,7 +30,7 @@ type SpriteAnimationComponent (time: TimeSpan, frames: int list) =
 module SpriteAnimation =
 
     let update : Behavior<float32 * float32> =
-        Behavior.update (fun (time, deltaTime) em ea ->
+        Behavior.Update (fun (time, deltaTime) em ea ->
             em.ForEach<SpriteAnimationComponent, SpriteComponent> (fun _ spriteAnimComp spriteComp ->
                 let frameIndex = int (spriteAnimComp.CurrentTime / spriteAnimComp.FrameTime)
 

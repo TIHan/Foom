@@ -52,7 +52,7 @@ type LoadWadAndLevelRequested (wad, level) =
     interface IEvent
 
 let loadWadAndLevelBehavior (clientWorld: ClientWorld) =
-    Behavior.handleLatestEvent (fun (evt: LoadWadAndLevelRequested) _ em ->
+    Behavior.HandleLatestEvent (fun (evt: LoadWadAndLevelRequested) _ em ->
         match em.TryGet<WadComponent> clientWorld.Entity with
         | None ->
 
@@ -71,10 +71,10 @@ let loadWadAndLevelBehavior (clientWorld: ClientWorld) =
     )
 
 let addRigidBodyBehavior (clientWorld: ClientWorld) : Behavior<float32 * float32> =
-    Behavior.merge
+    Behavior.Merge
         [
             // This should be part of a physics system.
-            Behavior.handleComponentAdded (fun ent (charContrComp: CharacterControllerComponent) _ em ->
+            Behavior.HandleComponentAdded (fun ent (charContrComp: CharacterControllerComponent) _ em ->
                 opt {
                     let! transformComp = em.TryGet<TransformComponent> ent
                     let! physicsEngineComp = em.TryGet<PhysicsEngineComponent> clientWorld.Entity
@@ -86,7 +86,7 @@ let addRigidBodyBehavior (clientWorld: ClientWorld) : Behavior<float32 * float32
             )
 
             // This should be part of a physics system.
-            Behavior.handleComponentAdded (fun ent (rbodyComp: RigidBodyComponent) _ em ->
+            Behavior.HandleComponentAdded (fun ent (rbodyComp: RigidBodyComponent) _ em ->
                 opt {
                     let! transformComp = em.TryGet<TransformComponent> ent
                     let! physicsEngineComp = em.TryGet<PhysicsEngineComponent> clientWorld.Entity
@@ -99,7 +99,7 @@ let addRigidBodyBehavior (clientWorld: ClientWorld) : Behavior<float32 * float32
     ]
 
 let physicsSpriteBehavior (clientWorld: ClientWorld) =
-    Behavior.handleComponentAdded (fun (ent: Entity) (spriteComp: SpriteComponent) _ em ->
+    Behavior.HandleComponentAdded (fun (ent: Entity) (spriteComp: SpriteComponent) _ em ->
         opt {
             let! charContrComp = em.TryGet<RigidBodyComponent> ent
             let! transformComp = em.TryGet<TransformComponent> ent
@@ -121,7 +121,7 @@ let physicsSpriteBehavior (clientWorld: ClientWorld) =
     )
 
 let physicsUpdateBehavior (clientWorld: ClientWorld) =
-    Behavior.update (fun _ em _ ->
+    Behavior.Update (fun _ em _ ->
 
         opt {
             let! physicsEngineComp = em.TryGet<PhysicsEngineComponent> clientWorld.Entity
@@ -152,7 +152,7 @@ let physicsUpdateBehavior (clientWorld: ClientWorld) =
 
 
 let create openWad exportTextures (clientWorld: ClientWorld) am =
-    Behavior.merge
+    Behavior.Merge
         (
             [
                 loadWadAndLevelBehavior clientWorld
