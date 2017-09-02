@@ -1,8 +1,49 @@
 ﻿open Foom.Ecs
 
 open System
+open System.Collections.Generic
 
 open Foom.Collections
+
+type seriesItem<'T> =
+    {
+        name : string
+        data : 'T seq
+    }
+
+let createChart title (series : (string * 'T seq) seq) =
+
+    let stringSeries = Newtonsoft.Json.JsonConvert.SerializeObject (series |> Seq.map (fun (name, data) -> { name = name; data = data }))
+    sprintf """
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+
+<div id="container"></div>
+
+<script>
+Highcharts.chart('container', {
+
+    title: {
+        text: '%s'
+    },
+
+    yAxis: {
+        title: {
+            text: 'ms'
+        },
+        max: 3
+    },
+    legend: {
+        layout: 'vertical',
+        align: 'right',
+        verticalAlign: 'middle'
+    },
+
+    series: %s
+
+});
+</script>
+    """ title stringSeries
 
 [<Struct>]
 type Vector3 =
@@ -45,56 +86,7 @@ let proto () =
         add (BigPositionComponent1 Unchecked.defaultof<Vector3>)
     }
 
-type title =
-    {
-        mutable text : string
-    }
-
-type subtitle =
-    {
-        mutable text : string
-    }
-
-type yAxis =
-    {
-        mutable title : title
-        mutable max : int
-    }
-
-type legend =
-    {
-        mutable layout : string
-        mutable align : string
-        mutable verticalAlign : string
-    }
-
-type plotOptionsSeries =
-    {
-        mutable pointStart : int
-    }
-
-type series<'T> =
-    {
-        mutable name : string
-        data : 'T seq
-    }
-
-type plotOptions =
-    {
-        mutable series : plotOptionsSeries
-    }
-
-type Chart =
-    {
-        mutable title : title
-        mutable subtitle : subtitle
-        mutable yAxis : yAxis
-        mutable legend : legend
-        mutable plotOptions : plotOptions
-        series : obj []
-    }
-
-let perfRecord title iterations f =
+let perfRecord title iterations f : (string * float seq) =
     let mutable total = 0.
     let data = ResizeArray ()
 
@@ -106,10 +98,7 @@ let perfRecord title iterations f =
         stopwatch.Stop ()
         data.Add stopwatch.Elapsed.TotalMilliseconds
 
-    {
-        name = title
-        data = data
-    }
+    (title, data :> IEnumerable<float>)
 
 [<EntryPoint>]
 let main argv = 
@@ -187,66 +176,33 @@ let main argv =
             world.EntityManager.ForEach<SubSystemComponent, BigPositionComponent1> (fun (_ : Entity) _ c -> result <- c.Position7)
     )
 
-    //let test9 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big - Reverse" 1000 (fun () ->
-    //    for i = 1 to 10 do
-    //        world.EntityManager.ForEach<BigPositionComponent1, SubSystemComponent> (fun (_ : Entity) c _ -> result <- c.Position7)
-    //)
+    let test9 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big - Reverse" 1000 (fun () ->
+        for i = 1 to 10 do
+            world.EntityManager.ForEach<BigPositionComponent1, SubSystemComponent> (fun (_ : Entity) c _ -> result <- c.Position7)
+    )
 
     let test10 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big - No Entity" 1000 (fun () ->
         for i = 1 to 10 do
             world.EntityManager.ForEachNoEntity<SubSystemComponent, BigPositionComponent1> (fun _ c -> result <- c.Position7)
     )
 
-    let chartData =
-        {
-            title = { text = "Iteration Performance" }
-            subtitle = { text = "" }
-            yAxis =
-                {
-                    title = { text = "ms" }
-                    max = 3
-                }
-            legend =
-                {
-                    layout = "vertical"
-                    align = "right"
-                    verticalAlign = "middle"
-                }
-            plotOptions =
-                {
-                    series = { pointStart = 0 }
-                }
-            series = 
-                [|
-                    //test1
-                    //test2
-                    //test3
-                    //test4
-                    //test5
-                    //test6
-                    //test7
-                    test8
-                    //test9
-                    test10
-                |]
-        }
 
-    let stringData = Newtonsoft.Json.JsonConvert.SerializeObject (chartData)
-    System.IO.File.WriteAllText ("chart.html",
-    """
-<script src="https://code.highcharts.com/highcharts.js"></script>
-<script src="https://code.highcharts.com/modules/exporting.js"></script>
 
-<div id="container"></div>
+    let series =
+        [|
+            test1
+            test2
+            test3
+            test4
+            test5
+            test6
+            test7
+            test8
+            test9
+            test10
+        |]
+    System.IO.File.WriteAllText ("chart.html", createChart "Iteration Performance" series)
 
-<script>
-Highcharts.chart('container', """ + stringData +
-"""
-);
-</script>
-    """
-    )
-
-    System.Diagnostics.Process.Start ("chart.html")
+    System.Diagnostics.Process.Start ("chart.html") |> ignore
 
     0
