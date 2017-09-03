@@ -127,7 +127,7 @@ let start (input : IInput) (gl : IGL) (invoke: Task ref) =
 
             //printfn "FPS: %A" (int (1000. / stopwatch.Elapsed.TotalMilliseconds))
            // if stopwatch.Elapsed.TotalMilliseconds > 20. then
-            printfn "MS: %A" stopwatch.Elapsed.TotalMilliseconds
+            printfn "FPS: %A" (System.Math.Round (1000. / stopwatch.Elapsed.TotalMilliseconds, 0))
         )
 
     (client.AlwaysUpdate, update, render)
