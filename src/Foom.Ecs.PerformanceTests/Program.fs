@@ -30,7 +30,9 @@ Highcharts.chart('container', {
     yAxis: {
         title: {
             text: 'ms'
-        }
+        },
+        min: 0,
+        max: 3
     },
     legend: {
         layout: 'vertical',
@@ -247,15 +249,10 @@ let main argv =
             world.EntityManager.ForEach<BigPositionComponent1, SubSystemComponent> (fun (_ : Entity) c _ -> result <- c.Position7)
     )
 
-    let test10 = perfRecord "ECS Iteration Non-Cache Local - One Small + One Big - No Entity" iterations (fun () ->
-        for i = 1 to 10 do
-            world.EntityManager.ForEachNoEntity<SubSystemComponent, BigPositionComponent1> (fun _ c -> result <- c.Position7)
-    )
-
     world.DestroyAllEntities ()
 
     let handleComponentAdded =
-        Behavior.HandleComponentAdded (fun _ (c : BigPositionComponent1) _ _ ->
+        Behavior.HandleComponentAdded (fun ent (c : BigPositionComponent1) _ em ->
             result <- c.Position7
         )
         |> world.AddBehavior
@@ -290,8 +287,7 @@ let main argv =
             )
             (fun () ->
                 for i = 1 to 1000 do
-                    proto () |> ignore
-                    //world.EntityManager.Spawn (proto ()) |> ignore
+                    world.EntityManager.Spawn (proto ()) |> ignore
             )
             (fun () ->
                 world.DestroyAllEntities ()
@@ -312,7 +308,6 @@ let main argv =
             test7
             test8
             test9
-            test10
             test11
             test12
         |]
