@@ -368,6 +368,22 @@ and [<ReferenceEquality>] EntityManager =
         else
             None
 
+    member this.TryGet<'T when 'T :> Component> (entity: Entity, [<Out>] comp : byref<'T>) : bool =
+        let mutable data = Unchecked.defaultof<IEntityLookupData>
+        if this.Lookup.TryGetValue (typeof<'T>, &data) then
+            let data = data :?> EntityLookupData<'T>
+            if this.IsValidEntity entity then
+                let index = data.IndexLookup.[entity.Index]
+                if index >= 0 then
+                    comp <- data.Components.Buffer.[index]
+                    true
+                else
+                    false
+            else
+                false
+        else
+            false
+
     member this.IsValid entity =
         this.IsValidEntity entity
 

@@ -46,34 +46,35 @@ type Behavior private () =
 
     static member HandleComponentAdded<'T, 'Update when 'T :> Component> (f: Entity -> 'T -> 'Update -> EntityManager -> unit) =
         BehaviorUpdate (fun context ->
-            let queue = ConcurrentQueue<'T> ()
+            let queue = Queue<'T> ()
             context.EventAggregator.GetComponentAddedEvent<'T>().Publish.Add queue.Enqueue
 
+            let em = context.EntityManager
             (fun updateData ->
-                let mutable item = Unchecked.defaultof<'T>
-                while queue.TryDequeue (&item) do
-                    if context.EntityManager.IsValid item.Owner then
-                        f item.Owner item updateData context.EntityManager
+                while queue.Count > 0 do
+                    let item = queue.Dequeue ()
+                    if em.IsValid item.Owner then
+                        f item.Owner item updateData em
             )
             |> context.Actions.Add
         )
 
-    //static member ComponentAdded<'T1, 'T2, 'Update when 'T1 :> Component and 'T2 :> Component> (f : 'Update -> Entity -> 'T1 -> 'T2 -> unit) =
-    //    BehaviorUpdate (fun context ->
-    //        let queue = ConcurrentQueue<struct ('T1 * 'T2)> ()
+    static member ComponentAdded<'T1, 'T2, 'Update when 'T1 :> Component and 'T2 :> Component> (f : 'Update -> Entity -> 'T1 -> 'T2 -> unit) =
+        BehaviorUpdate (fun context ->
+            let queue = Queue ()
+            context.EventAggregator.GetComponentAddedEvent<'T1>().Publish.Add queue.Enqueue
 
-    //        let evt1 = context.EventAggregator.GetComponentAddedEvent<'T1>().Publish
+            let em = context.EntityManager
+            (fun updateData ->
+                let mutable c2 = Unchecked.defaultof<'T2>
+                while queue.Count > 0 do
+                    let c1 = queue.Dequeue ()
+                    if em.TryGet<'T2> (c1.Owner, &c2) then
+                        f updateData c1.Owner c1 c2
 
-    //        context.EventAggregator.GetComponentAddedEvent<'T1>().Publish.Add queue.Enqueue
-
-    //        (fun updateData ->
-    //            let mutable item = Unchecked.defaultof<'T1>
-    //            while queue.TryDequeue (&item) do
-    //                if context.EntityManager.IsValid item.Owner then
-    //                    f updateData item.Owner item
-    //        )
-    //        |> context.Actions.Add
-    //    )
+            )
+            |> context.Actions.Add
+        )
 
     static member Update (f: 'Update -> EntityManager -> EventAggregator -> unit) = 
         BehaviorUpdate (fun context ->

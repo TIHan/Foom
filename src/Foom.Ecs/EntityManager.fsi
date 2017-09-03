@@ -19,6 +19,8 @@ type EntityManager =
     /// Attempts to find a component of type 'T based on the specified Entity.
     member TryGet<'T when 'T :> Component> : Entity -> 'T option
 
+    member TryGet<'T when 'T :> Component> : Entity * [<Out>] comp : byref<'T> -> bool
+
     /// Checks to see if the Entity is valid.
     member IsValid : Entity -> bool
 

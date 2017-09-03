@@ -32,7 +32,7 @@ Highcharts.chart('container', {
             text: 'ms'
         },
         min: 0,
-        max: 3
+        max: 17
     },
     legend: {
         layout: 'vertical',
@@ -253,12 +253,7 @@ let main argv =
 
     let handleComponentAdded =
         Behavior.HandleComponentAdded (fun ent (c : BigPositionComponent1) _ em ->
-            match em.TryGet<PositionComponent> ent with
-            | Some _ ->
-            //let mutable c2 = Unchecked.defaultof<PositionComponent>
-            //if em.TryGet (ent, &c2) then
-                result <- c.Position7
-            | _ ->()
+            result <- c.Position7
         )
         |> world.AddBehavior
 
@@ -279,12 +274,13 @@ let main argv =
         let (title, data) = test11
         (title, data |> Seq.map (fun x -> x * 10.))
 
-    for i = 1 to 9 do
-        Behavior.HandleComponentAdded (fun _ (c : BigPositionComponent1) _ _ ->
-            result <- c.Position7
+    let componentAddedBehaviors =
+        Array.init 10 (fun _ ->
+            Behavior.ComponentAdded (fun _ ent (c : BigPositionComponent1) (p : PositionComponent) ->
+                result <- c.Position7
+            )
+            |> world.AddBehavior
         )
-        |> world.AddBehavior
-        |> ignore
 
     let test12 = 
         perfRecordSpecial "Spawn 1000 Ents" iterations
@@ -296,6 +292,10 @@ let main argv =
             )
             (fun () ->
                 world.DestroyAllEntities ()
+
+                handleComponentAdded ()
+                componentAddedBehaviors
+                |> Array.iter (fun f -> f ())
             )
         
     let test12 =
@@ -304,15 +304,15 @@ let main argv =
 
     let series =
         [|
-            test1
-            test2
-            test3
-            test4
-            test5
-            test6
-            test7
-            test8
-            test9
+            //test1
+            //test2
+            //test3
+            //test4
+            //test5
+            //test6
+            //test7
+           // test8
+           // test9
             test11
             test12
         |]
