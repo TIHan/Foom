@@ -368,20 +368,6 @@ and [<ReferenceEquality>] EntityManager =
         else
             None
 
-    member this.TryGet (entity: Entity, typ: Type) : Component option =
-        let mutable data = Unchecked.defaultof<IEntityLookupData>
-        if this.Lookup.TryGetValue (typ, &data) then
-            if this.IsValidEntity entity then
-                let index = data.GetIndex (entity.Index)
-                if index >= 0 then
-                    Some (data.GetComponent index)
-                else
-                    None
-            else
-                None
-        else
-            None
-
     member this.IsValid entity =
         this.IsValidEntity entity
 

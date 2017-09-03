@@ -253,7 +253,12 @@ let main argv =
 
     let handleComponentAdded =
         Behavior.HandleComponentAdded (fun ent (c : BigPositionComponent1) _ em ->
-            result <- c.Position7
+            match em.TryGet<PositionComponent> ent with
+            | Some _ ->
+            //let mutable c2 = Unchecked.defaultof<PositionComponent>
+            //if em.TryGet (ent, &c2) then
+                result <- c.Position7
+            | _ ->()
         )
         |> world.AddBehavior
 

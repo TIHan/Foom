@@ -58,6 +58,23 @@ type Behavior private () =
             |> context.Actions.Add
         )
 
+    //static member ComponentAdded<'T1, 'T2, 'Update when 'T1 :> Component and 'T2 :> Component> (f : 'Update -> Entity -> 'T1 -> 'T2 -> unit) =
+    //    BehaviorUpdate (fun context ->
+    //        let queue = ConcurrentQueue<struct ('T1 * 'T2)> ()
+
+    //        let evt1 = context.EventAggregator.GetComponentAddedEvent<'T1>().Publish
+
+    //        context.EventAggregator.GetComponentAddedEvent<'T1>().Publish.Add queue.Enqueue
+
+    //        (fun updateData ->
+    //            let mutable item = Unchecked.defaultof<'T1>
+    //            while queue.TryDequeue (&item) do
+    //                if context.EntityManager.IsValid item.Owner then
+    //                    f updateData item.Owner item
+    //        )
+    //        |> context.Actions.Add
+    //    )
+
     static member Update (f: 'Update -> EntityManager -> EventAggregator -> unit) = 
         BehaviorUpdate (fun context ->
             (fun updateData ->
