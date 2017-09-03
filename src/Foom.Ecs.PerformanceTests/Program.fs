@@ -252,7 +252,7 @@ let main argv =
     world.DestroyAllEntities ()
 
     let handleComponentAdded =
-        Behavior.HandleComponentAdded (fun ent (c : BigPositionComponent1) _ em ->
+        Behavior.ComponentAdded (fun _ ent (c : BigPositionComponent1) (p : PositionComponent) ->
             result <- c.Position7
         )
         |> world.AddBehavior

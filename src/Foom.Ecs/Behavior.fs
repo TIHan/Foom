@@ -53,8 +53,9 @@ type Behavior private () =
             (fun updateData ->
                 while queue.Count > 0 do
                     let item = queue.Dequeue ()
-                    if em.IsValid item.Owner then
-                        f item.Owner item updateData em
+                    let ent = item.Owner
+                    if em.IsValid ent then
+                        f ent item updateData em
             )
             |> context.Actions.Add
         )
@@ -69,8 +70,9 @@ type Behavior private () =
                 let mutable c2 = Unchecked.defaultof<'T2>
                 while queue.Count > 0 do
                     let c1 = queue.Dequeue ()
-                    if em.TryGet<'T2> (c1.Owner, &c2) then
-                        f updateData c1.Owner c1 c2
+                    let ent = c1.Owner
+                    if em.TryGet<'T2> (ent, &c2) then
+                        f updateData ent c1 c2
 
             )
             |> context.Actions.Add
