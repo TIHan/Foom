@@ -7,6 +7,7 @@ open System.Collections.Generic
 open System.Collections.Concurrent
 open System.Threading.Tasks
 open System.Runtime.InteropServices
+open System.Runtime.Serialization
 
 open Foom.Collections
 
@@ -33,6 +34,7 @@ type Entity =
 [<AbstractClass>]
 type Component () =
 
+    [<IgnoreDataMember>]
     member val Owner = Entity (0, 0u) with get, set
 
 type IEvent = interface end

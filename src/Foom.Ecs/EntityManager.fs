@@ -7,10 +7,23 @@ open System.Collections.Generic
 open System.Collections.Concurrent
 open System.Threading.Tasks
 open System.Runtime.InteropServices
+open System.Runtime.Serialization
 
 open Foom.Collections
 
 #nowarn "9"
+
+type serializedComponent =
+    {
+        type' : string
+        component' : Component
+    }
+
+type serializedEntity =
+    {
+        entity : Entity
+        components : serializedComponent seq
+    }
 
 type IEntityLookupData =
 
@@ -19,6 +32,8 @@ type IEntityLookupData =
     abstract GetIndex : int -> int
 
     abstract GetComponent : int -> Component
+
+    abstract TryGetComponent : int -> Component option
 
 [<ReferenceEquality>]
 type EntityLookupData<'T when 'T :> Component> =
@@ -41,6 +56,15 @@ type EntityLookupData<'T when 'T :> Component> =
         member this.GetIndex id = this.IndexLookup.[id]
 
         member this.GetComponent index = this.Components.Buffer.[index] :> Component
+
+        member this.TryGetComponent entIndex =
+            let index = this.IndexLookup.[entIndex]
+
+            if index >= 0 then
+                this.Components.Buffer.[index] :> Component
+                |> Some
+            else
+                None
 
 type EntityBuilder = EntityBuilder of (Entity -> EntityManager -> unit)
 
@@ -457,6 +481,28 @@ and [<ReferenceEquality>] EntityManager =
             if version > 0u then
                 this.Destroy (Entity (index, version))
         )
+
+    member this.Save () =
+
+        let fullEntities = ResizeArray ()
+
+        this.ActiveVersions
+        |> Seq.iteri (fun i v ->
+            if v > 0u then
+                let comps = ResizeArray ()
+                this.Lookup
+                |> Seq.iter (fun pair ->
+                    let typ = pair.Key
+                    let data = pair.Value
+
+                    match data.TryGetComponent i with
+                    | Some comp -> comps.Add { type' = typ.FullName; component' = comp }
+                    | _ -> ()
+                )
+                fullEntities.Add ({ entity = Entity (i, v); components = comps })
+        )
+
+        Newtonsoft.Json.JsonConvert.SerializeObject (fullEntities, Newtonsoft.Json.Formatting.Indented)
 
 [<AutoOpen>]
 module EntityPrototype =

@@ -5,6 +5,18 @@ open System.Runtime.InteropServices
 
 #nowarn "9"
 
+type serializedComponent =
+    {
+        type' : string
+        component' : Component
+    }
+
+type serializedEntity =
+    {
+        entity : Entity
+        components : serializedComponent seq
+    }
+
 [<Sealed>]
 type EntityBuilder
 
@@ -59,6 +71,8 @@ type EntityManager =
     member Destroy : Entity -> unit
 
     member MaxNumberOfEntities : int
+
+    member Save : unit -> string
 
     member internal DestroyAll : unit -> unit
 

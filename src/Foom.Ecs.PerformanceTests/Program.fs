@@ -31,8 +31,7 @@ Highcharts.chart('container', {
         title: {
             text: 'ms'
         },
-        min: 0,
-        max: 17
+        min: 0
     },
     legend: {
         layout: 'vertical',
@@ -302,6 +301,26 @@ let main argv =
         let (title, data) = test12
         (title, data |> Seq.map (fun x -> x * 10.))
 
+    let mutable json = ""
+    let test13 = 
+        perfRecordSpecial "Save 10000 Ents" 2
+            (fun () ->
+                for i = 1 to 10000 do
+                    world.EntityManager.Spawn (proto ()) |> ignore
+            )
+            (fun () ->
+                json <- world.EntityManager.Save ()
+            )
+            (fun () ->
+                world.DestroyAllEntities ()
+
+                handleComponentAdded ()
+                componentAddedBehaviors
+                |> Array.iter (fun f -> f ())
+            )
+
+    System.IO.File.WriteAllText ("savegame.txt", json)
+
     let series =
         [|
             //test1
@@ -315,6 +334,7 @@ let main argv =
            // test9
             test11
             test12
+            test13
         |]
     System.IO.File.WriteAllText ("chart.html", createChart "Iteration Performance" series)
 
