@@ -4,6 +4,7 @@ open System
 open System.Collections.Generic
 
 open Foom.Collections
+//open Newtonsoft.Json.JsonReader
 
 type seriesItem<'T> =
     {
@@ -57,6 +58,24 @@ type SubSystemConstruct =
     {
         mutable Position : Vector3
     }
+
+[<Struct>]
+type NetworkState =
+    {
+        mutable Position : Vector3
+        mutable Position2 : Vector3
+        mutable Position3 : Vector3
+        mutable Position4 : Vector3
+        mutable Position5 : Vector3
+        mutable Position6 : Vector3
+        mutable Position7 : Vector3
+    }
+
+type NetworkComponent () =
+    inherit Component ()
+
+    [<DefaultValue>]
+    val mutable state : NetworkState
 
 type PositionComponent (position : Vector3) =
     inherit Component ()
@@ -132,6 +151,7 @@ let proto () =
         add (BigPositionComponent3 Unchecked.defaultof<Vector3>)
         add (BigPositionComponent4 Unchecked.defaultof<Vector3>)
         add (BigPositionComponent5 Unchecked.defaultof<Vector3>)
+        add (NetworkComponent ())
     }
 
 let perfRecord title iterations f : (string * float seq) =
@@ -169,7 +189,7 @@ let perfRecordSpecial title iterations s f e : (string * float seq) =
 [<EntryPoint>]
 let main argv = 
     let amount = 10000
-    let iterations = 1000
+    let iterations = 100
     let world = World (65536)
 
     let mutable result = Unchecked.defaultof<Vector3>
@@ -321,6 +341,31 @@ let main argv =
 
     System.IO.File.WriteAllText ("savegame.txt", json)
 
+    let test14 =
+        perfRecordSpecial "Network State Iteration" iterations
+            (fun () ->
+                for i = 1 to 10000 do
+                    world.EntityManager.Spawn (proto ()) |> ignore
+            )
+            (fun () ->
+                world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2, BigPositionComponent3, NetworkComponent> (fun _ c1 c2 c3 net ->
+                    net.state.Position <- c1.Position
+                    net.state.Position2 <- c1.Position2
+                    net.state.Position3 <- c1.Position3
+                    net.state.Position4 <- c2.Position4
+                    net.state.Position5 <- c2.Position5
+                    net.state.Position6 <- c3.Position6
+                    net.state.Position7 <- c3.Position7
+                )
+            )
+            (fun () ->
+                world.DestroyAllEntities ()
+
+                handleComponentAdded ()
+                componentAddedBehaviors
+                |> Array.iter (fun f -> f ())
+            )
+
     let series =
         [|
             //test1
@@ -335,6 +380,7 @@ let main argv =
             test11
             test12
             test13
+            test14
         |]
     System.IO.File.WriteAllText ("chart.html", createChart "Iteration Performance" series)
 

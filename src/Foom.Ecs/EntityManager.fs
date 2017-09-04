@@ -548,12 +548,12 @@ and [<ReferenceEquality>] EntityManager =
                 )
                 fullEntities.Add ({ Entity = Entity (i, v); Components = comps })
         )
-
-        let settings = JsonSerializerSettings ()
-        settings.ContractResolver <- EcsContractResolver ()
-        settings.Formatting <- Formatting.Indented
-        settings.ConstructorHandling <- ConstructorHandling.AllowNonPublicDefaultConstructor
-        JsonConvert.SerializeObject (fullEntities, settings)
+        ""
+        //let settings = JsonSerializerSettings ()
+        //settings.ContractResolver <- EcsContractResolver ()
+        //settings.Formatting <- Formatting.Indented
+        //settings.ConstructorHandling <- ConstructorHandling.AllowNonPublicDefaultConstructor
+        //JsonConvert.SerializeObject (fullEntities, settings)
 
 [<AutoOpen>]
 module EntityPrototype =
