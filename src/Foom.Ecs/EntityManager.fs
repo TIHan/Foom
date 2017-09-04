@@ -323,6 +323,7 @@ and [<ReferenceEquality>] EntityManager =
                     f entity components1.[comp1Index] components2.[comp2Index] components3.[comp3Index] components4.[comp4Index]
     
             for i = 0 to data.Entities.Count - 1 do iter i
+            //Parallel.For (0, data.Entities.Count - 1, fun i _ -> iter i) |> ignore
 
     // Components
 

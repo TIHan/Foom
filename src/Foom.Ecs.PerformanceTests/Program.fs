@@ -32,7 +32,8 @@ Highcharts.chart('container', {
         title: {
             text: 'ms'
         },
-        min: 0
+        min: 0,
+        max: 3
     },
     legend: {
         layout: 'vertical',
@@ -340,13 +341,14 @@ let main argv =
             )
 
     System.IO.File.WriteAllText ("savegame.txt", json)
-
+    for i = 1 to 10000 do
+        world.EntityManager.Spawn (proto ()) |> ignore
     let test14 =
-        perfRecordSpecial "Network State Iteration" iterations
-            (fun () ->
-                for i = 1 to 10000 do
-                    world.EntityManager.Spawn (proto ()) |> ignore
-            )
+        perfRecord "Network State Iteration" iterations
+            //(fun () ->
+            //    for i = 1 to 10000 do
+            //        world.EntityManager.Spawn (proto ()) |> ignore
+            //)
             (fun () ->
                 world.EntityManager.ForEach<BigPositionComponent1, BigPositionComponent2, BigPositionComponent3, NetworkComponent> (fun _ c1 c2 c3 net ->
                     net.state.Position <- c1.Position
@@ -358,13 +360,13 @@ let main argv =
                     net.state.Position7 <- c3.Position7
                 )
             )
-            (fun () ->
-                world.DestroyAllEntities ()
+            //(fun () ->
+            //    world.DestroyAllEntities ()
 
-                handleComponentAdded ()
-                componentAddedBehaviors
-                |> Array.iter (fun f -> f ())
-            )
+            //    handleComponentAdded ()
+            //    componentAddedBehaviors
+            //    |> Array.iter (fun f -> f ())
+            //)
 
     let series =
         [|
@@ -372,9 +374,9 @@ let main argv =
             //test2
             //test3
             //test4
-            //test5
+            test5
             //test6
-            //test7
+           // test7
            // test8
            // test9
             test11
