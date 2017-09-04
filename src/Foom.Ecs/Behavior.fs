@@ -44,7 +44,7 @@ type Behavior private () =
             |> context.Actions.Add
         )
 
-    static member HandleComponentAdded<'T, 'Update when 'T :> Component> (f: Entity -> 'T -> 'Update -> EntityManager -> unit) =
+    static member ComponentAdded<'T, 'Update when 'T :> Component> (f: 'Update -> Entity -> 'T -> unit) =
         BehaviorUpdate (fun context ->
             let queue = Queue<'T> ()
             context.EventAggregator.GetComponentAddedEvent<'T>().Publish.Add queue.Enqueue
@@ -55,7 +55,7 @@ type Behavior private () =
                     let item = queue.Dequeue ()
                     let ent = item.Owner
                     if em.IsValid ent then
-                        f ent item updateData em
+                        f updateData ent item
             )
             |> context.Actions.Add
         )
@@ -73,6 +73,48 @@ type Behavior private () =
                     let ent = c1.Owner
                     if em.TryGet<'T2> (ent, &c2) then
                         f updateData ent c1 c2
+
+            )
+            |> context.Actions.Add
+        )
+
+    static member ComponentAdded<'T1, 'T2, 'T3, 'Update when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component> (f : 'Update -> Entity -> 'T1 -> 'T2 -> 'T3 -> unit) =
+        BehaviorUpdate (fun context ->
+            let queue = Queue ()
+            context.EventAggregator.GetComponentAddedEvent<'T1>().Publish.Add queue.Enqueue
+
+            let em = context.EntityManager
+            (fun updateData ->
+                let mutable c2 = Unchecked.defaultof<'T2>
+                let mutable c3 = Unchecked.defaultof<'T3>
+                while queue.Count > 0 do
+                    let c1 = queue.Dequeue ()
+                    let ent = c1.Owner
+                    if em.TryGet<'T2> (ent, &c2) then
+                        if em.TryGet<'T3> (ent, &c3) then
+                            f updateData ent c1 c2 c3
+
+            )
+            |> context.Actions.Add
+        )
+
+    static member ComponentAdded<'T1, 'T2, 'T3, 'T4, 'Update when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component and 'T4 :> Component> (f : 'Update -> Entity -> 'T1 -> 'T2 -> 'T3 -> 'T4 -> unit) =
+        BehaviorUpdate (fun context ->
+            let queue = Queue ()
+            context.EventAggregator.GetComponentAddedEvent<'T1>().Publish.Add queue.Enqueue
+
+            let em = context.EntityManager
+            (fun updateData ->
+                let mutable c2 = Unchecked.defaultof<'T2>
+                let mutable c3 = Unchecked.defaultof<'T3>
+                let mutable c4 = Unchecked.defaultof<'T4>
+                while queue.Count > 0 do
+                    let c1 = queue.Dequeue ()
+                    let ent = c1.Owner
+                    if em.TryGet<'T2> (ent, &c2) then
+                        if em.TryGet<'T3> (ent, &c3) then
+                            if em.TryGet<'T4> (ent, &c4) then
+                                f updateData ent c1 c2 c3 c4
 
             )
             |> context.Actions.Add

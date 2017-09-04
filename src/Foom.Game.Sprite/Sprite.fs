@@ -105,25 +105,33 @@ module Sprite =
     let update (am: AssetManager) : Behavior<float32 * float32> =
         let lookup = Dictionary<int * TextureKind, SpriteBatchRendererComponent> ()
 
+        let rendererSpawnQueue = Queue ()
+
         Behavior.Merge
             [
-                Behavior.HandleComponentAdded (fun ent (comp: SpriteComponent) _ em ->
-                    let rendererComp = 
-                        let key = (comp.Layer, comp.TextureKind)
-                        match lookup.TryGetValue (key) with
-                        | true, x -> x
-                        | _ ->
-                            let material = MaterialDescription<SpriteBatchInput> (shader, comp.TextureKind)
-                            let rendererComp = new SpriteBatchRendererComponent(comp.Layer, material, 255.f)
+                Behavior.ComponentAdded (fun _ ent (comp: SpriteComponent) ->
+                    rendererSpawnQueue.Enqueue (comp)
+                )
 
-                            let rendererEnt = em.Spawn ()
-                            em.Add (rendererEnt, rendererComp)
+                Behavior.Update (fun _ em _ ->
+                    while rendererSpawnQueue.Count > 0 do
+                        let comp = rendererSpawnQueue.Dequeue ()
+                        let rendererComp = 
+                            let key = (comp.Layer, comp.TextureKind)
+                            match lookup.TryGetValue (key) with
+                            | true, x -> x
+                            | _ ->
+                                let material = MaterialDescription<SpriteBatchInput> (shader, comp.TextureKind)
+                                let rendererComp = new SpriteBatchRendererComponent(comp.Layer, material, 255.f)
 
-                            lookup.[key] <- rendererComp
+                                let rendererEnt = em.Spawn ()
+                                em.Add (rendererEnt, rendererComp)
 
-                            rendererComp
+                                lookup.[key] <- rendererComp
+
+                                rendererComp
                         
-                    comp.RendererComponent <- rendererComp
+                        comp.RendererComponent <- rendererComp
                 )
 
                 Behavior.Update (fun _ em ea ->

@@ -26,8 +26,3 @@ type RigidBodyComponent (position: Vector3, radius: float32, height: float32) =
         RigidBody (CollisionShape.DynamicAABB dynamicAABB, position)
 
     member this.RigidBody = rigidBody
-
-type PhysicsEngineComponent (cellSize) =
-    inherit Component ()
-
-    member val PhysicsEngine = PhysicsEngine.create cellSize

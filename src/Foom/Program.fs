@@ -90,7 +90,7 @@ let start (input : IInput) (gl : IGL) (invoke: Task ref) =
     let openWad = (fun name -> System.IO.File.Open (name, FileMode.Open, FileAccess.Read) :> Stream)
 #endif
     let exportTextures =
-        (fun wad _ ->
+        (fun wad ->
             wad |> exportFlatTextures
             wad |> exportTextures
             wad |> exportSpriteTextures

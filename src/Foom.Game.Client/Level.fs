@@ -148,12 +148,9 @@ let spawnWallMesh (level : Level) (wall: Wall) wad =
 
     | _ -> ()
 
-let updates openWad exportTextures am (clientWorld: ClientWorld) =
+let updates openWad exportTextures am (physics : PhysicsEngine) (clientWorld: ClientWorld) =
     globalAM <- am
     [
-        Behavior.wadLoading
-            openWad
-            exportTextures
            // (fun name -> System.IO.File.Open (name, FileMode.Open) :> Stream)
             //(fun wad _ ->
             //    wad |> exportFlatTextures
@@ -161,9 +158,7 @@ let updates openWad exportTextures am (clientWorld: ClientWorld) =
             //    wad |> exportSpriteTextures
             //)
 
-        Behavior.levelLoading (fun wad level em ->
-            let physicsEngineComp = PhysicsEngineComponent (128)
-
+        Behavior.wadLevelLoading openWad exportTextures (fun wad level em ->
             let lvl = WadLevel.toLevel level
 
             let sectorCount = lvl.SectorCount
@@ -187,7 +182,7 @@ let updates openWad exportTextures am (clientWorld: ClientWorld) =
 
                     let rBody = RigidBody (StaticWall staticWall, Vector3.Zero)
 
-                    physicsEngineComp.PhysicsEngine
+                    physics
                     |> PhysicsEngine.addRigidBody rBody
 
                     if isImpassible then
@@ -201,7 +196,7 @@ let updates openWad exportTextures am (clientWorld: ClientWorld) =
 
                         let rBody = RigidBody (StaticWall staticWall, Vector3.Zero)
 
-                        physicsEngineComp.PhysicsEngine
+                        physics
                         |> PhysicsEngine.addRigidBody rBody                        
                 )
 
@@ -216,7 +211,7 @@ let updates openWad exportTextures am (clientWorld: ClientWorld) =
                         let v1 = floor.Vertices.[j + 1]
                         let v2 = floor.Vertices.[j + 2]
 
-                        physicsEngineComp.PhysicsEngine
+                        physics
                         |> PhysicsEngine.addTriangle
                             (Triangle2D (
                                     Vector2 (v0.X, v0.Y),
@@ -272,7 +267,7 @@ let updates openWad exportTextures am (clientWorld: ClientWorld) =
                     | _ -> ()
 
                     let pos = Vector2 (single thing.X, single thing.Y)
-                    let sector = physicsEngineComp.PhysicsEngine |> PhysicsEngine.findWithPoint pos
+                    let sector = physics |> PhysicsEngine.findWithPoint pos
 
                     match image with
                     | Some texturePath when sector <> null ->
@@ -300,14 +295,13 @@ let updates openWad exportTextures am (clientWorld: ClientWorld) =
             )
 
             runGlobalBatch em
-            em.Add (clientWorld.Entity, physicsEngineComp)
 
             level
             |> Foom.Wad.Level.tryFindPlayer1Start
             |> Option.iter (function
                 | Doom doomThing ->
                     let sector =
-                        physicsEngineComp.PhysicsEngine
+                        physics
                         |> PhysicsEngine.findWithPoint (Vector2 (single doomThing.X, single doomThing.Y)) :?> Foom.Game.Level.Sector
 
                     let position = Vector3 (single doomThing.X, single doomThing.Y, single sector.floorHeight + 28.f)

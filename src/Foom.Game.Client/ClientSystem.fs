@@ -70,61 +70,42 @@ let loadWadAndLevelBehavior (clientWorld: ClientWorld) =
             em.Add (clientWorld.Entity, LevelComponent(evt.Level))
     )
 
-let addRigidBodyBehavior (clientWorld: ClientWorld) : Behavior<float32 * float32> =
+let addRigidBodyBehavior (physics : PhysicsEngine) (clientWorld: ClientWorld) : Behavior<float32 * float32> =
     Behavior.Merge
         [
             // This should be part of a physics system.
-            Behavior.HandleComponentAdded (fun ent (charContrComp: CharacterControllerComponent) _ em ->
-                opt {
-                    let! transformComp = em.TryGet<TransformComponent> ent
-                    let! physicsEngineComp = em.TryGet<PhysicsEngineComponent> clientWorld.Entity
-
-                    physicsEngineComp.PhysicsEngine
-                    |> PhysicsEngine.addRigidBody charContrComp.RigidBody
-                }
-                |> ignore
+            Behavior.ComponentAdded (fun _ _ (charContrComp: CharacterControllerComponent) (transformComp : TransformComponent) ->
+                physics
+                |> PhysicsEngine.addRigidBody charContrComp.RigidBody
             )
 
             // This should be part of a physics system.
-            Behavior.HandleComponentAdded (fun ent (rbodyComp: RigidBodyComponent) _ em ->
-                opt {
-                    let! transformComp = em.TryGet<TransformComponent> ent
-                    let! physicsEngineComp = em.TryGet<PhysicsEngineComponent> clientWorld.Entity
-
-                    physicsEngineComp.PhysicsEngine
-                    |> PhysicsEngine.addRigidBody rbodyComp.RigidBody
-                }
-                |> ignore
+            Behavior.ComponentAdded (fun _ _ (rbodyComp: RigidBodyComponent) (_ : TransformComponent) ->
+                physics
+                |> PhysicsEngine.addRigidBody rbodyComp.RigidBody
             )
     ]
 
-let physicsSpriteBehavior (clientWorld: ClientWorld) =
-    Behavior.HandleComponentAdded (fun (ent: Entity) (spriteComp: SpriteComponent) _ em ->
-        opt {
-            let! charContrComp = em.TryGet<RigidBodyComponent> ent
-            let! transformComp = em.TryGet<TransformComponent> ent
-            let! physicsEngineComp = em.TryGet<PhysicsEngineComponent> clientWorld.Entity
+let physicsSpriteBehavior (physics : PhysicsEngine) (clientWorld: ClientWorld) =
+    Behavior.ComponentAdded (fun _ (ent: Entity) (spriteComp: SpriteComponent) (charContrComp : RigidBodyComponent) (transformComp : TransformComponent) ->
+        // TODO: This can be null, fix it.
+        let sector =
+            physics
+            |> PhysicsEngine.findWithPoint charContrComp.RigidBody.WorldPosition
 
-            // TODO: This can be null, fix it.
-            let sector =
-                physicsEngineComp.PhysicsEngine
-                |> PhysicsEngine.findWithPoint charContrComp.RigidBody.WorldPosition
+        if obj.ReferenceEquals (sector, null) |> not then
+            let sector = sector :?> Foom.Game.Level.Sector
 
-            if obj.ReferenceEquals (sector, null) |> not then
-                let sector = sector :?> Foom.Game.Level.Sector
-
-                spriteComp.LightLevel <- sector.lightLevel
-                transformComp.Position <- Vector3 (transformComp.Position.X, transformComp.Position.Y, single sector.floorHeight)
-            else
-                System.Diagnostics.Debug.WriteLine (String.Format ("Entity (Rigid Body), {0}, didn't spawn in a proper spot.", ent))
-        } |> ignore
+            spriteComp.LightLevel <- sector.lightLevel
+            transformComp.Position <- Vector3 (transformComp.Position.X, transformComp.Position.Y, single sector.floorHeight)
+        else
+            System.Diagnostics.Debug.WriteLine (String.Format ("Entity (Rigid Body), {0}, didn't spawn in a proper spot.", ent))
     )
 
-let physicsUpdateBehavior (clientWorld: ClientWorld) =
+let physicsUpdateBehavior (physics : PhysicsEngine) (clientWorld: ClientWorld) =
     Behavior.Update (fun _ em _ ->
 
         opt {
-            let! physicsEngineComp = em.TryGet<PhysicsEngineComponent> clientWorld.Entity
             //let! wireframeComp = em.TryGet<WireframeComponent> clientWorld.Entity
             let! (_, charContrComp, transformComp) = em.TryFind<CharacterControllerComponent, TransformComponent> (fun _ _ _ -> true)
 
@@ -132,14 +113,14 @@ let physicsUpdateBehavior (clientWorld: ClientWorld) =
             let pos = Vector2 (pos.X, pos.Y)
 
             let rbody : RigidBody = charContrComp.RigidBody
-            physicsEngineComp.PhysicsEngine
+            physics
             |> PhysicsEngine.moveRigidBody transformComp.Position rbody
 
             transformComp.Position <- Vector3 (rbody.WorldPosition, transformComp.Position.Z)
 
             // TODO: This can be null, fix it.
             let sector =
-                physicsEngineComp.PhysicsEngine
+                physics
                 |> PhysicsEngine.findWithPoint rbody.WorldPosition
 
             if obj.ReferenceEquals (sector, null) |> not then
@@ -152,19 +133,20 @@ let physicsUpdateBehavior (clientWorld: ClientWorld) =
 
 
 let create openWad exportTextures (clientWorld: ClientWorld) am =
+    let physics = PhysicsEngine.create 128
     Behavior.Merge
         (
             [
                 loadWadAndLevelBehavior clientWorld
             ]
             @
-            Level.updates openWad exportTextures am clientWorld
+            Level.updates openWad exportTextures am physics clientWorld
             @
             [
                 Player.fixedUpdate
 
-                addRigidBodyBehavior clientWorld
-                physicsSpriteBehavior clientWorld
+                addRigidBodyBehavior physics clientWorld
+                physicsSpriteBehavior physics clientWorld
                 // physicsUpdateBehavior clientWorld
 
                 RendererSystem.assetBehavior am

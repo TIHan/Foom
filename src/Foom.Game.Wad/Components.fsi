@@ -14,14 +14,16 @@ type LevelComponent =
 
     new : levelName: string -> LevelComponent
 
+    member LevelName : string
+
 [<Sealed>]
 type WadComponent =
     inherit Component
 
     new : wadName: string -> WadComponent
 
+    member WadName : string
+
 module Behavior =
 
-    val wadLoading : openWad: (string -> Stream) -> (Wad -> EntityManager -> unit) -> Behavior<_>
-
-    val levelLoading : (Wad -> Level -> EntityManager -> unit) -> Behavior<_>
+    val wadLevelLoading : openWad: (string -> Stream) -> (Wad -> unit) -> (Wad -> Level -> EntityManager -> unit) -> Behavior<_>

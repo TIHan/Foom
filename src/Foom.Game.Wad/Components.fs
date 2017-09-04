@@ -4,75 +4,63 @@ open System
 open System.IO
 open System.Numerics
 open System.Diagnostics
+open System.Collections.Generic
 
 open Foom.Ecs
 open Foom.Wad
 open Foom.Wad.Level
-
-[<RequireQualifiedAccess>]
-type LevelState =
-    | ReadyToLoad of string
-    | Loaded of Level
   
 [<Sealed>]
 type LevelComponent (levelName: string) =
     inherit Component ()
 
-    member val State = LevelState.ReadyToLoad levelName with get, set
-
-[<RequireQualifiedAccess>]
-type WadState =
-    | ReadyToLoad of string
-    | Loaded of Wad
+    member __.LevelName = levelName
 
 [<Sealed>]
 type WadComponent (wadName: string) =
     inherit Component ()
 
-    member val State = WadState.ReadyToLoad wadName with get, set
+    member __.WadName = wadName
 
 module Behavior =
 
-    let wadLoading (openWad: string -> Stream) f =
-        Behavior.HandleComponentAdded (fun ent (wadComp: WadComponent) _ em ->
-            match wadComp.State with
-            | WadState.ReadyToLoad fileName ->
+    let wadLevelLoading (openWad: string -> Stream) (f : Wad -> unit) (g : Wad -> Level -> EntityManager -> unit) : Behavior<_> =
+        let levelQueue = Queue ()
+        let mutable levelOpt = None
+        let mutable wadOpt = None
 
+
+        let added =
+            Behavior.ComponentAdded (fun _ _ (wadComp: WadComponent) ->
+                let fileName = wadComp.WadName
                 let wad = Wad.create (openWad fileName)
                 //let wad = Wad.extend (openWad "Untitled.wad") wad
-               // let wad = Wad.extend (openWad "sunder.wad") wad
-                wadComp.State <- WadState.Loaded wad
-                f wad em
+                // let wad = Wad.extend (openWad "sunder.wad") wad
+                wadOpt <- Some wad
+                f wad
+            )
 
-            | _ -> ()
-        )
 
-    let levelLoading f =
-        Behavior.HandleComponentAdded (fun ent (levelComp: LevelComponent) _ em ->
-            match levelComp.State with
-            | LevelState.ReadyToLoad levelName ->
+        Behavior.Merge 
+            [
+                added
 
-                match em.TryGet<WadComponent> ent with
-                | Some wadComp ->
+                Behavior.ComponentAdded (fun _ _ (levelComp: LevelComponent) (wadComp : WadComponent) ->
+                    let levelName = levelComp.LevelName
+                    levelQueue.Enqueue levelName
+                )
 
-                    match wadComp.State with
-                    | WadState.Loaded wad ->
-                  
-                        let level = Wad.findLevel levelName wad
-                        levelComp.State <- LevelState.Loaded level
-                        f wad level em
-
-                    | WadState.ReadyToLoad wadName ->
-
-                        Debug.WriteLine (
-                            String.Format ("Tried to load level, {0}, but WAD, {1}, is not loaded.", levelName, wadName)
-                        )
-
-                | _ ->
-
-                    Debug.WriteLine (
-                        String.Format ("Tried to load level, {0}, but no WAD found.", levelName)
-                    )
-
-            | _ -> ()
-        )
+                Behavior.Update (fun _ em _ ->
+                    while levelQueue.Count > 0 do
+                        let levelName = levelQueue.Dequeue ()
+                        match wadOpt with
+                        | Some wad ->
+                            let level = Wad.findLevel levelName wad
+                            levelOpt <- Some level
+                            g wad level em
+                        | _ ->
+                            Debug.WriteLine (
+                                String.Format ("Tried to load level, {0}, but a WAD is not loaded.", levelName)
+                            )
+                )
+            ]
