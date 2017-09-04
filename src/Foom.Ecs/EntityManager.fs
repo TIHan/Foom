@@ -8,21 +8,42 @@ open System.Collections.Concurrent
 open System.Threading.Tasks
 open System.Runtime.InteropServices
 open System.Runtime.Serialization
+open System.Linq
 
 open Foom.Collections
 
+open Newtonsoft.Json
+
 #nowarn "9"
 
-type serializedComponent =
+type EcsContractResolver () =
+    inherit Newtonsoft.Json.Serialization.DefaultContractResolver ()
+
+    override this.CreateProperty(memberInfo, memberSerialization) =
+        let property = base.CreateProperty(memberInfo, memberSerialization)
+
+        let ctorInfos = memberInfo.DeclaringType.GetTypeInfo().DeclaredConstructors
+        let isPartOfCtor = ctorInfos.Any (fun ctorInfo -> ctorInfo.GetParameters().Any (fun x -> 
+            x.Name.ToLowerInvariant() = property.PropertyName.ToLowerInvariant()
+            //failwithf "%A %A" (x.Name.ToLowerInvariant()) (property.PropertyName.ToLowerInvariant())
+           // false
+        ))
+
+        if not isPartOfCtor then
+            property.Ignored <- true
+
+        property
+
+type SerializedComponent =
     {
-        type' : string
-        component' : Component
+        Type : string
+        Component : Component
     }
 
-type serializedEntity =
+type SerializedEntity =
     {
-        entity : Entity
-        components : serializedComponent seq
+        Entity : Entity
+        Components : SerializedComponent seq
     }
 
 type IEntityLookupData =
@@ -496,13 +517,16 @@ and [<ReferenceEquality>] EntityManager =
                     let data = pair.Value
 
                     match data.TryGetComponent i with
-                    | Some comp -> comps.Add { type' = typ.FullName; component' = comp }
+                    | Some comp -> comps.Add { Type = typ.FullName; Component = comp }
                     | _ -> ()
                 )
-                fullEntities.Add ({ entity = Entity (i, v); components = comps })
+                fullEntities.Add ({ Entity = Entity (i, v); Components = comps })
         )
 
-        Newtonsoft.Json.JsonConvert.SerializeObject (fullEntities, Newtonsoft.Json.Formatting.Indented)
+        let settings = JsonSerializerSettings ()
+        settings.ContractResolver <- EcsContractResolver ()
+        settings.Formatting <- Formatting.Indented
+        JsonConvert.SerializeObject (fullEntities, settings)
 
 [<AutoOpen>]
 module EntityPrototype =

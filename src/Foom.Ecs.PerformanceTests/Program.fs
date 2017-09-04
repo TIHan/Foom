@@ -71,7 +71,7 @@ type SubSystemComponent () =
 type BigPositionComponent1 (position : Vector3) =
     inherit Component ()
 
-    member val Position1 = position with get, set
+    member val Position = position with get, set
     member val Position2 = position with get, set
     member val Position3 = position with get, set
     member val Position4 = position with get, set
@@ -82,7 +82,7 @@ type BigPositionComponent1 (position : Vector3) =
 type BigPositionComponent2 (position : Vector3) =
     inherit Component ()
 
-    member val Position1 = position with get, set
+    member val Position = position with get, set
     member val Position2 = position with get, set
     member val Position3 = position with get, set
     member val Position4 = position with get, set
@@ -93,7 +93,7 @@ type BigPositionComponent2 (position : Vector3) =
 type BigPositionComponent3 (position : Vector3) =
     inherit Component ()
 
-    member val Position1 = position with get, set
+    member val Position = position with get, set
     member val Position2 = position with get, set
     member val Position3 = position with get, set
     member val Position4 = position with get, set
@@ -104,7 +104,7 @@ type BigPositionComponent3 (position : Vector3) =
 type BigPositionComponent4 (position : Vector3) =
     inherit Component ()
 
-    member val Position1 = position with get, set
+    member val Position = position with get, set
     member val Position2 = position with get, set
     member val Position3 = position with get, set
     member val Position4 = position with get, set
@@ -115,7 +115,7 @@ type BigPositionComponent4 (position : Vector3) =
 type BigPositionComponent5 (position : Vector3) =
     inherit Component ()
 
-    member val Position1 = position with get, set
+    member val Position = position with get, set
     member val Position2 = position with get, set
     member val Position3 = position with get, set
     member val Position4 = position with get, set
