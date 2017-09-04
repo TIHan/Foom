@@ -19,20 +19,46 @@ open Newtonsoft.Json
 type EcsContractResolver () =
     inherit Newtonsoft.Json.Serialization.DefaultContractResolver ()
 
-    override this.CreateProperty(memberInfo, memberSerialization) =
+   // let createProperty memberInfo memberSerialization =
+   
+    member this.CreateNewProperty(memberInfo, memberSerialization) =
         let property = base.CreateProperty(memberInfo, memberSerialization)
 
         let ctorInfos = memberInfo.DeclaringType.GetTypeInfo().DeclaredConstructors
         let isPartOfCtor = ctorInfos.Any (fun ctorInfo -> ctorInfo.GetParameters().Any (fun x -> 
             x.Name.ToLowerInvariant() = property.PropertyName.ToLowerInvariant()
-            //failwithf "%A %A" (x.Name.ToLowerInvariant()) (property.PropertyName.ToLowerInvariant())
-           // false
         ))
 
         if not isPartOfCtor then
             property.Ignored <- true
 
         property
+
+    override this.CreateProperty(memberInfo, memberSerialization) =
+        this.CreateNewProperty(memberInfo, memberSerialization)
+
+    override this.CreateProperties (typ, memberSerialization) =
+        let props = ResizeArray () :> IList<Serialization.JsonProperty>
+
+        typ.GetRuntimeProperties ()
+        |> Seq.iter (fun p ->
+            let memberInfo = p :> MemberInfo
+            let p = this.CreateNewProperty (memberInfo, memberSerialization)
+            p.Readable <- true
+            p.Writable <- true
+            props.Add p
+        )
+
+        props
+
+    //override this.CreateObjectContract (typ) =
+      //  let contract = base.CreateObjectContract (typ)
+
+      ////  failwithf "%A" typ
+
+        //contract.DefaultCreatorNonPublic <- true
+
+        //contract
 
 type SerializedComponent =
     {
@@ -526,6 +552,7 @@ and [<ReferenceEquality>] EntityManager =
         let settings = JsonSerializerSettings ()
         settings.ContractResolver <- EcsContractResolver ()
         settings.Formatting <- Formatting.Indented
+        settings.ConstructorHandling <- ConstructorHandling.AllowNonPublicDefaultConstructor
         JsonConvert.SerializeObject (fullEntities, settings)
 
 [<AutoOpen>]

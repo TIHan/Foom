@@ -5,17 +5,17 @@ open System.Runtime.InteropServices
 
 #nowarn "9"
 
-type SerializedComponent =
-    {
-        Type : string
-        Component : Component
-    }
+//type SerializedComponent =
+//    {
+//        Type : string
+//        Component : Component
+//    }
 
-type SerializedEntity =
-    {
-        Entity : Entity
-        Components : SerializedComponent seq
-    }
+//type SerializedEntity =
+    //{
+    //    Entity : Entity
+    //    Components : SerializedComponent seq
+    //}
 
 [<Sealed>]
 type EntityBuilder
