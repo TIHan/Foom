@@ -5,18 +5,6 @@ open System.Runtime.InteropServices
 
 #nowarn "9"
 
-//type SerializedComponent =
-//    {
-//        Type : string
-//        Component : Component
-//    }
-
-//type SerializedEntity =
-    //{
-    //    Entity : Entity
-    //    Components : SerializedComponent seq
-    //}
-
 [<Sealed>]
 type EntityBuilder
 
@@ -66,6 +54,8 @@ type EntityManager =
     // Entites
 
     member Spawn : unit -> Entity
+
+    member Load : string -> unit
 
     /// Defers to destroy the specified Entity.
     member Destroy : Entity -> unit

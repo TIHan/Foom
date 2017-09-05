@@ -374,6 +374,10 @@ let main argv =
             //    |> Array.iter (fun f -> f ())
             //)
 
+    world.DestroyAllEntities ()
+
+    world.EntityManager.Load (System.IO.File.ReadAllText ("savegame.txt"))
+
     let series =
         [|
             //test1

@@ -53,7 +53,6 @@ type EcsContractResolver () =
             p.Writable <- true
             props.Add p
         )
-
         props
 
 type SerializedEntity =
@@ -80,6 +79,8 @@ type EntityLookupData<'T when 'T :> Component> =
         ComponentAddedTriggers : ResizeArray<'T -> unit>
 
         RemoveComponent: Entity -> unit
+
+        AddComponent: Entity -> 'T -> unit
 
         IndexLookup: int []
         Entities: Entity UnsafeResizeArray
@@ -198,6 +199,7 @@ and [<ReferenceEquality>] EntityManager =
                         ComponentAddedTriggers = triggers
 
                         RemoveComponent = fun entity -> this.Remove<'T> entity
+                        AddComponent = fun ent comp -> this.Add<'T> (ent, comp)
 
                         IndexLookup = Array.init this.MaxEntityAmount (fun _ -> -1) // -1 means that no component exists for that entity
                         Entities = UnsafeResizeArray.Create this.MaxEntityAmount
@@ -319,7 +321,6 @@ and [<ReferenceEquality>] EntityManager =
 
     member this.Add<'T when 'T :> Component> (entity: Entity, comp: 'T) =
         if this.CurrentIterations > 0 then
-            let data = this.GetEntityLookupData<'T> ()
             this.PendingQueue.Enqueue (fun () -> this.Add (entity, comp))
         else
             if this.IsValidEntity entity then
@@ -348,8 +349,7 @@ and [<ReferenceEquality>] EntityManager =
 
     member this.Remove<'T when 'T :> Component> (entity: Entity) =
         if this.CurrentIterations > 0 then
-            let data = this.GetEntityLookupData<'T> ()
-            this.PendingQueue.Enqueue (fun () -> data.RemoveComponent (entity))
+            this.PendingQueue.Enqueue (fun () -> this.Remove<'T> (entity))
         else
             if this.IsValidEntity entity then
                 let data = this.GetEntityLookupData<'T> ()
@@ -530,7 +530,6 @@ and [<ReferenceEquality>] EntityManager =
                 let comps = ResizeArray ()
                 this.Lookup
                 |> Seq.iter (fun pair ->
-                    let typ = pair.Key
                     let data = pair.Value
 
                     match data.TryGetComponent i with
@@ -543,8 +542,28 @@ and [<ReferenceEquality>] EntityManager =
         let settings = JsonSerializerSettings ()
         settings.ContractResolver <- EcsContractResolver ()
         settings.Formatting <- Formatting.Indented
-        //settings.TypeNameHandling <- TypeNameHandling.Objects
         JsonConvert.SerializeObject (fullEntities, settings)
+
+    member this.Load (json : string) =
+
+        let emTyp = typeof<EntityManager>
+
+        let settings = JsonSerializerSettings ()
+        settings.ContractResolver <- EcsContractResolver ()
+        settings.ConstructorHandling <- ConstructorHandling.AllowNonPublicDefaultConstructor
+        let fullEntities = JsonConvert.DeserializeObject<SerializedEntity seq> (json, settings)
+
+        fullEntities
+        |> Seq.iter (fun serialized ->
+            let ent = this.Spawn ()
+
+            serialized.Components
+            |> Seq.iter (fun comp ->
+                let meth = emTyp.GetRuntimeMethod("Add", [| typeof<Entity>; typeof<Component> |]).MakeGenericMethod (comp.GetType ())
+                meth.Invoke (this, [| ent; comp |]) |> ignore
+            )
+        )
+
 
 [<AutoOpen>]
 module EntityPrototype =
