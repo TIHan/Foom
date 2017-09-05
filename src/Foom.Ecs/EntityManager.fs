@@ -67,6 +67,83 @@ type SerializedEntity =
         Components : Component seq
     }
 
+type Clone private () =
+   
+//static Func<TTarget, object, object> MagicMethodHelper<TTarget, TParam, TReturn>(MethodInfo method)
+//{
+//    // Convert the slow MethodInfo into a fast, strongly typed, open delegate
+//    Func<TTarget, TParam, TReturn> func = (Func<TTarget, TParam, TReturn>)Delegate.CreateDelegate
+//        (typeof(Func<TTarget, TParam, TReturn>), method);
+        
+//    // Now create a more weakly typed delegate which will call the strongly typed one
+//    Func<TTarget, object, object> ret = (TTarget target, object param) => func(target, (TParam) param);
+//    return ret;
+//}
+
+//static Func<T, object, object> MagicMethod<T>(MethodInfo method) where T : class
+//{
+//    // First fetch the generic form
+//    MethodInfo genericHelper = typeof(Test).GetMethod(“MagicMethodHelper”, 
+//        BindingFlags.Static | BindingFlags.NonPublic);
+        
+//    // Now supply the type arguments
+//    MethodInfo constructedHelper = genericHelper.MakeGenericMethod
+//        (typeof(T), method.GetParameters()[0].ParameterType, method.ReturnType);
+            
+//    // Now call it. The null argument is because it’s a static method.
+//    object ret = constructedHelper.Invoke(null, new object[] {method});
+        
+//    // Cast the result to the right kind of delegate and return it
+//    return (Func<T, object, object>) ret;
+//}    
+
+    static member CreateMagicMethodHelper<'TTarget, 'TReturn> (meth : MethodInfo) =
+        let func = meth.CreateDelegate (typeof<Func<'TTarget, 'TReturn>>) :?> Func<'TTarget, 'TReturn>
+        Func<'TTarget, obj> (fun t -> func.Invoke (t) :> obj)
+
+    static member MagicMethod (meth : MethodInfo) =
+        let genericHelper = typeof<Clone>.GetRuntimeMethods() |> Seq.find (fun x -> x.Name = "CreateMagicMethodHelper")
+
+        let constructedHelper = genericHelper.MakeGenericMethod ([|typeof<'T>; meth.ReturnType|])
+
+        let ret = constructedHelper.Invoke (null, [|meth|])
+        ret :?> Func<'T, obj>
+
+    static member CreateCloneMethod<'T when 'T :> Component> () =
+        let typ = typeof<'T>
+        let ctors = typ.GetTypeInfo().DeclaredConstructors
+        let ctor = ctors.ElementAt (0)
+        let ctorParams = ctor.GetParameters ()
+
+        let runtimeProps = typ.GetRuntimeProperties ()
+
+        let ctorProps = 
+            ctorParams
+            |> Seq.map (fun param ->
+                runtimeProps 
+                |> Seq.find (fun x -> x.Name.ToLowerInvariant() = param.Name.ToLowerInvariant())
+            )
+            |> Seq.toArray
+
+        let props =
+            typ.GetRuntimeProperties ()
+            |> Seq.choose (fun prop ->
+                if prop.CanRead && prop.CanWrite && not (ctorProps.Contains prop) then
+                    Some prop
+                else
+                    None
+            )
+            |> Seq.toArray
+
+        let gets =
+            ctorProps
+            |> Array.map (fun x -> Clone.MagicMethod<'T> x.GetMethod)
+
+
+        fun (o : obj) ->
+            ctor.Invoke (gets |> Array.map (fun x -> x.Invoke (o :?> 'T)))
+           //ctor.Invoke (ctorProps |> Array.map (fun x -> x.GetValue o))
+
 type IEntityLookupData =
 
     abstract Entities : Entity UnsafeResizeArray with get
@@ -76,6 +153,8 @@ type IEntityLookupData =
     abstract GetComponent : int -> Component
 
     abstract TryGetComponent : int -> Component option
+
+    abstract CloneComponent : Component -> Component
 
 [<ReferenceEquality>]
 type EntityLookupData<'T when 'T :> Component> =
@@ -91,6 +170,7 @@ type EntityLookupData<'T when 'T :> Component> =
         IndexLookup: int []
         Entities: Entity UnsafeResizeArray
         Components: 'T UnsafeResizeArray
+        Clone : obj -> obj
     }
 
     interface IEntityLookupData with
@@ -109,6 +189,9 @@ type EntityLookupData<'T when 'T :> Component> =
                 |> Some
             else
                 None
+
+        member this.CloneComponent comp =
+            this.Clone (comp :> obj) :?> Component
 
 type EntityBuilder = EntityBuilder of (Entity -> EntityManager -> unit)
 
@@ -210,6 +293,7 @@ and [<ReferenceEquality>] EntityManager =
                         IndexLookup = Array.init this.MaxEntityAmount (fun _ -> -1) // -1 means that no component exists for that entity
                         Entities = UnsafeResizeArray.Create this.MaxEntityAmount
                         Components = UnsafeResizeArray.Create this.MaxEntityAmount
+                        Clone = Clone.CreateCloneMethod<'T> ()
                     }
 
                 data :> IEntityLookupData
@@ -528,29 +612,32 @@ and [<ReferenceEquality>] EntityManager =
 
     member this.Save () =
 
-        let fullEntities = ResizeArray ()
+        let fullEntities = Array.zeroCreate 65536
 
         let componentLookups =
             this.Lookup
             |> Seq.map (fun pair -> pair.Value)
             |> Seq.toArray
 
-        this.ActiveVersions
-        |> Seq.iteri (fun i v ->
+       // this.ActiveVersions
+       // |> Seq.iteri (fun i v ->
+        Parallel.For (0, this.ActiveVersions.Length - 1, fun i ->
+            let v = this.ActiveVersions.[i]
             if v > 0u then
                 let comps = ResizeArray ()
                 for i = 0 to componentLookups.Length - 1 do
                     let data = componentLookups.[i]
                     match data.TryGetComponent i with
-                    | Some comp -> comps.Add comp
+                    | Some comp -> comps.Add (data.CloneComponent comp)
                     | _ -> ()
-                fullEntities.Add ({ Entity = Entity (i, v); Components = comps })
-        )
-
-        let settings = JsonSerializerSettings ()
-        settings.ContractResolver <- EcsContractResolver ()
-        settings.Formatting <- Formatting.Indented
-        JsonConvert.SerializeObject (fullEntities, settings)
+                fullEntities.[i] <- { Entity = Entity (i, v); Components = comps }
+                //fullEntities.Enqueue ({ Entity = Entity (i, v); Components = comps })
+        ) |> ignore
+        ""
+        //let settings = JsonSerializerSettings ()
+        //settings.ContractResolver <- EcsContractResolver ()
+        //settings.Formatting <- Formatting.Indented
+        //JsonConvert.SerializeObject (fullEntities, settings)
 
     member this.Load (json : string) =
 

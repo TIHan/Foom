@@ -327,23 +327,31 @@ let main argv =
         let (title, data) = test12
         (title, data |> Seq.map (fun x -> x * 10.))
 
+
+    world.DestroyAllEntities ()
+
+    handleComponentAdded ()
+    componentAddedBehaviors
+    |> Array.iter (fun f -> f ())
+    for i = 1 to 10000 do
+        world.EntityManager.Spawn (proto ()) |> ignore
+
     let mutable json = ""
     let test13 = 
-        perfRecordSpecial "Save 10000 Ents" 2
-            (fun () ->
-                for i = 1 to 10000 do
-                    world.EntityManager.Spawn (proto ()) |> ignore
+        perfRecordSpecial "Save 10000 Ents" 5
+            (fun () -> ()
             )
             (fun () ->
                 json <- world.EntityManager.Save ()
             )
-            (fun () ->
-                world.DestroyAllEntities ()
-
-                handleComponentAdded ()
-                componentAddedBehaviors
-                |> Array.iter (fun f -> f ())
+            (fun () -> ()
             )
+
+    world.DestroyAllEntities ()
+
+    handleComponentAdded ()
+    componentAddedBehaviors
+    |> Array.iter (fun f -> f ())
 
     System.IO.File.WriteAllText ("savegame.txt", json)
     for i = 1 to 10000 do
