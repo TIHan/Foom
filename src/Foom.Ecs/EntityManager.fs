@@ -18,8 +18,6 @@ open Newtonsoft.Json
 
 type EcsContractResolver () =
     inherit Newtonsoft.Json.Serialization.DefaultContractResolver ()
-
-   // let createProperty memberInfo memberSerialization =
    
     member this.CreateNewProperty(memberInfo, memberSerialization) =
         let property = base.CreateProperty(memberInfo, memberSerialization)
@@ -32,6 +30,12 @@ type EcsContractResolver () =
         let pInfo = memberInfo :> obj :?> PropertyInfo
         if not isPartOfCtor && not (pInfo.CanRead && pInfo.CanWrite) then
             property.Ignored <- true
+
+        if property.PropertyType.GetTypeInfo().IsAssignableFrom (typeof<Component>.GetTypeInfo()) then
+            property.TypeNameHandling <- Nullable TypeNameHandling.All
+
+        if property.PropertyType.GetTypeInfo().IsAssignableFrom (typeof<Component seq>.GetTypeInfo()) then
+            property.ItemTypeNameHandling <- Nullable TypeNameHandling.All
 
         property
 
@@ -539,7 +543,7 @@ and [<ReferenceEquality>] EntityManager =
         let settings = JsonSerializerSettings ()
         settings.ContractResolver <- EcsContractResolver ()
         settings.Formatting <- Formatting.Indented
-        settings.TypeNameHandling <- TypeNameHandling.Objects
+        //settings.TypeNameHandling <- TypeNameHandling.Objects
         JsonConvert.SerializeObject (fullEntities, settings)
 
 [<AutoOpen>]
