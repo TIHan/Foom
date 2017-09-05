@@ -5,12 +5,6 @@ open System.Runtime.InteropServices
 
 #nowarn "9"
 
-type SerializedEntity =
-    {
-        Entity : Entity
-        Components : Component seq
-    }
-
 [<Sealed>]
 type EntityBuilder
 

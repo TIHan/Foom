@@ -55,6 +55,12 @@ type EcsContractResolver () =
         )
         props
 
+    override this.CreateObjectContract (typ) =
+        let contract = base.CreateObjectContract (typ)
+        contract.DefaultCreatorNonPublic <- true
+        contract
+
+[<CLIMutable>]
 type SerializedEntity =
     {
         Entity : Entity
@@ -524,18 +530,20 @@ and [<ReferenceEquality>] EntityManager =
 
         let fullEntities = ResizeArray ()
 
+        let componentLookups =
+            this.Lookup
+            |> Seq.map (fun pair -> pair.Value)
+            |> Seq.toArray
+
         this.ActiveVersions
         |> Seq.iteri (fun i v ->
             if v > 0u then
                 let comps = ResizeArray ()
-                this.Lookup
-                |> Seq.iter (fun pair ->
-                    let data = pair.Value
-
+                for i = 0 to componentLookups.Length - 1 do
+                    let data = componentLookups.[i]
                     match data.TryGetComponent i with
                     | Some comp -> comps.Add comp
                     | _ -> ()
-                )
                 fullEntities.Add ({ Entity = Entity (i, v); Components = comps })
         )
 
@@ -546,27 +554,29 @@ and [<ReferenceEquality>] EntityManager =
 
     member this.Load (json : string) =
 
-        let emTyp = typeof<EntityManager>
+        let hasData = String.IsNullOrEmpty json |> not
+        if hasData then
+            let emTyp = typeof<EntityManager>
 
-        let settings = JsonSerializerSettings ()
-        settings.ContractResolver <- EcsContractResolver ()
-        settings.TypeNameHandling <- TypeNameHandling.All
-        let fullEntities = JsonConvert.DeserializeObject<SerializedEntity seq> (json, settings)
+            let settings = JsonSerializerSettings ()
+            settings.ContractResolver <- EcsContractResolver ()
+            settings.TypeNameHandling <- TypeNameHandling.All
+            let fullEntities = JsonConvert.DeserializeObject<SerializedEntity seq> (json, settings)
 
-        fullEntities
-        |> Seq.iter (fun serialized ->
-            let ent = this.Spawn ()
+            fullEntities
+            |> Seq.iter (fun serialized ->
+                let ent = this.Spawn ()
 
-            serialized.Components
-            |> Seq.iter (fun comp ->
-                let meth = 
-                    let meth =
-                        emTyp.GetRuntimeMethods() 
-                        |> Seq.find(fun x -> x.Name = "Add")
-                    meth.MakeGenericMethod (comp.GetType ())
-                meth.Invoke (this, [| ent; comp |]) |> ignore
+                serialized.Components
+                |> Seq.iter (fun comp ->
+                    let meth = 
+                        let meth =
+                            emTyp.GetRuntimeMethods() 
+                            |> Seq.find(fun x -> x.Name = "Add")
+                        meth.MakeGenericMethod (comp.GetType ())
+                    meth.Invoke (this, [| ent; comp |]) |> ignore
+                )
             )
-        )
 
 
 [<AutoOpen>]

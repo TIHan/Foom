@@ -32,8 +32,7 @@ Highcharts.chart('container', {
         title: {
             text: 'ms'
         },
-        min: 0,
-        max: 3
+        min: 0
     },
     legend: {
         layout: 'vertical',

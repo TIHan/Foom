@@ -25,6 +25,7 @@ type Entity =
     [<FieldOffset (0); DefaultValue>]
     val Id : uint64
 
+    [<Newtonsoft.Json.JsonConstructor>]
     new (index, version) = { Index = index; Version = version }
 
     member this.IsZero = this.Id = 0UL
