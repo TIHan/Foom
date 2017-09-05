@@ -135,3 +135,9 @@ type Behavior private () =
                 | BehaviorUpdate f ->  f context
             )
         )
+
+    static member Delay (f : unit -> Behavior<_>) =
+        BehaviorUpdate (fun context ->
+            match f () with
+            | BehaviorUpdate f -> f context
+        )

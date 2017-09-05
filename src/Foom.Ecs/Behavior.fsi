@@ -28,4 +28,6 @@ type Behavior =
 
     static member Update : ('Update -> EntityManager -> EventAggregator -> unit) -> Behavior<'Update>
 
-    static member Merge : Behavior<'Update>  list -> Behavior<'Update>
+    static member Merge : Behavior<'Update> list -> Behavior<'Update>
+
+    static member Delay : (unit -> Behavior<'Update>) -> Behavior<'Update>

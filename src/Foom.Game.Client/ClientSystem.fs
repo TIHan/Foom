@@ -133,25 +133,27 @@ let physicsUpdateBehavior (physics : PhysicsEngine) (clientWorld: ClientWorld) =
 
 
 let create openWad exportTextures (clientWorld: ClientWorld) am =
-    let physics = PhysicsEngine.create 128
-    Behavior.Merge
-        (
-            [
-                loadWadAndLevelBehavior clientWorld
-            ]
-            @
-            Level.updates openWad exportTextures am physics clientWorld
-            @
-            [
-                Player.fixedUpdate
+    Behavior.Delay (fun () ->
+        let physics = PhysicsEngine.create 128
+        Behavior.Merge
+            (
+                [
+                    loadWadAndLevelBehavior clientWorld
+                ]
+                @
+                Level.updates openWad exportTextures am physics clientWorld
+                @
+                [
+                    Player.fixedUpdate
 
-                addRigidBodyBehavior physics clientWorld
-                physicsSpriteBehavior physics clientWorld
-                // physicsUpdateBehavior clientWorld
+                    addRigidBodyBehavior physics clientWorld
+                    physicsSpriteBehavior physics clientWorld
+                    // physicsUpdateBehavior clientWorld
 
-                RendererSystem.assetBehavior am
+                    RendererSystem.assetBehavior am
 
-                SpriteAnimation.update
-                Sprite.update am
-            ]
-        )
+                    SpriteAnimation.update
+                    Sprite.update am
+                ]
+            )
+    )

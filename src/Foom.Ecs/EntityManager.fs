@@ -550,7 +550,7 @@ and [<ReferenceEquality>] EntityManager =
 
         let settings = JsonSerializerSettings ()
         settings.ContractResolver <- EcsContractResolver ()
-        settings.ConstructorHandling <- ConstructorHandling.AllowNonPublicDefaultConstructor
+        settings.TypeNameHandling <- TypeNameHandling.All
         let fullEntities = JsonConvert.DeserializeObject<SerializedEntity seq> (json, settings)
 
         fullEntities
@@ -559,7 +559,11 @@ and [<ReferenceEquality>] EntityManager =
 
             serialized.Components
             |> Seq.iter (fun comp ->
-                let meth = emTyp.GetRuntimeMethod("Add", [| typeof<Entity>; typeof<Component> |]).MakeGenericMethod (comp.GetType ())
+                let meth = 
+                    let meth =
+                        emTyp.GetRuntimeMethods() 
+                        |> Seq.find(fun x -> x.Name = "Add")
+                    meth.MakeGenericMethod (comp.GetType ())
                 meth.Invoke (this, [| ent; comp |]) |> ignore
             )
         )
