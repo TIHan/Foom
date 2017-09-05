@@ -29,7 +29,8 @@ type EcsContractResolver () =
             x.Name.ToLowerInvariant() = property.PropertyName.ToLowerInvariant()
         ))
 
-        if not isPartOfCtor then
+        let pInfo = memberInfo :> obj :?> PropertyInfo
+        if not isPartOfCtor && not (pInfo.CanRead && pInfo.CanWrite) then
             property.Ignored <- true
 
         property
@@ -51,25 +52,10 @@ type EcsContractResolver () =
 
         props
 
-    //override this.CreateObjectContract (typ) =
-      //  let contract = base.CreateObjectContract (typ)
-
-      ////  failwithf "%A" typ
-
-        //contract.DefaultCreatorNonPublic <- true
-
-        //contract
-
-type SerializedComponent =
-    {
-        Type : string
-        Component : Component
-    }
-
 type SerializedEntity =
     {
         Entity : Entity
-        Components : SerializedComponent seq
+        Components : Component seq
     }
 
 type IEntityLookupData =
@@ -544,17 +530,17 @@ and [<ReferenceEquality>] EntityManager =
                     let data = pair.Value
 
                     match data.TryGetComponent i with
-                    | Some comp -> comps.Add { Type = typ.FullName; Component = comp }
+                    | Some comp -> comps.Add comp
                     | _ -> ()
                 )
                 fullEntities.Add ({ Entity = Entity (i, v); Components = comps })
         )
-        ""
-        //let settings = JsonSerializerSettings ()
-        //settings.ContractResolver <- EcsContractResolver ()
-        //settings.Formatting <- Formatting.Indented
-        //settings.ConstructorHandling <- ConstructorHandling.AllowNonPublicDefaultConstructor
-        //JsonConvert.SerializeObject (fullEntities, settings)
+
+        let settings = JsonSerializerSettings ()
+        settings.ContractResolver <- EcsContractResolver ()
+        settings.Formatting <- Formatting.Indented
+        settings.TypeNameHandling <- TypeNameHandling.Objects
+        JsonConvert.SerializeObject (fullEntities, settings)
 
 [<AutoOpen>]
 module EntityPrototype =

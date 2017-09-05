@@ -60,24 +60,6 @@ type SubSystemConstruct =
         mutable Position : Vector3
     }
 
-[<Struct>]
-type NetworkState =
-    {
-        mutable Position : Vector3
-        mutable Position2 : Vector3
-        mutable Position3 : Vector3
-        mutable Position4 : Vector3
-        mutable Position5 : Vector3
-        mutable Position6 : Vector3
-        mutable Position7 : Vector3
-    }
-
-type NetworkComponent () =
-    inherit Component ()
-
-    [<DefaultValue>]
-    val mutable state : NetworkState
-
 type PositionComponent (position : Vector3) =
     inherit Component ()
 
@@ -142,6 +124,30 @@ type BigPositionComponent5 (position : Vector3) =
     member val Position5 = position with get, set
     member val Position6 = position with get, set
     member val Position7 = position with get, set
+
+[<Struct>]
+type NetworkState =
+    {
+        mutable Position : Vector3
+        mutable Position2 : Vector3
+        mutable Position3 : Vector3
+        mutable Position4 : Vector3
+        mutable Position5 : Vector3
+        mutable Position6 : Vector3
+        mutable Position7 : Vector3
+    }
+
+type NetworkComponent () =
+    inherit Component ()
+
+    [<DefaultValue>]
+    val mutable state : NetworkState
+
+    member val C1 = Unchecked.defaultof<BigPositionComponent1>
+
+    member val C2 = Unchecked.defaultof<BigPositionComponent2>
+
+    member val C3 = Unchecked.defaultof<BigPositionComponent3>
 
 let proto () =
     entity {
