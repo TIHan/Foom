@@ -64,18 +64,10 @@ type PositionComponent (position : Vector3) =
 
     member val Position = position with get, set
 
-    override this.Clone () =
-        PositionComponent (this.Position) :> Component
-
 type SubSystemComponent () =
     inherit Component ()
 
     member val Position = Unchecked.defaultof<Vector3> with get, set
-
-    override this.Clone () =
-        let comp = SubSystemComponent ()
-        comp.Position <- this.Position
-        comp :> Component
 
 type BigPositionComponent1 (position : Vector3) =
     inherit Component ()
@@ -88,16 +80,6 @@ type BigPositionComponent1 (position : Vector3) =
     member val Position6 = position with get, set
     member val Position7 = position with get, set
 
-    override this.Clone () =
-        let comp = BigPositionComponent1 (this.Position)
-        comp.Position2 <- this.Position2
-        comp.Position3 <- this.Position3
-        comp.Position4 <- this.Position4
-        comp.Position5 <- this.Position5
-        comp.Position6 <- this.Position6
-        comp.Position7 <- this.Position7
-        comp :> Component
-
 type BigPositionComponent2 (position : Vector3) =
     inherit Component ()
 
@@ -108,16 +90,6 @@ type BigPositionComponent2 (position : Vector3) =
     member val Position5 = position with get, set
     member val Position6 = position with get, set
     member val Position7 = position with get, set
-
-    override this.Clone () =
-        let comp = BigPositionComponent2 (this.Position)
-        comp.Position2 <- this.Position2
-        comp.Position3 <- this.Position3
-        comp.Position4 <- this.Position4
-        comp.Position5 <- this.Position5
-        comp.Position6 <- this.Position6
-        comp.Position7 <- this.Position7
-        comp :> Component
 
 type BigPositionComponent3 (position : Vector3) =
     inherit Component ()
@@ -130,16 +102,6 @@ type BigPositionComponent3 (position : Vector3) =
     member val Position6 = position with get, set
     member val Position7 = position with get, set
 
-    override this.Clone () =
-        let comp = BigPositionComponent3 (this.Position)
-        comp.Position2 <- this.Position2
-        comp.Position3 <- this.Position3
-        comp.Position4 <- this.Position4
-        comp.Position5 <- this.Position5
-        comp.Position6 <- this.Position6
-        comp.Position7 <- this.Position7
-        comp :> Component
-
 type BigPositionComponent4 (position : Vector3) =
     inherit Component ()
 
@@ -151,16 +113,6 @@ type BigPositionComponent4 (position : Vector3) =
     member val Position6 = position with get, set
     member val Position7 = position with get, set
 
-    override this.Clone () =
-        let comp = BigPositionComponent4 (this.Position)
-        comp.Position2 <- this.Position2
-        comp.Position3 <- this.Position3
-        comp.Position4 <- this.Position4
-        comp.Position5 <- this.Position5
-        comp.Position6 <- this.Position6
-        comp.Position7 <- this.Position7
-        comp :> Component
-
 type BigPositionComponent5 (position : Vector3) =
     inherit Component ()
 
@@ -171,16 +123,6 @@ type BigPositionComponent5 (position : Vector3) =
     member val Position5 = position with get, set
     member val Position6 = position with get, set
     member val Position7 = position with get, set
-
-    override this.Clone () =
-        let comp = BigPositionComponent5 (this.Position)
-        comp.Position2 <- this.Position2
-        comp.Position3 <- this.Position3
-        comp.Position4 <- this.Position4
-        comp.Position5 <- this.Position5
-        comp.Position6 <- this.Position6
-        comp.Position7 <- this.Position7
-        comp :> Component
 
 [<Struct>]
 type NetworkState =
@@ -205,11 +147,6 @@ type NetworkComponent () =
     member val C2 = Unchecked.defaultof<BigPositionComponent2>
 
     member val C3 = Unchecked.defaultof<BigPositionComponent3>
-
-    override this.Clone () =
-        let comp = NetworkComponent ()
-        comp.state <- this.state
-        comp :> Component
 
 let proto () =
     entity {

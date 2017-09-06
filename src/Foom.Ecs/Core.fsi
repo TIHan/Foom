@@ -35,8 +35,6 @@ type Component =
 
     member internal Owner : Entity with get, set
 
-    abstract Clone : unit -> Component
-
 /// A marker for event data.
 type IEvent = interface end
 
