@@ -38,6 +38,8 @@ type Component () =
     [<IgnoreDataMember>]
     member val Owner = Entity (0, 0u) with get, set
 
+    abstract Clone : unit -> Component
+
 type IEvent = interface end
 
 [<Sealed>]

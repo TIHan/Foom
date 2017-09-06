@@ -619,16 +619,16 @@ and [<ReferenceEquality>] EntityManager =
             |> Seq.map (fun pair -> pair.Value)
             |> Seq.toArray
 
-       // this.ActiveVersions
-       // |> Seq.iteri (fun i v ->
-        Parallel.For (0, this.ActiveVersions.Length - 1, fun i ->
+        this.ActiveVersions
+        |> Seq.iteri (fun i v ->
+       // Parallel.For (0, this.ActiveVersions.Length - 1, fun i ->
             let v = this.ActiveVersions.[i]
             if v > 0u then
                 let comps = ResizeArray ()
                 for i = 0 to componentLookups.Length - 1 do
                     let data = componentLookups.[i]
                     match data.TryGetComponent i with
-                    | Some comp -> comps.Add (data.CloneComponent comp)
+                    | Some comp -> comps.Add (comp.Clone ())
                     | _ -> ()
                 fullEntities.[i] <- { Entity = Entity (i, v); Components = comps }
                 //fullEntities.Enqueue ({ Entity = Entity (i, v); Components = comps })
