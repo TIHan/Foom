@@ -52,6 +52,25 @@ type Vector3 =
         mutable X : float32
         mutable Y : float32
         mutable Z : float32
+
+        mutable X1 : float32
+        mutable Y1 : float32
+        mutable Z1 : float32
+
+
+        mutable X2 : float32
+        mutable Y2 : float32
+        mutable Z2 : float32
+
+
+        mutable X3 : float32
+        mutable Y3 : float32
+        mutable Z3 : float32
+
+
+        mutable X4 : float32
+        mutable Y4 : float32
+        mutable Z4 : float32
     }
  
 type SubSystemConstruct =
@@ -371,6 +390,10 @@ let main argv =
                     net.state.Position5 <- c2.Position5
                     net.state.Position6 <- c3.Position6
                     net.state.Position7 <- c3.Position7
+                )
+
+                world.EntityManager.ForEach<NetworkComponent> (fun _ c1 ->
+                    c1.state <- c1.state
                 )
             )
             //(fun () ->
