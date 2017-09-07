@@ -94,53 +94,53 @@ type Clone private () =
         ret :?> Action<'T, obj>
 
     static member CreateCloneMethod<'T when 'T :> Component> () =
-        let typ = typeof<'T>
-        let ctors = typ.GetTypeInfo().DeclaredConstructors
-        let ctor = ctors.ElementAt (0)
-        let ctorParams = ctor.GetParameters ()
+        //let typ = typeof<'T>
+        //let ctors = typ.GetTypeInfo().DeclaredConstructors
+        //let ctor = ctors.ElementAt (0)
+        //let ctorParams = ctor.GetParameters ()
 
-        let runtimeProps = typ.GetRuntimeProperties ()
+        //let runtimeProps = typ.GetRuntimeProperties ()
 
-        let ctorProps = 
-            ctorParams
-            |> Seq.map (fun param ->
-                runtimeProps 
-                |> Seq.find (fun x -> x.Name.ToLowerInvariant() = param.Name.ToLowerInvariant())
-            )
-            |> Seq.toArray
+        //let ctorProps = 
+        //    ctorParams
+        //    |> Seq.map (fun param ->
+        //        runtimeProps 
+        //        |> Seq.find (fun x -> x.Name.ToLowerInvariant() = param.Name.ToLowerInvariant())
+        //    )
+        //    |> Seq.toArray
 
-        let props =
-            runtimeProps
-            |> Seq.choose (fun prop ->
-                if prop.CanRead && prop.CanWrite && not (ctorProps.Contains prop) && not (prop.Name = "Owner") then
-                    Some prop
-                else
-                    None
-            )
-            |> Seq.toArray
+        //let props =
+        //    runtimeProps
+        //    |> Seq.choose (fun prop ->
+        //        if prop.CanRead && prop.CanWrite && not (ctorProps.Contains prop) && not (prop.Name = "Owner") then
+        //            Some prop
+        //        else
+        //            None
+        //    )
+        //    |> Seq.toArray
 
-        let ctorGets : Func<'T, obj> [] =
-            ctorProps
-            |> Array.map (fun x -> Clone.MagicMethod<'T> x.GetMethod)
+        //let ctorGets : Func<'T, obj> [] =
+        //    ctorProps
+        //    |> Array.map (fun x -> Clone.MagicMethod<'T> x.GetMethod)
 
-        let sets =
-            props
-            |> Array.map (fun x -> Clone.MagicMethod2<'T> x.SetMethod)
+        //let sets =
+        //    props
+        //    |> Array.map (fun x -> Clone.MagicMethod2<'T> x.SetMethod)
 
-        let gets =
-            props
-            |> Array.map (fun x -> Clone.MagicMethod<'T> x.GetMethod)
+        //let gets =
+        //    props
+        //    |> Array.map (fun x -> Clone.MagicMethod<'T> x.GetMethod)
 
-        fun (comp : 'T) ->
-            let finalO = ctor.Invoke (ctorGets |> Array.map (fun x -> x.Invoke (comp)))
+        fun (comp : 'T) -> Unchecked.defaultof<'T>
+            //let finalO = ctor.Invoke (ctorGets |> Array.map (fun x -> x.Invoke (comp)))
 
-            sets
-            |> Array.iteri (fun i setMeth ->
-                let get = gets.[i]
-                setMeth.Invoke (finalO :?> 'T, get.Invoke (comp)) |> ignore
-            )
+            //sets
+            //|> Array.iteri (fun i setMeth ->
+            //    let get = gets.[i]
+            //    setMeth.Invoke (finalO :?> 'T, get.Invoke (comp)) |> ignore
+            //)
 
-            finalO :?> 'T
+            //finalO :?> 'T
 
 type IEntityLookupData =
 

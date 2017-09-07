@@ -10,7 +10,7 @@ type BehaviorContext<'Update> =
     {
         EntityManager: EntityManager
         EventAggregator: EventAggregator
-        Actions: ResizeArray<'Update -> unit>
+        mutable Update : 'Update -> unit
     }
 
 type Behavior<'Update> = internal BehaviorUpdate of (BehaviorContext<'Update> -> unit)
@@ -23,12 +23,11 @@ type Behavior private () =
             let queue = ConcurrentQueue<#IEvent> ()
             context.EventAggregator.GetEvent<#IEvent>().Publish.Add queue.Enqueue
 
-            (fun updateData ->
+            context.Update <- (fun updateData ->
                 let mutable item = Unchecked.defaultof<#IEvent>
                 while queue.TryDequeue (&item) do
                     f item updateData context.EntityManager
             )
-            |> context.Actions.Add
         )
 
     static member HandleLatestEvent (f: #IEvent -> 'Update -> EntityManager -> unit) = 
@@ -36,12 +35,11 @@ type Behavior private () =
             let mutable latestEvent = Unchecked.defaultof<#IEvent>
             context.EventAggregator.GetEvent<#IEvent>().Publish.Add (fun x -> latestEvent <- x)
 
-            (fun updateData ->
+            context.Update <- (fun updateData ->
                 if not <| obj.ReferenceEquals (latestEvent, null) then
                     f latestEvent updateData context.EntityManager
                     latestEvent <- Unchecked.defaultof<#IEvent>
             )
-            |> context.Actions.Add
         )
 
     static member ComponentAdded<'T, 'Update when 'T :> Component> (f: 'Update -> Entity -> 'T -> unit) =
@@ -50,14 +48,13 @@ type Behavior private () =
             context.EventAggregator.GetComponentAddedEvent<'T>().Publish.Add queue.Enqueue
 
             let em = context.EntityManager
-            (fun updateData ->
+            context.Update <- (fun updateData ->
                 while queue.Count > 0 do
                     let item = queue.Dequeue ()
                     let ent = item.Owner
                     if em.IsValid ent then
                         f updateData ent item
             )
-            |> context.Actions.Add
         )
 
     static member ComponentAdded<'T1, 'T2, 'Update when 'T1 :> Component and 'T2 :> Component> (f : 'Update -> Entity -> 'T1 -> 'T2 -> unit) =
@@ -66,7 +63,7 @@ type Behavior private () =
             context.EventAggregator.GetComponentAddedEvent<'T1>().Publish.Add queue.Enqueue
 
             let em = context.EntityManager
-            (fun updateData ->
+            context.Update <- (fun updateData ->
                 let mutable c2 = Unchecked.defaultof<'T2>
                 while queue.Count > 0 do
                     let c1 = queue.Dequeue ()
@@ -75,7 +72,6 @@ type Behavior private () =
                         f updateData ent c1 c2
 
             )
-            |> context.Actions.Add
         )
 
     static member ComponentAdded<'T1, 'T2, 'T3, 'Update when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component> (f : 'Update -> Entity -> 'T1 -> 'T2 -> 'T3 -> unit) =
@@ -84,7 +80,7 @@ type Behavior private () =
             context.EventAggregator.GetComponentAddedEvent<'T1>().Publish.Add queue.Enqueue
 
             let em = context.EntityManager
-            (fun updateData ->
+            context.Update <- (fun updateData ->
                 let mutable c2 = Unchecked.defaultof<'T2>
                 let mutable c3 = Unchecked.defaultof<'T3>
                 while queue.Count > 0 do
@@ -95,7 +91,6 @@ type Behavior private () =
                             f updateData ent c1 c2 c3
 
             )
-            |> context.Actions.Add
         )
 
     static member ComponentAdded<'T1, 'T2, 'T3, 'T4, 'Update when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component and 'T4 :> Component> (f : 'Update -> Entity -> 'T1 -> 'T2 -> 'T3 -> 'T4 -> unit) =
@@ -104,7 +99,7 @@ type Behavior private () =
             context.EventAggregator.GetComponentAddedEvent<'T1>().Publish.Add queue.Enqueue
 
             let em = context.EntityManager
-            (fun updateData ->
+            context.Update <- (fun updateData ->
                 let mutable c2 = Unchecked.defaultof<'T2>
                 let mutable c3 = Unchecked.defaultof<'T3>
                 let mutable c4 = Unchecked.defaultof<'T4>
@@ -117,23 +112,31 @@ type Behavior private () =
                                 f updateData ent c1 c2 c3 c4
 
             )
-            |> context.Actions.Add
         )
 
     static member Update (f: 'Update -> EntityManager -> EventAggregator -> unit) = 
         BehaviorUpdate (fun context ->
-            (fun updateData ->
+            context.Update <- (fun updateData ->
                 f updateData context.EntityManager context.EventAggregator
             )
-            |> context.Actions.Add
         )
 
     static member Merge (behaviors: Behavior<'Update> list) =
         BehaviorUpdate (fun context ->
+            let updates = Array.zeroCreate behaviors.Length
+
             behaviors
-            |> List.iter (function
-                | BehaviorUpdate f ->  f context
+            |> List.iteri (fun i -> function
+                | BehaviorUpdate f ->  
+                    f context
+                    updates.[i] <- context.Update
             )
+
+            context.Update <-
+                fun data ->
+                    for i = 0 to updates.Length - 1 do
+                        let update = updates.[i]
+                        update data
         )
 
     static member Delay (f : unit -> Behavior<_>) =

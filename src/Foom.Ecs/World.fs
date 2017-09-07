@@ -24,21 +24,13 @@ type Subworld (eventAggregator: EventAggregator, entityManager: EntityManager) =
             {
                 EntityManager = entityManager
                 EventAggregator = eventAggregator
-                Actions = ResizeArray ()
+                Update = fun _ -> ()
             }
 
         match behav with
         | BehaviorUpdate f -> f context
 
-        fun updateData ->
-
-            recordEntities <- true
-
-            for i = 0 to context.Actions.Count - 1 do
-                let f = context.Actions.[i]
-                f updateData
-
-            recordEntities <- false
+        context.Update
 
     member this.DestroyEntities () =
         entities
@@ -60,17 +52,13 @@ type World (maxEntityAmount) =
             {
                 EntityManager = entityManager
                 EventAggregator = eventAggregator
-                Actions = ResizeArray ()
+                Update = fun _ -> ()
             }
 
         match behav with
         | BehaviorUpdate f -> f context
 
-        fun updateData ->
-
-            for i = 0 to context.Actions.Count - 1 do
-                let f = context.Actions.[i]
-                f updateData
+        context.Update
 
     member this.CreateSubworld () = Subworld (eventAggregator, entityManager)
 

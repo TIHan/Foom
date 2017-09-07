@@ -6,7 +6,7 @@ type internal BehaviorContext<'Update> =
     {
         EntityManager: EntityManager
         EventAggregator: EventAggregator
-        Actions: ResizeArray<'Update -> unit>
+        mutable Update : 'Update -> unit
     }
 
 type Behavior<'Update> = internal BehaviorUpdate of (BehaviorContext<'Update> -> unit)
