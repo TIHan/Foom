@@ -144,3 +144,26 @@ type Behavior private () =
             match f () with
             | BehaviorUpdate f -> f context
         )
+
+ type Behavior<'Update> with
+
+    static member (>!!<) (beh : Behavior<'U>, f : 'T -> 'U) : Behavior<'T> =
+        BehaviorUpdate (fun context ->
+            let update = context.Update
+
+            let newContext =
+                {
+                    EntityManager = context.EntityManager
+                    EventAggregator = context.EventAggregator
+                    Update = fun _ -> ()
+                }
+
+            match beh with
+            | BehaviorUpdate f -> f newContext
+
+            let update2 = newContext.Update
+            context.Update <-
+                fun data ->
+                    update data
+                    update2 (f data)
+        )

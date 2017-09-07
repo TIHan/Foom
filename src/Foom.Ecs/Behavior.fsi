@@ -9,7 +9,9 @@ type internal BehaviorContext<'Update> =
         mutable Update : 'Update -> unit
     }
 
-type Behavior<'Update> = internal BehaviorUpdate of (BehaviorContext<'Update> -> unit)
+type Behavior<'Update> = internal BehaviorUpdate of (BehaviorContext<'Update> -> unit) with
+
+    static member (>!!<) : Behavior<'U> * ('T -> 'U) -> Behavior<'T>
 
 [<Sealed>]
 type Behavior =

@@ -26,4 +26,4 @@ type WadComponent =
 
 module Behavior =
 
-    val wadLevelLoading : openWad: (string -> Stream) -> (Wad -> unit) -> (Wad -> Level -> EntityManager -> unit) -> Behavior<_>
+    val wadLevelLoading : openWad: (string -> Stream) -> (Wad -> unit) -> (Wad -> Level -> EntityManager -> unit) -> Behavior<unit>

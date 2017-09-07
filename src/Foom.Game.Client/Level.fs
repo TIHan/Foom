@@ -320,5 +320,5 @@ let updates openWad exportTextures am (physics : PhysicsEngine) (clientWorld: Cl
 
                 | _ -> ()
             )
-        )
+        ) >!!< (fun _ -> ())
     ]

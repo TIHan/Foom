@@ -24,7 +24,7 @@ type WadComponent (wadName: string) =
 
 module Behavior =
 
-    let wadLevelLoading (openWad: string -> Stream) (f : Wad -> unit) (g : Wad -> Level -> EntityManager -> unit) : Behavior<_> =
+    let wadLevelLoading (openWad: string -> Stream) (f : Wad -> unit) (g : Wad -> Level -> EntityManager -> unit) : Behavior<unit> =
         let levelQueue = Queue ()
         let mutable levelOpt = None
         let mutable wadOpt = None
@@ -39,8 +39,7 @@ module Behavior =
                 wadOpt <- Some wad
                 f wad
             )
-
-
+    
         Behavior.Merge 
             [
                 added
