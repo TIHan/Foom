@@ -158,7 +158,8 @@ let updates openWad exportTextures am (physics : PhysicsEngine) (clientWorld: Cl
             //    wad |> exportSpriteTextures
             //)
 
-        Behavior.wadLevelLoading openWad exportTextures (fun wad level em ->
+        Behavior.wadLevelLoading
+        |> Behavior.contramap (fun _ -> Behavior.Context (openWad, exportTextures, fun wad level em ->
             let lvl = WadLevel.toLevel level
 
             let sectorCount = lvl.SectorCount
@@ -320,5 +321,5 @@ let updates openWad exportTextures am (physics : PhysicsEngine) (clientWorld: Cl
 
                 | _ -> ()
             )
-        ) >!!< (fun _ -> ())
+        ))
     ]

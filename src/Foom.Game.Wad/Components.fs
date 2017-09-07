@@ -24,42 +24,54 @@ type WadComponent (wadName: string) =
 
 module Behavior =
 
-    let wadLevelLoading (openWad: string -> Stream) (f : Wad -> unit) (g : Wad -> Level -> EntityManager -> unit) : Behavior<unit> =
-        let levelQueue = Queue ()
-        let mutable levelOpt = None
-        let mutable wadOpt = None
+    [<Sealed>]
+    type Context (openWad: string -> Stream, f : Wad -> unit, g : Wad -> Level -> EntityManager -> unit) =
+
+        member __.OpenWad = openWad
+
+        member __.OnWadLoaded = f
+
+        member __.OnLevelLoaded = g
+
+    let wadLevelLoading : Behavior<Context> =
+        Behavior.Delay <| fun () ->
+            let levelQueue = Queue ()
+            let mutable levelOpt = None
+            let mutable wadOpt = None
 
 
-        let added =
-            Behavior.ComponentAdded (fun _ _ (wadComp: WadComponent) ->
-                let fileName = wadComp.WadName
-                let wad = Wad.create (openWad fileName)
-                //let wad = Wad.extend (openWad "Untitled.wad") wad
-                // let wad = Wad.extend (openWad "sunder.wad") wad
-                wadOpt <- Some wad
-                f wad
-            )
+            let added =
+                Behavior.contramap (fun (context : Context) -> (context.OpenWad, context.OnWadLoaded))
+                <| Behavior.ComponentAdded (fun (openWad, onWadLoaded : Wad -> unit) _ (wadComp: WadComponent) ->
+                    let fileName = wadComp.WadName
+                    let wad = Wad.create (openWad fileName)
+                    //let wad = Wad.extend (openWad "Untitled.wad") wad
+                    // let wad = Wad.extend (openWad "sunder.wad") wad
+                    wadOpt <- Some wad
+                    onWadLoaded wad
+                )
     
-        Behavior.Merge 
-            [
-                added
+            Behavior.Merge 
+                [
+                    added
 
-                Behavior.ComponentAdded (fun _ _ (levelComp: LevelComponent) (wadComp : WadComponent) ->
-                    let levelName = levelComp.LevelName
-                    levelQueue.Enqueue levelName
-                )
+                    Behavior.ComponentAdded (fun _ _ (levelComp: LevelComponent) (wadComp : WadComponent) ->
+                        let levelName = levelComp.LevelName
+                        levelQueue.Enqueue levelName
+                    )
 
-                Behavior.Update (fun _ em _ ->
-                    while levelQueue.Count > 0 do
-                        let levelName = levelQueue.Dequeue ()
-                        match wadOpt with
-                        | Some wad ->
-                            let level = Wad.findLevel levelName wad
-                            levelOpt <- Some level
-                            g wad level em
-                        | _ ->
-                            Debug.WriteLine (
-                                String.Format ("Tried to load level, {0}, but a WAD is not loaded.", levelName)
-                            )
-                )
-            ]
+                    Behavior.contramap (fun (context : Context) -> context.OnLevelLoaded)
+                    <| Behavior.Update (fun onLevelLoaded em _ ->
+                        while levelQueue.Count > 0 do
+                            let levelName = levelQueue.Dequeue ()
+                            match wadOpt with
+                            | Some wad ->
+                                let level = Wad.findLevel levelName wad
+                                levelOpt <- Some level
+                                onLevelLoaded wad level em
+                            | _ ->
+                                Debug.WriteLine (
+                                    String.Format ("Tried to load level, {0}, but a WAD is not loaded.", levelName)
+                                )
+                    )
+                ]

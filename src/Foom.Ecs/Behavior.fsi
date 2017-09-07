@@ -9,9 +9,7 @@ type internal BehaviorContext<'Update> =
         mutable Update : 'Update -> unit
     }
 
-type Behavior<'Update> = internal BehaviorUpdate of (BehaviorContext<'Update> -> unit) with
-
-    static member (>!!<) : Behavior<'U> * ('T -> 'U) -> Behavior<'T>
+type Behavior<'Update> = internal BehaviorUpdate of (BehaviorContext<'Update> -> unit)
 
 [<Sealed>]
 type Behavior =
@@ -33,3 +31,8 @@ type Behavior =
     static member Merge : Behavior<'Update> list -> Behavior<'Update>
 
     static member Delay : (unit -> Behavior<'Update>) -> Behavior<'Update>
+
+[<RequireQualifiedAccess>]
+module Behavior =
+
+    val contramap : ('T -> 'U) -> Behavior<'U> -> Behavior<'T>

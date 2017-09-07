@@ -145,9 +145,10 @@ type Behavior private () =
             | BehaviorUpdate f -> f context
         )
 
- type Behavior<'Update> with
+[<RequireQualifiedAccess>]
+module Behavior =
 
-    static member (>!!<) (beh : Behavior<'U>, f : 'T -> 'U) : Behavior<'T> =
+    let contramap (f : 'T -> 'U) (beh : Behavior<'U>) : Behavior<'T> =
         BehaviorUpdate (fun context ->
             let update = context.Update
 
