@@ -6,6 +6,37 @@ open System.Collections.Generic
 open Foom.Ecs
 open Foom.Geometry
 
+[<AutoOpen>]
+module private LevelHelpers =
+
+    let updateUpperFront (a : Vector2) (b : Vector2) (wall : Wall) getSector (data : Vector3 []) =
+        wall.FrontSide
+        |> Option.iter (fun frontSide ->
+            wall.BackSide
+            |> Option.iter (fun backSide ->
+                let frontSideSector = getSector frontSide.SectorId
+                let backSideSector = getSector backSide.SectorId
+
+                if frontSideSector.ceilingHeight > backSideSector.ceilingHeight then
+
+                    let floorHeight, ceilingHeight = backSideSector.ceilingHeight, frontSideSector.ceilingHeight
+
+                    data.[0] <- Vector3 (a, single floorHeight)
+                    data.[1] <- Vector3 (b, single floorHeight)
+                    data.[2] <- Vector3 (b, single ceilingHeight)
+
+                    data.[3] <- Vector3 (b, single ceilingHeight)
+                    data.[4] <- Vector3 (a, single ceilingHeight)
+                    data.[5] <- Vector3 (a, single floorHeight)
+            )
+        )
+
+    let createUpperFront (a : Vector2) (b : Vector2) (wall : Wall) getSector =
+        let data = Array.zeroCreate 6
+        updateUpperFront a b wall getSector data
+        data
+
+
 [<Sealed>]
 type Level () =
 
@@ -85,30 +116,7 @@ type Level () =
         let b = seg.B
 
         // Upper Front
-        let mutable upperFront = [||]
-        wall.FrontSide
-        |> Option.iter (fun frontSide ->
-            wall.BackSide
-            |> Option.iter (fun backSide ->
-                let frontSideSector = this.GetSector frontSide.SectorId
-                let backSideSector = this.GetSector backSide.SectorId
-
-                if frontSideSector.ceilingHeight > backSideSector.ceilingHeight then
-
-                    let floorHeight, ceilingHeight = backSideSector.ceilingHeight, frontSideSector.ceilingHeight
-
-                    upperFront <-
-                        [|
-                            Vector3 (a, single floorHeight)
-                            Vector3 (b, single floorHeight)
-                            Vector3 (b, single ceilingHeight)
-
-                            Vector3 (b, single ceilingHeight)
-                            Vector3 (a, single ceilingHeight)
-                            Vector3 (a, single floorHeight)
-                        |]
-            )
-        )
+        let upperFront = createUpperFront a b wall this.GetSector 
 
         // Middle Front
         let mutable middleFront = [||]
