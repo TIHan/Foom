@@ -6,6 +6,16 @@ open System.Collections.Generic
 open Foom.Ecs
 open Foom.Geometry
 
+type Sector =
+    {
+        mutable lightLevel: int
+        mutable floorHeight: int
+        mutable ceilingHeight: int
+
+        mutable floorTextureName: string
+        mutable ceilingTextureName: string
+    }
+
 [<AutoOpen>]
 module private LevelHelpers =
 
@@ -109,6 +119,29 @@ type Level () =
         let lightLevel = sector.lightLevel
         if lightLevel > 255 then 255uy
         else byte lightLevel
+
+    member this.UpdateSectorCeilingHeight (height : int, sectorId : int, f) =
+        let sector = this.GetSector sectorId
+
+        sector.ceilingHeight <- height
+
+        match wallLookup.TryGetValue sectorId with
+        | true, indices ->
+
+            for i = 0 to indices.Count - 1 do
+                let wall = walls.[indices.[i]]
+
+                match wall.FrontSide with
+                | Some frontSide when frontSide.SectorId = sectorId ->
+                    f sectorId i true
+                | _ -> ()
+
+                match wall.BackSide with
+                | Some backSide when backSide.SectorId = sectorId ->
+                    f sectorId i false
+                | _ -> ()
+
+        | _ -> ()
 
     member this.CreateWallGeometry (wall : Wall) : (Vector3 [] * Vector3 [] * Vector3 []) * (Vector3 [] * Vector3 [] * Vector3 []) =
         let seg = wall.Segment

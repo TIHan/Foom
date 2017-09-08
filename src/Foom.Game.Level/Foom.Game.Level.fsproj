@@ -86,7 +86,6 @@
     <Compile Include="Wall.fs" />
     <Compile Include="SectorGeometry.fsi" />
     <Compile Include="SectorGeometry.fs" />
-    <Compile Include="Sector.fs" />
     <Compile Include="Level.fs" />
     <Compile Include="LinedefTracer.fsi" />
     <Compile Include="LinedefTracer.fs" />
