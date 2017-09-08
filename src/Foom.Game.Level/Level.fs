@@ -273,10 +273,3 @@ type Level () =
             (upperFront, middleFront, lowerFront),
             (upperBack, middleBack, lowerBack)
         )
-
-
-[<Sealed>]
-type LevelComponent (level: Level) =
-    inherit Component ()
-
-    member val Level = level

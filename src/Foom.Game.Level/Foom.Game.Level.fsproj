@@ -90,7 +90,6 @@
     <Compile Include="Level.fs" />
     <Compile Include="LinedefTracer.fsi" />
     <Compile Include="LinedefTracer.fs" />
-    <Compile Include="LevelWorld.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.Portable.FSharp.Targets" />
