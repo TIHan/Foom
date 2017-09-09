@@ -211,15 +211,15 @@ module CloneHelpers =
 
         let ctorGets =
             ctorProps
-            |> Array.map (fun x -> createGetIL<'T> x.GetMethod)
+            |> Array.map (fun x -> createGet<'T> x.GetMethod)
 
         let sets =
             props
-            |> Array.map (fun x -> createSetIL<'T> x.SetMethod)
+            |> Array.map (fun x -> createSet<'T> x.SetMethod)
 
         let gets =
             props
-            |> Array.map (fun x -> createGetIL<'T> x.GetMethod)
+            |> Array.map (fun x -> createGet<'T> x.GetMethod)
 
         /////////////////////////////////////////////////////
         ()
@@ -227,10 +227,11 @@ module CloneHelpers =
         let cloneMeth = DynamicMethod ("Clone", typ, [|typ|])
         let il = cloneMeth.GetILGenerator ()
 
-        il.Emit (OpCodes.Ldarg_0)
-        ctorGets |> Array.iteri (fun i ctorGet ->
-            il.Emit (OpCodes.Callvirt, ctorGet)
-        )
+        if ctorGets.Length > 0 then
+            il.Emit (OpCodes.Ldarg_0)
+            ctorGets |> Array.iteri (fun i ctorGet ->
+                il.Emit (OpCodes.Callvirt, ctorGet)
+            )
         il.Emit (OpCodes.Newobj, ctor)
         il.Emit (OpCodes.Ret)
 
@@ -254,7 +255,7 @@ module CloneHelpers =
                 GetReference (Clone.GetMethod<'T> meth)
         | _ -> 
             let helperMethods = moduleType.GetRuntimeMethods ()
-            let createCloneMeth = helperMethods |> Seq.find (fun x -> x.Name = "createCloneMethod")
+            let createCloneMeth = helperMethods |> Seq.find (fun x -> x.Name = "createCloneMethodObj")
 
             let generic = createCloneMeth.MakeGenericMethod ([|typ|])
 
@@ -276,7 +277,7 @@ module CloneHelpers =
             Clone.SetMethod<'T> meth
             |> SetReference
 
-    let createCloneMethod<'T> () =
+    let createCloneMethodObj<'T> () =
         let typ = typeof<'T>
         let ctors = typ.GetTypeInfo().DeclaredConstructors
         let ctor = ctors.ElementAt (0)
@@ -382,6 +383,10 @@ module CloneHelpers =
                 )
 
                 finalO
+
+    let createCloneMethod<'T> () =
+        let f = createCloneMethodObj<'T> ()
+        Func<'T, 'T> (fun comp -> f (comp :> obj) :?> 'T)
 #endif
 
 type IEntityLookupData =
@@ -410,7 +415,7 @@ type EntityLookupData<'T when 'T :> Component> =
         IndexLookup: int []
         Entities: Entity UnsafeResizeArray
         Components: 'T UnsafeResizeArray
-        Clone : obj -> obj
+        Clone : Func<'T, 'T>
     }
 
     interface IEntityLookupData with
@@ -431,7 +436,7 @@ type EntityLookupData<'T when 'T :> Component> =
                 None
 
         member this.CloneComponent comp =
-            this.Clone comp
+            this.Clone.Invoke (comp :?> 'T) :> obj
 
 type EntityBuilder = EntityBuilder of (Entity -> EntityManager -> unit)
 
@@ -852,27 +857,30 @@ and [<ReferenceEquality>] EntityManager =
 
     member this.Save () =
 
-        let fullEntities = Array.zeroCreate 65536
+        //let fullEntities = Array.init this.MaxEntityAmount (fun _ -> ResizeArray ())
 
         let componentLookups =
             this.Lookup
             |> Seq.map (fun pair -> pair.Value)
             |> Seq.toArray
 
-        this.ActiveVersions
-        |> Seq.iteri (fun i v ->
-        //Parallel.For (0, this.ActiveVersions.Length - 1, fun i ->
-            let v = this.ActiveVersions.[i]
-            if v > 0u then
-                let comps = ResizeArray ()
-                for i = 0 to componentLookups.Length - 1 do
-                    let data = componentLookups.[i]
-                    match data.TryGetComponent i with
-                    | Some comp -> comps.Add (data.CloneComponent comp)
-                    | _ -> ()
-                fullEntities.[i] <- { Entity = Entity (i, v); Components = comps }
-                //fullEntities.Enqueue ({ Entity = Entity (i, v); Components = comps })
-        ) |> ignore
+        //this.ActiveVersions
+        //|> Seq.iteri (fun i v ->
+        ////Parallel.For (0, this.ActiveVersions.Length - 1, fun i ->
+        //    let v = this.ActiveVersions.[i]
+        //    if v > 0u then
+        //       let comps = ResizeArray ()
+        //       for j = 0 to 16 do
+        //        for i = 0 to componentLookups.Length - 1 do
+        //            let data = componentLookups.[i]
+        //            ()
+        //           // match data.TryGetComponent i with
+        //           // | Some comp -> comps.Add (data.CloneComponent comp)
+        //            //| _ -> ()
+        //        ()
+        //        //fullEntities.[i] <- { Entity = Entity (i, v); Components = comps }
+        //        //fullEntities.Enqueue ({ Entity = Entity (i, v); Components = comps })
+        //) |> ignore
         ""
         //let settings = JsonSerializerSettings ()
         //settings.ContractResolver <- EcsContractResolver ()
