@@ -857,30 +857,53 @@ and [<ReferenceEquality>] EntityManager =
 
     member this.Save () =
 
-        //let fullEntities = Array.init this.MaxEntityAmount (fun _ -> ResizeArray ())
+        let fullEntities = Array.zeroCreate this.MaxEntityAmount
 
         let componentLookups =
             this.Lookup
             |> Seq.map (fun pair -> pair.Value)
             |> Seq.toArray
 
-        //this.ActiveVersions
-        //|> Seq.iteri (fun i v ->
-        ////Parallel.For (0, this.ActiveVersions.Length - 1, fun i ->
-        //    let v = this.ActiveVersions.[i]
-        //    if v > 0u then
-        //       let comps = ResizeArray ()
-        //       for j = 0 to 16 do
-        //        for i = 0 to componentLookups.Length - 1 do
-        //            let data = componentLookups.[i]
-        //            ()
-        //           // match data.TryGetComponent i with
-        //           // | Some comp -> comps.Add (data.CloneComponent comp)
-        //            //| _ -> ()
+
+        //componentLookups
+        //|> Array.iter (fun lookup ->
+        //    let ents = lookup.Entities.Buffer
+        //    let count = lookup.Entities.Count
+
+        //    Parallel.For (0, count - 1, fun i ->
+        //        let ent = ents.[i]
+        //        let index = ent.Index
+        //        let arr = 
+        //            let arr = fullEntities.[index]
+        //            if arr = null then
+        //                let arr = ResizeArray ()
+        //                fullEntities.[index] <- arr
+        //                arr
+        //            else
+        //                arr
         //        ()
-        //        //fullEntities.[i] <- { Entity = Entity (i, v); Components = comps }
-        //        //fullEntities.Enqueue ({ Entity = Entity (i, v); Components = comps })
-        //) |> ignore
+        //        //arr.Add (lookup.GetComponent i)
+        //    ) |> ignore
+        //)
+
+
+        this.ActiveVersions
+        |> Seq.iteri (fun i v ->
+       // Parallel.For (0, this.ActiveVersions.Length - 1, fun i ->
+            let v = this.ActiveVersions.[i]
+            if v > 0u then
+                let comps = ResizeArray ()
+              // for j = 0 to 16 do
+                for i = 0 to componentLookups.Length - 1 do
+                    let data = componentLookups.[i]
+                    ()
+                    match data.TryGetComponent i with
+                    | Some comp -> comps.Add (data.CloneComponent comp)
+                    | _ -> ()
+                //()
+                fullEntities.[i] <- { Entity = Entity (i, v); Components = comps }
+                //fullEntities.Enqueue ({ Entity = Entity (i, v); Components = comps })
+        ) |> ignore
         ""
         //let settings = JsonSerializerSettings ()
         //settings.ContractResolver <- EcsContractResolver ()

@@ -61,10 +61,6 @@
       <Project>{E6E59E16-3055-4964-8F21-5B7F0A13AB5D}</Project>
       <Name>Foom.Ecs.Desktop</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Foom.Ecs\Foom.Ecs.fsproj">
-      <Project>{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}</Project>
-      <Name>Foom.Ecs</Name>
-    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v2.0' Or $(TargetFrameworkVersion) == 'v3.0' Or $(TargetFrameworkVersion) == 'v3.5')">
