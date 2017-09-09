@@ -122,7 +122,7 @@ type Clone private () =
         ret :?> ByrefAction<'T, obj>
 
 [<AutoOpen>]
-module rec CloneHelpers =
+module CloneHelpers =
 
     let allNestedRuntimeFieldTypes (typ: Type) =
         let f (x: Type) : Type list =
@@ -150,19 +150,8 @@ module rec CloneHelpers =
         | false -> false
         | _ -> allNestedRuntimeFieldTypes typ |> List.forall check
 
-    type internal Marker = interface end
-    let moduleType = typeof<Marker>.DeclaringType
-
-    type GetMethod<'T> =
-        | GetReference of Func<'T, obj>
-        | GetValue of ByrefFunc<'T, obj>
-
-    type SetMethod<'T> =
-        | SetReference of Action<'T, obj>
-        | SetValue of ByrefAction<'T, obj>
-
-    let createGet<'T> (meth : MethodInfo) =
-        match meth.ReturnType with
+    let isImmutableType<'T> (typ : Type) =
+        match typ with
         | x when 
             x = typeof<byte> ||
             x = typeof<sbyte> ||
@@ -176,13 +165,94 @@ module rec CloneHelpers =
             x = typeof<double> ||
             x = typeof<bool> ||
             isTypeBlittable x ||
-            x = typeof<string> -> 
-                if typeof<'T>.GetTypeInfo().IsValueType then
-                    GetValue (Clone.GetStructMethod<'T> meth)
-                else
-                    GetReference (Clone.GetMethod<'T> meth)
+            x = typeof<string> -> true
+        | _ -> false
 
-        | typ -> 
+    type internal Marker = interface end
+    let moduleType = typeof<Marker>.DeclaringType
+
+#if ECS_CLONING_EMIT_IL
+    open System.Reflection.Emit
+
+    let createGet<'T> (meth : MethodInfo) =
+        let typ = meth.ReturnType
+        match isImmutableType typ with
+        | true -> meth
+        | _ -> failwith "not valid yet"
+
+    let createSet<'T> (meth : MethodInfo) = meth
+
+    let createCloneMethod<'T> () =
+        let typ = typeof<'T>
+
+        let ctors = typ.GetTypeInfo().DeclaredConstructors
+        let ctor = ctors.ElementAt (0)
+        let ctorParams = ctor.GetParameters ()
+
+        let runtimeProps = typ.GetRuntimeProperties ()
+
+        let ctorProps = 
+            ctorParams
+            |> Seq.map (fun param ->
+                runtimeProps 
+                |> Seq.find (fun x -> x.Name.ToLowerInvariant() = param.Name.ToLowerInvariant())
+            )
+            |> Seq.toArray
+
+        let props =
+            runtimeProps
+            |> Seq.choose (fun prop ->
+                if prop.CanRead && prop.CanWrite && not (ctorProps.Contains prop) && not (prop.Name = "Owner") then
+                    Some prop
+                else
+                    None
+            )
+            |> Seq.toArray
+
+        let ctorGets =
+            ctorProps
+            |> Array.map (fun x -> createGetIL<'T> x.GetMethod)
+
+        let sets =
+            props
+            |> Array.map (fun x -> createSetIL<'T> x.SetMethod)
+
+        let gets =
+            props
+            |> Array.map (fun x -> createGetIL<'T> x.GetMethod)
+
+        /////////////////////////////////////////////////////
+        ()
+
+        let cloneMeth = DynamicMethod ("Clone", typ, [|typ|])
+        let il = cloneMeth.GetILGenerator ()
+
+        il.Emit (OpCodes.Ldarg_0)
+        ctorGets |> Array.iteri (fun i ctorGet ->
+            il.Emit (OpCodes.Callvirt, ctorGet)
+        )
+        il.Emit (OpCodes.Newobj, ctor)
+        il.Emit (OpCodes.Ret)
+
+        cloneMeth.CreateDelegate (typeof<Func<'T, 'T>>) :?> Func<'T, 'T>
+#else
+    type GetMethod<'T> =
+        | GetReference of Func<'T, obj>
+        | GetValue of ByrefFunc<'T, obj>
+
+    type SetMethod<'T> =
+        | SetReference of Action<'T, obj>
+        | SetValue of ByrefAction<'T, obj>
+
+    let createGet<'T> (meth : MethodInfo) =
+        let typ = meth.ReturnType
+        match isImmutableType typ with
+        | true ->
+            if typeof<'T>.GetTypeInfo().IsValueType then
+                GetValue (Clone.GetStructMethod<'T> meth)
+            else
+                GetReference (Clone.GetMethod<'T> meth)
+        | _ -> 
             let helperMethods = moduleType.GetRuntimeMethods ()
             let createCloneMeth = helperMethods |> Seq.find (fun x -> x.Name = "createCloneMethod")
 
@@ -249,21 +319,21 @@ module rec CloneHelpers =
             let ctorGets =
                 ctorGets
                 |> Array.map (function
-                    | GetValue x -> x
+                    | GetValue (x) -> x
                     | _ -> failwith "should not happen"
                 )
 
             let sets =
                 sets
                 |> Array.map (function
-                    | SetValue x -> x
+                    | SetValue (x) -> x
                     | _ -> failwith "should not happen"
                 )
 
             let gets =
                 gets
                 |> Array.map (function
-                    | GetValue x -> x
+                    | GetValue (x) -> x
                     | _ -> failwith "should not happen"
                 )
 
@@ -283,21 +353,21 @@ module rec CloneHelpers =
             let ctorGets =
                 ctorGets
                 |> Array.map (function
-                    | GetReference x -> x
+                    | GetReference (x) -> x
                     | _ -> failwith "should not happen"
                 )
 
             let sets =
                 sets
                 |> Array.map (function
-                    | SetReference x -> x
+                    | SetReference (x) -> x
                     | _ -> failwith "should not happen"
                 )
 
             let gets =
                 gets
                 |> Array.map (function
-                    | GetReference x -> x
+                    | GetReference (x) -> x
                     | _ -> failwith "should not happen"
                 )
 
@@ -312,6 +382,7 @@ module rec CloneHelpers =
                 )
 
                 finalO
+#endif
 
 type IEntityLookupData =
 
