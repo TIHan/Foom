@@ -64,83 +64,254 @@ type EcsContractResolver () =
 type SerializedEntity =
     {
         Entity : Entity
-        Components : Component seq
+        Components : obj seq
     }
 
+type ByrefFunc<'TTarget, 'TReturn> = delegate of byref<'TTarget> -> 'TReturn
+type ByrefAction<'TTarget, 'TParam> = delegate of byref<'TTarget> * 'TParam -> unit
+
+[<Sealed>]
 type Clone private () =
 
-    static member CreateMagicMethodHelper<'TTarget, 'TReturn> (meth : MethodInfo) =
+    static member GetHelper<'TTarget, 'TReturn> (meth : MethodInfo) =
         let func = meth.CreateDelegate (typeof<Func<'TTarget, 'TReturn>>) :?> Func<'TTarget, 'TReturn>
         Func<'TTarget, obj> (fun t -> func.Invoke (t) :> obj)
 
-    static member MagicMethod (meth : MethodInfo) =
-        let genericHelper = typeof<Clone>.GetRuntimeMethods() |> Seq.find (fun x -> x.Name = "CreateMagicMethodHelper")
+    static member GetMethod (meth : MethodInfo) =
+        let genericHelper = typeof<Clone>.GetRuntimeMethods() |> Seq.find (fun x -> x.Name = "GetHelper")
 
         let constructedHelper = genericHelper.MakeGenericMethod ([|typeof<'T>; meth.ReturnType|])
 
         let ret = constructedHelper.Invoke (null, [|meth|])
         ret :?> Func<'T, obj>
 
-    static member CreateMagicMethodHelper2<'TTarget, 'TParam> (meth : MethodInfo) =
+    static member SetHelper<'TTarget, 'TParam> (meth : MethodInfo) =
         let func = meth.CreateDelegate (typeof<Action<'TTarget, 'TParam>>) :?> Action<'TTarget, 'TParam>
-        Action<'TTarget, obj> (fun t o -> func.Invoke (t, o :?> 'TParam))
+        Action<'TTarget, obj> (fun t (o : obj) -> func.Invoke (t, o :?> 'TParam))
 
-    static member MagicMethod2 (meth : MethodInfo) =
-        let genericHelper = typeof<Clone>.GetRuntimeMethods() |> Seq.find (fun x -> x.Name = "CreateMagicMethodHelper2")
+    static member SetMethod (meth : MethodInfo) =
+        let genericHelper = typeof<Clone>.GetRuntimeMethods() |> Seq.find (fun x -> x.Name = "SetHelper")
 
         let constructedHelper = genericHelper.MakeGenericMethod ([|typeof<'T>; meth.GetParameters().[0].ParameterType|])
         
         let ret = constructedHelper.Invoke (null, [|meth|])
         ret :?> Action<'T, obj>
 
-    static member CreateCloneMethod<'T when 'T :> Component> () =
-        //let typ = typeof<'T>
-        //let ctors = typ.GetTypeInfo().DeclaredConstructors
-        //let ctor = ctors.ElementAt (0)
-        //let ctorParams = ctor.GetParameters ()
+    static member GetStructHelper<'TTarget, 'TReturn> (meth : MethodInfo) =
+        let func = meth.CreateDelegate (typeof<ByrefFunc<'TTarget, 'TReturn>>) :?> ByrefFunc<'TTarget, 'TReturn>
+        ByrefFunc (fun t -> func.Invoke (&t) :> obj)
 
-        //let runtimeProps = typ.GetRuntimeProperties ()
+    static member GetStructMethod (meth : MethodInfo) =
+        let genericHelper = typeof<Clone>.GetRuntimeMethods() |> Seq.find (fun x -> x.Name = "GetStructHelper")
 
-        //let ctorProps = 
-        //    ctorParams
-        //    |> Seq.map (fun param ->
-        //        runtimeProps 
-        //        |> Seq.find (fun x -> x.Name.ToLowerInvariant() = param.Name.ToLowerInvariant())
-        //    )
-        //    |> Seq.toArray
+        let constructedHelper = genericHelper.MakeGenericMethod ([|typeof<'T>; meth.ReturnType|])
 
-        //let props =
-        //    runtimeProps
-        //    |> Seq.choose (fun prop ->
-        //        if prop.CanRead && prop.CanWrite && not (ctorProps.Contains prop) && not (prop.Name = "Owner") then
-        //            Some prop
-        //        else
-        //            None
-        //    )
-        //    |> Seq.toArray
+        let ret = constructedHelper.Invoke (null, [|meth|])
+        ret :?> ByrefFunc<'T, obj>
 
-        //let ctorGets : Func<'T, obj> [] =
-        //    ctorProps
-        //    |> Array.map (fun x -> Clone.MagicMethod<'T> x.GetMethod)
+    static member SetStructHelper<'TTarget, 'TParam> (meth : MethodInfo) =
+        let func = meth.CreateDelegate (typeof<ByrefAction<'TTarget, 'TParam>>) :?> ByrefAction<'TTarget, 'TParam>
+        ByrefAction<'TTarget, obj> (fun t (o : obj) -> func.Invoke (&t, o :?> 'TParam))
 
-        //let sets =
-        //    props
-        //    |> Array.map (fun x -> Clone.MagicMethod2<'T> x.SetMethod)
+    static member SetStructMethod (meth : MethodInfo) =
+        let genericHelper = typeof<Clone>.GetRuntimeMethods() |> Seq.find (fun x -> x.Name = "SetHelper")
 
-        //let gets =
-        //    props
-        //    |> Array.map (fun x -> Clone.MagicMethod<'T> x.GetMethod)
+        let constructedHelper = genericHelper.MakeGenericMethod ([|typeof<'T>; meth.GetParameters().[0].ParameterType|])
+        
+        let ret = constructedHelper.Invoke (null, [|meth|])
+        ret :?> ByrefAction<'T, obj>
 
-        fun (comp : 'T) -> Unchecked.defaultof<'T>
-            //let finalO = ctor.Invoke (ctorGets |> Array.map (fun x -> x.Invoke (comp)))
+[<AutoOpen>]
+module rec CloneHelpers =
 
-            //sets
-            //|> Array.iteri (fun i setMeth ->
-            //    let get = gets.[i]
-            //    setMeth.Invoke (finalO :?> 'T, get.Invoke (comp)) |> ignore
-            //)
+    let allNestedRuntimeFieldTypes (typ: Type) =
+        let f (x: Type) : Type list =
+            (x.GetRuntimeFields ())
+            |> Seq.map (fun x -> x.FieldType)
+            |> Seq.distinctBy (fun x -> x.FullName)
+            |> List.ofSeq
 
-            //finalO :?> 'T
+        let rec fr (types: Type list) = function
+            | [] -> types
+            | x :: xs as nested ->
+                let typesToCover = types @ nested
+                let refs =
+                    (f x)
+                    |> List.filter (fun x -> not (typesToCover |> List.exists (fun y -> y.FullName = x.FullName)))
+                fr (x :: types) (xs @ refs)
+                    
+        fr [] (f typ)  
+
+    let rec isTypeBlittable (typ: Type) =
+        let check (x: Type) = 
+            (x.GetTypeInfo().IsValueType && not (x.GetTypeInfo().IsGenericType)) ||
+            (x.IsPointer && (x.GenericTypeArguments |> Array.forall (isTypeBlittable)))
+        match check typ with
+        | false -> false
+        | _ -> allNestedRuntimeFieldTypes typ |> List.forall check
+
+    type internal Marker = interface end
+    let moduleType = typeof<Marker>.DeclaringType
+
+    type GetMethod<'T> =
+        | GetReference of Func<'T, obj>
+        | GetValue of ByrefFunc<'T, obj>
+
+    type SetMethod<'T> =
+        | SetReference of Action<'T, obj>
+        | SetValue of ByrefAction<'T, obj>
+
+    let createGet<'T> (meth : MethodInfo) =
+        match meth.ReturnType with
+        | x when 
+            x = typeof<byte> ||
+            x = typeof<sbyte> ||
+            x = typeof<uint16> ||
+            x = typeof<int16> ||
+            x = typeof<uint32> ||
+            x = typeof<int32> ||
+            x = typeof<uint64> ||
+            x = typeof<int64> ||
+            x = typeof<single> ||
+            x = typeof<double> ||
+            x = typeof<bool> ||
+            isTypeBlittable x ||
+            x = typeof<string> -> 
+                if typeof<'T>.GetTypeInfo().IsValueType then
+                    GetValue (Clone.GetStructMethod<'T> meth)
+                else
+                    GetReference (Clone.GetMethod<'T> meth)
+
+        | typ -> 
+            let helperMethods = moduleType.GetRuntimeMethods ()
+            let createCloneMeth = helperMethods |> Seq.find (fun x -> x.Name = "createCloneMethod")
+
+            let generic = createCloneMeth.MakeGenericMethod ([|typ|])
+
+            let ret = generic.Invoke (null, [||])
+            let ret = ret :?> (obj -> obj)
+
+            if typeof<'T>.GetTypeInfo().IsValueType then
+                let copy = Clone.GetStructMethod<'T> meth
+                GetValue (ByrefFunc<'T, obj> (fun (t : byref<'T>) -> ret (copy.Invoke (&t))))
+             else
+                let copy = Clone.GetMethod<'T> meth
+                GetReference (Func<'T, obj> (fun t -> ret (copy.Invoke (t))))
+
+    let createSet<'T> (meth : MethodInfo) = 
+        if typeof<'T>.GetTypeInfo().IsValueType then
+            Clone.SetStructMethod<'T> meth
+            |> SetValue
+        else
+            Clone.SetMethod<'T> meth
+            |> SetReference
+
+    let createCloneMethod<'T> () =
+        let typ = typeof<'T>
+        let ctors = typ.GetTypeInfo().DeclaredConstructors
+        let ctor = ctors.ElementAt (0)
+        let ctorParams = ctor.GetParameters ()
+
+        let runtimeProps = typ.GetRuntimeProperties ()
+
+        let ctorProps = 
+            ctorParams
+            |> Seq.map (fun param ->
+                runtimeProps 
+                |> Seq.find (fun x -> x.Name.ToLowerInvariant() = param.Name.ToLowerInvariant())
+            )
+            |> Seq.toArray
+
+        let props =
+            runtimeProps
+            |> Seq.choose (fun prop ->
+                if prop.CanRead && prop.CanWrite && not (ctorProps.Contains prop) && not (prop.Name = "Owner") then
+                    Some prop
+                else
+                    None
+            )
+            |> Seq.toArray
+
+        let ctorGets =
+            ctorProps
+            |> Array.map (fun x -> createGet<'T> x.GetMethod)
+
+        let sets =
+            props
+            |> Array.map (fun x -> createSet<'T> x.SetMethod)
+
+        let gets =
+            props
+            |> Array.map (fun x -> createGet<'T> x.GetMethod)
+
+
+        if typeof<'T>.GetTypeInfo().IsValueType then
+            let ctorGets =
+                ctorGets
+                |> Array.map (function
+                    | GetValue x -> x
+                    | _ -> failwith "should not happen"
+                )
+
+            let sets =
+                sets
+                |> Array.map (function
+                    | SetValue x -> x
+                    | _ -> failwith "should not happen"
+                )
+
+            let gets =
+                gets
+                |> Array.map (function
+                    | GetValue x -> x
+                    | _ -> failwith "should not happen"
+                )
+
+            fun (comp : obj) ->
+                let mutable typedComp = comp :?> 'T
+                let finalO = ctor.Invoke (ctorGets |> Array.map (fun x -> x.Invoke (&typedComp)))
+                let mutable typedFinalO = finalO :?> 'T
+                sets
+                |> Array.iteri (fun i setMeth ->
+                    let get = gets.[i]
+                    setMeth.Invoke (&typedFinalO, (get.Invoke (&typedComp))) |> ignore
+                )
+
+                finalO
+        else
+
+            let ctorGets =
+                ctorGets
+                |> Array.map (function
+                    | GetReference x -> x
+                    | _ -> failwith "should not happen"
+                )
+
+            let sets =
+                sets
+                |> Array.map (function
+                    | SetReference x -> x
+                    | _ -> failwith "should not happen"
+                )
+
+            let gets =
+                gets
+                |> Array.map (function
+                    | GetReference x -> x
+                    | _ -> failwith "should not happen"
+                )
+
+            fun (comp : obj) ->
+                let typedComp = comp :?> 'T
+                let finalO = ctor.Invoke (ctorGets |> Array.map (fun x -> x.Invoke (typedComp)))
+                let typedFinalO = finalO :?> 'T
+                sets
+                |> Array.iteri (fun i setMeth ->
+                    let get = gets.[i]
+                    setMeth.Invoke (typedFinalO, (get.Invoke (typedComp))) |> ignore
+                )
+
+                finalO
 
 type IEntityLookupData =
 
@@ -152,7 +323,7 @@ type IEntityLookupData =
 
     abstract TryGetComponent : int -> Component option
 
-    abstract CloneComponent : Component -> Component
+    abstract CloneComponent : obj -> obj
 
 [<ReferenceEquality>]
 type EntityLookupData<'T when 'T :> Component> =
@@ -168,7 +339,7 @@ type EntityLookupData<'T when 'T :> Component> =
         IndexLookup: int []
         Entities: Entity UnsafeResizeArray
         Components: 'T UnsafeResizeArray
-        Clone : 'T -> 'T
+        Clone : obj -> obj
     }
 
     interface IEntityLookupData with
@@ -189,7 +360,7 @@ type EntityLookupData<'T when 'T :> Component> =
                 None
 
         member this.CloneComponent comp =
-            this.Clone (comp :?> 'T) :> Component
+            this.Clone comp
 
 type EntityBuilder = EntityBuilder of (Entity -> EntityManager -> unit)
 
@@ -291,7 +462,7 @@ and [<ReferenceEquality>] EntityManager =
                         IndexLookup = Array.init this.MaxEntityAmount (fun _ -> -1) // -1 means that no component exists for that entity
                         Entities = UnsafeResizeArray.Create this.MaxEntityAmount
                         Components = UnsafeResizeArray.Create this.MaxEntityAmount
-                        Clone = Clone.CreateCloneMethod<'T> ()
+                        Clone = createCloneMethod<'T> ()
                     }
 
                 data :> IEntityLookupData
