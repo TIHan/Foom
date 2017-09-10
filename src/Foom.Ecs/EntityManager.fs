@@ -413,8 +413,6 @@ type IEntityLookupData =
 
     abstract TryGetComponent : int -> Component option
 
-    abstract CloneComponent : obj -> obj
-
 [<ReferenceEquality>]
 type EntityLookupData<'T when 'T :> Component> =
     {
@@ -430,6 +428,7 @@ type EntityLookupData<'T when 'T :> Component> =
         Entities: Entity UnsafeResizeArray
         Components: 'T UnsafeResizeArray
         Clone : Func<'T, 'T>
+        CloneComponent : obj -> obj
     }
 
     interface IEntityLookupData with
@@ -449,9 +448,6 @@ type EntityLookupData<'T when 'T :> Component> =
             else
                 None
 
-        member this.CloneComponent comp =
-            this.Clone.Invoke (comp :?> 'T) :> obj
-
 type EntityBuilder = EntityBuilder of (Entity -> EntityManager -> unit)
 
 and [<ReferenceEquality>] EntityManager =
@@ -462,11 +458,10 @@ and [<ReferenceEquality>] EntityManager =
         Lookup: ConcurrentDictionary<Type, IEntityLookupData>
 
         ActiveVersions: uint32 []
+        EntityComponents : ResizeArray<struct (obj * (obj -> obj) * (Entity -> unit))> []
 
         mutable nextEntityIndex: int
         RemovedEntityQueue: Queue<Entity>
-
-        EntityRemovals: ((Entity -> unit) ResizeArray) []
 
         EntitySpawnedEvent: Event<Entity>
         EntityDestroyedEvent: Event<Entity>
@@ -487,8 +482,6 @@ and [<ReferenceEquality>] EntityManager =
         let mutable nextEntityIndex = 1
         let removedEntityQueue = Queue<Entity> () 
 
-        let entityRemovals : ((Entity -> unit) ResizeArray) [] = Array.init maxEntityAmount (fun _ -> ResizeArray 16)
-
         let entitySpawnedEvent = eventManager.GetEntitySpawnedEvent ()
         let entityDestroyedEvent = eventManager.GetEntityDestroyedEvent ()
 
@@ -497,9 +490,9 @@ and [<ReferenceEquality>] EntityManager =
             MaxEntityAmount = maxEntityAmount
             Lookup = lookup
             ActiveVersions = activeVersions
+            EntityComponents = Array.init maxEntityAmount (fun _ -> ResizeArray ())
             nextEntityIndex = nextEntityIndex
             RemovedEntityQueue = removedEntityQueue
-            EntityRemovals = entityRemovals
             EntitySpawnedEvent = entitySpawnedEvent
             EntityDestroyedEvent = entityDestroyedEvent
             CurrentIterations = 0
@@ -540,6 +533,7 @@ and [<ReferenceEquality>] EntityManager =
                         triggers.Add (fun o -> trigger o)
 
             let factory t =
+                let clone = null//createCloneMethod<'T> ()
                 let data =
                     {
                         ComponentRemovedEvent = this.EventAggregator.GetComponentRemovedEvent<'T> ()
@@ -552,7 +546,8 @@ and [<ReferenceEquality>] EntityManager =
                         IndexLookup = Array.init this.MaxEntityAmount (fun _ -> -1) // -1 means that no component exists for that entity
                         Entities = UnsafeResizeArray.Create this.MaxEntityAmount
                         Components = UnsafeResizeArray.Create this.MaxEntityAmount
-                        Clone = createCloneMethod<'T> ()
+                        Clone = clone
+                        CloneComponent = fun o -> null//clone.Invoke (o :?> 'T) :> obj
                     }
 
                 data :> IEntityLookupData
@@ -677,7 +672,8 @@ and [<ReferenceEquality>] EntityManager =
                 components : UnsafeResizeArray<'T>,
                 entities : UnsafeResizeArray<Entity>,
                 componentAddedTriggers : ResizeArray<('T -> unit)>,
-                removeComponent : Entity -> unit
+                removeComponent : Entity -> unit,
+                cloneComponent : obj -> obj
             ) =
         if indexLookup.[entity.Index] >= 0 then
             Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, already added to {1}.", typeof<'T>.Name, entity))
@@ -687,7 +683,7 @@ and [<ReferenceEquality>] EntityManager =
             else
                 comp.Owner <- entity
 
-                this.EntityRemovals.[entity.Index].Add (removeComponent)
+                this.EntityComponents.[entity.Index].Add struct (comp :> obj, cloneComponent, removeComponent)
 
                 indexLookup.[entity.Index] <- entities.Count
 
@@ -701,7 +697,7 @@ and [<ReferenceEquality>] EntityManager =
     member inline this.AddInline<'T when 'T :> Component> (entity: Entity, comp: 'T) =
         let data = this.GetEntityLookupData<'T> ()
 
-        this.AddInline2<'T> (entity, comp, data.IndexLookup, data.Components, data.Entities, data.ComponentAddedTriggers, data.RemoveComponent)
+        this.AddInline2<'T> (entity, comp, data.IndexLookup, data.Components, data.Entities, data.ComponentAddedTriggers, data.RemoveComponent, data.CloneComponent)
 
     member this.Add<'T when 'T :> Component> (entity: Entity, comp: 'T) =
         if this.CurrentIterations > 0 then
@@ -765,9 +761,10 @@ and [<ReferenceEquality>] EntityManager =
             this.PendingQueue.Enqueue (fun () -> this.Destroy entity)
         else
             if this.IsValidEntity entity then
-                let removals = this.EntityRemovals.[entity.Index]
-                removals |> Seq.iter (fun f -> f entity)
-                removals.Clear ()
+                let entComps = this.EntityComponents.[entity.Index]
+                entComps |> Seq.iter (fun struct (_, _, f) -> f entity)
+                entComps.Clear ()
+
                 this.RemovedEntityQueue.Enqueue entity  
 
                 this.ActiveVersions.[entity.Index] <- 0u
@@ -919,21 +916,21 @@ and [<ReferenceEquality>] EntityManager =
 
        // this.ActiveVersions
        // |> Seq.iteri (fun i v ->
-        Parallel.For (0, this.ActiveVersions.Length - 1, fun i ->
-            let v = this.ActiveVersions.[i]
-            if v > 0u then
-                let comps = ResizeArray ()
-              // for j = 0 to 16 do
-                for i = 0 to componentLookups.Length - 1 do
-                    let data = componentLookups.[i]
-                    ()
-                    match data.TryGetComponent i with
-                    | Some comp -> comps.Add (data.CloneComponent comp)
-                    | _ -> ()
-                //()
-                fullEntities.[i] <- { Entity = Entity (i, v); Components = comps }
-                //fullEntities.Enqueue ({ Entity = Entity (i, v); Components = comps })
-        ) |> ignore
+        //Parallel.For (0, this.ActiveVersions.Length - 1, fun i ->
+        //    let v = this.ActiveVersions.[i]
+        //    if v > 0u then
+        //        let comps = ResizeArray ()
+        //      // for j = 0 to 16 do
+        //        for i = 0 to componentLookups.Length - 1 do
+        //            let data = componentLookups.[i]
+        //            ()
+        //            match data.TryGetComponent i with
+        //            | Some comp -> comps.Add (data.CloneComponent comp)
+        //            | _ -> ()
+        //        //()
+        //        fullEntities.[i] <- { Entity = Entity (i, v); Components = comps }
+        //        //fullEntities.Enqueue ({ Entity = Entity (i, v); Components = comps })
+        //) |> ignore
         ""
         //let settings = JsonSerializerSettings ()
         //settings.ContractResolver <- EcsContractResolver ()
