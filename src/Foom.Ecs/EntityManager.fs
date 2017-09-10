@@ -668,31 +668,47 @@ and [<ReferenceEquality>] EntityManager =
 
     // Components
 
+
+    member inline this.AddInline2<'T when 'T :> Component> 
+            (
+                entity: Entity, 
+                comp : 'T, 
+                indexLookup : int [], 
+                components : UnsafeResizeArray<'T>,
+                entities : UnsafeResizeArray<Entity>,
+                componentAddedTriggers : ResizeArray<('T -> unit)>,
+                removeComponent : Entity -> unit
+            ) =
+        if indexLookup.[entity.Index] >= 0 then
+            Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, already added to {1}.", typeof<'T>.Name, entity))
+        else
+            if not comp.Owner.IsZero then
+                Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, has already been assigned to {1}.", typeof<'T>.Name, comp.Owner))
+            else
+                comp.Owner <- entity
+
+                this.EntityRemovals.[entity.Index].Add (removeComponent)
+
+                indexLookup.[entity.Index] <- entities.Count
+
+                components.Add comp
+                entities.Add entity
+
+                for i = 0 to componentAddedTriggers.Count - 1 do
+                    let f = componentAddedTriggers.[i]
+                    f comp
+
+    member inline this.AddInline<'T when 'T :> Component> (entity: Entity, comp: 'T) =
+        let data = this.GetEntityLookupData<'T> ()
+
+        this.AddInline2<'T> (entity, comp, data.IndexLookup, data.Components, data.Entities, data.ComponentAddedTriggers, data.RemoveComponent)
+
     member this.Add<'T when 'T :> Component> (entity: Entity, comp: 'T) =
         if this.CurrentIterations > 0 then
             this.PendingQueue.Enqueue (fun () -> this.Add (entity, comp))
         else
             if this.IsValidEntity entity then
-                let data = this.GetEntityLookupData<'T> ()
-
-                if data.IndexLookup.[entity.Index] >= 0 then
-                    Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, already added to {1}.", typeof<'T>.Name, entity))
-                else
-                    if not comp.Owner.IsZero then
-                        Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, has already been assigned to {1}.", typeof<'T>.Name, comp.Owner))
-                    else
-                        comp.Owner <- entity
-
-                        this.EntityRemovals.[entity.Index].Add (data.RemoveComponent)
-
-                        data.IndexLookup.[entity.Index] <- data.Entities.Count
-
-                        data.Components.Add comp
-                        data.Entities.Add entity
-
-                        for i = 0 to data.ComponentAddedTriggers.Count - 1 do
-                            let f = data.ComponentAddedTriggers.[i]
-                            f comp
+                this.AddInline<'T> (entity, comp)
             else
                 Debug.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot add component, {1}", entity, typeof<'T>.Name))
 
