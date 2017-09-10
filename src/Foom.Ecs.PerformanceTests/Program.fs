@@ -203,9 +203,10 @@ let perfRecordSpecial title iterations s f e : (string * float seq) =
     let mutable total = 0.
     let data = ResizeArray ()
 
-    GC.Collect (2, GCCollectionMode.Forced, true)
+
 
     for i = 1 to iterations do
+        GC.Collect (2, GCCollectionMode.Forced, true)
         s ()
 
         let stopwatch = System.Diagnostics.Stopwatch.StartNew ()

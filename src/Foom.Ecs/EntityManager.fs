@@ -533,7 +533,7 @@ and [<ReferenceEquality>] EntityManager =
                         triggers.Add (fun o -> trigger o)
 
             let factory t =
-                let clone = null//createCloneMethod<'T> ()
+                let clone = createCloneMethod<'T> ()
                 let data =
                     {
                         ComponentRemovedEvent = this.EventAggregator.GetComponentRemovedEvent<'T> ()
@@ -547,7 +547,7 @@ and [<ReferenceEquality>] EntityManager =
                         Entities = UnsafeResizeArray.Create this.MaxEntityAmount
                         Components = UnsafeResizeArray.Create this.MaxEntityAmount
                         Clone = clone
-                        CloneComponent = fun o -> null//clone.Invoke (o :?> 'T) :> obj
+                        CloneComponent = fun o -> clone.Invoke (o :?> 'T) :> obj
                     }
 
                 data :> IEntityLookupData
@@ -764,6 +764,7 @@ and [<ReferenceEquality>] EntityManager =
                 let entComps = this.EntityComponents.[entity.Index]
                 entComps |> Seq.iter (fun struct (_, _, f) -> f entity)
                 entComps.Clear ()
+                entComps.TrimExcess ()
 
                 this.RemovedEntityQueue.Enqueue entity  
 
