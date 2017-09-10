@@ -887,9 +887,9 @@ and [<ReferenceEquality>] EntityManager =
         //)
 
 
-        this.ActiveVersions
-        |> Seq.iteri (fun i v ->
-       // Parallel.For (0, this.ActiveVersions.Length - 1, fun i ->
+       // this.ActiveVersions
+       // |> Seq.iteri (fun i v ->
+        Parallel.For (0, this.ActiveVersions.Length - 1, fun i ->
             let v = this.ActiveVersions.[i]
             if v > 0u then
                 let comps = ResizeArray ()
