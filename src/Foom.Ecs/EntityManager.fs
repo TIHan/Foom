@@ -227,12 +227,26 @@ module CloneHelpers =
         let cloneMeth = DynamicMethod ("Clone", typ, [|typ|])
         let il = cloneMeth.GetILGenerator ()
 
+        il.DeclareLocal (typ) |> ignore
+
         if ctorGets.Length > 0 then
             il.Emit (OpCodes.Ldarg_0)
             ctorGets |> Array.iteri (fun i ctorGet ->
                 il.Emit (OpCodes.Callvirt, ctorGet)
             )
         il.Emit (OpCodes.Newobj, ctor)
+        il.Emit (OpCodes.Stloc_0)
+
+        gets
+        |> Array.iteri (fun i get ->
+            let set = sets.[i]
+            il.Emit (OpCodes.Ldloc_0)
+            il.Emit (OpCodes.Ldarg_0)
+            il.Emit (OpCodes.Callvirt, get)
+            il.Emit (OpCodes.Callvirt, set)
+        )
+
+        il.Emit (OpCodes.Ldloc_0)
         il.Emit (OpCodes.Ret)
 
         cloneMeth.CreateDelegate (typeof<Func<'T, 'T>>) :?> Func<'T, 'T>

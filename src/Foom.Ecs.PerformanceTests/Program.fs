@@ -143,6 +143,12 @@ type BigPositionComponent5 (position : Vector3) =
     member val Position6 = position with get, set
     member val Position7 = position with get, set
 
+    static member Clone (comp : BigPositionComponent5) =
+        let newComp = BigPositionComponent5 (comp.Position)
+        newComp.Position2 <- comp.Position2
+        newComp.Position3 <- comp.Position3
+        newComp
+
 [<Struct>]
 type NetworkState =
     {
