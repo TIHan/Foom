@@ -888,14 +888,13 @@ and [<ReferenceEquality>] EntityManager =
         let fullEntities = Array.zeroCreate this.MaxEntityAmount
 
         this.EntityComponents
-        |> Array.iteri (fun i comps ->
+        |> Array.Parallel.iteri (fun i comps ->
             if comps.Count > 0 then
-                let comps =
-                    comps
-                    |> Seq.map (fun struct (comp, clone, remove) ->
-                        clone comp
-                    )
-                fullEntities.[i] <- { Entity = Entity (i, this.ActiveVersions.[i]); Components = comps |> Seq.toArray }
+                let clones = ResizeArray (comps.Count)
+                for i = 0 to comps.Count - 1 do
+                    let struct (comp, clone, remove) = comps.[i]
+                    clones.Add (clone comp)
+                fullEntities.[i] <- { Entity = Entity (i, this.ActiveVersions.[i]); Components = clones }
         )
         ""
         //let settings = JsonSerializerSettings ()
