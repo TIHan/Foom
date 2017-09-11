@@ -189,9 +189,8 @@ let perfRecord title iterations f : (string * float seq) =
     let mutable total = 0.
     let data = ResizeArray ()
 
-    GC.Collect (2, GCCollectionMode.Forced, true)
-
     for i = 1 to iterations do
+        GC.Collect (2, GCCollectionMode.Forced, true)
         let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
         f ()
         stopwatch.Stop ()
@@ -203,13 +202,12 @@ let perfRecordSpecial title iterations s f e : (string * float seq) =
     let mutable total = 0.
     let data = ResizeArray ()
 
-
-
     for i = 1 to iterations do
         GC.Collect (2, GCCollectionMode.Forced, true)
         s ()
 
         let stopwatch = System.Diagnostics.Stopwatch.StartNew ()
+        
         f ()
         stopwatch.Stop ()
         data.Add stopwatch.Elapsed.TotalMilliseconds
@@ -221,7 +219,7 @@ let perfRecordSpecial title iterations s f e : (string * float seq) =
 [<EntryPoint>]
 let main argv = 
     let amount = 10000
-    let iterations = 100
+    let iterations = 10
     let world = World (65536)
 
     let mutable result = Unchecked.defaultof<Vector3>
@@ -364,7 +362,7 @@ let main argv =
 
     let mutable json = ""
     let test13 = 
-        perfRecordSpecial "Save 10000 Ents" 10
+        perfRecordSpecial "Save 10000 Ents" iterations
             (fun () -> ()
             )
             (fun () ->
