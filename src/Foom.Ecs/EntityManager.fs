@@ -178,7 +178,7 @@ module CloneHelpers =
         let typ = meth.ReturnType
         match isImmutableType typ with
         | true -> meth
-        | _ -> failwith "not valid yet"
+        | _ -> failwithf "Component, %s, has an invalid property type. Property Name: %s. Type: %s." typeof<'T>.Name meth.Name typ.Name
 
     let createSet<'T> (meth : MethodInfo) = meth
 
@@ -186,6 +186,10 @@ module CloneHelpers =
         let typ = typeof<'T>
 
         let ctors = typ.GetTypeInfo().DeclaredConstructors
+
+        if ctors.Count () > 1 then
+            failwithf "Component, %s, has more than one constructor. Components can only have one constructor." typ.Name
+
         let ctor = ctors.ElementAt (0)
         let ctorParams = ctor.GetParameters ()
 
@@ -194,8 +198,12 @@ module CloneHelpers =
         let ctorProps = 
             ctorParams
             |> Seq.map (fun param ->
-                runtimeProps 
-                |> Seq.find (fun x -> x.Name.ToLowerInvariant() = param.Name.ToLowerInvariant())
+                let propOpt =
+                    runtimeProps 
+                    |> Seq.tryFind (fun x -> x.Name.ToLowerInvariant() = param.Name.ToLowerInvariant() && x.PropertyType = param.ParameterType)
+                match propOpt with
+                | Some prop -> prop
+                | _ -> failwithf "Component, %s, has a constructor parameter that doesn't match a property with a getter. Parameter Name: %s. Type: %s." typ.Name param.Name param.ParameterType.Name
             )
             |> Seq.toArray
 

@@ -5,7 +5,7 @@
     <ProjectGuid>{E6E59E16-3055-4964-8F21-5B7F0A13AB5D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Foom.Ecs.Desktop</RootNamespace>
-    <AssemblyName>Foom.Ecs.Desktop</AssemblyName>
+    <AssemblyName>Foom.Ecs</AssemblyName>
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -44,6 +44,7 @@
     <Reference Include="System.Runtime.Serialization" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="..\Foom.Ecs\Core.fsi">
       <Link>Core.fsi</Link>
     </Compile>

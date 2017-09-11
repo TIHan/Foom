@@ -6,10 +6,10 @@ open System.Numerics
 open Foom.Ecs
 
 [<Sealed>]
-type TransformComponent (value: Matrix4x4) =
+type TransformComponent (transform: Matrix4x4) =
     inherit Component ()
 
-    let mutable transform = value
+    let mutable transform = transform
 
     member __.Transform
         with get () = transform

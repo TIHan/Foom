@@ -9,7 +9,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>Foom</RootNamespace>
     <AssemblyName>Foom</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
     <Name>Foom</Name>
@@ -29,7 +29,7 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
+    <DebugType>full</DebugType>
     <Optimize>true</Optimize>
     <Tailcalls>true</Tailcalls>
     <OutputPath>..\..\build\</OutputPath>
@@ -94,10 +94,6 @@
       <Project>{13CAB67A-5A00-401D-8CE2-032FFEA5FECE}</Project>
       <Name>Foom.Wad</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Foom.Ecs\Foom.Ecs.fsproj">
-      <Project>{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}</Project>
-      <Name>Foom.Ecs</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Foom.Geometry\Foom.Geometry.fsproj">
       <Project>{34AA5257-2F5B-4097-8250-1FD4956D1130}</Project>
       <Name>Foom.Geometry</Name>
@@ -159,6 +155,10 @@
       <Name>Foom.Physics</Name>
     </ProjectReference>
     <Reference Include="System.Drawing" />
+    <ProjectReference Include="..\Foom.Ecs.Desktop\Foom.Ecs.Desktop.fsproj">
+      <Project>{E6E59E16-3055-4964-8F21-5B7F0A13AB5D}</Project>
+      <Name>Foom.Ecs.Desktop</Name>
+    </ProjectReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

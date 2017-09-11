@@ -2,7 +2,7 @@
 open System.Reflection
 open System.Runtime.CompilerServices
 
-[<assembly: AssemblyTitle("Foom.Ecs")>]
+[<assembly: AssemblyTitle("Foom.Ecs.Desktop")>]
 [<assembly: AssemblyDescription("")>]
 [<assembly: AssemblyConfiguration("")>]
 [<assembly: AssemblyCompany("")>]
@@ -16,5 +16,5 @@ open System.Runtime.CompilerServices
 
 //[<assembly: AssemblyDelaySign(false)>]
 //[<assembly: AssemblyKeyFile("")>]
-[<assembly: ReferenceAssembly>]
+
 ()
