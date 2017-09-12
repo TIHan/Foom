@@ -184,7 +184,7 @@ module CloneHelpers =
 
     type GetMethod =
         | Normal of getMethod : MethodInfo
-        | Clone of cloningMethod : MethodInfo * getMethod : MethodInfo
+        | Clone of cloningMethod : DynamicMethod * getMethod : MethodInfo
 
     let createGet<'T> (meth : MethodInfo) =
         let typ = meth.ReturnType
@@ -193,16 +193,16 @@ module CloneHelpers =
         | _ -> //failwithf "Component, %s, has an invalid property type. Property Name: %s. Type: %s." typeof<'T>.Name meth.Name typ.Name
 
             let helperMethods = moduleType.GetRuntimeMethods ()
-            let createCloneMeth = helperMethods |> Seq.find (fun x -> x.Name = "createCloneMethod")
+            let createCloneMeth = helperMethods |> Seq.find (fun x -> x.Name = "createCloneDynamicMethod")
 
             let generic = createCloneMeth.MakeGenericMethod ([|typ|])
             let ret = generic.Invoke (null, [||])
-            let ret = ret :?> Delegate
-            Clone (ret.Method, meth)
+            let ret = ret :?> DynamicMethod
+            Clone (ret, meth)
 
     let createSet<'T> (meth : MethodInfo) = meth
 
-    let createCloneMethod<'T> () =
+    let createCloneDynamicMethod<'T> () =
         let typ = typeof<'T>
 
         if typ.IsValueType then
@@ -268,7 +268,6 @@ module CloneHelpers =
                     il.Emit (OpCodes.Callvirt, ctorGet)
                 | Clone (clone, ctorGet) ->
                     il.Emit (OpCodes.Callvirt, ctorGet)
-                    printfn "ToString: %A    GetType: %A" clone <| clone.GetType()
                     il.Emit (OpCodes.Call, clone)
             )
         il.Emit (OpCodes.Newobj, ctor)
@@ -293,7 +292,10 @@ module CloneHelpers =
         il.Emit (OpCodes.Ldloc_0)
         il.Emit (OpCodes.Ret)
 
-        cloneMeth.CreateDelegate (typeof<Func<'T, 'T>>) :?> Func<'T, 'T>
+        cloneMeth
+
+    let createCloneMethod<'T> () =
+        createCloneDynamicMethod<'T>().CreateDelegate (typeof<Func<'T, 'T>>) :?> Func<'T, 'T>
 #else
     type GetMethod<'T> =
         | GetReference of Func<'T, obj>
