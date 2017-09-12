@@ -8,6 +8,14 @@ type SectorGeometry =
 
         mutable height: float32
         textureName: string option
+
+        upperFrontWall : Vector3 [] list
+        middleFrontWall : Vector3 [] list
+        lowerFrontWall : Vector3 [] list
+
+        upperBackWall : Vector3 [] list
+        middleBackWall : Vector3 [] list
+        lowerBackWall : Vector3 [] list
     }
 
 [<CompilationRepresentationAttribute (CompilationRepresentationFlags.ModuleSuffix)>]
@@ -18,6 +26,12 @@ module SectorGeometry =
             vertices = vertices
             height = height
             textureName = textureName
+            upperFrontWall = []
+            middleFrontWall = []
+            lowerFrontWall = []
+            upperBackWall = []
+            middleBackWall = []
+            lowerBackWall = []
         }
 
     let changeHeight height flatPart =
