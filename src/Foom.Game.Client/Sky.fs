@@ -5,6 +5,7 @@ open System.Numerics
 open Foom.Renderer
 open Foom.Renderer.RendererSystem
 open Foom.Game.Assets
+open Foom.Ecs
 
 let octahedron_vtx = 
     [|
@@ -100,7 +101,7 @@ type SkyInput (shaderInput) =
 
 let shader = CreateShader SkyInput 2 (CreateShaderPass (fun _ -> [ Stencil2 ]) "Sky")//CreateShader "Sky" 2 ShaderPass.Stencil2 SkyInput
 
-type Sky () =
+type SkyMesh () =
     inherit Mesh<SkyInput> (skyVertices, [||], [||])
 
     member val Model = Matrix4x4.CreateScale (100.f)
@@ -111,4 +112,22 @@ type Sky () =
         input.Model.Set this.Model
 
 type SkyRendererComponent (textureKind : TextureKind) =
-    inherit MeshRendererComponent<SkyInput, Sky> (0, MaterialDescription<SkyInput> (shader, textureKind), Sky ())
+    inherit Component ()
+
+    member val TextureKind = textureKind
+
+    member val SkyMesh = SkyMesh ()
+
+module Sky =
+
+    let update (am : AssetManager) (renderer : Renderer) =
+
+        Behavior.Merge
+            [
+                Behavior.ComponentAdded (fun _ _ (comp : SkyRendererComponent) ->
+                    let material = MaterialDescription<SkyInput> (shader, comp.TextureKind) |> am.GetMaterial
+
+                    renderer.AddMesh (0, material.Shader :?> Shader<SkyInput>, material.Texture.Buffer, comp.SkyMesh)
+
+                )
+            ]
