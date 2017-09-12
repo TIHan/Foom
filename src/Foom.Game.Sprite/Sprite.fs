@@ -84,17 +84,6 @@ type SpriteBatch (lightLevel, material : BaseMaterial) =
         input.LightLevels.Set this.LightLevelBuffer
         input.UvOffsets.Set this.UvOffsetBuffer
 
-//type SpriteBatchRendererComponent (layer, material, lightLevel) =
-//    inherit MeshRendererComponent<SpriteBatchInput, SpriteBatch> (layer, material, SpriteBatch lightLevel)
-
-//    member val SpriteCount = 0 with get, set
-
-//    member val Positions : Vector3 [] = Array.zeroCreate 1000000
-
-//    member val LightLevels : Vector4 [] = Array.zeroCreate 1000000
-
-//    member val UvOffsets : Vector4 [] = Array.zeroCreate 100000
-
 [<Sealed>]
 type SpriteComponent (layer : int, textureKind : TextureKind, lightLevel: int) =
     inherit Component ()

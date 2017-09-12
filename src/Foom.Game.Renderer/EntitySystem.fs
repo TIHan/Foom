@@ -13,53 +13,6 @@ open Foom.Renderer
 open Foom.Game.Assets
 open Foom.Game.Core
 
-//[<AbstractClass>]
-//type BaseMeshRendererComponent (layer : int, materialDesc : MaterialDescription, mesh : BaseMesh) =
-//    inherit Component ()
-
-//    member val Layer = layer
-
-//    member val MaterialDescription = materialDesc
-
-//    member val BaseMesh = mesh
-
-//    member val Material = None with get, set
-
-//    member this.LoadMaterial (am : AssetManager) =
-//        match this.Material with
-//        | None ->
-//            let material = am.GetMaterial materialDesc
-//            this.Material <- Some material
-//        | _ -> ()
-
-//    abstract member AddMesh : Renderer -> unit
-
-//[<AbstractClass>]
-//type MeshRendererComponent<'T, 'U when 'T :> MeshInput and 'U :> Mesh<'T>> (layer, materialDesc : MaterialDescription<'T>, mesh : 'U) =
-//    inherit BaseMeshRendererComponent (layer, materialDesc, mesh)
-
-//    member val Mesh = mesh
-
-//    override this.AddMesh renderer =
-//        match this.Material with
-//        | Some material ->
-//            renderer.AddMesh (layer, material.Shader :?> Shader<'T>, material.Texture.Buffer, mesh) |> ignore
-//        | _ -> ()
-
-//[<Sealed>]
-//type MeshRendererComponent (group, material : MaterialDescription<MeshInput>, meshInfo : MeshInfo) =
-//    inherit MeshRendererComponent<MeshInput, Mesh<MeshInput>> (group, material, meshInfo.ToMesh ())
-
-//let assetBehavior (am : AssetManager) =
-//    Behavior.ComponentAdded (fun _ _ (comp : BaseMeshRendererComponent) ->
-//        comp.LoadMaterial am
-//    )
-
-//let assetRenderBehavior (renderer : Renderer) =
-//    Behavior.ComponentAdded (fun _ _ (comp : BaseMeshRendererComponent) ->
-//        comp.AddMesh (renderer)
-//    )
-
 let create (renderer : Renderer) (am : AssetManager) : Behavior<float32 * float32> =
 
     // This should probably be on the camera itself :)
@@ -67,9 +20,6 @@ let create (renderer : Renderer) (am : AssetManager) : Behavior<float32 * float3
 
     Behavior.Merge
         [
-            //assetBehavior am
-            //assetRenderBehavior renderer
-
             Behavior.ComponentAdded (fun _ _ (comp : CameraComponent) ->
                 comp.RenderCamera <- renderer.CreateCamera (Matrix4x4.Identity, comp.Projection) |> Some
             )

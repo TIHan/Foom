@@ -268,7 +268,8 @@ module CloneHelpers =
                     il.Emit (OpCodes.Callvirt, ctorGet)
                 | Clone (clone, ctorGet) ->
                     il.Emit (OpCodes.Callvirt, ctorGet)
-                  //  il.Emit (OpCodes.Call, clone)
+                    printfn "ToString: %A    GetType: %A" clone <| clone.GetType()
+                    il.Emit (OpCodes.Call, clone)
             )
         il.Emit (OpCodes.Newobj, ctor)
         il.Emit (OpCodes.Stloc_0)
@@ -284,7 +285,7 @@ module CloneHelpers =
                 il.Emit (OpCodes.Callvirt, get)
             | Clone (clone, get) ->
                 il.Emit (OpCodes.Callvirt, get)
-               // il.Emit (OpCodes.Call, clone)
+                il.Emit (OpCodes.Call, clone)
 
             il.Emit (OpCodes.Callvirt, set)
         )
@@ -578,7 +579,7 @@ and [<ReferenceEquality>] EntityManager =
             let factory t =
                 let clone = 
                     try createCloneMethod<'T> () with
-                    | e -> failwithf "Component, %s, failed to create a clone method. Reason: %s" typeof<'T>.Name e.InnerException.Message
+                    | e -> failwithf "Component, %s, failed to create a clone method. Reason: %A" typeof<'T>.Name e
                 let data =
                     {
                         ComponentRemovedEvent = this.EventAggregator.GetComponentRemovedEvent<'T> ()
@@ -942,12 +943,12 @@ and [<ReferenceEquality>] EntityManager =
 
                 fullEntities.[i] <- { Entity = Entity (i, this.ActiveVersions.[i]); Components = clones }
         )
-      //  ""
-        let settings = JsonSerializerSettings ()
-        settings.ContractResolver <- EcsContractResolver ()
-        settings.Formatting <- Formatting.Indented
+        ""
+        //let settings = JsonSerializerSettings ()
+        //settings.ContractResolver <- EcsContractResolver ()
+        //settings.Formatting <- Formatting.Indented
 
-        JsonConvert.SerializeObject (fullEntities |> Seq.filter (fun x -> obj.ReferenceEquals (x, null) |> not), settings)
+        //JsonConvert.SerializeObject (fullEntities |> Seq.filter (fun x -> obj.ReferenceEquals (x, null) |> not), settings)
 
     member this.Load (json : string) =
         ()
