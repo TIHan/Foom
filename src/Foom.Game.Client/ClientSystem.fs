@@ -132,7 +132,7 @@ let physicsUpdateBehavior (physics : PhysicsEngine) (clientWorld: ClientWorld) =
     )
 
 
-let create openWad exportTextures (clientWorld: ClientWorld) am =
+let create openWad exportTextures (clientWorld: ClientWorld) am renderer =
     Behavior.Delay (fun () ->
         let physics = PhysicsEngine.create 128
         Behavior.Merge
@@ -150,10 +150,8 @@ let create openWad exportTextures (clientWorld: ClientWorld) am =
                     physicsSpriteBehavior physics clientWorld
                     // physicsUpdateBehavior clientWorld
 
-                    RendererSystem.assetBehavior am
-
                     SpriteAnimation.update
-                    Sprite.update am
+                    Sprite.update am renderer
                 ]
             )
     )

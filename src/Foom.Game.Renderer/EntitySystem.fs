@@ -60,12 +60,10 @@ open Foom.Game.Core
 //        comp.AddMesh (renderer)
 //    )
 
-let create (gl: IGL) fileReadAllText (am : AssetManager) : Behavior<float32 * float32> =
+let create (renderer : Renderer) (am : AssetManager) : Behavior<float32 * float32> =
 
     // This should probably be on the camera itself :)
     let zEasing = Foom.Math.Mathf.LerpEasing(0.100f)
-
-    let renderer = Renderer.Create (gl, fileReadAllText)
 
     Behavior.Merge
         [
@@ -108,7 +106,7 @@ let create (gl: IGL) fileReadAllText (am : AssetManager) : Behavior<float32 * fl
 
                 renderer.Draw time
 
-                gl.Swap ()
+                renderer.gl.Swap ()
             )
 
         ]

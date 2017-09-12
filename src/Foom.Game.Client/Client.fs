@@ -14,18 +14,16 @@ open Foom.Game.Sprite
 
 let init print (gl: IGL) (assetLoader: IAssetLoader) loadTextFile openWad exportTextures input (world: World) =
     let am = AssetManager (assetLoader)
+    let renderer = Renderer.Create (gl, loadTextFile)
     let renderSystem = 
-        RendererSystem.create
-            gl
-            loadTextFile
-            am
+        RendererSystem.create renderer am
            
 
     let renderSystemUpdate = world.AddBehavior (Behavior.Merge [ renderSystem ])
 
     let clientSubworld = world.CreateSubworld ()
     let clientWorld = ClientWorld.Create (clientSubworld, world.SpawnEntity ())
-    let clientSystemUpdate = ClientSystem.create openWad exportTextures clientWorld am |> clientSubworld.AddBehavior
+    let clientSystemUpdate = ClientSystem.create openWad exportTextures clientWorld am renderer |> clientSubworld.AddBehavior
 
     world.Publish (ClientSystem.LoadWadAndLevelRequested ("DOOM1.WAD", "e1m1"))
 
