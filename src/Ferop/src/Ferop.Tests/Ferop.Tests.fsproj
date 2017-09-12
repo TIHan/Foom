@@ -39,21 +39,12 @@
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="Ferop">
-      <HintPath>..\..\bin\Ferop.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Test.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <Import Project="..\..\bin\build\Ferop.targets" Condition="Exists('..\..\bin\build\Ferop.targets')" />
-  <ItemGroup>
-    <ProjectReference Include="..\Foom.Tests.PCL\Foom.Tests.PCL.fsproj">
-      <Project>{FC68760A-CBBD-43B7-AE3E-7C0E527B6FDC}</Project>
-      <Name>Foom.Tests.PCL</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(FSharpTargetsPath)" />
   <Choose>
     <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v2.0' Or $(TargetFrameworkVersion) == 'v3.0' Or $(TargetFrameworkVersion) == 'v3.5')">
@@ -914,6 +905,13 @@
     <Reference Include="System.ComponentModel.Composition">
       <Paket>True</Paket>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Ferop\Ferop.fsproj">
+      <Name>Ferop (Ferop\Ferop)</Name>
+      <Project>{88e06223-2026-42f8-be6d-b03e3ed3fe4b}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.6.2' Or $(TargetFrameworkVersion) == 'v4.6.3' Or $(TargetFrameworkVersion) == 'v4.7' Or $(TargetFrameworkVersion) == 'v5.0')">
