@@ -72,6 +72,29 @@ type Vector3 =
         mutable Y4 : float32
         mutable Z4 : float32
     }
+
+    static member Create () =
+        {
+            X = 0.f
+            Y = 1.f
+            Z = 2.f
+
+            X1 = 3.f
+            Y1 = 4.f
+            Z1 = 5.f
+
+            X2 = 6.f
+            Y2 = 7.f
+            Z2 = 8.f
+
+            X3 = 9.f
+            Y3 = 10.f
+            Z3 = 11.f
+
+            X4 = 12.f
+            Y4 = 13.f
+            Z4 = 14.f
+        }
  
 type SubSystemConstruct =
     {
@@ -86,7 +109,7 @@ type PositionComponent (position : Vector3) =
 type SubSystemComponent () =
     inherit Component ()
 
-    member val Position = Unchecked.defaultof<Vector3> with get, set
+    member val Position = Vector3.Create () with get, set
 
 type BigPositionComponent1 (position : Vector3) =
     inherit Component ()
@@ -98,6 +121,8 @@ type BigPositionComponent1 (position : Vector3) =
     member val Position5 = position with get, set
     member val Position6 = position with get, set
     member val Position7 = position with get, set
+
+    override this.ToString () = this.Position2.ToString ()
 
 type BigPositionComponent2 (position : Vector3) =
     inherit Component ()
@@ -143,12 +168,6 @@ type BigPositionComponent5 (position : Vector3) =
     member val Position6 = position with get, set
     member val Position7 = position with get, set
 
-    static member Clone (comp : BigPositionComponent5) =
-        let newComp = BigPositionComponent5 (comp.Position)
-        newComp.Position2 <- comp.Position2
-        newComp.Position3 <- comp.Position3
-        newComp
-
 [<Struct>]
 type NetworkState =
     {
@@ -175,13 +194,13 @@ type NetworkComponent () =
 
 let proto () =
     entity {
-        add (PositionComponent Unchecked.defaultof<Vector3>)
+        add (PositionComponent (Vector3.Create ()))
         add (SubSystemComponent ())
-        add (BigPositionComponent1 Unchecked.defaultof<Vector3>)
-        add (BigPositionComponent2 Unchecked.defaultof<Vector3>)
-        add (BigPositionComponent3 Unchecked.defaultof<Vector3>)
-        add (BigPositionComponent4 Unchecked.defaultof<Vector3>)
-        add (BigPositionComponent5 Unchecked.defaultof<Vector3>)
+        add (BigPositionComponent1 (Vector3.Create ()))
+        add (BigPositionComponent2 (Vector3.Create ()))
+        add (BigPositionComponent3 (Vector3.Create ()))
+        add (BigPositionComponent4 (Vector3.Create ()))
+        add (BigPositionComponent5 (Vector3.Create ()))
         add (NetworkComponent ())
     }
 

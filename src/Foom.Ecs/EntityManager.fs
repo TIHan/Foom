@@ -174,11 +174,23 @@ module CloneHelpers =
 #if ECS_CLONING_EMIT_IL
     open System.Reflection.Emit
 
+    type GetMethod =
+        | Normal of getMethod : MethodInfo
+        | Clone of cloningMethod : MethodInfo * getMethod : MethodInfo
+
     let createGet<'T> (meth : MethodInfo) =
         let typ = meth.ReturnType
         match isImmutableType typ with
-        | true -> meth
-        | _ -> failwithf "Component, %s, has an invalid property type. Property Name: %s. Type: %s." typeof<'T>.Name meth.Name typ.Name
+        | true -> Normal meth
+        | _ -> //failwithf "Component, %s, has an invalid property type. Property Name: %s. Type: %s." typeof<'T>.Name meth.Name typ.Name
+
+            let helperMethods = moduleType.GetRuntimeMethods ()
+            let createCloneMeth = helperMethods |> Seq.find (fun x -> x.Name = "createCloneMethod")
+
+            let generic = createCloneMeth.MakeGenericMethod ([|typ|])
+            let ret = generic.Invoke (null, [||])
+            let ret = ret :?> Delegate
+            Clone (ret.Method, meth)
 
     let createSet<'T> (meth : MethodInfo) = meth
 
@@ -188,7 +200,7 @@ module CloneHelpers =
         let ctors = typ.GetTypeInfo().DeclaredConstructors
 
         if ctors.Count () > 1 then
-            failwithf "Component, %s, has more than one constructor. Components can only have one constructor." typ.Name
+            failwithf "Type, %s, has more than one constructor. Cloneable types can only have one constructor." typ.Name
 
         let ctor = ctors.ElementAt (0)
         let ctorParams = ctor.GetParameters ()
@@ -203,7 +215,7 @@ module CloneHelpers =
                     |> Seq.tryFind (fun x -> x.Name.ToLowerInvariant() = param.Name.ToLowerInvariant() && x.PropertyType = param.ParameterType)
                 match propOpt with
                 | Some prop -> prop
-                | _ -> failwithf "Component, %s, has a constructor parameter that doesn't match a property with a getter. Parameter Name: %s. Type: %s." typ.Name param.Name param.ParameterType.Name
+                | _ -> failwithf "Type, %s, has a constructor parameter that doesn't match a property with a getter. Parameter Name: %s. Parameter Type: %s." typ.Name param.Name param.ParameterType.Name
             )
             |> Seq.toArray
 
@@ -238,9 +250,14 @@ module CloneHelpers =
         il.DeclareLocal (typ) |> ignore
 
         if ctorGets.Length > 0 then
-            il.Emit (OpCodes.Ldarg_0)
             ctorGets |> Array.iteri (fun i ctorGet ->
-                il.Emit (OpCodes.Callvirt, ctorGet)
+                il.Emit (OpCodes.Ldarg_0)
+                match ctorGet with
+                | Normal ctorGet ->
+                    il.Emit (OpCodes.Callvirt, ctorGet)
+                | Clone (clone, ctorGet) ->
+                    il.Emit (OpCodes.Callvirt, ctorGet)
+                    il.Emit (OpCodes.Call, clone)
             )
         il.Emit (OpCodes.Newobj, ctor)
         il.Emit (OpCodes.Stloc_0)
@@ -250,7 +267,14 @@ module CloneHelpers =
             let set = sets.[i]
             il.Emit (OpCodes.Ldloc_0)
             il.Emit (OpCodes.Ldarg_0)
-            il.Emit (OpCodes.Callvirt, get)
+
+            match get with
+            | Normal get ->
+                il.Emit (OpCodes.Callvirt, get)
+            | Clone (clone, get) ->
+                il.Emit (OpCodes.Callvirt, get)
+                il.Emit (OpCodes.Call, clone)
+
             il.Emit (OpCodes.Callvirt, set)
         )
 
@@ -902,39 +926,41 @@ and [<ReferenceEquality>] EntityManager =
                 for i = 0 to comps.Count - 1 do
                     let struct (comp, clone, remove) = comps.[i]
                     clones.Add (clone comp)
+
                 fullEntities.[i] <- { Entity = Entity (i, this.ActiveVersions.[i]); Components = clones }
         )
         ""
         //let settings = JsonSerializerSettings ()
         //settings.ContractResolver <- EcsContractResolver ()
         //settings.Formatting <- Formatting.Indented
-        //JsonConvert.SerializeObject (fullEntities, settings)
+
+        //JsonConvert.SerializeObject (fullEntities |> Seq.filter (fun x -> obj.ReferenceEquals (x, null) |> not), settings)
 
     member this.Load (json : string) =
+        ()
+        //let hasData = String.IsNullOrEmpty json |> not
+        //if hasData then
+            //let emTyp = typeof<EntityManager>
 
-        let hasData = String.IsNullOrEmpty json |> not
-        if hasData then
-            let emTyp = typeof<EntityManager>
+            //let settings = JsonSerializerSettings ()
+            //settings.ContractResolver <- EcsContractResolver ()
+            //settings.TypeNameHandling <- TypeNameHandling.All
+            //let fullEntities = JsonConvert.DeserializeObject<SerializedEntity seq> (json, settings)
 
-            let settings = JsonSerializerSettings ()
-            settings.ContractResolver <- EcsContractResolver ()
-            settings.TypeNameHandling <- TypeNameHandling.All
-            let fullEntities = JsonConvert.DeserializeObject<SerializedEntity seq> (json, settings)
+            //fullEntities
+            //|> Seq.iter (fun serialized ->
+            //    let ent = this.Spawn ()
 
-            fullEntities
-            |> Seq.iter (fun serialized ->
-                let ent = this.Spawn ()
-
-                serialized.Components
-                |> Seq.iter (fun comp ->
-                    let meth = 
-                        let meth =
-                            emTyp.GetRuntimeMethods() 
-                            |> Seq.find(fun x -> x.Name = "Add")
-                        meth.MakeGenericMethod (comp.GetType ())
-                    meth.Invoke (this, [| ent; comp |]) |> ignore
-                )
-            )
+            //    serialized.Components
+            //    |> Seq.iter (fun comp ->
+            //        let meth = 
+            //            let meth =
+            //                emTyp.GetRuntimeMethods() 
+            //                |> Seq.find(fun x -> x.Name = "Add")
+            //            meth.MakeGenericMethod (comp.GetType ())
+            //        meth.Invoke (this, [| ent; comp |]) |> ignore
+            //    )
+            //)
 
 
 [<AutoOpen>]
