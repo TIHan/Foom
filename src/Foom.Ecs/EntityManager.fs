@@ -929,12 +929,12 @@ and [<ReferenceEquality>] EntityManager =
 
                 fullEntities.[i] <- { Entity = Entity (i, this.ActiveVersions.[i]); Components = clones }
         )
-        ""
-        //let settings = JsonSerializerSettings ()
-        //settings.ContractResolver <- EcsContractResolver ()
-        //settings.Formatting <- Formatting.Indented
+      //  ""
+        let settings = JsonSerializerSettings ()
+        settings.ContractResolver <- EcsContractResolver ()
+        settings.Formatting <- Formatting.Indented
 
-        //JsonConvert.SerializeObject (fullEntities |> Seq.filter (fun x -> obj.ReferenceEquals (x, null) |> not), settings)
+        JsonConvert.SerializeObject (fullEntities |> Seq.filter (fun x -> obj.ReferenceEquals (x, null) |> not), settings)
 
     member this.Load (json : string) =
         ()

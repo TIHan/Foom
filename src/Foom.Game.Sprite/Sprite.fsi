@@ -24,4 +24,4 @@ type SpriteComponent =
 
 module Sprite =
 
-    val update : AssetManager -> Behavior<float32 * float32>
+    val update : AssetManager -> Renderer -> Behavior<float32 * float32>

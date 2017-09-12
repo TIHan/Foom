@@ -11,6 +11,7 @@ open Foom.Renderer
 open Foom.Renderer.RendererSystem
 open Foom.Game.Assets
 open Foom.Game.Core
+open System.Runtime.Serialization
 
 [<AutoOpen>]
 module SpriteHelpers =
@@ -57,32 +58,42 @@ type SpriteBatchInput (shaderInput) =
 
     member val UvOffsets = shaderInput.CreateInstanceAttributeVar<Vector4Buffer> ("instance_uvOffset")
 
-type SpriteBatch (lightLevel) =
+type SpriteBatch (lightLevel, material : BaseMaterial) =
     inherit Mesh<SpriteBatchInput> (vertices, uv, createSpriteColor lightLevel)
 
-    member val Positions = Buffer.createVector3 [||]
+    member val PositionBuffer = Buffer.createVector3 [||]
 
-    member val LightLevels = Buffer.createVector4 [||]
+    member val Positions = Array.zeroCreate 1000000
 
-    member val UvOffsets = Buffer.createVector4 [||]
+    member val LightLevelBuffer = Buffer.createVector4 [||]
+
+    member val LightLevels = Array.zeroCreate 1000000
+
+    member val UvOffsetBuffer = Buffer.createVector4 [||]
+
+    member val UvOffsets = Array.zeroCreate 1000000
+
+    member val SpriteCount = 0 with get, set
+
+    member val Material = material
 
     override this.SetShaderInput input =
         base.SetShaderInput input
 
-        input.Positions.Set this.Positions
-        input.LightLevels.Set this.LightLevels
-        input.UvOffsets.Set this.UvOffsets
+        input.Positions.Set this.PositionBuffer
+        input.LightLevels.Set this.LightLevelBuffer
+        input.UvOffsets.Set this.UvOffsetBuffer
 
-type SpriteBatchRendererComponent (layer, material, lightLevel) =
-    inherit MeshRendererComponent<SpriteBatchInput, SpriteBatch> (layer, material, SpriteBatch lightLevel)
+//type SpriteBatchRendererComponent (layer, material, lightLevel) =
+//    inherit MeshRendererComponent<SpriteBatchInput, SpriteBatch> (layer, material, SpriteBatch lightLevel)
 
-    member val SpriteCount = 0 with get, set
+//    member val SpriteCount = 0 with get, set
 
-    member val Positions : Vector3 [] = Array.zeroCreate 1000000
+//    member val Positions : Vector3 [] = Array.zeroCreate 1000000
 
-    member val LightLevels : Vector4 [] = Array.zeroCreate 1000000
+//    member val LightLevels : Vector4 [] = Array.zeroCreate 1000000
 
-    member val UvOffsets : Vector4 [] = Array.zeroCreate 100000
+//    member val UvOffsets : Vector4 [] = Array.zeroCreate 100000
 
 [<Sealed>]
 type SpriteComponent (layer : int, textureKind : TextureKind, lightLevel: int) =
@@ -96,14 +107,15 @@ type SpriteComponent (layer : int, textureKind : TextureKind, lightLevel: int) =
 
     member val TextureKind = textureKind
 
-    member val RendererComponent : SpriteBatchRendererComponent = Unchecked.defaultof<SpriteBatchRendererComponent> with get, set
+    [<IgnoreDataMember>]
+    member val Batch : SpriteBatch = Unchecked.defaultof<SpriteBatch> with get, set
 
 module Sprite =
 
     let shader = CreateShader SpriteBatchInput 0 (CreateShaderPass (fun _ -> []) "Sprite")
 
-    let update (am: AssetManager) : Behavior<float32 * float32> =
-        let lookup = Dictionary<int * TextureKind, SpriteBatchRendererComponent> ()
+    let update (am: AssetManager) (renderer : Renderer) : Behavior<float32 * float32> =
+        let lookup = Dictionary<int * TextureKind, SpriteBatch> ()
 
         let rendererSpawnQueue = Queue ()
 
@@ -116,53 +128,52 @@ module Sprite =
                 Behavior.Update (fun _ em _ ->
                     while rendererSpawnQueue.Count > 0 do
                         let comp = rendererSpawnQueue.Dequeue ()
-                        let rendererComp = 
+                        let batch = 
                             let key = (comp.Layer, comp.TextureKind)
                             match lookup.TryGetValue (key) with
                             | true, x -> x
                             | _ ->
-                                let material = MaterialDescription<SpriteBatchInput> (shader, comp.TextureKind)
-                                let rendererComp = new SpriteBatchRendererComponent(comp.Layer, material, 255.f)
+                                let material = MaterialDescription<SpriteBatchInput> (shader, comp.TextureKind) |> am.GetMaterial
+                                let batch = SpriteBatch (255.f, material)
 
-                                let rendererEnt = em.Spawn ()
-                                em.Add (rendererEnt, rendererComp)
+                                renderer.AddMesh (comp.Layer, material.Shader :?> Shader<SpriteBatchInput>, material.Texture.Buffer, batch)
 
-                                lookup.[key] <- rendererComp
+                                lookup.[key] <- batch
 
-                                rendererComp
+                                batch
                         
-                        comp.RendererComponent <- rendererComp
+                        comp.Batch <- batch
                 )
 
                 Behavior.Update (fun _ em ea ->
                     em.ForEach<TransformComponent, SpriteComponent> (fun _ transformComp spriteComp ->
-                        let rendererComp = spriteComp.RendererComponent
+                        let rendererComp = spriteComp.Batch
                         if rendererComp.SpriteCount < rendererComp.Positions.Length then
                             let c = single spriteComp.LightLevel / 255.f
 
                             rendererComp.Positions.[rendererComp.SpriteCount] <- transformComp.Position
                             rendererComp.LightLevels.[rendererComp.SpriteCount] <- Vector4 (c, c, c, 1.f)
 
-                            match rendererComp.Material with
-                            | Some material ->
-                                let frames = material.Texture.Frames
-                                let frame = spriteComp.Frame
-                                let frame = 
-                                    if frame >= frames.Length then 0
-                                    else frame
+                            let material = rendererComp.Material
+                            let frames = material.Texture.Frames
+                            let frame = spriteComp.Frame
+                            let frame = 
+                                if frame >= frames.Length then 0
+                                else frame
                                                  
-                                rendererComp.UvOffsets.[rendererComp.SpriteCount] <- frames.[frame]
-                            | _ -> ()
+                            rendererComp.UvOffsets.[rendererComp.SpriteCount] <- frames.[frame]
 
                             rendererComp.SpriteCount <- rendererComp.SpriteCount + 1
                     )
                 )
 
                 Behavior.Update (fun _ em ea ->
-                    em.ForEach<SpriteBatchRendererComponent> (fun _ rendererComp ->
-                        rendererComp.Mesh.Positions.Set (rendererComp.Positions, rendererComp.SpriteCount)
-                        rendererComp.Mesh.LightLevels.Set (rendererComp.LightLevels, rendererComp.SpriteCount)
-                        rendererComp.Mesh.UvOffsets.Set (rendererComp.UvOffsets, rendererComp.SpriteCount)
+                    lookup
+                    |> Seq.iter (fun pair ->
+                        let rendererComp = pair.Value
+                        rendererComp.PositionBuffer.Set (rendererComp.Positions, rendererComp.SpriteCount)
+                        rendererComp.LightLevelBuffer.Set (rendererComp.LightLevels, rendererComp.SpriteCount)
+                        rendererComp.UvOffsetBuffer.Set (rendererComp.UvOffsets, rendererComp.SpriteCount)
                         rendererComp.SpriteCount <- 0
                     )
                 )
