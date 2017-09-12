@@ -1,6 +1,7 @@
 ﻿namespace Foom.Physics
 
 open System.Numerics
+open System.Runtime.Serialization
 open System.Collections.Generic
 
 open Foom.Math
@@ -15,6 +16,14 @@ type CharacterControllerComponent (position: Vector3, radius: float32, height: f
     let rigidBody =
         RigidBody (CollisionShape.DynamicAABB dynamicAABB, position)
 
+    member this.Position
+        with get () = Vector3 (rigidBody.WorldPosition, rigidBody.Z)
+
+    member this.Radius = radius
+
+    member this.Height = height
+
+    [<IgnoreDataMember>]
     member this.RigidBody = rigidBody
 
 type RigidBodyComponent (position: Vector3, radius: float32, height: float32) =
@@ -25,4 +34,12 @@ type RigidBodyComponent (position: Vector3, radius: float32, height: float32) =
     let rigidBody =
         RigidBody (CollisionShape.DynamicAABB dynamicAABB, position)
 
+    member this.Position
+        with get () = Vector3 (rigidBody.WorldPosition, rigidBody.Z)
+
+    member this.Radius = radius
+
+    member this.Height = height
+
+    [<IgnoreDataMember>]
     member this.RigidBody = rigidBody

@@ -67,8 +67,8 @@ let runGlobalBatch (em: EntityManager) =
                 Uv = uv |> Seq.toArray
                 Color = color |> Seq.toArray
             }
-
-        em.Add (ent, RendererSystem.MeshRendererComponent (0, texture, meshInfo))
+        ()
+     //   em.Add (ent, RendererSystem.MeshRendererComponent (0, texture, meshInfo))
     )
 
 open System.Linq

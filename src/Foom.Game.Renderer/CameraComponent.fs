@@ -2,6 +2,7 @@
 
 open System
 open System.Numerics
+open System.Runtime.Serialization
 
 open Foom.Ecs
 open Foom.Geometry
@@ -12,6 +13,7 @@ type CameraComponent (projection : Matrix4x4) =
 
     let mutable angle = Vector3 (0.f, 0.f, 0.f)
 
+    [<IgnoreDataMember>]
     member val internal RenderCamera : RenderCamera option = None with get, set
 
     member val HeightOffset : single = 0.f with get, set

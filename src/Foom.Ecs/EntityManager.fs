@@ -127,6 +127,7 @@ module CloneHelpers =
     let allNestedRuntimeFieldTypes (typ: Type) =
         let f (x: Type) : Type list =
             (x.GetRuntimeFields ())
+            |> Seq.filter (fun x -> not x.IsStatic)
             |> Seq.map (fun x -> x.FieldType)
             |> Seq.distinctBy (fun x -> x.FullName)
             |> List.ofSeq
@@ -150,7 +151,12 @@ module CloneHelpers =
         | false -> false
         | _ -> allNestedRuntimeFieldTypes typ |> List.forall check
 
-    let isImmutableType<'T> (typ : Type) =
+    let propertyHasAttributeType (attrType: Type) (prop: PropertyInfo) =
+        prop.CustomAttributes
+        |> Seq.map (fun x -> x.AttributeType.FullName)
+        |> Seq.exists ((=)attrType.FullName)
+
+    let rec isImmutableType (typ : Type) =
         match typ with
         | x when 
             x = typeof<byte> ||
@@ -165,7 +171,9 @@ module CloneHelpers =
             x = typeof<double> ||
             x = typeof<bool> ||
             isTypeBlittable x ||
-            x = typeof<string> -> true
+            ((x.GetTypeInfo().IsGenericType) && x.GetGenericTypeDefinition() = typedefof<list<_>> && isImmutableType (x.GenericTypeArguments.ElementAt(0))) ||
+            x = typeof<string> -> 
+                true
         | _ -> false
 
     type internal Marker = interface end
@@ -197,6 +205,9 @@ module CloneHelpers =
     let createCloneMethod<'T> () =
         let typ = typeof<'T>
 
+        if typ.IsValueType then
+            failwithf "Cannot create a clone method for value type, %s." typ.Name
+
         let ctors = typ.GetTypeInfo().DeclaredConstructors
 
         if ctors.Count () > 1 then
@@ -205,7 +216,7 @@ module CloneHelpers =
         let ctor = ctors.ElementAt (0)
         let ctorParams = ctor.GetParameters ()
 
-        let runtimeProps = typ.GetRuntimeProperties ()
+        let runtimeProps = typ.GetRuntimeProperties () |> Seq.filter (not << propertyHasAttributeType typeof<IgnoreDataMemberAttribute>)
 
         let ctorProps = 
             ctorParams
@@ -257,7 +268,7 @@ module CloneHelpers =
                     il.Emit (OpCodes.Callvirt, ctorGet)
                 | Clone (clone, ctorGet) ->
                     il.Emit (OpCodes.Callvirt, ctorGet)
-                    il.Emit (OpCodes.Call, clone)
+                  //  il.Emit (OpCodes.Call, clone)
             )
         il.Emit (OpCodes.Newobj, ctor)
         il.Emit (OpCodes.Stloc_0)
@@ -273,7 +284,7 @@ module CloneHelpers =
                 il.Emit (OpCodes.Callvirt, get)
             | Clone (clone, get) ->
                 il.Emit (OpCodes.Callvirt, get)
-                il.Emit (OpCodes.Call, clone)
+               // il.Emit (OpCodes.Call, clone)
 
             il.Emit (OpCodes.Callvirt, set)
         )
@@ -565,7 +576,9 @@ and [<ReferenceEquality>] EntityManager =
                         triggers.Add (fun o -> trigger o)
 
             let factory t =
-                let clone = createCloneMethod<'T> ()
+                let clone = 
+                    try createCloneMethod<'T> () with
+                    | e -> failwithf "Component, %s, failed to create a clone method. Reason: %s" typeof<'T>.Name e.InnerException.Message
                 let data =
                     {
                         ComponentRemovedEvent = this.EventAggregator.GetComponentRemovedEvent<'T> ()
