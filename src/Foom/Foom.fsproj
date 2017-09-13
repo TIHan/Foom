@@ -1468,4 +1468,7 @@
     </When>
   </Choose>
   <Import Project="..\..\packages\SkiaSharp\build\$(__paket__SkiaSharp_targets).targets" Condition="Exists('..\..\packages\SkiaSharp\build\$(__paket__SkiaSharp_targets).targets')" Label="Paket" />
+  <PropertyGroup>
+    <PostBuildEvent>Ferop.Compiler.exe Foom.Renderer.Desktop.dll Foom.Input.Desktop.dll</PostBuildEvent>
+  </PropertyGroup>
 </Project>
