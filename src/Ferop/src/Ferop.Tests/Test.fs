@@ -376,12 +376,14 @@ let ``with a delegate type, should pass a delegate and return the result`` () =
 [<Test>]
 let ``with a byref type, should pass a reference to get a new value`` () =
     let mutable x = 1.
-    Assert.AreEqual (Tests4.testByRef (&x), 30.2)
+    Tests4.testByRef (&x)
+    Assert.AreEqual (x, 30.2)
 
 [<Test>]
 let ``with a pointer type, should pass a pointer to get a new value`` () =
     let mutable x = 1.
-    Assert.AreEqual (Tests4.testPointer (&&x), 36.2)
+    Tests4.testPointer (&&x)
+    Assert.AreEqual (x, 36.2)
 
 [<Test>]
 let ``with an array type, should pass an array and have it be modified in the unmanaged world`` () =
