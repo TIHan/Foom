@@ -18,7 +18,7 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom", "src\Foom\Foom.fspro
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Ecs", "src\Foom.Ecs\Foom.Ecs.fsproj", "{0D3AAAE3-4AD2-452E-97CE-5DF1F1DA0A50}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{CDAC4EAC-FDCE-4D71-B473-4EEDF7A20D0C}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Foom.Core", "Foom.Core", "{CDAC4EAC-FDCE-4D71-B473-4EEDF7A20D0C}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Math", "src\Foom.Math\Foom.Math.fsproj", "{B94F520E-B150-45A7-ADA1-E2945BE9A743}"
 EndProject
@@ -30,7 +30,7 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Collections", "src\Foo
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Renderer", "src\Foom.Renderer\Foom.Renderer.fsproj", "{ED30B5EB-571D-4815-BE37-DDF7ED6198CC}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core.Game", "Core.Game", "{66C3905B-FBAD-412B-B49A-FB42DCB08FA9}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Foom.Game", "Foom.Game", "{66C3905B-FBAD-412B-B49A-FB42DCB08FA9}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Game.Renderer", "src\Foom.Game.Renderer\Foom.Game.Renderer.fsproj", "{181E47F5-8BF0-4AEC-B452-0A88D5BFD28F}"
 EndProject

@@ -233,7 +233,7 @@ module CloneHelpers =
         let props =
             runtimeProps
             |> Seq.choose (fun prop ->
-                if prop.CanRead && prop.CanWrite && not (ctorProps.Contains prop) && not (prop.Name = "Owner") then
+                if prop.CanRead && prop.CanWrite && not (ctorProps.Contains prop) then
                     Some prop
                 else
                     None
