@@ -15,6 +15,14 @@ let documents = Environment.GetFolderPath (Environment.SpecialFolder.MyDocuments
 let documents = Environment.GetFolderPath (Environment.SpecialFolder.Personal)
 #endif
 
+[<AutoOpen>]
+module SkiaHelpers =
+
+    let imageInfo =
+        let mutable info = SKImageInfo ()
+        info.ColorType <- SKColorType.Rgba8888
+        info
+
 let savePng name (pixels : Pixel [,]) =
     let mutable isTransparent = false
 
@@ -27,7 +35,8 @@ let savePng name (pixels : Pixel [,]) =
             isTransparent <- true
     )
 
-    use bitmap = new SKBitmap (width, height, not isTransparent)
+    let alphaType = if not isTransparent then SKAlphaType.Opaque else SKAlphaType.Premul
+    use bitmap = new SKBitmap (width, height, SKColorType.Rgba8888, alphaType)
     for i = 0 to width - 1 do
         for j = 0 to height - 1 do
             let pixel = pixels.[i, j]
