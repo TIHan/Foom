@@ -5,6 +5,7 @@ open System.Collections.Generic
 
 open Foom.Ecs
 open Foom.Renderer
+open Foom.Collections
 
 [<ReferenceEquality>]
 type TextureKind =
@@ -13,6 +14,8 @@ type TextureKind =
 
 [<Sealed>]
 type Texture () = 
+
+    member val internal Id = CompactId.Zero with get, set
 
     member val Buffer = Texture2DBuffer ()
 
@@ -92,6 +95,9 @@ type IAssetLoader =
 [<Sealed>]
 type AssetManager (assetLoader: IAssetLoader) =
 
+    let textures = CompactManager<Texture> (0)
+    let textureEnum = ResizeArray<Texture> ()
+
     let materialLookup = Dictionary<MaterialDescription, BaseMaterial> ()
     let textureKindCache = Dictionary<TextureKind, Texture> ()
 
@@ -103,6 +109,7 @@ type AssetManager (assetLoader: IAssetLoader) =
             | true, texture -> texture
             | _ -> 
                 let texture = Texture ()
+                texture.Id <- textures.Add texture
                 textureKindCache.Add (textureKind, texture)
                 texture
 

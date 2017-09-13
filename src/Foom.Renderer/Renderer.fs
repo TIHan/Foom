@@ -422,7 +422,7 @@ type Renderer =
                 gl = gl
                 programCache = programCache
                 layers = Array.init 32 (fun _ -> RenderLayer (gl))
-                cameras = CompactManager<RenderCamera>.Create 1
+                cameras = CompactManager<RenderCamera> (1)
                 nextShaderId = 0
             }
 

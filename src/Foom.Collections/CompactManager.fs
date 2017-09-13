@@ -11,50 +11,44 @@ type CompactId =
 
     static member Zero = CompactId (ref -1)
 
-type CompactManager<'T> =
-    {
-        dataIds: CompactId ResizeArray
-        data: 'T ResizeArray
-    }
+[<Sealed>]
+type CompactManager<'T> (capacity : int) =
 
-    static member Create (capacity: int) =
-        {
-            dataIds = ResizeArray (capacity)
-            data = ResizeArray (capacity)
-        }
+    let dataIds = ResizeArray (capacity)
+    let data = ResizeArray<'T> (capacity)
 
-    member this.Count = this.data.Count
+    member this.Count = data.Count
 
     member this.Add datum =     
-        let index = this.dataIds.Count
+        let index = dataIds.Count
 
         let indexRef = ref index
 
         let id = CompactId (indexRef)
 
-        this.dataIds.Add id
-        this.data.Add datum
+        dataIds.Add id
+        data.Add datum
 
         id
 
     member this.RemoveById (id: CompactId) =
         if this.IsValid id then
-            let count = this.dataIds.Count
+            let count = dataIds.Count
             let lastIndex = count - 1
             let index = !id.Index
 
             id.Index := -1
 
-            let lastId = this.dataIds.[lastIndex]
-            let last = this.data.[lastIndex]
+            let lastId = dataIds.[lastIndex]
+            let last = data.[lastIndex]
 
-            this.dataIds.[index]
+            dataIds.[index]
         else
             failwithf "Not a valid id, %A." id
 
     member this.IsValid (id: CompactId) =
 
-        if !id.Index < this.dataIds.Count && !id.Index <> -1 then
+        if !id.Index < dataIds.Count && !id.Index <> -1 then
             true
         else
             false    
@@ -62,19 +56,19 @@ type CompactManager<'T> =
     member this.FindById (id: CompactId) =
 
         if this.IsValid id then
-            this.data.[!id.Index]
+            data.[!id.Index]
         else
             failwithf "Not a valid id, %A." id.Index
 
     member this.TryFindById (id: CompactId) =
 
         if this.IsValid id then
-            Some this.data.[!id.Index]
+            Some data.[!id.Index]
         else
             None
 
     member this.ForEach f =
 
-        for i = 0 to this.data.Count - 1 do
+        for i = 0 to data.Count - 1 do
             
-            f this.dataIds.[i] this.data.[i]
+            f dataIds.[i] data.[i]
