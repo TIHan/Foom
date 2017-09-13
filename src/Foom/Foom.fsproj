@@ -15,6 +15,7 @@
     <Name>Foom</Name>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <TargetFrameworkProfile />
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -1469,6 +1470,7 @@
   </Choose>
   <Import Project="..\..\packages\SkiaSharp\build\$(__paket__SkiaSharp_targets).targets" Condition="Exists('..\..\packages\SkiaSharp\build\$(__paket__SkiaSharp_targets).targets')" Label="Paket" />
   <PropertyGroup>
-    <PostBuildEvent>Ferop.Compiler.exe Foom.Renderer.Desktop.dll Foom.Input.Desktop.dll</PostBuildEvent>
+    <PostBuildEvent Condition="'$(OS)' == 'Windows_NT' ">Ferop.Compiler.exe Foom.Renderer.Desktop.dll Foom.Input.Desktop.dll</PostBuildEvent>
+    <PostBuildEvent Condition="'$(OS)' != 'Windows_NT' ">mono Ferop.Compiler.exe Foom.Renderer.Desktop.dll Foom.Input.Desktop.dll</PostBuildEvent>
   </PropertyGroup>
 </Project>
