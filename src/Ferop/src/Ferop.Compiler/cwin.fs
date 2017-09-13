@@ -46,15 +46,15 @@ let bat (is64bit: bool) dir =
 
     let cl = "cl.exe"
 
-    let cl32bit =
-        let path = Path.Combine (vcBin, cl)
-        if Directory.Exists path then path
-        else Path.Combine (Path.Combine (vs, "SDK\\ScopeCppSDK\\VC\\bin"), cl)
+    let cl32bit = "cl.exe"
+       // let path = Path.Combine (vcBin, cl)
+       // if Directory.Exists path then path
+       // else Path.Combine (Path.Combine (vs, "SDK\\ScopeCppSDK\\VC\\bin"), cl)
 
-    let cl64bit = 
-        let path = Path.Combine (vcBin64bit, cl)
-        if Directory.Exists path then path
-        else Path.Combine (Path.Combine (vs, "SDK\\ScopeCppSDK\\VC\\bin"), cl)
+    let cl64bit = "cl.exe"
+        //let path = Path.Combine (vcBin64bit, cl)
+        //if Directory.Exists path then path
+        //else Path.Combine (Path.Combine (vs, "SDK\\ScopeCppSDK\\VC\\bin"), cl)
 
     let cl, vcvars =
         if is64bit

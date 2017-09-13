@@ -2,6 +2,8 @@
 
 [<EntryPoint>]
 let main argv = 
-    Ferop.run "Foom.Renderer.Desktop.dll"
-    Ferop.run "Foom.Input.Desktop.dll"
+    argv
+    |> Seq.iter (fun x -> Ferop.run x |> ignore)
+    //Ferop.run "Foom.Renderer.Desktop.dll"
+    //Ferop.run "Foom.Input.Desktop.dll"
     0
