@@ -46,7 +46,7 @@ Highcharts.chart('container', {
 </script>
     """ title stringSeries
 
-[<Struct>]
+//[<Struct>]
 type Vector3 =
     {
         mutable X : float32
@@ -106,10 +106,15 @@ type PositionComponent (position : Vector3) =
 
     member val Position = position with get, set
 
+[<Struct>]
+type TestUnion =
+    | Test1 of chicken : int
+    | Test2 of beef : float
+
 type SubSystemComponent () =
     inherit Component ()
 
-    member val Position = Vector3.Create () with get, set
+    member val Position = Test1 5 with get, set
 
 type BigPositionComponent1 (position : Vector3) =
     inherit Component ()

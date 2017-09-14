@@ -173,6 +173,7 @@ module CloneHelpers =
             isTypeBlittable x ||
             ((x.GetTypeInfo().IsGenericType) && x.GetGenericTypeDefinition() = typedefof<list<_>> && isImmutableType (x.GenericTypeArguments.ElementAt(0))) ||
             x = typeof<string> -> 
+                printfn "blittable: %A" typ
                 true
         | _ -> false
 
@@ -186,8 +187,9 @@ module CloneHelpers =
         | Normal of getMethod : MethodInfo
         | Clone of cloningMethod : DynamicMethod * getMethod : MethodInfo
 
-    let createGet<'T> (meth : MethodInfo) =
+    let createGet (meth : MethodInfo) =
         let typ = meth.ReturnType
+
         match isImmutableType typ with
         | true -> Normal meth
         | _ -> //failwithf "Component, %s, has an invalid property type. Property Name: %s. Type: %s." typeof<'T>.Name meth.Name typ.Name
@@ -200,10 +202,11 @@ module CloneHelpers =
             let ret = ret :?> DynamicMethod
             Clone (ret, meth)
 
-    let createSet<'T> (meth : MethodInfo) = meth
+    let createSet (meth : MethodInfo) = meth
 
-    let createCloneDynamicMethod<'T> () =
-        let typ = typeof<'T>
+    let createCloneDynamicMethodByType (typ : Type) =
+        if typ.IsAbstract then
+            failwithf "Cannot create a clone method for an abstract type, %s." typ.Name
 
         if typ.IsValueType then
             failwithf "Cannot create a clone method for value type, %s." typ.Name
@@ -242,15 +245,15 @@ module CloneHelpers =
 
         let ctorGets =
             ctorProps
-            |> Array.map (fun x -> createGet<'T> x.GetMethod)
+            |> Array.map (fun x -> createGet x.GetMethod)
 
         let sets =
             props
-            |> Array.map (fun x -> createSet<'T> x.SetMethod)
+            |> Array.map (fun x -> createSet x.SetMethod)
 
         let gets =
             props
-            |> Array.map (fun x -> createGet<'T> x.GetMethod)
+            |> Array.map (fun x -> createGet x.GetMethod)
 
         /////////////////////////////////////////////////////
         ()
@@ -293,6 +296,10 @@ module CloneHelpers =
         il.Emit (OpCodes.Ret)
 
         cloneMeth
+
+    let createCloneDynamicMethod<'T> () =
+        let typ = typeof<'T>
+        createCloneDynamicMethodByType typ
 
     let createCloneMethod<'T> () =
         createCloneDynamicMethod<'T>().CreateDelegate (typeof<Func<'T, 'T>>) :?> Func<'T, 'T>
