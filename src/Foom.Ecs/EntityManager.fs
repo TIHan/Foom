@@ -173,7 +173,6 @@ module CloneHelpers =
             isTypeBlittable x ||
             ((x.GetTypeInfo().IsGenericType) && x.GetGenericTypeDefinition() = typedefof<list<_>> && isImmutableType (x.GenericTypeArguments.ElementAt(0))) ||
             x = typeof<string> -> 
-                printfn "blittable: %A" typ
                 true
         | _ -> false
 
@@ -195,18 +194,73 @@ module CloneHelpers =
         | _ -> //failwithf "Component, %s, has an invalid property type. Property Name: %s. Type: %s." typeof<'T>.Name meth.Name typ.Name
 
             let helperMethods = moduleType.GetRuntimeMethods ()
-            let createCloneMeth = helperMethods |> Seq.find (fun x -> x.Name = "createCloneDynamicMethod")
+            let createCloneMeth = 
+                match 
+                    helperMethods 
+                    |> Seq.tryFind (fun x -> x.Name = "createCloneDynamicMethodByType")
+                    with
+                    | Some x -> x
+                    | _ -> failwith "Could not find createCloneDynamicMethodByType"
 
-            let generic = createCloneMeth.MakeGenericMethod ([|typ|])
-            let ret = generic.Invoke (null, [||])
+            let ret = createCloneMeth.Invoke (null, [|typ|])
             let ret = ret :?> DynamicMethod
             Clone (ret, meth)
 
     let createSet (meth : MethodInfo) = meth
 
-    let createCloneDynamicMethodByType (typ : Type) =
-        if typ.IsAbstract then
-            failwithf "Cannot create a clone method for an abstract type, %s." typ.Name
+    let rec createUnionCloneDynamicMethodByType (typ : Type) =
+        if not typ.IsAbstract then
+            failwith "should not happen, type should be abstract for non-struct union types"
+
+        let getTag = typ.GetMethod ("get_Tag")
+
+        let nestedTypes = 
+            typ.GetNestedTypes ()
+            |> Array.filter typ.IsAssignableFrom
+            |> Array.filter (fun x -> not x.IsAbstract)
+
+        let cloneMeths = 
+            nestedTypes
+            |> Array.map createCloneDynamicMethodByType
+
+        // IL
+
+        let cloneMeth = DynamicMethod ("Clone", typ, [|typ|])
+        let il = cloneMeth.GetILGenerator ()
+
+        let defaultCase = il.DefineLabel ()
+        let endOfMethod = il.DefineLabel ()
+
+        let jumpTable =
+            Array.init nestedTypes.Length (fun _ -> il.DefineLabel ())
+
+        il.Emit (OpCodes.Ldarg_0)
+        il.Emit (OpCodes.Callvirt, getTag)
+        il.Emit (OpCodes.Switch, jumpTable)
+
+        il.Emit (OpCodes.Br_S, defaultCase)
+
+        cloneMeths
+        |> Array.iteri (fun i (m : DynamicMethod) ->
+            il.MarkLabel (jumpTable.[i])
+            il.Emit (OpCodes.Ldarg_0)
+            il.Emit (OpCodes.Call, m)
+            il.Emit (OpCodes.Br_S, endOfMethod)
+        )
+
+        il.MarkLabel (defaultCase)
+        il.Emit (OpCodes.Ldstr, "should not happen")
+        il.Emit (OpCodes.Throw)
+
+        il.MarkLabel (endOfMethod)
+        il.Emit (OpCodes.Ret)
+
+        cloneMeth
+
+    and createCloneDynamicMethodByType (typ : Type) =
+        if typ.IsAbstract then // TODO: we should probably check to see if it's a union or not
+            createUnionCloneDynamicMethodByType typ
+        else
 
         if typ.IsValueType then
             failwithf "Cannot create a clone method for value type, %s." typ.Name
@@ -226,7 +280,7 @@ module CloneHelpers =
             |> Seq.map (fun param ->
                 let propOpt =
                     runtimeProps 
-                    |> Seq.tryFind (fun x -> x.Name.ToLowerInvariant() = param.Name.ToLowerInvariant() && x.PropertyType = param.ParameterType)
+                    |> Seq.tryFind (fun x -> x.Name.ToLowerInvariant() = param.Name.Replace("_", "").ToLowerInvariant() && x.PropertyType = param.ParameterType)
                 match propOpt with
                 | Some prop -> prop
                 | _ -> failwithf "Type, %s, has a constructor parameter that doesn't match a property with a getter. Parameter Name: %s. Parameter Type: %s." typ.Name param.Name param.ParameterType.Name
