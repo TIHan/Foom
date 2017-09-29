@@ -9,8 +9,6 @@ open System.Threading.Tasks
 open System.Runtime.InteropServices
 open System.Runtime.Serialization
 
-open Foom.Collections
-
 #nowarn "9"
 
 [<Struct; StructLayout (LayoutKind.Explicit)>]

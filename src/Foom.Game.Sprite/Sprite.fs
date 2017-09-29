@@ -6,7 +6,6 @@ open System.Collections.Generic
 
 open Foom.Ecs
 open Foom.Renderer
-open Foom.Collections
 open Foom.Renderer
 open Foom.Renderer.RendererSystem
 open Foom.Game.Assets
