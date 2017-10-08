@@ -109,11 +109,11 @@ type ShaderInput () =
 
 type MeshInput (shaderInput : ShaderInput) =
 
-    member val Position = shaderInput.CreateVertexAttributeVar<Vector3Buffer> ("position")
+    member val Position = shaderInput.CreateVertexAttributeVar<Buffer<Vector3>> ("position")
 
-    member val Uv = shaderInput.CreateVertexAttributeVar<Vector2Buffer> ("in_uv")
+    member val Uv = shaderInput.CreateVertexAttributeVar<Buffer<Vector2>> ("in_uv")
 
-    member val Color = shaderInput.CreateVertexAttributeVar<Vector4Buffer> ("in_color")
+    member val Color = shaderInput.CreateVertexAttributeVar<Buffer<Vector4>> ("in_color")
 
     member val Texture = shaderInput.CreateUniformVar<Texture2DBuffer []> ("uni_texture")
 
@@ -173,14 +173,14 @@ type BaseMesh () =
     abstract SetBaseShaderInput : MeshInput -> unit
 
 [<AbstractClass>]
-type Mesh<'T when 'T :> MeshInput> (position, uv, color) =
+type Mesh<'T when 'T :> MeshInput> (position : Vector3 [], uv : Vector2 [], color : Vector4 []) =
     inherit BaseMesh ()
 
-    member val Position = Buffer.createVector3 position
+    member val Position = Buffer.Create position
 
-    member val Uv = Buffer.createVector2 uv
+    member val Uv = Buffer.Create uv
 
-    member val Color = Buffer.createVector4 color
+    member val Color = Buffer.Create color
 
     abstract SetShaderInput : 'T -> unit
 

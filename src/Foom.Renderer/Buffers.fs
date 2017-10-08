@@ -12,7 +12,7 @@ open System.Runtime.InteropServices
 // *****************************************
 
 [<Sealed>]
-type Buffer<'T when 'T : struct> (data: 'T [], bufferData: IGL -> 'T [] -> int -> int -> unit) =
+type Buffer<'T when 'T : struct> internal (data: 'T [], bufferData: IGL -> 'T [] -> int -> int -> unit) =
 
     let mutable id = 0
     let mutable length = 0
@@ -51,21 +51,16 @@ type Buffer<'T when 'T : struct> (data: 'T [], bufferData: IGL -> 'T [] -> int -
             length <- 0
             queuedData <- None
 
-type Vector2Buffer = Buffer<Vector2>
-type Vector3Buffer = Buffer<Vector3>
-type Vector4Buffer = Buffer<Vector4>
+type Buffer private () =
 
-module Buffer =
+    static member Create (data) =
+        Buffer<Vector2> (data, fun gl data size id -> gl.BufferData (data, (sizeof<Vector2> * size), id))
 
-    let createVector2 data =
-        Vector2Buffer (data, fun gl data size id -> gl.BufferData (data, (sizeof<Vector2> * size), id))
+    static member Create (data) =
+        Buffer<Vector3> (data, fun gl data size id -> gl.BufferData (data, (sizeof<Vector3> * size), id))
 
-    let createVector3 data =
-        Vector3Buffer (data, fun gl data size id -> gl.BufferData (data, (sizeof<Vector3> * size), id))
-
-    let createVector4 data =
-        Vector4Buffer (data, fun gl data size id -> gl.BufferData (data, (sizeof<Vector4> * size), id))
-
+    static member Create (data) =
+        Buffer<Vector4> (data, fun gl data size id -> gl.BufferData (data, (sizeof<Vector4> * size), id))
 
 type Texture2DBufferQueueItem =
     | Empty

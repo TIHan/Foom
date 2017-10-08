@@ -49,26 +49,26 @@ module SpriteHelpers =
 type SpriteBatchInput (shaderInput) =
     inherit MeshInput (shaderInput)
 
-    member val Center = shaderInput.CreateVertexAttributeVar<Vector3Buffer> ("in_center")
+    member val Center = shaderInput.CreateVertexAttributeVar<Buffer<Vector3>> ("in_center")
 
-    member val Positions = shaderInput.CreateInstanceAttributeVar<Vector3Buffer> ("instance_position")
+    member val Positions = shaderInput.CreateInstanceAttributeVar<Buffer<Vector3>> ("instance_position")
 
-    member val LightLevels = shaderInput.CreateInstanceAttributeVar<Vector4Buffer> ("instance_lightLevel")
+    member val LightLevels = shaderInput.CreateInstanceAttributeVar<Buffer<Vector4>> ("instance_lightLevel")
 
-    member val UvOffsets = shaderInput.CreateInstanceAttributeVar<Vector4Buffer> ("instance_uvOffset")
+    member val UvOffsets = shaderInput.CreateInstanceAttributeVar<Buffer<Vector4>> ("instance_uvOffset")
 
 type SpriteBatch (lightLevel, material : BaseMaterial) =
     inherit Mesh<SpriteBatchInput> (vertices, uv, createSpriteColor lightLevel)
 
-    member val PositionBuffer = Buffer.createVector3 [||]
+    member val PositionBuffer = Buffer.Create Array.empty<Vector3>
 
     member val Positions = Array.zeroCreate 1000000
 
-    member val LightLevelBuffer = Buffer.createVector4 [||]
+    member val LightLevelBuffer : Buffer<Vector4> = Buffer.Create Array.empty<Vector4>
 
     member val LightLevels = Array.zeroCreate 1000000
 
-    member val UvOffsetBuffer = Buffer.createVector4 [||]
+    member val UvOffsetBuffer = Buffer.Create Array.empty<Vector4>
 
     member val UvOffsets = Array.zeroCreate 1000000
 

@@ -204,17 +204,17 @@ type ShaderProgram =
 
         let bufferData =
             match attrib :> obj with
-            | :? VertexAttribute<Vector2Buffer> as attrib -> 
+            | :? VertexAttribute<Buffer<Vector2>> as attrib -> 
                 fun () -> 
                     if obj.ReferenceEquals (attrib.Value, null) |> not then
                         attrib.Value.TryBufferData this.gl |> ignore
 
-            | :? VertexAttribute<Vector3Buffer> as attrib -> 
+            | :? VertexAttribute<Buffer<Vector3>> as attrib -> 
                 fun () -> 
                     if obj.ReferenceEquals (attrib.Value, null) |> not then
                         attrib.Value.TryBufferData this.gl |> ignore
 
-            | :? VertexAttribute<Vector4Buffer> as attrib ->
+            | :? VertexAttribute<Buffer<Vector4>> as attrib ->
                 fun () -> 
                     if obj.ReferenceEquals (attrib.Value, null) |> not then
                         attrib.Value.TryBufferData this.gl |> ignore
@@ -223,17 +223,17 @@ type ShaderProgram =
 
         let bindBuffer =
             match attrib :> obj with
-            | :? VertexAttribute<Vector2Buffer> as attrib -> 
+            | :? VertexAttribute<Buffer<Vector2>> as attrib -> 
                 fun () -> 
                     if obj.ReferenceEquals (attrib.Value, null) |> not then
                         attrib.Value.Bind this.gl
 
-            | :? VertexAttribute<Vector3Buffer> as attrib ->
+            | :? VertexAttribute<Buffer<Vector3>> as attrib ->
                 fun () -> 
                     if obj.ReferenceEquals (attrib.Value, null) |> not then
                         attrib.Value.Bind this.gl
 
-            | :? VertexAttribute<Vector4Buffer> as attrib ->
+            | :? VertexAttribute<Buffer<Vector4>> as attrib ->
                 fun () -> 
                     if obj.ReferenceEquals (attrib.Value, null) |> not then
                         attrib.Value.Bind this.gl
@@ -242,16 +242,16 @@ type ShaderProgram =
 
         let size =
             match attrib :> obj with
-            | :? VertexAttribute<Vector2Buffer> -> 2
-            | :? VertexAttribute<Vector3Buffer> -> 3
-            | :? VertexAttribute<Vector4Buffer> -> 4
+            | :? VertexAttribute<Buffer<Vector2>> -> 2
+            | :? VertexAttribute<Buffer<Vector3>> -> 3
+            | :? VertexAttribute<Buffer<Vector4>> -> 4
             | _ -> failwith "Should not happen."
 
         let getLength =
             match attrib :> obj with
-            | :? VertexAttribute<Vector2Buffer> as attrib -> fun () -> attrib.Value.Length
-            | :? VertexAttribute<Vector3Buffer> as attrib -> fun () -> attrib.Value.Length
-            | :? VertexAttribute<Vector4Buffer> as attrib -> fun () -> attrib.Value.Length
+            | :? VertexAttribute<Buffer<Vector2>> as attrib -> fun () -> attrib.Value.Length
+            | :? VertexAttribute<Buffer<Vector3>> as attrib -> fun () -> attrib.Value.Length
+            | :? VertexAttribute<Buffer<Vector4>> as attrib -> fun () -> attrib.Value.Length
             | _ -> failwith "Should not happen."
 
         let bind =
@@ -321,22 +321,22 @@ type ShaderProgram =
         this.CreateUniform<RenderTexture> (name)
 
     member this.CreateVertexAttributeVector2 (name) =
-        this.CreateVertexAttribute<Vector2Buffer> (name)
+        this.CreateVertexAttribute<Buffer<Vector2>> (name)
 
     member this.CreateVertexAttributeVector3 (name) =
-        this.CreateVertexAttribute<Vector3Buffer> (name)
+        this.CreateVertexAttribute<Buffer<Vector3>> (name)
 
     member this.CreateVertexAttributeVector4 (name) =
-        this.CreateVertexAttribute<Vector4Buffer> (name)
+        this.CreateVertexAttribute<Buffer<Vector4>> (name)
 
     member this.CreateInstanceAttributeVector2 (name) =
-        this.CreateInstanceAttribute<Vector2Buffer> (name)
+        this.CreateInstanceAttribute<Buffer<Vector2>> (name)
 
     member this.CreateInstanceAttributeVector3 (name) =
-        this.CreateInstanceAttribute<Vector3Buffer> (name)
+        this.CreateInstanceAttribute<Buffer<Vector3>> (name)
 
     member this.CreateInstanceAttributeVector4 (name) =
-        this.CreateInstanceAttribute<Vector4Buffer> (name)
+        this.CreateInstanceAttribute<Buffer<Vector4>> (name)
 
     member this.Unbind () =
         if not this.isUnbinded then
