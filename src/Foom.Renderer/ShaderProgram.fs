@@ -3,7 +3,6 @@
 open System
 open System.Numerics
 open System.Collections.Generic
-open System.IO
 
 [<Sealed>]
 type Uniform<'T> (name) =
@@ -295,48 +294,6 @@ type ShaderProgram =
 
         this.binds.Add bind
         this.unbinds.Add unbind
-
-    member this.CreateUniformInt (name) =
-        this.CreateUniform<int> (name)
-
-    member this.CreateUniformFloat (name) =
-        this.CreateUniform<float32> (name)
-
-    member this.CreateUniformVector2 (name) =
-        this.CreateUniform<Vector2> (name)
-
-    member this.CreateUniformVector4 (name) =
-        this.CreateUniform<Vector4> (name)
-
-    member this.CreateUniformMatrix4x4 (name) =
-        this.CreateUniform<Matrix4x4> (name)
-
-    member this.CreateUniformTexture2D (name) =
-        this.CreateUniform<Texture2DBuffer> (name)
-
-    member this.CreateUniformTexture2DVarying (name) =
-        this.CreateUniform<Texture2DBuffer []> (name)
-
-    member this.CreateUniformRenderTexture (name) =
-        this.CreateUniform<RenderTexture> (name)
-
-    member this.CreateVertexAttributeVector2 (name) =
-        this.CreateVertexAttribute<Buffer<Vector2>> (name)
-
-    member this.CreateVertexAttributeVector3 (name) =
-        this.CreateVertexAttribute<Buffer<Vector3>> (name)
-
-    member this.CreateVertexAttributeVector4 (name) =
-        this.CreateVertexAttribute<Buffer<Vector4>> (name)
-
-    member this.CreateInstanceAttributeVector2 (name) =
-        this.CreateInstanceAttribute<Buffer<Vector2>> (name)
-
-    member this.CreateInstanceAttributeVector3 (name) =
-        this.CreateInstanceAttribute<Buffer<Vector3>> (name)
-
-    member this.CreateInstanceAttributeVector4 (name) =
-        this.CreateInstanceAttribute<Buffer<Vector4>> (name)
 
     member this.Unbind () =
         if not this.isUnbinded then

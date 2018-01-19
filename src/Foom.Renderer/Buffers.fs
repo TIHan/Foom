@@ -2,7 +2,6 @@
 
 open System
 open System.Numerics
-open System.Collections.Generic
 open System.Runtime.InteropServices
 
 // *****************************************
@@ -12,7 +11,7 @@ open System.Runtime.InteropServices
 // *****************************************
 
 [<Sealed>]
-type Buffer<'T when 'T : struct> internal (data: 'T [], bufferData: IGL -> 'T [] -> int -> int -> unit) =
+type Buffer<'T when 'T : struct> (data: 'T [], bufferData: IGL -> 'T [] -> int -> int -> unit) =
 
     let mutable id = 0
     let mutable length = 0
@@ -51,6 +50,7 @@ type Buffer<'T when 'T : struct> internal (data: 'T [], bufferData: IGL -> 'T []
             length <- 0
             queuedData <- None
 
+[<Sealed>]
 type Buffer private () =
 
     static member Create (data) =
@@ -68,6 +68,7 @@ type Texture2DBufferQueueItem =
     | File of TextureFile
     | Files of TextureFile list * width: int * height: int
 
+[<Sealed>]
 type Texture2DBuffer () =
 
     let mutable id = 0
@@ -152,6 +153,7 @@ type Texture2DBuffer () =
             height <- 0
             queuedData <- Empty
 
+[<Sealed>]
 type RenderTexture (width, height) =
 
     let mutable framebufferId = 0
@@ -196,6 +198,6 @@ type RenderTexture (width, height) =
 
     member this.TextureId = textureId
 
-    member this.Release () =
+    member this.Release (gl: IGL) =
         ()
         // TODO:
